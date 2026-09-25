@@ -144,3 +144,19 @@ Append-only log. Newest at the bottom.
   a Try again button.
 - The proxy answers with a plain-text setup message if the Supabase env
   vars are missing, instead of crashing every request.
+
+## 2026-09-25: Migration status report and "already applied" repair
+
+- The live database already had the init schema (run by hand), so `db push`
+  failed with `type "exercise_type" already exists`.
+- `scripts/db-status.sql`: read-only report of the 17 objects the init
+  migration creates, plus user/profile/routine counts and the migration
+  history. Printed at the start of every migrations run.
+- New input `mark_init_applied` runs `supabase migration repair --status
+  applied 20260925000000`, but only when the report shows 17 of 17; a
+  partial schema is refused.
+- New migration `20260925000001_backfill_profiles.sql`: creates a profile
+  row for accounts that signed up before the signup trigger existed.
+- The whole path (sign up, paste init by hand, push fails, repair, push
+  applies backfill, seed) was reproduced on local Postgres with the real
+  Supabase CLI.

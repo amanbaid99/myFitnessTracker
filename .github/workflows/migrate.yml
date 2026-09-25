@@ -7,6 +7,11 @@ name: Database migrations
 #   summary lists what is pending, so the SQL can be reviewed (spec rule 9).
 # - Actions tab > Database migrations > Run workflow, "apply" ticked:
 #   applies the pending migrations. Default branch only.
+# - "mark_init_applied": for a database where the init SQL was already run
+#   by hand (SQL editor). Records it as applied so it is not run twice; only
+#   use it when the status report shows all 17 schema objects present.
+#
+# Every run starts with a read-only status report (scripts/db-status.sql).
 #
 # Needs repository secret SUPABASE_DB_URL (docs/SETUP.md). Without it the
 # job skips.
@@ -18,6 +23,10 @@ on:
     inputs:
       apply:
         description: "Apply pending migrations (unticked = dry run)"
+        type: boolean
+        default: false
+      mark_init_applied:
+        description: "Init SQL was already run by hand: record it as applied (only if status shows 17 of 17)"
         type: boolean
         default: false
 
@@ -41,6 +50,7 @@ jobs:
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       APPLY: ${{ github.event_name == 'workflow_dispatch' && inputs.apply }}
+      MARK_INIT: ${{ github.event_name == 'workflow_dispatch' && inputs.mark_init_applied }}
     steps:
       - uses: actions/checkout@v4
 
@@ -73,6 +83,27 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - if: steps.check.outputs.enabled == 'true'
+        name: Database status (read-only)
+        run: |
+          {
+            echo "### Database status"
+            echo '```'
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -q -f scripts/db-status.sql 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - if: steps.check.outputs.enabled == 'true' && env.MARK_INIT == 'true'
+        name: Record init migration as already applied
+        run: |
+          # Refuse unless every object from the init migration exists.
+          present=$(psql "$SUPABASE_DB_URL" -At -f scripts/db-status.sql | grep -c '|present$' || true)
+          if [ "$present" != "17" ]; then
+            echo "::error::Only $present of 17 init objects exist, so the init SQL did not fully run. Not marking it applied. Ask Claude how to proceed."
+            exit 1
+          fi
+          supabase migration repair --status applied 20260925000000 --db-url "$SUPABASE_DB_URL"
 
       - if: steps.check.outputs.enabled == 'true'
         name: Pending migrations (dry run)

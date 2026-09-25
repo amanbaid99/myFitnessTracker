@@ -140,16 +140,12 @@ instead: create `main` from it, then Settings > General > Default branch.
 
 ## Troubleshooting
 
-**Migration already pasted into the SQL editor.** Tell the migration
-history it ran, then the workflow will skip it. In the SQL editor:
-
-```sql
-create schema if not exists supabase_migrations;
-create table if not exists supabase_migrations.schema_migrations
-  (version text primary key, statements text[], name text);
-insert into supabase_migrations.schema_migrations (version, name)
-values ('20260925000000', 'init') on conflict do nothing;
-```
+**Migration already pasted into the SQL editor** (apply fails with
+`type "exercise_type" already exists`). Run **Database migrations** with
+both **apply** and **mark_init_applied** ticked. The status report at the
+top must show "17 of 17 present"; the workflow then records the init
+migration as applied and applies only the newer ones. If fewer than 17 are
+present it refuses and changes nothing.
 
 **Deploy job says "skipping".** One of the three `VERCEL_*` secrets is
 missing or misspelt.
