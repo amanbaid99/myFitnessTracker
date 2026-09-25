@@ -107,6 +107,22 @@ export async function getProfile(supabase: Supabase): Promise<Profile> {
   };
 }
 
+/**
+ * Whether the one-time feedback prompt was already answered or dismissed.
+ * Any error (including a database without the column yet) counts as yes,
+ * so the prompt never shows when it cannot be recorded.
+ */
+export async function getFeedbackPrompted(supabase: Supabase): Promise<{ userId: string; prompted: boolean }> {
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims.sub ?? "";
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("feedback_prompted_at")
+    .eq("id", userId)
+    .maybeSingle();
+  return { userId, prompted: Boolean(error || !data || data.feedback_prompted_at) };
+}
+
 // Plans ------------------------------------------------------------------------
 
 export async function getPlans(supabase: Supabase): Promise<Plan[]> {

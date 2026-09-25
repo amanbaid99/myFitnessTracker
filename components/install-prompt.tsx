@@ -83,7 +83,8 @@ export function InstallPrompt() {
     };
   }, []);
 
-  if (!open) return null;
+  // Demo visitors have not signed up yet, and the demo has its own bottom bar.
+  if (!open || pathname.startsWith("/demo")) return null;
 
   function dismiss() {
     writeDismissed();

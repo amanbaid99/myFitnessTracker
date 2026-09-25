@@ -298,3 +298,23 @@ plans, which the spec did not have.
   and the database are untouched.
 - The plan day list is now a shared `PlanDays` component used by
   Routines and the demo.
+
+## 2026-09-25: In-app feedback and bug reports (Aman's choice: database)
+
+- Settings has "Give feedback" (Good / Okay / Bad plus an optional note)
+  and "Report a bug" (a required description). Both open one bottom
+  sheet and insert into a new `feedback` table; bug reports also carry
+  the page path and browser, to help reproduce them.
+- `feedback` has `user_id` and RLS: users insert and read only their own,
+  and there is no update or delete policy. Aman reads everything in the
+  Supabase dashboard, which bypasses RLS. A check constraint requires a
+  description on a bug and a rating or note on feedback. Anonymous
+  visitors (including the demo) cannot send any, which keeps out spam.
+- One-time prompt: Today asks "How is the app working for you?" once the
+  user has finished workouts on two different days (imported and
+  unfinished ones do not count), and not while a workout is open.
+  Sending or closing it sets `profiles.feedback_prompted_at`, so it
+  never shows again on any device. If that column cannot be read (for
+  example before the migration lands) the prompt stays hidden.
+- The install toast no longer shows on `/demo`, which has its own bottom
+  bar and whose visitors have not signed up yet.

@@ -199,11 +199,48 @@ with u as (update public.profiles set units = 'lb'
            where id = '11111111-1111-1111-1111-111111111111' returning 1)
 select pg_temp.expect((select count(*) from u) = 0, 'cannot update another user''s profile');
 
+-- Feedback ------------------------------------------------------------------
+-- Still user 2.
+insert into public.feedback (kind, rating, message, page) values ('feedback', 'good', 'Love it', '/');
+insert into public.feedback (kind, message, page, user_agent) values ('bug', 'Timer froze', '/workout/x', 'test');
+select pg_temp.expect(
+  (select count(*) from public.feedback) = 2
+  and (select bool_and(user_id = '22222222-2222-2222-2222-222222222222') from public.feedback),
+  'a user can send feedback and bug reports, owned by them');
+select pg_temp.expect_error(
+  $$insert into public.feedback (user_id, kind, rating) values ('11111111-1111-1111-1111-111111111111', 'feedback', 'bad')$$,
+  'cannot send feedback as another user');
+select pg_temp.expect_error(
+  $$insert into public.feedback (kind, message) values ('bug', '   ')$$,
+  'a bug report needs a description');
+select pg_temp.expect_error(
+  $$insert into public.feedback (kind) values ('feedback')$$,
+  'feedback needs a rating or a message');
+select pg_temp.expect_error(
+  $$insert into public.feedback (kind, rating) values ('feedback', 'meh')$$,
+  'rating must be good, okay or bad');
+with u as (update public.feedback set message = 'edited' returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'feedback cannot be edited');
+with d as (delete from public.feedback returning 1)
+select pg_temp.expect((select count(*) from d) = 0, 'feedback cannot be deleted');
+
+with u as (update public.profiles set feedback_prompted_at = now()
+           where id = '22222222-2222-2222-2222-222222222222' returning 1)
+select pg_temp.expect((select count(*) from u) = 1, 'a user can mark the feedback prompt as seen');
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect((select count(*) from public.feedback) = 0, 'users cannot read each other''s feedback');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;
 select public.ping();
 select pg_temp.expect((select count(*) from public.sets) = 0, 'anon sees no sets');
+select pg_temp.expect((select count(*) from public.feedback) = 0, 'anon sees no feedback');
+select pg_temp.expect_error(
+  $$insert into public.feedback (kind, rating) values ('feedback', 'good')$$,
+  'anon cannot send feedback');
 reset role;
 
 \o

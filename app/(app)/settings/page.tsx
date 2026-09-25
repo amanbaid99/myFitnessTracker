@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FeedbackButtons } from "@/components/feedback-buttons";
 import { InstallButton } from "@/components/install-button";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,12 @@ export default async function SettingsPage() {
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-medium">App</h2>
         <InstallButton />
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-1 text-sm font-medium">Feedback</h2>
+        <p className="mb-3 text-xs text-muted-foreground">Tell us what you think, or report something broken.</p>
+        <FeedbackButtons />
       </section>
 
       <form action="/auth/signout" method="post" className="mt-8">
