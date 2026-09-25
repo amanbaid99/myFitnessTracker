@@ -13,6 +13,7 @@ select set_config('seed.email', :'email', true) as seed_email \gset
 do $seed$
 declare
   uid uuid;
+  p_id uuid;
   r_id uuid;
   w_id uuid;
   e_id uuid;
@@ -29,9 +30,19 @@ begin
     return;
   end if;
 
+  -- One plan holds the imported routines; active unless another plan is.
+  insert into public.plans (user_id, name, is_custom, is_active)
+  select uid,
+         coalesce(nullif(trim(p.name), '') || '''s Upper Lower plan', 'My Upper Lower plan'),
+         true,
+         not exists (select 1 from public.plans where user_id = uid and is_active)
+  from (select 1) as one
+  left join public.profiles p on p.id = uid
+  returning id into p_id;
+
   -- Push
-  insert into public.routines (user_id, name, sort_order)
-    values (uid, 'Push', 0) returning id into r_id;
+  insert into public.routines (user_id, plan_id, name, sort_order)
+    values (uid, p_id, 'Push', 0) returning id into r_id;
   insert into public.workouts (user_id, routine_id, started_at, ended_at, notes, source)
     values (uid, r_id, now(), now(), 'Imported from Google Sheet', 'sheet_import') returning id into w_id;
   e_id := null;
@@ -120,8 +131,8 @@ begin
   n_sets := n_sets + 1;
 
   -- Legs
-  insert into public.routines (user_id, name, sort_order)
-    values (uid, 'Legs', 1) returning id into r_id;
+  insert into public.routines (user_id, plan_id, name, sort_order)
+    values (uid, p_id, 'Legs', 1) returning id into r_id;
   insert into public.workouts (user_id, routine_id, started_at, ended_at, notes, source)
     values (uid, r_id, now(), now(), 'Imported from Google Sheet', 'sheet_import') returning id into w_id;
   e_id := null;
@@ -210,8 +221,8 @@ begin
   n_sets := n_sets + 1;
 
   -- Upper 2
-  insert into public.routines (user_id, name, sort_order)
-    values (uid, 'Upper 2', 2) returning id into r_id;
+  insert into public.routines (user_id, plan_id, name, sort_order)
+    values (uid, p_id, 'Upper 2', 2) returning id into r_id;
   insert into public.workouts (user_id, routine_id, started_at, ended_at, notes, source)
     values (uid, r_id, now(), now(), 'Imported from Google Sheet', 'sheet_import') returning id into w_id;
   e_id := null;
@@ -311,8 +322,8 @@ begin
   n_sets := n_sets + 1;
 
   -- Lower
-  insert into public.routines (user_id, name, sort_order)
-    values (uid, 'Lower', 3) returning id into r_id;
+  insert into public.routines (user_id, plan_id, name, sort_order)
+    values (uid, p_id, 'Lower', 3) returning id into r_id;
   insert into public.workouts (user_id, routine_id, started_at, ended_at, notes, source)
     values (uid, r_id, now(), now(), 'Imported from Google Sheet', 'sheet_import') returning id into w_id;
   e_id := null;

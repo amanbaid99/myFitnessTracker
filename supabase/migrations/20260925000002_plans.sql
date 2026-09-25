@@ -1,5 +1,3 @@
--- DRAFT for review (not applied). Moves to supabase/migrations/ once approved.
---
 -- Workout plans: a plan groups routines (Push, Legs, ...). Several plans per
 -- user, exactly one active. Existing routines are moved into one plan per
 -- user named "<name>'s Upper Lower plan".
@@ -153,3 +151,29 @@ select distinct on (exercise_id)
 from public.working_sets
 where reps > 0 and load_kg is not null
 order by exercise_id, e1rm_kg desc, logged_at desc;
+
+-- Effort per set ------------------------------------------------------------
+-- Sets stay append-only, with one exception: the effort (rpe) a set felt
+-- like may be recorded or corrected while its workout is still in progress.
+-- Once the workout is finished, it is locked like everything else.
+
+create or replace function public.sets_append_only()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.deleted_at is not null then
+    raise exception 'set % is deleted and cannot be changed', old.id;
+  end if;
+  if (to_jsonb(new) - 'deleted_at' - 'rpe') is distinct from (to_jsonb(old) - 'deleted_at' - 'rpe') then
+    raise exception 'sets are append-only: only deleted_at (or rpe during the workout) may be set';
+  end if;
+  if new.rpe is distinct from old.rpe and exists (
+    select 1 from public.workouts w where w.id = old.workout_id and w.ended_at is not null
+  ) then
+    raise exception 'workout is finished; effort for set % can no longer change', old.id;
+  end if;
+  return new;
+end;
+$$;

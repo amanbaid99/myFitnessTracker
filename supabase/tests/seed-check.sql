@@ -18,6 +18,10 @@ set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
 select pg_temp.expect(
   (select string_agg(name, ',' order by sort_order) from public.routines) = 'Push,Legs,Upper 2,Lower',
   'seed: 4 routines in rotation order');
+select pg_temp.expect(
+  (select name from public.plans where is_active) = 'My Upper Lower plan'
+  and (select count(*) from public.routines r join public.plans p on p.id = r.plan_id where p.is_active) = 4,
+  'seed: routines live in one active plan');
 select pg_temp.expect((select count(*) from public.exercises) = 26, 'seed: 26 exercises');
 select pg_temp.expect((select count(*) from public.routine_exercises) = 26, 'seed: 26 routine slots');
 select pg_temp.expect(

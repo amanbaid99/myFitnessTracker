@@ -42,7 +42,8 @@ set role authenticated;
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 
 insert into public.exercises (id, name) values ('aaaaaaaa-0000-0000-0000-000000000001', 'Incline Bench Press');
-insert into public.routines (id, name) values ('bbbbbbbb-0000-0000-0000-000000000001', 'Push');
+insert into public.plans (id, name, is_active) values ('eeeeeeee-0000-0000-0000-000000000001', 'My plan', true);
+insert into public.routines (id, plan_id, name) values ('bbbbbbbb-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000001', 'Push');
 insert into public.routine_exercises (routine_id, exercise_id, sort_order, target_sets, target_reps)
   values ('bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 1, 3, 10);
 insert into public.workouts (id, routine_id)
@@ -79,6 +80,50 @@ select pg_temp.expect_error(
 with d as (delete from public.sets returning 1)
 select pg_temp.expect((select count(*) from d) = 0, 'hard delete of sets removes nothing');
 
+-- Effort (rpe): editable while the workout runs, locked once it ends --------
+update public.sets set rpe = 7.5 where id = 'dddddddd-0000-0000-0000-000000000002';
+update public.sets set rpe = 9 where id = 'dddddddd-0000-0000-0000-000000000002';
+select pg_temp.expect(
+  (select rpe from public.sets where id = 'dddddddd-0000-0000-0000-000000000002') = 9,
+  'effort can be recorded and corrected during the workout');
+select pg_temp.expect_error(
+  $$update public.sets set rpe = 8, reps = 9 where id = 'dddddddd-0000-0000-0000-000000000002'$$,
+  'effort update cannot sneak in other changes');
+update public.workouts set ended_at = now() where id = 'cccccccc-0000-0000-0000-000000000001';
+select pg_temp.expect_error(
+  $$update public.sets set rpe = 6 where id = 'dddddddd-0000-0000-0000-000000000002'$$,
+  'effort is locked once the workout is finished');
+
+-- Personal records view -----------------------------------------------------
+select pg_temp.expect(
+  (select load_kg from public.exercise_prs) = 15 and (select count(*) from public.exercise_prs) = 1,
+  'exercise_prs picks the best live working set (warm-ups and deleted excluded)');
+
+-- Plans ---------------------------------------------------------------------
+select pg_temp.expect(
+  public.create_plan('Full Body', 'full_body', 3::smallint,
+    '[{"name":"Full Body A","exercises":[
+       {"name":"Incline Bench Press","sets":3,"reps":8},
+       {"name":"Goblet Squat","equipment":"dumbbell","muscle_groups":["quads","glutes"],"per_hand":false,"sets":3,"reps":10}]}]'::jsonb)
+  is not null,
+  'create_plan builds a plan with routines and exercises');
+select pg_temp.expect(
+  (select name from public.plans where is_active) = 'Full Body'
+  and (select count(*) from public.plans where is_active) = 1,
+  'a new plan becomes the only active plan');
+select pg_temp.expect(
+  (select count(*) from public.exercises where lower(name) = 'incline bench press') = 1
+  and (select count(*) from public.exercises) = 2,
+  'create_plan reuses exercises by name');
+select public.set_active_plan('eeeeeeee-0000-0000-0000-000000000001');
+select pg_temp.expect(
+  (select name from public.plans where is_active) = 'My plan'
+  and (select count(*) from public.plans where is_active) = 1,
+  'set_active_plan switches the active plan');
+select pg_temp.expect_error(
+  $$insert into public.plans (name, is_active) values ('Second active', true)$$,
+  'only one plan can be active');
+
 with d as (delete from public.workouts where id = 'cccccccc-0000-0000-0000-000000000001' returning 1)
 select pg_temp.expect((select count(*) from d) = 0, 'workout with sets cannot be deleted');
 
@@ -96,8 +141,17 @@ select pg_temp.expect(
   and (select count(*) from public.exercises) = 0
   and (select count(*) from public.routines) = 0
   and (select count(*) from public.routine_exercises) = 0
+  and (select count(*) from public.plans) = 0
+  and (select count(*) from public.exercise_prs) = 0
   and (select count(*) from public.profiles) = 1,
   'second user sees only their own profile');
+
+select pg_temp.expect_error(
+  $$select public.set_active_plan('eeeeeeee-0000-0000-0000-000000000001')$$,
+  'cannot activate another user''s plan');
+select pg_temp.expect_error(
+  $$insert into public.routines (plan_id, name) values ('eeeeeeee-0000-0000-0000-000000000001', 'Sneaky')$$,
+  'cannot add a routine to another user''s plan');
 
 insert into public.workouts (id) values ('cccccccc-0000-0000-0000-000000000009');
 

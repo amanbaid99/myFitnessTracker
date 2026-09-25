@@ -15,8 +15,8 @@ export function generateSeedSql(result: ImportResult, source: string): string {
     body.push(
       ``,
       `  -- ${routine.name}`,
-      `  insert into public.routines (user_id, name, sort_order)`,
-      `    values (uid, ${lit(routine.name)}, ${routine.sortOrder}) returning id into r_id;`,
+      `  insert into public.routines (user_id, plan_id, name, sort_order)`,
+      `    values (uid, p_id, ${lit(routine.name)}, ${routine.sortOrder}) returning id into r_id;`,
       `  insert into public.workouts (user_id, routine_id, started_at, ended_at, notes, source)`,
       `    values (uid, r_id, now(), now(), 'Imported from Google Sheet', 'sheet_import') returning id into w_id;`,
     );
@@ -54,6 +54,7 @@ select set_config('seed.email', :'email', true) as seed_email \\gset
 do $seed$
 declare
   uid uuid;
+  p_id uuid;
   r_id uuid;
   w_id uuid;
   e_id uuid;
@@ -69,6 +70,16 @@ begin
     raise notice 'User already has routines; nothing seeded.';
     return;
   end if;
+
+  -- One plan holds the imported routines; active unless another plan is.
+  insert into public.plans (user_id, name, is_custom, is_active)
+  select uid,
+         coalesce(nullif(trim(p.name), '') || '''s Upper Lower plan', 'My Upper Lower plan'),
+         true,
+         not exists (select 1 from public.plans where user_id = uid and is_active)
+  from (select 1) as one
+  left join public.profiles p on p.id = uid
+  returning id into p_id;
 ${body.join("\n")}
 
   raise notice 'Seeded ${result.routines.length} routines, % new exercises, % sets.', n_exercises, n_sets;
