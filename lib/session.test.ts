@@ -27,7 +27,7 @@ const set = (exerciseId: string, setType: "warmup" | "working", setNo: number, w
 });
 
 describe("buildSession", () => {
-  it("Push from the Sheet import: 3 warm-ups for Incline, 2 for Lateral Raise (spec)", () => {
+  it("Push from the Sheet import: Incline ramps 50% and 75%, Lateral Raise none", () => {
     const previous = new Map([
       ["incline", [set("incline", "working", 1, 15, 8)]],
       ["lateral", [set("lateral", "working", 1, 1.25, 12, { addedKg: 0.6 })]],
@@ -35,10 +35,9 @@ describe("buildSession", () => {
     const [inc, lat] = buildSession([incline, lateral], previous, []);
     expect(inc.warmups.map((w) => [w.label, w.weightKg, w.reps])).toEqual([
       ["W1", 7.5, 10],
-      ["W2", 10, 5],
-      ["W3", 12.5, 3],
+      ["W2", 11.25, 5],
     ]);
-    expect(lat.warmups).toHaveLength(2);
+    expect(lat.warmups).toHaveLength(0);
     // One imported set pre-fills every working set; add-on weight is kept.
     expect(inc.working.map((w) => [w.label, w.weightKg, w.reps])).toEqual([
       ["1", 15, 8],

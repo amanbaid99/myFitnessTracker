@@ -219,3 +219,18 @@ plans, which the spec did not have.
 - **Not yet:** offline logging (Milestone 6), History and Progress
   screens (Milestone 5), editing warm-up templates and muscle groups per
   exercise, reordering exercises inside a live workout.
+
+## 2026-09-25: Personalised warm-up; ramp-up on the first exercise only
+
+- **Aman's rule replaces the spec's warm-up ramp.** Only the first exercise
+  of the day gets ramp-up sets: 50% x 10, 75% x 5 (of last session's first
+  working weight, rounded to 1.25 kg), then the working sets at 100%.
+  Other exercises have no warm-up rows. No previous weight or bodyweight:
+  one blank set. Per-exercise templates and warmup_enabled still apply to
+  the first exercise.
+- **Warm-up checklist is built from the routine** (`routineWarmup`):
+  cardio matched to the day (rower or incline walk for upper, bike for
+  lower, any for mixed), then one drill per muscle area the day trains,
+  in the order it first trains them (primary muscles before secondary),
+  at most five, each labelled with the exercises it prepares for.
+  Triceps and biceps get separate drills so Push is not given curls.

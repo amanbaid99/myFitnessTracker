@@ -11,6 +11,7 @@ import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/l
 import type { Row, SessionExercise, SessionExerciseInput } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, type Units } from "@/lib/units";
+import type { WarmupItem } from "@/lib/general-warmup";
 import { cn } from "@/lib/utils";
 import { WARMUP_REST_SEC } from "@/lib/warmup";
 
@@ -36,7 +37,7 @@ export function Logger(props: {
   routineName: string;
   items: Item[];
   session: SessionExercise[];
-  checklist: string[];
+  checklist: WarmupItem[];
   prs: Record<string, PR>;
   units: Units;
   defaultRestSec: number;
@@ -267,23 +268,33 @@ export function Logger(props: {
             </span>
           </h2>
           <ul className="mt-2">
-            {props.checklist.map((text, i) => {
+            {props.checklist.map((item, i) => {
               const on = checked.includes(i);
               return (
-                <li key={text}>
+                <li key={item.text}>
                   <button
                     type="button"
                     onClick={() => toggleChecklist(i)}
-                    className="flex min-h-11 w-full items-center gap-3 text-left text-sm"
+                    className="flex min-h-11 w-full items-center gap-3 py-1 text-left text-sm"
                     aria-pressed={on}
                   >
                     <TickCircle on={on} small />
-                    <span className={cn(on && "text-muted-foreground line-through")}>{text}</span>
+                    <span className="min-w-0">
+                      <span className={cn("block", on && "text-muted-foreground line-through")}>{item.text}</span>
+                      {item.forExercises.length > 0 && (
+                        <span className="block text-xs text-muted-foreground">for {item.forExercises.join(", ")}</span>
+                      )}
+                    </span>
                   </button>
                 </li>
               );
             })}
           </ul>
+          {items[0] && exercises[0]?.warmups.length > 0 && (
+            <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
+              Then ramp up on {items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.
+            </p>
+          )}
         </section>
 
         {exercises.map((ex, exIndex) => {

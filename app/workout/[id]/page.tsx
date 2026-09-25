@@ -10,7 +10,7 @@ import {
   getWorkoutSets,
   load,
 } from "@/lib/data";
-import { generalWarmup, warmupFocus } from "@/lib/general-warmup";
+import { routineWarmup } from "@/lib/general-warmup";
 import { buildSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Logger } from "./logger";
@@ -49,7 +49,9 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   if (!routine) notFound();
 
   const session = buildSession(routine.exercises, previous, logged);
-  const checklist = generalWarmup(warmupFocus(routine.exercises.map((e) => e.exercise.muscleGroups[0] ?? "")));
+  const checklist = routineWarmup(
+    routine.exercises.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups })),
+  );
 
   return (
     <Logger
