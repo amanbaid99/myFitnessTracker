@@ -60,3 +60,16 @@ Append-only log. Newest at the bottom.
   append-only assertions (`supabase/tests/rls.sql`). Vercel deploys.
 - **Keepalive** reads `SUPABASE_URL` and `SUPABASE_ANON_KEY` from repo
   secrets instead of a committed env file; skips when they are not set.
+
+## 2026-09-25: Email and password sign-in (replaces magic link)
+
+- Aman chose email and password. Supersedes the magic-link entry above.
+- Emails carry 6-digit codes typed into the app, used to confirm a new
+  account and to reset a forgotten password. Links in the same emails still
+  work via `/auth/confirm` as a fallback (recovery links go on to
+  `/reset-password`).
+- Minimum password length 8, in `lib/auth.ts` and the Supabase setting.
+- Sign-ups are turned off in Supabase after Aman's account exists.
+- Migrations can be applied by Claude through the Supabase Management API
+  with `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` set in the
+  environment, or pasted into the SQL editor.

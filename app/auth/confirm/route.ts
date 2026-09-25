@@ -3,13 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Landing point for the magic link.
- *
- * Handles both link styles:
- * - `?token_hash=…&type=email` from the custom email template (docs/SETUP.md).
- *   Works in any browser, including one other than where the link was requested.
- * - `?code=…` from Supabase's default template (PKCE). Only works in the
- *   browser that requested the link, because the verifier is in its cookies.
+ * Fallback for links in auth emails. The app's main path is typing the
+ * 6-digit code, but a tapped link still works:
+ * - `?token_hash=…&type=signup|recovery` from the templates in docs/SETUP.md.
+ * - `?code=…` from Supabase's default templates (PKCE; same browser only).
+ * Recovery links continue to /reset-password to choose a new password.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
@@ -19,6 +17,8 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
   let error: string | null = "missing_token";
+  // next=reset is set on the redirect URL by resetPasswordForEmail (login-form.tsx).
+  const recovery = type === "recovery" || searchParams.get("next") === "reset";
 
   if (tokenHash && type) {
     const result = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
@@ -34,5 +34,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return NextResponse.redirect(new URL("/", origin));
+  return NextResponse.redirect(new URL(recovery ? "/reset-password" : "/", origin));
 }
