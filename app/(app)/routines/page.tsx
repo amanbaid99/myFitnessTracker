@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { DataError } from "@/components/data-error";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
-import { getLastWorkingSets, getProfile, getRoutines } from "@/lib/data";
+import { getLastWorkingSets, getProfile, getRoutines, load } from "@/lib/data";
 import { formatSet } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,11 +10,18 @@ export const metadata: Metadata = { title: "Routines" };
 
 export default async function RoutinesPage() {
   const supabase = await createClient();
-  const [profile, routines, lastSets] = await Promise.all([
-    getProfile(supabase),
-    getRoutines(supabase),
-    getLastWorkingSets(supabase),
-  ]);
+  const profile = await getProfile(supabase);
+  const result = await load(() => Promise.all([getRoutines(supabase), getLastWorkingSets(supabase)]));
+
+  if (result.error !== null) {
+    return (
+      <>
+        <ScreenHeader title="Routines" subtitle="Your training plan, in rotation order." />
+        <DataError message={result.error} />
+      </>
+    );
+  }
+  const [routines, lastSets] = result.data;
 
   return (
     <>

@@ -15,6 +15,15 @@ export function isPublicPath(pathname: string): boolean {
  * visitors to /login. Runs from proxy.ts.
  */
 export async function updateSession(request: NextRequest) {
+  // Without these every page would crash with a bare 500. Say what is wrong.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return new NextResponse(
+      "Server setup: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. " +
+        "Add both in Vercel > Project > Settings > Environment Variables, then redeploy.",
+      { status: 500, headers: { "content-type": "text/plain; charset=utf-8" } },
+    );
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

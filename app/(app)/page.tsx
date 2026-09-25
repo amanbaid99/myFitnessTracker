@@ -1,19 +1,28 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { DataError } from "@/components/data-error";
 import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
-import { getProfile, getRecentWorkouts, getRoutines } from "@/lib/data";
+import { getProfile, getRecentWorkouts, getRoutines, load } from "@/lib/data";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 export default async function TodayPage() {
   const supabase = await createClient();
-  const [profile, routines, workouts] = await Promise.all([
-    getProfile(supabase),
-    getRoutines(supabase),
-    getRecentWorkouts(supabase),
-  ]);
+  const profile = await getProfile(supabase);
+  const result = await load(() => Promise.all([getRoutines(supabase), getRecentWorkouts(supabase)]));
+  const title = profile.name ? `Hi, ${profile.name}` : "Today";
+
+  if (result.error !== null) {
+    return (
+      <>
+        <ScreenHeader title={title} subtitle="Pick a routine and start." />
+        <DataError message={result.error} />
+      </>
+    );
+  }
+  const [routines, workouts] = result.data;
 
   // Imported workouts are not sessions: they neither set "last done" nor
   // move the rotation.
@@ -24,7 +33,7 @@ export default async function TodayPage() {
 
   return (
     <>
-      <ScreenHeader title={profile.name ? `Hi, ${profile.name}` : "Today"} subtitle="Pick a routine and start." />
+      <ScreenHeader title={title} subtitle="Pick a routine and start." />
 
       {routines.length === 0 ? (
         <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">

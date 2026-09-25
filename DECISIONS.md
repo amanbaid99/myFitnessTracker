@@ -131,3 +131,16 @@ Append-only log. Newest at the bottom.
 - Dismissal is remembered for 14 days in localStorage (a per-device
   convenience; failures are ignored). Settings > App > "Add to Home Screen"
   reopens it any time.
+
+## 2026-09-25: Screens never 500 on a database error
+
+- Aman hit an Internal Server Error on the live app: the migration had not
+  been applied (no `SUPABASE_DB_URL` secret yet), and the Milestone 2
+  screens threw on the missing tables. Reproduced locally.
+- Reads now go through `load()` (lib/data.ts), which returns a message
+  instead of throwing; `describeDbError` (lib/db-error.ts) turns "schema
+  cache / does not exist" into "run Database migrations". Screens render
+  the notice inline. `app/(app)/error.tsx` catches anything unexpected with
+  a Try again button.
+- The proxy answers with a plain-text setup message if the Supabase env
+  vars are missing, instead of crashing every request.

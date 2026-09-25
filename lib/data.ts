@@ -1,4 +1,5 @@
 import "server-only";
+import { describeDbError } from "./db-error";
 import type { Units } from "./units";
 import { createClient } from "./supabase/server";
 
@@ -157,4 +158,16 @@ export async function getLastWorkingSets(supabase: Supabase): Promise<Map<string
     });
   }
   return map;
+}
+
+/**
+ * Runs the page's reads; on failure returns a readable message instead of
+ * throwing, so a missing table or an outage shows a notice, not a 500.
+ */
+export async function load<T>(fn: () => Promise<T>): Promise<{ data: T; error: null } | { data: null; error: string }> {
+  try {
+    return { data: await fn(), error: null };
+  } catch (e) {
+    return { data: null, error: describeDbError(e instanceof Error ? e.message : String(e)) };
+  }
 }
