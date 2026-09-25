@@ -124,6 +124,12 @@ To regenerate the seed from a fresh Sheet export:
 `pnpm seed:generate path/to/export.csv` (prints the flagged-rows report),
 then commit `supabase/seed.sql`.
 
+## 5c. Later migrations
+
+When a push adds a file to `supabase/migrations/`, the Database migrations
+workflow runs a dry run listing it. Review, then run the workflow with
+**apply** ticked (leave mark_init_applied unticked).
+
 ## 6. Deploy and check on the phone
 
 1. Actions tab > **CI** > Run workflow (or push any commit). The deploy job

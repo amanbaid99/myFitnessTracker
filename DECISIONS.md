@@ -178,3 +178,44 @@ Append-only log. Newest at the bottom.
   Supabase URL. The deploy job now writes the build's Supabase values from
   the GitHub secrets `SUPABASE_URL` / `SUPABASE_ANON_KEY` (public values,
   already used by keepalive), so Vercel's copies are no longer needed.
+
+## 2026-09-25: Plans, workout logger, warm-ups, PRs and aims (Aman's request)
+
+Covers most of Milestones 3 and 4 and the plan-editing part of 6, plus
+plans, which the spec did not have.
+
+- **Plans.** A plan groups routines; one plan is active (partial unique
+  index). Existing routines became "<name>'s Upper Lower plan". Templates:
+  Full Body (2 or 3 days), Upper Lower (2 or 4), Push Pull Legs (3 or 6),
+  Bro Split (5), recommended by days per week (2: Full Body or Upper
+  Lower, 3: Full Body or PPL, 4: Upper Lower, 5: Bro Split, 6: PPL).
+  Created atomically by `create_plan`; switching uses `set_active_plan`.
+  Editing a template plan sets `is_custom` (shown as Custom); rename any
+  plan or day inline.
+- **Today.** Active plan name, Next up (rotation) with Start workout,
+  other days with Start, Resume for an open workout, New plan.
+- **Logger** (`/workout/[id]`, full screen). General warm-up checklist
+  (upper, lower or full body, by the day's primary muscles; ticks kept in
+  localStorage), then per exercise: ramp-up sets (spec rules), then
+  working sets pre-filled from the same set last session. One tap logs a
+  set (client-generated id, append-only insert); tapping again soft
+  deletes it. Rest timer starts automatically (45 s warm-up, routine or
+  profile rest otherwise, +15 s, skip, vibrates). Seat badge, per hand,
+  optional pin add-on, add set, skip warm-up, screen wake lock. Finish
+  records energy and notes; an empty workout can be discarded.
+- **Effort per set** (Aman: "ask how the user felt after each set and
+  tweak the effort"). Optional chips Easy/Good/Hard/Max = RPE 6/7.5/9/10.
+  The next set adapts: Easy below target reps adds a rep, Easy at target
+  adds a step; Max matches the reps just done. rpe may change only while
+  the workout is open (trigger), keeping sets otherwise append-only.
+- **PR and aim.** `exercise_prs` view (best live working set by e1RM).
+  Aim: every target hit last time and it felt Easy/Good (or no feel) ->
+  +1 step (2.5 kg barbell/machine, 1.25 kg cable/dumbbell) at target
+  reps; hit but Hard/Max -> repeat; missed -> same weight, weakest set +1
+  rep. Bodyweight and fixed weights progress by reps. Shown with the
+  "Ready to increase" hint; pre-fill stays last session (spec).
+- **Verified** end to end on local Postgres + PostgREST with the real
+  migration order (seed, then plans migration) in a 390px browser.
+- **Not yet:** offline logging (Milestone 6), History and Progress
+  screens (Milestone 5), editing warm-up templates and muscle groups per
+  exercise, reordering exercises inside a live workout.

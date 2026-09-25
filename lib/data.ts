@@ -176,7 +176,7 @@ export function toExercise(e: ExerciseRow): Exercise {
 }
 
 /** Routines of one plan (or all), in rotation order, exercises in order. */
-export async function getRoutines(supabase: Supabase, planId?: string): Promise<Routine[]> {
+export async function getRoutines(supabase: Supabase, planId?: string, routineId?: string): Promise<Routine[]> {
   let query = supabase
     .from("routines")
     .select(
@@ -185,6 +185,7 @@ export async function getRoutines(supabase: Supabase, planId?: string): Promise<
     .order("sort_order")
     .order("sort_order", { referencedTable: "routine_exercises" });
   if (planId) query = query.eq("plan_id", planId);
+  if (routineId) query = query.eq("id", routineId);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
@@ -212,6 +213,27 @@ export async function getActivePlan(supabase: Supabase): Promise<{ plan: Plan; r
   const plan = plans.find((p) => p.isActive);
   if (!plan) return null;
   return { plan, routines: await getRoutines(supabase, plan.id) };
+}
+
+export async function getRoutine(supabase: Supabase, routineId: string): Promise<Routine | null> {
+  return (await getRoutines(supabase, undefined, routineId))[0] ?? null;
+}
+
+export interface Workout {
+  id: string;
+  routineId: string | null;
+  startedAt: string;
+  endedAt: string | null;
+}
+
+export async function getWorkout(supabase: Supabase, workoutId: string): Promise<Workout | null> {
+  const { data, error } = await supabase
+    .from("workouts")
+    .select("id, routine_id, started_at, ended_at")
+    .eq("id", workoutId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data && { id: data.id, routineId: data.routine_id, startedAt: data.started_at, endedAt: data.ended_at };
 }
 
 export async function getExerciseLibrary(supabase: Supabase): Promise<Exercise[]> {

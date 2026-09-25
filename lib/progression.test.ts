@@ -47,19 +47,25 @@ describe("aimForSession", () => {
 
 describe("adjustNextSet", () => {
   const planned = { weightKg: 15, reps: 10 };
-  it("easy and reps met: next set goes up a step", () => {
-    expect(adjustNextSet({ done: { weightKg: 15, reps: 10 }, planned, feel: "easy", equipment: "machine" })).toEqual({ weightKg: 17.5, reps: 10 });
+  const base = { planned, targetReps: 10, equipment: "machine" };
+  it("easy at target reps: next set goes up a step", () => {
+    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "easy" })).toEqual({ weightKg: 17.5, reps: 10 });
+  });
+  it("easy below target reps: one more rep, same weight", () => {
+    expect(adjustNextSet({ ...base, planned: { weightKg: 15, reps: 8 }, done: { weightKg: 15, reps: 8 }, feel: "easy" }))
+      .toEqual({ weightKg: 15, reps: 9 });
   });
   it("max: keep weight, match the reps just done", () => {
-    expect(adjustNextSet({ done: { weightKg: 15, reps: 8 }, planned, feel: "max", equipment: "machine" })).toEqual({ weightKg: 15, reps: 8 });
+    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 8 }, feel: "max" })).toEqual({ weightKg: 15, reps: 8 });
   });
   it("good or hard: unchanged", () => {
-    expect(adjustNextSet({ done: { weightKg: 15, reps: 10 }, planned, feel: "good", equipment: "machine" })).toEqual(planned);
-    expect(adjustNextSet({ done: { weightKg: 15, reps: 10 }, planned, feel: "hard", equipment: "machine" })).toEqual(planned);
+    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "good" })).toEqual(planned);
+    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "hard" })).toEqual(planned);
   });
-  it("easy on bodyweight: unchanged (no weight to add)", () => {
-    expect(adjustNextSet({ done: { weightKg: null, reps: 15 }, planned: { weightKg: null, reps: 15 }, feel: "easy", equipment: "bodyweight" }))
-      .toEqual({ weightKg: null, reps: 15 });
+  it("easy on bodyweight at target: one more rep", () => {
+    expect(
+      adjustNextSet({ planned: { weightKg: null, reps: 15 }, targetReps: 15, done: { weightKg: null, reps: 15 }, feel: "easy", equipment: "bodyweight" }),
+    ).toEqual({ weightKg: null, reps: 16 });
   });
 });
 

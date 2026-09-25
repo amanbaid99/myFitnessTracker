@@ -109,19 +109,27 @@ export function aimForSession(input: {
 
 /**
  * After a set is ticked with a feel, what the next working set should be.
- * Easy: add a step if reps were met. Max: keep the weight, match the reps
- * just done. Otherwise: unchanged.
+ * Easy: below target reps, one more rep at the same weight; at or above
+ * target, add a step. Max: keep the weight, match the reps just done.
+ * Good or hard: unchanged.
  */
 export function adjustNextSet(input: {
   done: { weightKg: number | null; reps: number | null };
   planned: { weightKg: number | null; reps: number };
+  targetReps: number;
   feel: Feel;
   equipment: string;
 }): { weightKg: number | null; reps: number } {
   const step = stepKg(input.equipment);
   const doneReps = input.done.reps ?? input.planned.reps;
-  if (input.feel === "easy" && step !== null && input.done.weightKg !== null && doneReps >= input.planned.reps) {
-    return { weightKg: round2(input.done.weightKg + step), reps: input.planned.reps };
+  if (input.feel === "easy") {
+    if (doneReps < input.targetReps) {
+      return { weightKg: input.done.weightKg, reps: Math.min(input.targetReps, doneReps + 1) };
+    }
+    if (step !== null && input.done.weightKg !== null) {
+      return { weightKg: round2(input.done.weightKg + step), reps: input.targetReps };
+    }
+    return { weightKg: input.done.weightKg, reps: doneReps + 1 };
   }
   if (input.feel === "max") {
     return { weightKg: input.done.weightKg, reps: Math.min(input.planned.reps, doneReps) };

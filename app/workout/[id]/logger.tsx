@@ -1,0 +1,727 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Check, ChevronLeft, Flame, Plus, Timer, Trophy, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatSet } from "@/lib/format";
+import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
+import type { Row, SessionExercise, SessionExerciseInput } from "@/lib/session";
+import { createClient } from "@/lib/supabase/client";
+import { fromKg, toKg, type Units } from "@/lib/units";
+import { cn } from "@/lib/utils";
+import { WARMUP_REST_SEC } from "@/lib/warmup";
+
+interface Item extends SessionExerciseInput {
+  exercise: SessionExerciseInput["exercise"] & {
+    machineSetting: string | null;
+    perHand: boolean;
+    muscleGroups: string[];
+  };
+}
+
+interface PR {
+  weightKg: number | null;
+  addedKg: number;
+  reps: number;
+}
+
+const FEELS: Feel[] = ["easy", "good", "hard", "max"];
+
+export function Logger(props: {
+  workoutId: string;
+  startedAt: string;
+  routineName: string;
+  items: Item[];
+  session: SessionExercise[];
+  checklist: string[];
+  prs: Record<string, PR>;
+  units: Units;
+  defaultRestSec: number;
+  hasLoggedSets: boolean;
+}) {
+  const { workoutId, items, units } = props;
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [exercises, setExercises] = useState(props.session);
+  const [checked, setChecked] = useState<number[]>([]);
+  const [skipped, setSkipped] = useState<string[]>([]);
+  const [feelKey, setFeelKey] = useState<string | null>(null);
+  const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [error, setError] = useState<string | null>(null);
+  const [finishing, setFinishing] = useState(false);
+
+  // One clock for the elapsed time and the rest timer; a finished rest
+  // buzzes once and clears.
+  useEffect(() => {
+    const t = setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      setRest((r) => {
+        if (r && current >= r.endsAt) {
+          navigator.vibrate?.([200, 100, 200]);
+          return null;
+        }
+        return r;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Keep the screen awake during the workout (spec).
+  useEffect(() => {
+    let lock: WakeLockSentinel | null = null;
+    const request = async () => {
+      try {
+        lock = await navigator.wakeLock?.request("screen");
+      } catch {
+        // Not supported or denied: the workout still works.
+      }
+    };
+    const onVisible = () => document.visibilityState === "visible" && request();
+    request();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      lock?.release().catch(() => {});
+    };
+  }, []);
+
+  // General warm-up ticks are a per-device convenience, kept in localStorage.
+  const storageKey = `wt-warmup-${workoutId}`;
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring browser-only state after hydration
+      if (saved) setChecked(JSON.parse(saved));
+    } catch {
+      // Storage unavailable: start unticked.
+    }
+  }, [storageKey]);
+
+  function toggleChecklist(i: number) {
+    setChecked((prev) => {
+      const next = prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i];
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }
+
+  const updateRow = useCallback((exIndex: number, key: string, patch: Partial<Row>) => {
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i !== exIndex
+          ? ex
+          : {
+              ...ex,
+              warmups: ex.warmups.map((r) => (r.key === key ? { ...r, ...patch } : r)),
+              working: ex.working.map((r) => (r.key === key ? { ...r, ...patch } : r)),
+            },
+      ),
+    );
+  }, []);
+
+  async function tick(exIndex: number, row: Row) {
+    const item = items[exIndex];
+    const id = crypto.randomUUID();
+    const logged = {
+      id,
+      exerciseId: item.exercise.id,
+      setNo: row.setNo,
+      setType: row.setType,
+      weightKg: row.weightKg,
+      addedKg: row.addedKg,
+      reps: row.reps,
+      rpe: null,
+    };
+    updateRow(exIndex, row.key, { logged });
+    setError(null);
+    const restSec = row.setType === "warmup" ? WARMUP_REST_SEC : (item.restSec ?? props.defaultRestSec);
+    setRest({ endsAt: secondsFromNow(restSec), total: restSec });
+    if (row.setType === "working") setFeelKey(row.key);
+
+    const { error } = await supabase.from("sets").insert({
+      id,
+      workout_id: workoutId,
+      exercise_id: item.exercise.id,
+      set_no: row.setNo,
+      set_type: row.setType,
+      weight_kg: row.weightKg,
+      added_kg: row.addedKg,
+      reps: row.reps,
+    });
+    if (error) {
+      updateRow(exIndex, row.key, { logged: null });
+      setError(`Could not save that set: ${error.message}`);
+    }
+  }
+
+  async function untick(exIndex: number, row: Row) {
+    if (!row.logged) return;
+    const logged = row.logged;
+    updateRow(exIndex, row.key, { logged: null });
+    const { error } = await supabase.from("sets").update({ deleted_at: new Date().toISOString() }).eq("id", logged.id);
+    if (error) {
+      updateRow(exIndex, row.key, { logged });
+      setError(`Could not undo: ${error.message}`);
+    }
+  }
+
+  async function setFeel(exIndex: number, row: Row, feel: Feel) {
+    if (!row.logged) return;
+    const rpe = FEEL_RPE[feel];
+    updateRow(exIndex, row.key, { logged: { ...row.logged, rpe } });
+    setFeelKey(null);
+
+    // Tweak the next unticked working set from how this one felt.
+    const ex = exercises[exIndex];
+    const next = ex.working.find((r) => r.setNo > row.setNo && !r.logged);
+    if (next) {
+      const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
+      const adjusted = adjustNextSet({
+        done: { weightKg: row.logged.weightKg, reps: row.logged.reps },
+        planned,
+        targetReps: items[exIndex].targetReps,
+        feel,
+        equipment: items[exIndex].exercise.equipment,
+      });
+      if (adjusted.weightKg !== planned.weightKg || adjusted.reps !== planned.reps) {
+        updateRow(exIndex, next.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });
+      }
+    }
+
+    const { error } = await supabase.from("sets").update({ rpe }).eq("id", row.logged.id);
+    if (error) setError(`Could not save how it felt: ${error.message}`);
+  }
+
+  function addSet(exIndex: number) {
+    setExercises((prev) =>
+      prev.map((ex, i) => {
+        if (i !== exIndex) return ex;
+        const last = ex.working[ex.working.length - 1];
+        const no = (last?.setNo ?? 0) + 1;
+        return {
+          ...ex,
+          working: [
+            ...ex.working,
+            {
+              key: `${ex.exerciseId}-s${no}`,
+              setType: "working",
+              setNo: no,
+              label: String(no),
+              weightKg: last?.weightKg ?? null,
+              addedKg: last?.addedKg ?? 0,
+              reps: last?.reps ?? items[i].targetReps,
+              logged: null,
+            },
+          ],
+        };
+      }),
+    );
+  }
+
+  const allRows = exercises.flatMap((ex) => [...(skipped.includes(ex.exerciseId) ? [] : ex.warmups), ...ex.working]);
+  const doneCount = allRows.filter((r) => r.logged).length;
+  const anyLogged = props.hasLoggedSets || doneCount > 0;
+  const elapsed = Math.max(0, Math.floor((now - new Date(props.startedAt).getTime()) / 1000));
+
+  return (
+    <div className="min-h-dvh pb-[calc(8rem+env(safe-area-inset-bottom))]">
+      <header className="sticky top-0 z-30 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <div className="mx-auto flex max-w-lg items-center gap-2 px-2 py-2">
+          <Button asChild variant="ghost" size="icon" aria-label="Back to Today (workout stays open)">
+            <Link href="/">
+              <ChevronLeft />
+            </Link>
+          </Button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-lg font-semibold">{props.routineName}</h1>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {clock(elapsed)} · {doneCount}/{allRows.length} sets
+            </p>
+          </div>
+          <Button variant="secondary" onClick={() => setFinishing(true)}>
+            Finish
+          </Button>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-lg space-y-4 px-4 pt-4">
+        {error && (
+          <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
+            {error}
+          </p>
+        )}
+
+        <section className="rounded-2xl border bg-card p-4">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Flame className="size-4 text-primary" aria-hidden /> Warm-up
+            <span className="ml-auto text-xs font-normal text-muted-foreground">
+              {checked.length}/{props.checklist.length}
+            </span>
+          </h2>
+          <ul className="mt-2">
+            {props.checklist.map((text, i) => {
+              const on = checked.includes(i);
+              return (
+                <li key={text}>
+                  <button
+                    type="button"
+                    onClick={() => toggleChecklist(i)}
+                    className="flex min-h-11 w-full items-center gap-3 text-left text-sm"
+                    aria-pressed={on}
+                  >
+                    <TickCircle on={on} small />
+                    <span className={cn(on && "text-muted-foreground line-through")}>{text}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        {exercises.map((ex, exIndex) => {
+          const item = items[exIndex];
+          const pr = props.prs[item.exercise.id];
+          const workingDone = ex.working.length > 0 && ex.working.every((r) => r.logged);
+          const showWarmups = ex.warmups.length > 0 && !skipped.includes(ex.exerciseId);
+          return (
+            <section key={ex.exerciseId} className={cn("rounded-2xl border bg-card", workingDone && "border-success/50")}>
+              <div className="px-4 pt-4">
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-semibold leading-snug">{item.exercise.name}</h2>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <Badge variant="muted">
+                        {item.targetSets} × {item.targetReps}
+                      </Badge>
+                      {item.exercise.machineSetting && <Badge variant="accent">Seat {item.exercise.machineSetting}</Badge>}
+                      {item.exercise.perHand && <Badge variant="outline">per hand</Badge>}
+                      {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
+                    </div>
+                  </div>
+                  {workingDone && <Check className="mt-0.5 size-6 text-success" aria-label="Exercise done" />}
+                </div>
+                <div className="mt-2 space-y-0.5 text-xs">
+                  {pr && (
+                    <p className="flex items-center gap-1 text-muted-foreground">
+                      <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
+                    </p>
+                  )}
+                  {ex.aim && (
+                    <p>
+                      <span className="font-medium text-primary">Aim: {formatSet(ex.aim, units)}</span>{" "}
+                      <span className="text-muted-foreground">· {ex.aim.reason}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {showWarmups && (
+                <div className="mt-3 border-t border-dashed px-2 pt-1">
+                  {ex.warmups.map((row) => (
+                    <SetRow
+                      key={row.key}
+                      row={row}
+                      units={units}
+                      perHand={item.exercise.perHand}
+                      warmup
+                      onChange={(patch) => updateRow(exIndex, row.key, patch)}
+                      onTick={() => tick(exIndex, row)}
+                      onUntick={() => untick(exIndex, row)}
+                    />
+                  ))}
+                  {ex.warmups.some((r) => !r.logged) && (
+                    <button
+                      type="button"
+                      onClick={() => setSkipped((s) => [...s, ex.exerciseId])}
+                      className="min-h-11 px-2 text-xs text-muted-foreground underline underline-offset-4"
+                    >
+                      Skip warm-up
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-1 border-t px-2 pt-1">
+                {ex.working.map((row) => (
+                  <div key={row.key}>
+                    <SetRow
+                      row={row}
+                      units={units}
+                      perHand={item.exercise.perHand}
+                      onChange={(patch) => updateRow(exIndex, row.key, patch)}
+                      onTick={() => tick(exIndex, row)}
+                      onUntick={() => untick(exIndex, row)}
+                    />
+                    {row.logged && (feelKey === row.key || row.logged.rpe !== null) && (
+                      <FeelChips
+                        value={feelFromRpe(row.logged.rpe)}
+                        onPick={(feel) => setFeel(exIndex, row, feel)}
+                      />
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => addSet(exIndex)}
+                  className="flex min-h-11 w-full items-center justify-center gap-1 text-sm text-muted-foreground"
+                >
+                  <Plus className="size-4" /> Add set
+                </button>
+              </div>
+            </section>
+          );
+        })}
+
+        <Button size="lg" className="w-full" onClick={() => setFinishing(true)}>
+          Finish workout
+        </Button>
+      </main>
+
+      {rest && (
+        <RestBar
+          remaining={Math.max(0, Math.ceil((rest.endsAt - now) / 1000))}
+          total={rest.total}
+          onAdd={() => setRest((r) => r && { endsAt: r.endsAt + 15000, total: r.total + 15 })}
+          onSkip={() => setRest(null)}
+        />
+      )}
+
+      {finishing && (
+        <FinishSheet
+          workoutId={workoutId}
+          anyLogged={anyLogged}
+          onClose={() => setFinishing(false)}
+          onDone={() => {
+            router.push("/");
+            router.refresh();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function SetRow({
+  row,
+  units,
+  perHand,
+  warmup = false,
+  onChange,
+  onTick,
+  onUntick,
+}: {
+  row: Row;
+  units: Units;
+  perHand: boolean;
+  warmup?: boolean;
+  onChange: (patch: Partial<Row>) => void;
+  onTick: () => void;
+  onUntick: () => void;
+}) {
+  const done = row.logged !== null;
+  const [showAddOn, setShowAddOn] = useState(row.addedKg > 0);
+
+  return (
+    <div className={cn("flex min-h-14 items-center gap-2 px-2", warmup && "text-muted-foreground")}>
+      <span className={cn("w-7 shrink-0 text-center text-sm tabular-nums", warmup ? "text-xs" : "font-semibold")}>
+        {row.label}
+      </span>
+      <NumberField
+        label={`Set ${row.label} weight`}
+        value={row.weightKg === null ? null : fromKg(row.weightKg, units)}
+        onChange={(v) => onChange({ weightKg: v === null ? null : toKg(v, units) })}
+        disabled={done}
+        suffix={units}
+        className="w-[4.5rem]"
+      />
+      {showAddOn ? (
+        <NumberField
+          label={`Set ${row.label} add-on weight`}
+          value={row.addedKg ? fromKg(row.addedKg, units) : null}
+          onChange={(v) => onChange({ addedKg: v === null ? 0 : toKg(v, units) })}
+          disabled={done}
+          prefix="+"
+          className="w-14"
+        />
+      ) : (
+        !done &&
+        !warmup && (
+          <button
+            type="button"
+            onClick={() => setShowAddOn(true)}
+            className="h-11 w-6 shrink-0 text-muted-foreground"
+            aria-label="Add pin add-on weight"
+          >
+            <Plus className="mx-auto size-3.5" />
+          </button>
+        )
+      )}
+      <span className="text-muted-foreground">×</span>
+      <NumberField
+        label={`Set ${row.label} reps`}
+        value={row.reps}
+        onChange={(v) => onChange({ reps: v === null ? null : Math.round(v) })}
+        disabled={done}
+        integer
+        className="w-12"
+      />
+      {perHand && !warmup && <span className="hidden text-[10px] text-muted-foreground min-[380px]:inline">/hand</span>}
+      <button
+        type="button"
+        onClick={done ? onUntick : onTick}
+        className="ml-auto flex size-11 shrink-0 items-center justify-center"
+        aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`}
+        aria-pressed={done}
+      >
+        <TickCircle on={done} small={warmup} />
+      </button>
+    </div>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+  disabled,
+  integer = false,
+  prefix,
+  suffix,
+  className,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+  disabled?: boolean;
+  integer?: boolean;
+  prefix?: string;
+  suffix?: string;
+  className?: string;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (value === null ? "" : String(value));
+  return (
+    <label className={cn("relative flex h-11 shrink-0 items-center rounded-lg border bg-background", disabled && "border-transparent bg-transparent", className)}>
+      <span className="sr-only">{label}</span>
+      {prefix && <span className="pl-1.5 text-xs text-muted-foreground">{prefix}</span>}
+      <input
+        inputMode={integer ? "numeric" : "decimal"}
+        value={shown}
+        disabled={disabled}
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => {
+          const text = e.target.value.replace(",", ".");
+          setDraft(text);
+          if (text.trim() === "") onChange(null);
+          else if (Number.isFinite(Number(text))) onChange(Number(text));
+        }}
+        onBlur={() => setDraft(null)}
+        className="h-full w-full min-w-0 bg-transparent px-1.5 text-center text-base tabular-nums outline-none disabled:text-inherit"
+        placeholder="–"
+      />
+      {suffix && <span className="pr-1.5 text-[10px] text-muted-foreground">{suffix}</span>}
+    </label>
+  );
+}
+
+function TickCircle({ on, small = false }: { on: boolean; small?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+        small ? "size-6" : "size-8",
+        on ? "border-success bg-success text-background" : "border-muted-foreground/50",
+      )}
+      aria-hidden
+    >
+      {on && <Check className={small ? "size-3.5" : "size-5"} strokeWidth={3} />}
+    </span>
+  );
+}
+
+function FeelChips({ value, onPick }: { value: Feel | null; onPick: (f: Feel) => void }) {
+  return (
+    <div className="flex items-center gap-1.5 px-2 pb-2 pl-11">
+      <span className="mr-1 text-xs text-muted-foreground">How did it feel?</span>
+      {FEELS.map((f) => (
+        <button
+          key={f}
+          type="button"
+          onClick={() => onPick(f)}
+          aria-pressed={value === f}
+          className={cn(
+            "h-9 min-w-11 rounded-full border px-2.5 text-xs",
+            value === f ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground",
+          )}
+        >
+          {FEEL_LABEL[f]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function RestBar({
+  remaining,
+  total,
+  onAdd,
+  onSkip,
+}: {
+  remaining: number;
+  total: number;
+  onAdd: () => void;
+  onSkip: () => void;
+}) {
+  const pct = total > 0 ? (remaining / total) * 100 : 0;
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-popover pb-[env(safe-area-inset-bottom)]">
+      <div className="h-1 bg-primary transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
+      <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-2">
+        <Timer className="size-5 text-primary" aria-hidden />
+        <p className="flex-1 text-lg font-semibold tabular-nums" aria-live="polite">
+          Rest {clock(remaining)}
+        </p>
+        <Button variant="secondary" onClick={onAdd}>
+          +15s
+        </Button>
+        <Button variant="ghost" onClick={onSkip}>
+          Skip
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function FinishSheet({
+  workoutId,
+  anyLogged,
+  onClose,
+  onDone,
+}: {
+  workoutId: string;
+  anyLogged: boolean;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const supabase = createClient();
+  const [energy, setEnergy] = useState<number | null>(null);
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  async function save() {
+    setBusy(true);
+    const { error } = await supabase
+      .from("workouts")
+      .update({ ended_at: new Date().toISOString(), energy, notes: notes.trim() || null })
+      .eq("id", workoutId);
+    if (error) {
+      setBusy(false);
+      setError(error.message);
+      return;
+    }
+    onDone();
+  }
+
+  async function discard() {
+    if (!confirm("Discard this workout? Nothing was logged.")) return;
+    setBusy(true);
+    const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
+    if (error) {
+      setBusy(false);
+      setError(error.message);
+      return;
+    }
+    onDone();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-labelledby="finish-title"
+        className="mx-auto w-full max-w-lg rounded-t-3xl border bg-popover p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 id="finish-title" className="text-xl font-semibold">
+            Finish workout
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+            <X />
+          </Button>
+        </div>
+
+        {anyLogged ? (
+          <>
+            <p className="mt-3 text-sm font-medium">Energy today</p>
+            <div className="mt-2 grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setEnergy(n)}
+                  aria-pressed={energy === n}
+                  className={cn(
+                    "h-12 rounded-xl border text-lg font-semibold",
+                    energy === n ? "border-primary bg-primary text-primary-foreground" : "bg-card",
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <label htmlFor="notes" className="mt-4 block text-sm font-medium">
+              Notes
+            </label>
+            <textarea
+              id="notes"
+              ref={notesRef}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="mt-2 w-full rounded-xl border bg-card p-3 text-base outline-none focus-visible:border-ring"
+              placeholder="Anything worth remembering"
+            />
+            <Button size="lg" className="mt-4 w-full" onClick={save} disabled={busy}>
+              {busy ? "Saving…" : "Save workout"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="mt-3 text-sm text-muted-foreground">No sets logged yet.</p>
+            <Button size="lg" variant="destructive" className="mt-4 w-full" onClick={discard} disabled={busy}>
+              Discard workout
+            </Button>
+          </>
+        )}
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function secondsFromNow(sec: number): number {
+  return Date.now() + sec * 1000;
+}
+
+function clock(totalSec: number): string {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
