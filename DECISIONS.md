@@ -94,3 +94,40 @@ Append-only log. Newest at the bottom.
 - **Every workflow skips with a notice** when its secrets are missing, so
   the repo stays green before setup is finished.
 - **CI runs on all branches** (was `main` and `claude/**`).
+
+## 2026-09-25: Milestone 2 (import and seed)
+
+- **Parser** (`lib/sheet-import.ts`) follows the spec's row and cell rules,
+  plus what the real export needed: leading blank rows are skipped (the
+  spec's "empty row ends the data" applies only after data starts), cells
+  are trimmed ("Leg press ", "Upper 2 "), CRLF line endings, quoted CSV.
+  Unreadable rows are flagged, never thrown. Report for the real Sheet:
+  In. Db press has no last-logged value; Walking Lunge has no reps.
+- **Sheet source.** Read with the Google Drive connector; the CSV export is
+  committed as `lib/__fixtures__/upper-lower.csv` and drives the tests.
+- **Seed** (`supabase/seed.sql`) is generated from the parser and checked
+  in CI for staleness. It targets one account by email (psql variable),
+  runs in one transaction, does nothing if the account has routines, and
+  reuses an existing exercise with the same name. Applied by the "Seed from
+  Sheet" workflow; checked in the database CI job.
+- **Muscle groups** use one small vocabulary (chest, front/side/rear
+  delts, triceps, biceps, lats, upper back, traps, quads, hamstrings,
+  glutes, abductors, adductors, calves, core); first entry is the primary
+  mover. Aman approved them and asked to be able to edit them: muscle
+  groups join the Milestone 6 exercise settings screen.
+- **Rotation** ignores `sheet_import` workouts for both the suggestion and
+  "last done", so Push is suggested first and Today shows "Imported from
+  Sheet" rather than "Done today".
+- **Local end-to-end check.** Screens were verified against PostgREST on
+  the seeded local Postgres with a stub auth endpoint: real queries,
+  embedded selects, the `working_sets` view and RLS.
+
+## 2026-09-25: Add to Home Screen toast (Aman's request)
+
+- Shown after 2.5 s on phones in the browser, never in the installed app
+  or on desktop. iOS: Share > Add to Home Screen steps (no install API).
+  Android Chrome: one-tap Install via `beforeinstallprompt`. Other Android
+  browsers: menu steps.
+- Dismissal is remembered for 14 days in localStorage (a per-device
+  convenience; failures are ignored). Settings > App > "Add to Home Screen"
+  reopens it any time.

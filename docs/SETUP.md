@@ -7,6 +7,7 @@ everything runs from GitHub Actions:
 | --- | --- | --- |
 | CI (`ci.yml`) | Every push | Lint, typecheck, tests, build, migrations plus RLS checks. If green: deploy to Vercel (production on the default branch, preview on other branches) |
 | Database migrations (`migrate.yml`) | Push touching `supabase/migrations/` (dry run); manual run (apply) | Applies new migrations to Supabase |
+| Seed from Sheet (`seed.yml`) | Manual, once | Loads your 4 routines and 26 exercises from the Google Sheet import |
 | Keep Supabase awake (`keepalive.yml`) | Daily | Pings the database so the free project does not pause |
 
 Each workflow skips cleanly until its secrets exist.
@@ -109,6 +110,17 @@ For future migrations: the push shows the pending SQL as a dry run; after
 review, run the workflow with "apply" ticked. For a required approval
 before any apply, add yourself as a reviewer on the `production`
 environment (Settings > Environments > production).
+
+## 5b. Load your plan from the Sheet
+
+After the migration is applied and you have created your account:
+Actions tab > **Seed from Sheet** > Run workflow > enter the email you
+signed up with > Run. The summary ends with "Seeded 4 routines, 26 new
+exercises, 25 sets." Running it again does nothing.
+
+To regenerate the seed from a fresh Sheet export:
+`pnpm seed:generate path/to/export.csv` (prints the flagged-rows report),
+then commit `supabase/seed.sql`.
 
 ## 6. Deploy and check on the phone
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { InstallButton } from "@/components/install-button";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -28,6 +29,11 @@ export default async function SettingsPage() {
       <p className="mt-2 text-xs text-muted-foreground">
         Editing units and rest, and CSV export, arrive in Milestone 6.
       </p>
+
+      <section className="mt-8">
+        <h2 className="mb-2 text-sm font-medium">App</h2>
+        <InstallButton />
+      </section>
 
       <form action="/auth/signout" method="post" className="mt-8">
         <Button type="submit" variant="outline" size="lg" className="w-full">
