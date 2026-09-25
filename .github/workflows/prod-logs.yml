@@ -29,8 +29,10 @@ jobs:
 
       - name: Production URL
         id: url
+        env:
+          INPUT_URL: ${{ inputs.url }}
         run: |
-          url="${{ inputs.url }}"
+          url="$INPUT_URL"
           if [ -z "$url" ]; then
             url=$(vercel ls --environment production --token "$VERCEL_TOKEN" 2>/dev/null | grep -Eo 'https://[^ ]+\.vercel\.app' | head -1)
           fi
