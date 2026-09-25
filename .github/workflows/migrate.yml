@@ -58,9 +58,16 @@ jobs:
           if [ -z "$SUPABASE_DB_URL" ]; then
             echo "::notice::SUPABASE_DB_URL secret not set; skipping. See docs/SETUP.md."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          # The direct host (db.<ref>.supabase.co) is IPv6-only; GitHub runners
+          # cannot reach it. The session pooler URI works over IPv4.
+          case "$SUPABASE_DB_URL" in
+            *@db.*.supabase.co*)
+              echo "::error::SUPABASE_DB_URL is the Direct connection string (db.<ref>.supabase.co), which GitHub cannot reach (IPv6 only). In Supabase click Connect > Session pooler, copy that URI (host ends in pooler.supabase.com, user postgres.<ref>), and update the secret. See docs/SETUP.md."
+              exit 1 ;;
+          esac
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - if: steps.check.outputs.enabled == 'true'
         uses: supabase/setup-cli@v1
