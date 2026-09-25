@@ -280,3 +280,21 @@ plans, which the spec did not have.
 - Found in review: `{ ... } | tee` hid failures (the step's shell has no
   pipefail), so a failed seed or push showed green. Those steps now set
   pipefail.
+
+## 2026-09-25: Public demo instead of a hard login wall (Aman's request)
+
+- The login screen has a "Try the demo" button. `/demo` is public and
+  shows a made-up lifter, John, on a Push Pull Legs plan: Next up, the
+  other days, what the app does, and the full plan with PRs and last sets.
+- "Try this workout" opens the real logger (`demo` prop) on sample data,
+  so visitors feel the actual flow: warm-up, ramp-up sets, aims, feel
+  chips adjusting the next set, rest timer, finish. In demo mode the
+  logger never calls the database; the finish sheet returns to `/demo`
+  with a "Nice workout" note and Sign in / Create account buttons.
+- Sample data lives in `lib/demo.ts` (static, kg, one past session per
+  exercise chosen to show each kind of aim) and is unit tested to stay
+  valid against the app's vocabulary and rotation logic.
+- No anonymous Supabase users: nothing a visitor does is stored, so RLS
+  and the database are untouched.
+- The plan day list is now a shared `PlanDays` component used by
+  Routines and the demo.

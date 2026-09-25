@@ -43,8 +43,11 @@ export function Logger(props: {
   units: Units;
   defaultRestSec: number;
   hasLoggedSets: boolean;
+  /** Public demo: sample data, nothing is saved. */
+  demo?: boolean;
 }) {
-  const { workoutId, items, units } = props;
+  const { workoutId, items, units, demo = false } = props;
+  const home = demo ? "/demo" : "/";
   const router = useRouter();
   const supabase = createClient();
 
@@ -147,6 +150,7 @@ export function Logger(props: {
     const restSec = row.setType === "warmup" ? WARMUP_REST_SEC : (item.restSec ?? props.defaultRestSec);
     setRest({ endsAt: secondsFromNow(restSec), total: restSec });
     if (row.setType === "working") setFeelKey(row.key);
+    if (demo) return;
 
     const { error } = await supabase.from("sets").insert({
       id,
@@ -168,6 +172,7 @@ export function Logger(props: {
     if (!row.logged) return;
     const logged = row.logged;
     updateRow(exIndex, row.key, { logged: null });
+    if (demo) return;
     const { error } = await supabase.from("sets").update({ deleted_at: new Date().toISOString() }).eq("id", logged.id);
     if (error) {
       updateRow(exIndex, row.key, { logged });
@@ -198,6 +203,7 @@ export function Logger(props: {
       }
     }
 
+    if (demo) return;
     const { error } = await supabase.from("sets").update({ rpe }).eq("id", row.logged.id);
     if (error) setError(`Could not save how it felt: ${error.message}`);
   }
@@ -237,8 +243,13 @@ export function Logger(props: {
     <div className="min-h-dvh pb-[calc(8rem+env(safe-area-inset-bottom))]">
       <header className="sticky top-0 z-30 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-lg items-center gap-2 px-2 py-2">
-          <Button asChild variant="ghost" size="icon" aria-label="Back to Today (workout stays open)">
-            <Link href="/">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            aria-label={demo ? "Back to the demo" : "Back to Today (workout stays open)"}
+          >
+            <Link href={home}>
               <ChevronLeft />
             </Link>
           </Button>
@@ -255,6 +266,12 @@ export function Logger(props: {
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pt-4">
+        {demo && (
+          <p className="rounded-xl border border-primary/40 bg-accent/40 p-3 text-sm">
+            Demo workout with sample numbers. Tick sets, pick how they felt and watch the next set adjust.
+            Nothing is saved.
+          </p>
+        )}
         {error && (
           <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
             {error}
@@ -395,11 +412,19 @@ export function Logger(props: {
         <Button size="lg" className="w-full" onClick={() => setFinishing(true)}>
           Finish workout
         </Button>
-        <CancelWorkoutButton
-          workoutId={workoutId}
-          loggedSets={doneCount}
-          className="w-full text-muted-foreground"
-        />
+        {demo ? (
+          <Button asChild variant="ghost" className="w-full text-muted-foreground">
+            <Link href={home}>
+              <X /> Leave demo workout
+            </Link>
+          </Button>
+        ) : (
+          <CancelWorkoutButton
+            workoutId={workoutId}
+            loggedSets={doneCount}
+            className="w-full text-muted-foreground"
+          />
+        )}
       </main>
 
       {rest && (
@@ -415,9 +440,10 @@ export function Logger(props: {
         <FinishSheet
           workoutId={workoutId}
           anyLogged={anyLogged}
+          demo={demo}
           onClose={() => setFinishing(false)}
           onDone={() => {
-            router.push("/");
+            router.push(demo ? "/demo?finished=1" : "/");
             router.refresh();
           }}
         />
@@ -622,11 +648,13 @@ function RestBar({
 function FinishSheet({
   workoutId,
   anyLogged,
+  demo,
   onClose,
   onDone,
 }: {
   workoutId: string;
   anyLogged: boolean;
+  demo: boolean;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -638,6 +666,7 @@ function FinishSheet({
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
   async function save() {
+    if (demo) return onDone();
     setBusy(true);
     const { error } = await supabase
       .from("workouts")
@@ -652,6 +681,7 @@ function FinishSheet({
   }
 
   async function discard() {
+    if (demo) return onDone();
     if (!confirm("Discard this workout? Nothing was logged.")) return;
     setBusy(true);
     const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
