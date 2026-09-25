@@ -2,47 +2,62 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Minus, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Exercise, Plan, Routine, RoutineExercise } from "@/lib/data";
+import { EQUIPMENT } from "@/lib/muscles";
 import { createClient } from "@/lib/supabase/client";
 import { MakeActiveButton } from "../plan-actions";
+import { ExerciseSheet, type ExerciseEdits } from "./exercise-sheet";
 
-const EQUIPMENT = ["machine", "cable", "dumbbell", "barbell", "bodyweight", "other"] as const;
+type Result = { error: { message: string; code?: string } | null } | void;
+type Run = (fn: () => PromiseLike<Result>, markCustom?: boolean) => Promise<string | null>;
 
 /**
- * Edits a plan in place. Every change is saved straight away; a structural
- * change to a plan that came from a template marks it custom.
+ * Edits a plan in place. Every change saves straight away; a structural
+ * change (days, exercises, targets) to a template plan marks it custom.
  */
-export function PlanEditor({ plan, routines, library }: { plan: Plan; routines: Routine[]; library: Exercise[] }) {
+export function PlanEditor({
+  plan,
+  routines,
+  library,
+  defaultRestSec,
+}: {
+  plan: Plan;
+  routines: Routine[];
+  library: Exercise[];
+  defaultRestSec: number;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function run(fn: () => PromiseLike<{ error: { message: string } | null } | void>, markCustom = true) {
+  /** Runs a change; returns an error message or null. */
+  const run: Run = async (fn, markCustom = true) => {
     setBusy(true);
     setError(null);
     const res = await fn();
     if (res && res.error) {
       setBusy(false);
-      setError(res.error.message);
-      return false;
+      const message = friendlyError(res.error);
+      setError(message);
+      return message;
     }
     if (markCustom && plan.template && !plan.isCustom) {
       await supabase.from("plans").update({ is_custom: true }).eq("id", plan.id);
     }
     setBusy(false);
     router.refresh();
-    return true;
-  }
+    return null;
+  };
 
   async function deletePlan() {
     if (!confirm(`Delete "${plan.name}"? Its days are removed; logged workouts stay in your history.`)) return;
-    const ok = await run(() => supabase.from("plans").delete().eq("id", plan.id), false);
-    if (ok) router.push("/plans");
+    const err = await run(() => supabase.from("plans").delete().eq("id", plan.id), false);
+    if (!err) router.push("/plans");
   }
 
   const nextSort = routines.length ? Math.max(...routines.map((r) => r.sortOrder)) + 1 : 0;
@@ -57,35 +72,36 @@ export function PlanEditor({ plan, routines, library }: { plan: Plan; routines: 
         <InlineName
           label="Plan name"
           value={plan.name}
-          className="mt-2 text-xl font-semibold"
+          className="mt-1 text-2xl font-semibold tracking-tight"
           onSave={(name) => run(() => supabase.from("plans").update({ name }).eq("id", plan.id), false)}
         />
+        <p className="text-xs text-muted-foreground">Tap a name to rename it. Tap an exercise to edit it.</p>
         {!plan.isActive && (
           <div className="mt-3 grid grid-cols-2 gap-2">
             <MakeActiveButton planId={plan.id} />
             <Button variant="outline" onClick={deletePlan}>
-              <Trash2 /> Delete
+              <Trash2 /> Delete plan
             </Button>
           </div>
         )}
       </header>
 
       {error && (
-        <p role="alert" className="mb-4 rounded-xl border border-destructive/40 p-3 text-sm text-destructive">
+        <p role="alert" className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
           {error}
         </p>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {routines.map((routine) => (
-          <RoutineEditor key={routine.id} routine={routine} library={library} run={run} />
+          <RoutineEditor key={routine.id} routine={routine} library={library} defaultRestSec={defaultRestSec} run={run} />
         ))}
       </div>
 
       <Button
         variant="outline"
         size="lg"
-        className="mt-6 w-full"
+        className="mt-5 w-full"
         onClick={() =>
           run(() =>
             supabase.from("routines").insert({ plan_id: plan.id, name: `Day ${routines.length + 1}`, sort_order: nextSort }),
@@ -98,19 +114,81 @@ export function PlanEditor({ plan, routines, library }: { plan: Plan; routines: 
   );
 }
 
-type Run = (fn: () => PromiseLike<{ error: { message: string } | null } | void>, markCustom?: boolean) => Promise<boolean>;
-
-function RoutineEditor({ routine, library, run }: { routine: Routine; library: Exercise[]; run: Run }) {
+function RoutineEditor({
+  routine,
+  library,
+  defaultRestSec,
+  run,
+}: {
+  routine: Routine;
+  library: Exercise[];
+  defaultRestSec: number;
+  run: Run;
+}) {
   const supabase = createClient();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const items = routine.exercises;
+  const editingIndex = items.findIndex((i) => i.id === editing);
+  const editingItem = editingIndex === -1 ? null : items[editingIndex];
 
-  async function swap(a: RoutineExercise, b: RoutineExercise) {
+  async function move(item: RoutineExercise, dir: -1 | 1) {
+    const other = items[items.indexOf(item) + dir];
+    if (!other) return;
     await run(async () => {
-      const r1 = await supabase.from("routine_exercises").update({ sort_order: b.sortOrder }).eq("id", a.id);
+      const r1 = await supabase.from("routine_exercises").update({ sort_order: other.sortOrder }).eq("id", item.id);
       if (r1.error) return r1;
-      return supabase.from("routine_exercises").update({ sort_order: a.sortOrder }).eq("id", b.id);
+      return supabase.from("routine_exercises").update({ sort_order: item.sortOrder }).eq("id", other.id);
     });
+  }
+
+  async function remove(item: RoutineExercise) {
+    if (!confirm(`Remove ${item.exercise.name} from ${routine.name}? Its history is kept.`)) return;
+    const err = await run(() => supabase.from("routine_exercises").delete().eq("id", item.id));
+    if (!err) setEditing(null);
+  }
+
+  async function save(item: RoutineExercise, edits: ExerciseEdits): Promise<string | null> {
+    const e = item.exercise;
+    const x = edits.exercise;
+    const exerciseChanged =
+      x.name !== e.name ||
+      x.equipment !== e.equipment ||
+      x.machineSetting !== e.machineSetting ||
+      x.perHand !== e.perHand ||
+      x.muscleGroups.join() !== e.muscleGroups.join();
+    const slotChanged =
+      edits.slot.targetSets !== item.targetSets ||
+      edits.slot.targetReps !== item.targetReps ||
+      edits.slot.restSec !== item.restSec;
+
+    if (exerciseChanged) {
+      // The exercise itself: not a change to the plan's structure.
+      const err = await run(
+        () =>
+          supabase
+            .from("exercises")
+            .update({
+              name: x.name,
+              equipment: x.equipment,
+              machine_setting: x.machineSetting,
+              per_hand: x.perHand,
+              muscle_groups: x.muscleGroups,
+            })
+            .eq("id", e.id),
+        false,
+      );
+      if (err) return err;
+    }
+    if (slotChanged) {
+      return run(() =>
+        supabase
+          .from("routine_exercises")
+          .update({ target_sets: edits.slot.targetSets, target_reps: edits.slot.targetReps, rest_sec: edits.slot.restSec })
+          .eq("id", item.id),
+      );
+    }
+    return null;
   }
 
   async function deleteRoutine() {
@@ -119,12 +197,12 @@ function RoutineEditor({ routine, library, run }: { routine: Routine; library: E
   }
 
   return (
-    <section className="rounded-2xl border bg-card">
-      <div className="flex items-center gap-2 border-b px-4 py-2">
+    <section className="overflow-hidden rounded-2xl border bg-card">
+      <div className="flex items-center gap-1 border-b py-1 pl-4 pr-1">
         <InlineName
           label="Day name"
           value={routine.name}
-          className="flex-1 text-lg font-semibold"
+          className="min-w-0 flex-1 text-lg font-semibold"
           onSave={(name) => run(() => supabase.from("routines").update({ name }).eq("id", routine.id))}
         />
         <Button variant="ghost" size="icon" aria-label={`Remove ${routine.name}`} onClick={deleteRoutine}>
@@ -133,61 +211,43 @@ function RoutineEditor({ routine, library, run }: { routine: Routine; library: E
       </div>
 
       <ol className="divide-y">
-        {items.map((item, i) => (
-          <li key={item.id} className="px-4 py-3">
-            <div className="flex items-start gap-2">
-              <p className="min-w-0 flex-1 pt-2.5 font-medium leading-snug">{item.exercise.name}</p>
-              <div className="flex shrink-0">
-                <Button variant="ghost" size="icon" aria-label="Move up" disabled={i === 0} onClick={() => swap(item, items[i - 1])}>
-                  <ArrowUp />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Move down"
-                  disabled={i === items.length - 1}
-                  onClick={() => swap(item, items[i + 1])}
-                >
-                  <ArrowDown />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove ${item.exercise.name}`}
-                  onClick={() => run(() => supabase.from("routine_exercises").delete().eq("id", item.id))}
-                >
-                  <Trash2 className="text-muted-foreground" />
-                </Button>
-              </div>
-            </div>
-            <div className="mt-1 flex items-center gap-4">
-              <Stepper
-                label="Sets"
-                value={item.targetSets}
-                min={1}
-                max={10}
-                onChange={(v) => run(() => supabase.from("routine_exercises").update({ target_sets: v }).eq("id", item.id))}
-              />
-              <Stepper
-                label="Reps"
-                value={item.targetReps}
-                min={1}
-                max={50}
-                onChange={(v) => run(() => supabase.from("routine_exercises").update({ target_reps: v }).eq("id", item.id))}
-              />
-            </div>
-          </li>
-        ))}
+        {items.map((item, i) => {
+          const details = [
+            item.exercise.machineSetting ? `Seat ${item.exercise.machineSetting}` : null,
+            item.exercise.muscleGroups.slice(0, 2).join(", ") || null,
+          ].filter(Boolean);
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => setEditing(item.id)}
+                className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left active:bg-muted"
+              >
+                <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{item.exercise.name}</span>
+                  {details.length > 0 && (
+                    <span className="block truncate text-xs text-muted-foreground">{details.join(" · ")}</span>
+                  )}
+                </span>
+                <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-sm tabular-nums">
+                  {item.targetSets} × {item.targetReps}
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              </button>
+            </li>
+          );
+        })}
       </ol>
 
-      <div className="border-t p-3">
+      <div className="border-t p-2">
         {adding ? (
           <AddExercise
             library={library}
             existingIds={items.map((i) => i.exercise.id)}
             onCancel={() => setAdding(false)}
             onAdd={async (pick) => {
-              const ok = await run(async () => {
+              const err = await run(async () => {
                 let exerciseId = pick.exerciseId;
                 if (!exerciseId) {
                   const { data, error } = await supabase
@@ -207,7 +267,7 @@ function RoutineEditor({ routine, library, run }: { routine: Routine; library: E
                   target_reps: 10,
                 });
               });
-              if (ok) setAdding(false);
+              if (!err) setAdding(false);
             }}
           />
         ) : (
@@ -216,6 +276,20 @@ function RoutineEditor({ routine, library, run }: { routine: Routine; library: E
           </Button>
         )}
       </div>
+
+      {editingItem && (
+        <ExerciseSheet
+          key={editingItem.id}
+          item={editingItem}
+          defaultRestSec={defaultRestSec}
+          canMoveUp={editingIndex > 0}
+          canMoveDown={editingIndex < items.length - 1}
+          onSave={(edits) => save(editingItem, edits)}
+          onMove={(dir) => move(editingItem, dir)}
+          onRemove={() => remove(editingItem)}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </section>
   );
 }
@@ -240,7 +314,7 @@ function AddExercise({
   const exact = library.find((e) => e.name.toLowerCase() === q);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 p-2">
       <Input autoFocus placeholder="Search or type a new exercise" value={query} onChange={(e) => setQuery(e.target.value)} />
       <ul className="divide-y rounded-xl border">
         {matches.map((e) => (
@@ -264,7 +338,7 @@ function AddExercise({
               aria-label="Equipment"
               value={equipment}
               onChange={(e) => setEquipment(e.target.value)}
-              className="h-11 w-full rounded-xl border bg-card px-3 text-base"
+              className="h-11 w-full rounded-xl border bg-card px-3 text-base capitalize"
             >
               {EQUIPMENT.map((eq) => (
                 <option key={eq} value={eq}>
@@ -280,33 +354,6 @@ function AddExercise({
       </ul>
       <Button variant="ghost" className="w-full" onClick={onCancel}>
         Cancel
-      </Button>
-    </div>
-  );
-}
-
-function Stepper({
-  label,
-  value,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <span className="w-10 text-xs text-muted-foreground">{label}</span>
-      <Button variant="secondary" size="icon" aria-label={`Fewer ${label.toLowerCase()}`} disabled={value <= min} onClick={() => onChange(value - 1)}>
-        <Minus />
-      </Button>
-      <span className="w-8 text-center tabular-nums">{value}</span>
-      <Button variant="secondary" size="icon" aria-label={`More ${label.toLowerCase()}`} disabled={value >= max} onClick={() => onChange(value + 1)}>
-        <Plus />
       </Button>
     </div>
   );
@@ -336,8 +383,14 @@ function InlineName({
 
   if (!editing) {
     return (
-      <button type="button" onClick={() => setEditing(true)} className={`min-h-11 text-left ${className ?? ""}`} aria-label={`${label}: ${value}. Tap to rename`}>
-        {value}
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className={`flex min-h-11 items-center gap-2 text-left ${className ?? ""}`}
+        aria-label={`${label}: ${value}. Tap to rename`}
+      >
+        <span className="min-w-0 truncate">{value}</span>
+        <Pencil className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       </button>
     );
   }
@@ -359,4 +412,11 @@ function InlineName({
       className={className}
     />
   );
+}
+
+function friendlyError(error: { message: string; code?: string }): string {
+  if (error.code === "23505" || /duplicate key|exercises_user_name_live_idx/i.test(error.message)) {
+    return "You already have an exercise with that name. Pick a different name.";
+  }
+  return error.message;
 }

@@ -247,3 +247,16 @@ plans, which the spec did not have.
   how many sets will go) and on Today's "Workout in progress" card.
 - `getRecentWorkouts` selects `*` so the app works before and after the
   migration is applied.
+
+## 2026-09-25: Plan editor redesign and exercise renaming (Aman's request)
+
+- Each exercise is one row (number, name, seat and top muscles, sets x
+  reps pill); tapping opens a bottom sheet instead of six inline buttons
+  per exercise, which overflowed at 390px.
+- The sheet edits the exercise itself (name, equipment, seat setting, per
+  hand, muscle groups in order, first = primary) and this day's slot
+  (sets, reps, rest), plus move up/down and remove. Renaming applies
+  everywhere the exercise is used, history included; a duplicate name is
+  refused with a plain message. Exercise-level edits do not mark a
+  template plan Custom; slot and structure edits do.
+- Plan and day names show a pencil to make tap-to-rename discoverable.
