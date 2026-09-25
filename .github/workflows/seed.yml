@@ -1,0 +1,44 @@
+name: Seed from Sheet
+
+# Loads supabase/seed.sql (the Google Sheet import: 4 routines, 26 exercises,
+# one imported workout per routine) into one user's account.
+#
+# Actions tab > Seed from Sheet > Run workflow > enter the email you signed
+# up with. Safe to re-run: it does nothing if that account has routines.
+# Needs the SUPABASE_DB_URL secret and the migrations already applied.
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Email of the account to seed"
+        required: true
+        type: string
+
+concurrency:
+  group: seed
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      EMAIL: ${{ inputs.email }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secret
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret not set. See docs/SETUP.md."
+            exit 1
+          fi
+
+      - name: Seed
+        run: |
+          # psql quotes :'email' itself, so the input cannot inject SQL.
+          psql "$SUPABASE_DB_URL" -v email="$EMAIL" -f supabase/seed.sql 2>&1 \
+            | tee -a "$GITHUB_STEP_SUMMARY"
