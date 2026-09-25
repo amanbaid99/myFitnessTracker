@@ -102,6 +102,27 @@ jobs:
       - if: steps.check.outputs.enabled == 'true'
         run: vercel pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
 
+      # Stop before deploying a build that cannot reach Supabase. The URL is
+      # a public value, so it is printed to make mistakes easy to spot.
+      - if: steps.check.outputs.enabled == 'true'
+        name: Check Supabase settings in Vercel
+        run: |
+          file=".vercel/.env.$TARGET.local"
+          get() { grep -E "^$1=" "$file" | head -1 | cut -d= -f2- | sed -e 's/^[[:space:]"'"'"']*//' -e 's/\\[nr]//g' -e 's/[[:space:]"'"'"']*$//'; }
+          url=$(get NEXT_PUBLIC_SUPABASE_URL)
+          key=$(get NEXT_PUBLIC_SUPABASE_ANON_KEY)
+          echo "NEXT_PUBLIC_SUPABASE_URL ($TARGET) = [$url]"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY ($TARGET) = ${#key} characters"
+          case "$url" in
+            https://*.supabase.co|https://*.supabase.co/) ;;
+            *) echo "::error::NEXT_PUBLIC_SUPABASE_URL for $TARGET is [$url]. It must be https://<project-ref>.supabase.co. Fix it in Vercel > Project > Settings > Environment Variables ($TARGET), then re-run this workflow."
+               exit 1 ;;
+          esac
+          if [ -z "$key" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_ANON_KEY for $TARGET is empty in Vercel."
+            exit 1
+          fi
+
       - if: steps.check.outputs.enabled == 'true'
         run: |
           if [ "$TARGET" = production ]; then PROD=--prod; else PROD=; fi

@@ -160,3 +160,15 @@ Append-only log. Newest at the bottom.
 - The whole path (sign up, paste init by hand, push fails, repair, push
   applies backfill, seed) was reproduced on local Postgres with the real
   Supabase CLI.
+
+## 2026-09-25: Invalid Supabase URL in Vercel crashed every request
+
+- Vercel runtime logs (new "Production logs" workflow) showed every request
+  failing in the proxy with `Invalid supabaseUrl: Must be a valid HTTP or
+  HTTPS URL`: the NEXT_PUBLIC_SUPABASE_URL value in Vercel is malformed.
+- `lib/env.ts` cleans the values (quotes, spaces, newlines, trailing slash)
+  and validates the URL. All Supabase clients use it; the proxy answers
+  with a plain-text setup message naming the bad value instead of a 500.
+- The deploy job now prints the Supabase URL it pulled from Vercel (a
+  public value) and refuses to deploy one that is not
+  https://<ref>.supabase.co, or an empty anon key.
