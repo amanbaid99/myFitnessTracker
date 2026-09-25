@@ -172,3 +172,9 @@ Append-only log. Newest at the bottom.
 - The deploy job now prints the Supabase URL it pulled from Vercel (a
   public value) and refuses to deploy one that is not
   https://<ref>.supabase.co, or an empty anon key.
+- Root cause (from the new deploy check): both Supabase variables were
+  type Secret in Vercel, and `vercel pull` returns Secret values as the
+  text `[SENSITIVE]`, so the GitHub-built app used "[SENSITIVE]" as its
+  Supabase URL. The deploy job now writes the build's Supabase values from
+  the GitHub secrets `SUPABASE_URL` / `SUPABASE_ANON_KEY` (public values,
+  already used by keepalive), so Vercel's copies are no longer needed.

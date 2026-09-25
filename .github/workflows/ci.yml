@@ -73,6 +73,11 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Public Supabase values, from GitHub secrets. Vercel withholds
+      # variables marked "Sensitive" from builds made outside Vercel (they
+      # arrive as the text [SENSITIVE]), so the build takes them from here.
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       TARGET: ${{ github.ref_name == github.event.repository.default_branch && 'production' || 'preview' }}
     steps:
       - name: Check Vercel secrets
@@ -102,26 +107,39 @@ jobs:
       - if: steps.check.outputs.enabled == 'true'
         run: vercel pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
 
-      # Stop before deploying a build that cannot reach Supabase. The URL is
-      # a public value, so it is printed to make mistakes easy to spot.
+      # Use the GitHub secrets for the Supabase values, then stop before
+      # deploying a build that cannot reach Supabase.
       - if: steps.check.outputs.enabled == 'true'
-        name: Check Supabase settings in Vercel
+        name: Supabase settings for the build
         run: |
           file=".vercel/.env.$TARGET.local"
+          touch "$file"
+          set_var() {
+            grep -v "^$1=" "$file" > "$file.tmp" || true
+            printf '%s="%s"\n' "$1" "$2" >> "$file.tmp"
+            mv "$file.tmp" "$file"
+          }
+          if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
+            set_var NEXT_PUBLIC_SUPABASE_URL "$SUPABASE_URL"
+            set_var NEXT_PUBLIC_SUPABASE_ANON_KEY "$SUPABASE_ANON_KEY"
+            source="GitHub secrets SUPABASE_URL / SUPABASE_ANON_KEY"
+          else
+            source="Vercel environment variables"
+          fi
           get() { grep -E "^$1=" "$file" | head -1 | cut -d= -f2- | sed -e 's/^[[:space:]"'"'"']*//' -e 's/\\[nr]//g' -e 's/[[:space:]"'"'"']*$//'; }
           url=$(get NEXT_PUBLIC_SUPABASE_URL)
           key=$(get NEXT_PUBLIC_SUPABASE_ANON_KEY)
-          echo "NEXT_PUBLIC_SUPABASE_URL ($TARGET) = [$url]"
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY ($TARGET) = ${#key} characters"
+          echo "Supabase values from: $source"
+          echo "URL: ${#url} characters, anon key: ${#key} characters"
+          fail() { echo "::error::$1"; exit 1; }
+          if [ "$url" = "[SENSITIVE]" ] || [ "$key" = "[SENSITIVE]" ]; then
+            fail "Vercel withholds variables marked Sensitive from builds made outside Vercel. Add GitHub secrets SUPABASE_URL and SUPABASE_ANON_KEY (docs/SETUP.md), then re-run this workflow."
+          fi
           case "$url" in
             https://*.supabase.co|https://*.supabase.co/) ;;
-            *) echo "::error::NEXT_PUBLIC_SUPABASE_URL for $TARGET is [$url]. It must be https://<project-ref>.supabase.co. Fix it in Vercel > Project > Settings > Environment Variables ($TARGET), then re-run this workflow."
-               exit 1 ;;
+            *) fail "The Supabase URL from $source is not https://<project-ref>.supabase.co. Fix it, then re-run this workflow." ;;
           esac
-          if [ -z "$key" ]; then
-            echo "::error::NEXT_PUBLIC_SUPABASE_ANON_KEY for $TARGET is empty in Vercel."
-            exit 1
-          fi
+          [ -n "$key" ] || fail "The Supabase anon key from $source is empty."
 
       - if: steps.check.outputs.enabled == 'true'
         run: |

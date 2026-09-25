@@ -76,9 +76,11 @@ Vercel's own Git deploys so nothing deploys twice or skips the checks.
 1. [vercel.com/new](https://vercel.com/new) > import `amanbaid99/myFitnessTracker`
    (Hobby plan is fine). Let the first deploy run or cancel it; later deploys
    come from Actions.
-2. Project > Settings > Environment Variables, for **Production** and **Preview**:
-   - `NEXT_PUBLIC_SUPABASE_URL` = `https://qoeyskhsjvlolbvlvypm.supabase.co`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = the anon public key
+2. Supabase values: nothing to add in Vercel. The deploy job takes them
+   from the GitHub secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` (step 4).
+   If you add them in Vercel anyway, choose type **Config**, not Secret:
+   Vercel withholds Secret values from builds made on GitHub, and the app
+   would be built with the text `[SENSITIVE]` as its Supabase address.
 3. Note two IDs:
    - **Project ID**: Project > Settings > General.
    - **Org ID**: Team (or personal account) Settings > General > "Team ID"
@@ -97,8 +99,8 @@ Actions > **New repository secret**, one per row:
 | `VERCEL_ORG_ID` | Org ID from step 3.3 | CI deploy |
 | `VERCEL_PROJECT_ID` | Project ID from step 3.3 | CI deploy |
 | `SUPABASE_DB_URL` | session pooler URI with password, step 1 | Migrations |
-| `SUPABASE_URL` | `https://qoeyskhsjvlolbvlvypm.supabase.co` | Keepalive |
-| `SUPABASE_ANON_KEY` | anon public key | Keepalive |
+| `SUPABASE_URL` | `https://qoeyskhsjvlolbvlvypm.supabase.co` | Deploy (build), keepalive |
+| `SUPABASE_ANON_KEY` | anon public key | Deploy (build), keepalive |
 
 ## 5. Apply the migration
 
