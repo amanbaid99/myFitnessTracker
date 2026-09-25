@@ -27,7 +27,6 @@ export default async function TodayPage() {
   // Imported workouts are not sessions: they neither set "last done" nor
   // move the rotation.
   const trained = workouts.filter((w) => w.source === "app");
-  const imported = new Set(workouts.filter((w) => w.source === "sheet_import").map((w) => w.routineId));
   const nextId = suggestNextRoutineId(routines, trained);
   const lastDone = lastDoneByRoutine(trained);
 
@@ -48,7 +47,7 @@ export default async function TodayPage() {
           {routines.map((routine) => {
             const isNext = routine.id === nextId;
             const done = lastDone.get(routine.id);
-            const status = done ? relativeDay(done) : imported.has(routine.id) ? "Imported from Sheet" : "Not done yet";
+            const status = relativeDay(done);
             return (
               <li key={routine.id}>
                 <Link
