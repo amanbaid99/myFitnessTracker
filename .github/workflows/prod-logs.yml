@@ -1,0 +1,47 @@
+name: Production logs
+
+# Read-only diagnostics for the live app: recent 5xx requests and error
+# logs from Vercel, plus a quick check of a few public URLs.
+# Actions tab > Production logs > Run workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "How far back to look (e.g. 30m, 2h, 1d)"
+        default: "2h"
+        type: string
+
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      SINCE: ${{ inputs.since }}
+    steps:
+      - run: npm install --global vercel@60
+
+      - name: Production URL
+        id: url
+        run: |
+          url=$(vercel ls --environment production --token "$VERCEL_TOKEN" 2>/dev/null | grep -Eo 'https://[^ ]+\.vercel\.app' | head -1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Latest production deployment: $url"
+
+      - name: Public URLs
+        env:
+          URL: ${{ steps.url.outputs.url }}
+        run: |
+          for path in /login /manifest.webmanifest /sw.js /; do
+            printf '%-24s ' "$path"
+            curl -s -o /tmp/body -w '%{http_code} -> %{redirect_url}\n' "$URL$path" || true
+            head -c 300 /tmp/body | tr '\n' ' '; echo
+          done
+
+      - name: Requests that returned 5xx
+        run: vercel logs --environment production --since "$SINCE" --status-code 5xx --expand --limit 20 --token "$VERCEL_TOKEN" || true
+
+      - name: Error-level logs
+        run: vercel logs --environment production --since "$SINCE" --level error --expand --limit 20 --token "$VERCEL_TOKEN" || true
