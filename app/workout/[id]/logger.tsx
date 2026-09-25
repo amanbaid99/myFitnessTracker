@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, Flame, Plus, Timer, Trophy, X } from "lucide-react";
+import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatSet } from "@/lib/format";
@@ -394,6 +395,11 @@ export function Logger(props: {
         <Button size="lg" className="w-full" onClick={() => setFinishing(true)}>
           Finish workout
         </Button>
+        <CancelWorkoutButton
+          workoutId={workoutId}
+          loggedSets={doneCount}
+          className="w-full text-muted-foreground"
+        />
       </main>
 
       {rest && (

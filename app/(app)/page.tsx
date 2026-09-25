@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Play, Plus, RotateCcw } from "lucide-react";
 import { startWorkout } from "@/app/actions";
+import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { DataError } from "@/components/data-error";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
@@ -65,17 +66,20 @@ export default async function TodayPage() {
       </Link>
 
       {open && (
-        <div className="mt-5 flex items-center gap-3 rounded-2xl border border-primary/50 bg-accent/40 p-4">
-          <RotateCcw className="size-5 shrink-0 text-primary" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <p className="font-medium">Workout in progress</p>
-            <p className="text-sm text-muted-foreground">
-              {routines.find((r) => r.id === open.routineId)?.name}
-            </p>
+        <div className="mt-5 rounded-2xl border border-primary/50 bg-accent/40 p-4">
+          <div className="flex items-center gap-3">
+            <RotateCcw className="size-5 shrink-0 text-primary" aria-hidden />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">Workout in progress</p>
+              <p className="text-sm text-muted-foreground">
+                {routines.find((r) => r.id === open.routineId)?.name}
+              </p>
+            </div>
+            <Button asChild>
+              <Link href={`/workout/${open.id}`}>Resume</Link>
+            </Button>
           </div>
-          <Button asChild>
-            <Link href={`/workout/${open.id}`}>Resume</Link>
-          </Button>
+          <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="mt-2 w-full text-muted-foreground" />
         </div>
       )}
 

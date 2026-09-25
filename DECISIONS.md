@@ -234,3 +234,16 @@ plans, which the spec did not have.
   in the order it first trains them (primary muscles before secondary),
   at most five, each labelled with the exercises it prepares for.
   Triceps and biceps get separate drills so Push is not given curls.
+
+## 2026-09-25: Cancel a workout in progress (Aman's request)
+
+- `cancel_workout(id)` (runs as the caller): no sets logged, the workout
+  is deleted; otherwise its live sets are soft-deleted and the workout is
+  marked `cancelled_at` (and ended). Sets stay append-only; nothing is
+  hard-deleted. Soft-deleted sets already drop out of PRs, working_sets,
+  pre-fill and aims; cancelled workouts are left out of the rotation and
+  "last done". A finished workout cannot be cancelled.
+- UI: "Cancel workout" at the bottom of the logger (confirmation names
+  how many sets will go) and on Today's "Workout in progress" card.
+- `getRecentWorkouts` selects `*` so the app works before and after the
+  migration is applied.

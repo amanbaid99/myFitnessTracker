@@ -248,20 +248,27 @@ export async function getExerciseLibrary(supabase: Supabase): Promise<Exercise[]
 
 // Workouts ---------------------------------------------------------------------
 
+/**
+ * Recent workouts, newest first. Cancelled workouts are left out, so they
+ * never count for the rotation or "last done". Selects * so this works
+ * before and after the cancel migration adds cancelled_at.
+ */
 export async function getRecentWorkouts(supabase: Supabase, limit = 200): Promise<WorkoutSummary[]> {
   const { data, error } = await supabase
     .from("workouts")
-    .select("id, routine_id, started_at, ended_at, source")
+    .select("*")
     .order("started_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((w) => ({
-    id: w.id,
-    routineId: w.routine_id,
-    startedAt: w.started_at,
-    endedAt: w.ended_at,
-    source: w.source === "sheet_import" ? "sheet_import" : "app",
-  }));
+  return (data ?? [])
+    .filter((w) => !w.cancelled_at)
+    .map((w) => ({
+      id: w.id,
+      routineId: w.routine_id,
+      startedAt: w.started_at,
+      endedAt: w.ended_at,
+      source: w.source === "sheet_import" ? "sheet_import" : "app",
+    }));
 }
 
 function toSet(s: Record<string, unknown>): SetRow {

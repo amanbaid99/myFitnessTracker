@@ -124,6 +124,28 @@ select pg_temp.expect_error(
   $$insert into public.plans (name, is_active) values ('Second active', true)$$,
   'only one plan can be active');
 
+-- Cancel a workout in progress ----------------------------------------------
+insert into public.workouts (id, routine_id) values ('cccccccc-0000-0000-0000-000000000003', 'bbbbbbbb-0000-0000-0000-000000000001');
+select public.cancel_workout('cccccccc-0000-0000-0000-000000000003');
+select pg_temp.expect(
+  not exists (select 1 from public.workouts where id = 'cccccccc-0000-0000-0000-000000000003'),
+  'cancelling an empty workout deletes it');
+
+insert into public.workouts (id, routine_id) values ('cccccccc-0000-0000-0000-000000000004', 'bbbbbbbb-0000-0000-0000-000000000001');
+insert into public.sets (id, workout_id, exercise_id, set_no, weight_kg, reps) values
+  ('dddddddd-0000-0000-0000-000000000041', 'cccccccc-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-000000000001', 1, 50, 8);
+select public.cancel_workout('cccccccc-0000-0000-0000-000000000004');
+select pg_temp.expect(
+  (select cancelled_at is not null and ended_at is not null from public.workouts where id = 'cccccccc-0000-0000-0000-000000000004')
+  and (select deleted_at is not null from public.sets where id = 'dddddddd-0000-0000-0000-000000000041'),
+  'cancelling a workout with sets soft-deletes them and marks it cancelled');
+select pg_temp.expect(
+  (select load_kg from public.exercise_prs) = 15,
+  'sets from a cancelled workout never count as a PR');
+select pg_temp.expect_error(
+  $$select public.cancel_workout('cccccccc-0000-0000-0000-000000000001')$$,
+  'a finished workout cannot be cancelled');
+
 with d as (delete from public.workouts where id = 'cccccccc-0000-0000-0000-000000000001' returning 1)
 select pg_temp.expect((select count(*) from d) = 0, 'workout with sets cannot be deleted');
 
@@ -152,6 +174,9 @@ select pg_temp.expect_error(
 select pg_temp.expect_error(
   $$insert into public.routines (plan_id, name) values ('eeeeeeee-0000-0000-0000-000000000001', 'Sneaky')$$,
   'cannot add a routine to another user''s plan');
+select pg_temp.expect_error(
+  $$select public.cancel_workout('cccccccc-0000-0000-0000-000000000004')$$,
+  'cannot cancel another user''s workout');
 
 insert into public.workouts (id) values ('cccccccc-0000-0000-0000-000000000009');
 
