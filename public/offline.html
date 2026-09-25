@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c0c0d" />
+    <title>Offline · Workout Tracker</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: #0c0c0d; color: #f2f1ee;
+        font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px; box-sizing: border-box; text-align: center;
+      }
+      p { color: #9a9890; margin: 8px 0 24px; }
+      button {
+        background: #f2d24b; color: #17150c; border: 0; border-radius: 999px;
+        height: 48px; padding: 0 24px; font: inherit; font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You're offline</h1>
+      <p>Offline logging arrives in a later update. Reconnect and try again.</p>
+      <button onclick="location.reload()">Retry</button>
+    </main>
+  </body>
+</html>

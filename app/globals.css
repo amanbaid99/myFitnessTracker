@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Palette: dark by default (spec). One yellow accent, carried over from the
+   old app, reserved for the primary action on a screen.
+--------------------------------------------------------------------------- */
+:root {
+  --radius: 0.875rem;
+
+  --background: #0c0c0d;
+  --foreground: #f2f1ee;
+  --card: #17171a;
+  --card-foreground: var(--foreground);
+  --popover: #17171a;
+  --popover-foreground: var(--foreground);
+  --primary: #f2d24b;
+  --primary-foreground: #17150c;
+  --secondary: #232327;
+  --secondary-foreground: var(--foreground);
+  --muted: #1d1d21;
+  --muted-foreground: #9a9890;
+  --accent: #2a2716;
+  --accent-foreground: #f2d24b;
+  --destructive: #e5654f;
+  --success: #5fbf7f;
+  --border: #2b2b30;
+  --input: #2b2b30;
+  --ring: #f2d24b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* iPhone notch and home indicator. Needs viewport-fit=cover (layout.tsx). */
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top), 1rem);
+}
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+}
