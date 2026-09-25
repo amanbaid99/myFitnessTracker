@@ -18,8 +18,11 @@ Setup: `docs/SETUP.md`.
 - Next 16: `proxy.ts` replaces middleware; `cookies()` and `searchParams` are async.
 - Supabase: `lib/supabase/client.ts` in Client Components,
   `lib/supabase/server.ts` in server code. Never use the service role key in app code.
-- New migrations go in `supabase/migrations/` with a timestamp prefix. Show the
-  SQL for review before it is applied, and add checks to `supabase/tests/rls.sql`.
+- New migrations go in `supabase/migrations/` with a timestamp prefix. Show
+  Aman the SQL in chat before pushing it: CI applies it to the live database
+  automatically on the default branch (before deploying), so the push is
+  the point of no return. Add checks to `supabase/tests/rls.sql`, and keep
+  the app working against the previous schema until the migration lands.
 - Weights are kg in the database; convert with `lib/units.ts` only for display.
 - 390px wide first; tap targets 44px or more; dark theme tokens in `app/globals.css`.
 - No em dashes in UI copy or docs.

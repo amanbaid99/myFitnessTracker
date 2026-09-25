@@ -1,11 +1,16 @@
 name: CI
 
 # Every push: lint, typecheck, unit tests, build, and migrations plus RLS
-# checks on Postgres. When those pass, deploy to Vercel: production for the
-# repository's default branch, a preview for any other branch.
+# checks on Postgres. When those pass:
+#   1. migrate: on the default branch, apply any new supabase/migrations/*
+#      to the live database (supabase db push; already-applied files are
+#      skipped). Other branches never touch the live database.
+#   2. deploy: to Vercel, production for the default branch, a preview for
+#      any other branch. Runs after migrate, so the app never runs ahead of
+#      the database.
 #
-# Deploy needs repository secrets VERCEL_TOKEN, VERCEL_ORG_ID and
-# VERCEL_PROJECT_ID (docs/SETUP.md). Without them the deploy job skips.
+# Secrets: SUPABASE_DB_URL (migrate), VERCEL_TOKEN, VERCEL_ORG_ID and
+# VERCEL_PROJECT_ID (deploy). A job without its secrets skips with a notice.
 
 on:
   push:
@@ -15,7 +20,9 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded runs are cancelled to save time, except on the default branch,
+  # where a run may be applying migrations and must finish.
+  cancel-in-progress: ${{ github.ref_name != github.event.repository.default_branch }}
 
 jobs:
   app:
@@ -58,8 +65,57 @@ jobs:
       - name: Migrations and RLS checks
         run: ./scripts/test-db.sh
 
-  deploy:
+  migrate:
     needs: [app, database]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    # One migration run at a time, and never cancelled halfway.
+    concurrency:
+      group: migrate
+      cancel-in-progress: false
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      DEFAULT_BRANCH: ${{ github.ref_name == github.event.repository.default_branch }}
+    steps:
+      - name: Check branch and secret
+        id: check
+        run: |
+          if [ "$DEFAULT_BRANCH" != "true" ]; then
+            echo "::notice::Not the default branch: the live database is not changed."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::notice::SUPABASE_DB_URL secret not set; skipping migrations."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          case "$SUPABASE_DB_URL" in
+            *@db.*.supabase.co*)
+              echo "::error::SUPABASE_DB_URL is the Direct connection string, which GitHub cannot reach (IPv6 only). Use the Session pooler URI. See docs/SETUP.md."
+              exit 1 ;;
+          esac
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - if: steps.check.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+
+      - if: steps.check.outputs.enabled == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - if: steps.check.outputs.enabled == 'true'
+        name: Apply new migrations
+        run: |
+          set -o pipefail  # a failed push must fail the job, despite tee
+          {
+            echo "### Database migrations"
+            echo '```'
+            supabase db push --db-url "$SUPABASE_DB_URL" --yes 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: [app, database, migrate]
     # Push events only: a PR's branch is already deployed by its own push.
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest

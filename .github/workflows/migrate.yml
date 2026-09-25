@@ -1,24 +1,19 @@
 name: Database migrations
 
-# Applies supabase/migrations/* to the Supabase project with
-# `supabase db push`, which records what has run and applies only new files.
+# Manual database tools. Normal migrations need nothing from you: the CI
+# workflow applies new supabase/migrations/* automatically on every push to
+# the default branch, before deploying the app.
 #
-# - Push to the default branch touching migrations: dry run only. The job
-#   summary lists what is pending, so the SQL can be reviewed (spec rule 9).
-# - Actions tab > Database migrations > Run workflow, "apply" ticked:
-#   applies the pending migrations. Default branch only.
-# - "mark_init_applied": for a database where the init SQL was already run
-#   by hand (SQL editor). Records it as applied so it is not run twice; only
-#   use it when the status report shows all 17 schema objects present.
+# Actions tab > Database migrations > Run workflow:
+# - no boxes ticked: read-only status report plus the list of pending
+#   migrations (dry run).
+# - "apply": apply pending migrations now (CI normally does this).
+# - "mark_init_applied": one-off repair for a database where the init SQL
+#   was run by hand in the SQL editor; only when the status shows 17 of 17.
 #
-# Every run starts with a read-only status report (scripts/db-status.sql).
-#
-# Needs repository secret SUPABASE_DB_URL (docs/SETUP.md). Without it the
-# job skips.
+# Needs repository secret SUPABASE_DB_URL (docs/SETUP.md).
 
 on:
-  push:
-    paths: ["supabase/migrations/**"]
   workflow_dispatch:
     inputs:
       apply:
@@ -87,6 +82,7 @@ jobs:
       - if: steps.check.outputs.enabled == 'true'
         name: Database status (read-only)
         run: |
+          set -o pipefail
           {
             echo "### Database status"
             echo '```'
@@ -108,6 +104,7 @@ jobs:
       - if: steps.check.outputs.enabled == 'true'
         name: Pending migrations (dry run)
         run: |
+          set -o pipefail
           {
             echo "### Pending migrations"
             echo '```'

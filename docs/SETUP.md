@@ -5,8 +5,8 @@ everything runs from GitHub Actions:
 
 | Workflow | When | What |
 | --- | --- | --- |
-| CI (`ci.yml`) | Every push | Lint, typecheck, tests, build, migrations plus RLS checks. If green: deploy to Vercel (production on the default branch, preview on other branches) |
-| Database migrations (`migrate.yml`) | Push touching `supabase/migrations/` (dry run); manual run (apply) | Applies new migrations to Supabase |
+| CI (`ci.yml`) | Every push | Lint, typecheck, tests, build, migrations plus RLS checks. If green, on the default branch: apply new database migrations to Supabase, then deploy to Vercel. Other branches: preview deploy only |
+| Database migrations (`migrate.yml`) | Manual only | Status report, dry run, one-off repair tools |
 | Seed from Sheet (`seed.yml`) | Manual, once | Loads your 4 routines and 26 exercises from the Google Sheet import |
 | Keep Supabase awake (`keepalive.yml`) | Daily | Pings the database so the free project does not pause |
 
@@ -126,9 +126,10 @@ then commit `supabase/seed.sql`.
 
 ## 5c. Later migrations
 
-When a push adds a file to `supabase/migrations/`, the Database migrations
-workflow runs a dry run listing it. Review, then run the workflow with
-**apply** ticked (leave mark_init_applied unticked).
+Nothing to do. When a push to the default branch adds a file to
+`supabase/migrations/`, CI applies it to Supabase automatically after the
+tests pass and before the app deploys. The CI run's summary shows what
+was applied.
 
 ## 6. Deploy and check on the phone
 

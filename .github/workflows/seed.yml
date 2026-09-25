@@ -46,6 +46,7 @@ jobs:
 
       - name: Seed
         run: |
+          set -o pipefail  # a failed seed must fail the job, despite tee
           # psql quotes :'email' itself, so the input cannot inject SQL.
           psql "$SUPABASE_DB_URL" -v email="$EMAIL" -f supabase/seed.sql 2>&1 \
             | tee -a "$GITHUB_STEP_SUMMARY"

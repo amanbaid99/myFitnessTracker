@@ -260,3 +260,23 @@ plans, which the spec did not have.
   refused with a plain message. Exercise-level edits do not mark a
   template plan Custom; slot and structure edits do.
 - Plan and day names show a pencil to make tap-to-rename discoverable.
+
+## 2026-09-25: Migrations apply automatically in CI (Aman's choice)
+
+- Aman asked why migrations needed a manual run and chose automatic.
+  CI now has a `migrate` job between the checks and the deploy: on the
+  default branch it runs `supabase db push`, which applies only files not
+  yet recorded. Deploy waits for it, so the app never runs ahead of the
+  database (previously the app deployed first and briefly showed "database
+  needs an update").
+- Spec rule 9 (show SQL before applying) is kept by showing the SQL in
+  chat before pushing; the push is now the point of no return.
+- Safety: the same migrations and RLS/seed suite run against a scratch
+  Postgres first; each migration file runs in a transaction; one
+  migration run at a time; runs on the default branch are no longer
+  cancelled by a newer push; other branches never touch the live database.
+- `migrate.yml` is now manual-only: status report, dry run, apply, and
+  the one-off "mark init applied" repair.
+- Found in review: `{ ... } | tee` hid failures (the step's shell has no
+  pipefail), so a failed seed or push showed green. Those steps now set
+  pipefail.
