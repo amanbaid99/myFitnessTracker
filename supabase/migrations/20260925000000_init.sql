@@ -1,6 +1,7 @@
 -- Workout Tracker: initial schema (Milestone 1)
 --
--- DRAFT FOR REVIEW. Not applied to any database yet.
+-- Apply once in the Supabase SQL editor (docs/SETUP.md). Tested by
+-- supabase/tests/rls.sql (pnpm test:db).
 --
 -- Seven tables and one view, per docs/SPEC.md. Every table is owner-only
 -- through row-level security. Sets are append-only: there is no delete
