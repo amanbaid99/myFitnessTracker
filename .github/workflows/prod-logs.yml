@@ -11,6 +11,10 @@ on:
         description: "How far back to look (e.g. 30m, 2h, 1d)"
         default: "2h"
         type: string
+      url:
+        description: "Public app URL to check (e.g. https://my-fitness-tracker-tan.vercel.app); empty = latest deployment URL"
+        default: ""
+        type: string
 
 jobs:
   logs:
@@ -26,9 +30,12 @@ jobs:
       - name: Production URL
         id: url
         run: |
-          url=$(vercel ls --environment production --token "$VERCEL_TOKEN" 2>/dev/null | grep -Eo 'https://[^ ]+\.vercel\.app' | head -1)
+          url="${{ inputs.url }}"
+          if [ -z "$url" ]; then
+            url=$(vercel ls --environment production --token "$VERCEL_TOKEN" 2>/dev/null | grep -Eo 'https://[^ ]+\.vercel\.app' | head -1)
+          fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "Latest production deployment: $url"
+          echo "Checking: $url"
 
       - name: Public URLs
         env:
