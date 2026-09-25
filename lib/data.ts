@@ -10,6 +10,10 @@ import { createClient } from "./supabase/server";
  */
 
 export interface Profile {
+  /** The signed-in user's id ("" if unknown). */
+  id: string;
+  /** Whether the one-time feedback prompt was answered or dismissed. */
+  feedbackPrompted: boolean;
   name: string | null;
   units: Units;
   defaultRestSec: number;
@@ -95,32 +99,20 @@ const num = (v: unknown): number | null => (v === null || v === undefined ? null
 
 export async function getProfile(supabase: Supabase): Promise<Profile> {
   const { data: claims } = await supabase.auth.getClaims();
-  const { data } = await supabase
+  const id = claims?.claims.sub ?? "";
+  const { data, error } = await supabase
     .from("profiles")
-    .select("name, units, default_rest_sec")
-    .eq("id", claims?.claims.sub ?? "")
+    .select("name, units, default_rest_sec, feedback_prompted_at")
+    .eq("id", id)
     .maybeSingle();
   return {
+    id,
     name: data?.name ?? null,
     units: data?.units === "lb" ? "lb" : "kg",
     defaultRestSec: data?.default_rest_sec ?? 90,
+    // Unknown counts as prompted, so the prompt never shows when it cannot be recorded.
+    feedbackPrompted: Boolean(error || !data || data.feedback_prompted_at),
   };
-}
-
-/**
- * Whether the one-time feedback prompt was already answered or dismissed.
- * Any error (including a database without the column yet) counts as yes,
- * so the prompt never shows when it cannot be recorded.
- */
-export async function getFeedbackPrompted(supabase: Supabase): Promise<{ userId: string; prompted: boolean }> {
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims.sub ?? "";
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("feedback_prompted_at")
-    .eq("id", userId)
-    .maybeSingle();
-  return { userId, prompted: Boolean(error || !data || data.feedback_prompted_at) };
 }
 
 // Plans ------------------------------------------------------------------------
@@ -193,14 +185,24 @@ export function toExercise(e: ExerciseRow): Exercise {
 
 /** Routines of one plan (or all), in rotation order, exercises in order. */
 export async function getRoutines(supabase: Supabase, planId?: string, routineId?: string): Promise<Routine[]> {
+  return queryRoutines(supabase, { planId, routineId });
+}
+
+async function queryRoutines(
+  supabase: Supabase,
+  filter: { planId?: string; routineId?: string; activePlan?: boolean },
+): Promise<Routine[]> {
+  const { planId, routineId } = filter;
+  const activePlan = filter.activePlan ? ", plans!inner(is_active)" : "";
   let query = supabase
     .from("routines")
     .select(
-      `id, plan_id, name, sort_order, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS}))`,
+      `id, plan_id, name, sort_order, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS}))${activePlan}`,
     )
     .order("sort_order")
     .order("sort_order", { referencedTable: "routine_exercises" });
-  if (planId) query = query.eq("plan_id", planId);
+  if (activePlan) query = query.eq("plans.is_active", true);
+  else if (planId) query = query.eq("plan_id", planId);
   if (routineId) query = query.eq("id", routineId);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -225,10 +227,11 @@ export async function getRoutines(supabase: Supabase, planId?: string, routineId
 
 /** The active plan and its routines; null if the user has no active plan. */
 export async function getActivePlan(supabase: Supabase): Promise<{ plan: Plan; routines: Routine[] } | null> {
-  const plans = await getPlans(supabase);
+  // One round trip: plans and the active plan's routines in parallel.
+  const [plans, routines] = await Promise.all([getPlans(supabase), queryRoutines(supabase, { activePlan: true })]);
   const plan = plans.find((p) => p.isActive);
   if (!plan) return null;
-  return { plan, routines: await getRoutines(supabase, plan.id) };
+  return { plan, routines: routines.filter((r) => r.planId === plan.id) };
 }
 
 export async function getRoutine(supabase: Supabase, routineId: string): Promise<Routine | null> {

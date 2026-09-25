@@ -7,15 +7,18 @@ import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getActivePlan, getFeedbackPrompted, getProfile, getRecentWorkouts, load } from "@/lib/data";
+import { getActivePlan, getProfile, getRecentWorkouts, load } from "@/lib/data";
 import { shouldPromptFeedback } from "@/lib/feedback";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function TodayPage() {
   const supabase = await createClient();
-  const [profile, feedback] = await Promise.all([getProfile(supabase), getFeedbackPrompted(supabase)]);
-  const result = await load(() => Promise.all([getActivePlan(supabase), getRecentWorkouts(supabase)]));
+  // Everything in parallel: one round trip's wait instead of several.
+  const [profile, result] = await Promise.all([
+    getProfile(supabase),
+    load(() => Promise.all([getActivePlan(supabase), getRecentWorkouts(supabase)])),
+  ]);
   const greeting = profile.name ? `Hi, ${profile.name}` : "Today";
 
   if (result.error !== null) {
@@ -58,11 +61,11 @@ export default async function TodayPage() {
   const next = routines.find((r) => r.id === nextId);
   const others = routines.filter((r) => r.id !== nextId);
   // Not while a workout is open: that is not the moment to ask.
-  const askFeedback = !open && shouldPromptFeedback(trained, feedback.prompted);
+  const askFeedback = !open && shouldPromptFeedback(trained, profile.feedbackPrompted);
 
   return (
     <>
-      {askFeedback && <FeedbackPrompt userId={feedback.userId} />}
+      {askFeedback && <FeedbackPrompt userId={profile.id} />}
       <p className="text-sm text-muted-foreground">{greeting}</p>
       <Link href="/plans" className="mt-1 flex items-center gap-2 py-1">
         <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">{plan.name}</h1>

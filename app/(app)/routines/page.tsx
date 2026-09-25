@@ -13,10 +13,10 @@ export const metadata: Metadata = { title: "Routines" };
 
 export default async function RoutinesPage() {
   const supabase = await createClient();
-  const profile = await getProfile(supabase);
-  const result = await load(() =>
-    Promise.all([getActivePlan(supabase), getLastWorkingSets(supabase), getPersonalRecords(supabase)]),
-  );
+  const [profile, result] = await Promise.all([
+    getProfile(supabase),
+    load(() => Promise.all([getActivePlan(supabase), getLastWorkingSets(supabase), getPersonalRecords(supabase)])),
+  ]);
 
   if (result.error !== null) {
     return (

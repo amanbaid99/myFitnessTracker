@@ -8,7 +8,13 @@
 import type { Exercise, LastSet, Plan, Profile, Routine } from "./data";
 import type { SessionSet } from "./session";
 
-export const DEMO_PROFILE: Profile = { name: "John", units: "kg", defaultRestSec: 90 };
+export const DEMO_PROFILE: Profile = {
+  id: "demo",
+  name: "John",
+  units: "kg",
+  defaultRestSec: 90,
+  feedbackPrompted: true,
+};
 
 export const DEMO_PLAN: Plan = {
   id: "demo-plan",

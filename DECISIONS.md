@@ -318,3 +318,29 @@ plans, which the spec did not have.
   example before the migration lands) the prompt stays hidden.
 - The install toast no longer shows on `/demo`, which has its own bottom
   bar and whose visitors have not signed up yet.
+
+## 2026-09-25: Faster tab switches
+
+- Cause: every tab is rendered per user on the server, and with no
+  `loading.tsx` Next.js neither shows anything nor prefetches anything
+  before the whole page is ready, so a tap froze the old screen until
+  every query returned. Revisits always went back to the server
+  (dynamic `staleTimes` defaults to 0). Pages also ran their queries
+  partly one after another.
+- Loading skeletons for Today, Routines, Settings, Plans and the workout
+  logger: the tab bar responds at once and the skeleton shows while data
+  streams in. With a boundary in place Next.js also prefetches the shell.
+- `experimental.staleTimes.dynamic = 30`: a tab seen in the last 30 s is
+  shown from the client cache. Every save already calls
+  `router.refresh()`; `startWorkout` now also calls `revalidatePath("/")`
+  so Today never shows a stale "Next up" instead of "Resume".
+- Queries: Today and Routines run the profile and data reads in one
+  `Promise.all`; the active plan and its routines load in parallel (an
+  inner join on `plans.is_active`) instead of one after the other; the
+  feedback prompt flag is read in the same profile query.
+- Measured locally with 250 ms added to every database call: something
+  on screen in about 50 ms on every tab, content after 350 to 850 ms on
+  a first visit, about 80 ms on a revisit.
+- Not done yet: running Vercel functions in the same region as the
+  Supabase project (needs the project's region), and moving Supabase to
+  asymmetric JWT signing keys so `getClaims()` verifies locally.

@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,5 +28,7 @@ export async function startWorkout(routineId: string) {
     .select("id")
     .single();
   if (error) throw new Error(error.message);
+  // Today now has a workout in progress; drop any cached copy of it.
+  revalidatePath("/");
   redirect(`/workout/${data.id}`);
 }
