@@ -73,3 +73,24 @@ Append-only log. Newest at the bottom.
 - Migrations can be applied by Claude through the Supabase Management API
   with `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` set in the
   environment, or pasted into the SQL editor.
+
+## 2026-09-25: Deploys and migrations run from GitHub Actions
+
+- **Deploy after CI, from Actions.** The CI workflow deploys to Vercel with
+  the Vercel CLI (`pull`, `build`, `deploy --prebuilt`) once lint,
+  typecheck, tests, build and the database checks pass. Production for the
+  repository's default branch, preview for any other branch. `vercel.json`
+  disables Vercel's own Git deploys so every deploy has passed CI.
+- **Migrations via `supabase db push --db-url`.** Needs only a
+  `SUPABASE_DB_URL` secret (session pooler URI); no access token or
+  `config.toml`. It records applied files in
+  `supabase_migrations.schema_migrations`, so reruns are no-ops. Tested
+  against local Postgres, including the repair path for a migration pasted
+  by hand.
+- **Apply is manual.** A push that touches `supabase/migrations/` runs a dry
+  run and prints the pending SQL; applying needs a manual workflow run with
+  "apply" ticked (spec rule 9: review before apply). The migrations job
+  reruns the local RLS suite first.
+- **Every workflow skips with a notice** when its secrets are missing, so
+  the repo stays green before setup is finished.
+- **CI runs on all branches** (was `main` and `claude/**`).

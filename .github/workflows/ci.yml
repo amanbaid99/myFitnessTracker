@@ -1,9 +1,17 @@
 name: CI
 
+# Every push: lint, typecheck, unit tests, build, and migrations plus RLS
+# checks on Postgres. When those pass, deploy to Vercel: production for the
+# repository's default branch, a preview for any other branch.
+#
+# Deploy needs repository secrets VERCEL_TOKEN, VERCEL_ORG_ID and
+# VERCEL_PROJECT_ID (docs/SETUP.md). Without them the deploy job skips.
+
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: ["**"]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -47,3 +55,60 @@ jobs:
       - uses: actions/checkout@v4
       - name: Migrations and RLS checks
         run: ./scripts/test-db.sh
+
+  deploy:
+    needs: [app, database]
+    # Push events only: a PR's branch is already deployed by its own push.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
+    environment:
+      name: ${{ github.ref_name == github.event.repository.default_branch && 'production' || 'preview' }}
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      TARGET: ${{ github.ref_name == github.event.repository.default_branch && 'production' || 'preview' }}
+    steps:
+      - name: Check Vercel secrets
+        id: check
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::notice::Vercel secrets not set; skipping deploy. See docs/SETUP.md."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+      - if: steps.check.outputs.enabled == 'true'
+        uses: pnpm/action-setup@v4
+      - if: steps.check.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: steps.check.outputs.enabled == 'true'
+        run: npm install --global vercel@60
+
+      # Pulls the project settings and its environment variables (the
+      # NEXT_PUBLIC_SUPABASE_* values live in the Vercel project).
+      - if: steps.check.outputs.enabled == 'true'
+        run: vercel pull --yes --environment="$TARGET" --token="$VERCEL_TOKEN"
+
+      - if: steps.check.outputs.enabled == 'true'
+        run: |
+          if [ "$TARGET" = production ]; then PROD=--prod; else PROD=; fi
+          vercel build $PROD --token="$VERCEL_TOKEN"
+
+      - if: steps.check.outputs.enabled == 'true'
+        id: deploy
+        run: |
+          if [ "$TARGET" = production ]; then PROD=--prod; else PROD=; fi
+          url=$(vercel deploy --prebuilt $PROD --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "### Deployed ($TARGET): $url" >> "$GITHUB_STEP_SUMMARY"

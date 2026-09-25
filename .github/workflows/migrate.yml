@@ -1,0 +1,82 @@
+name: Database migrations
+
+# Applies supabase/migrations/* to the Supabase project with
+# `supabase db push`, which records what has run and applies only new files.
+#
+# - Push to the default branch touching migrations: dry run only. The job
+#   summary lists what is pending, so the SQL can be reviewed (spec rule 9).
+# - Actions tab > Database migrations > Run workflow, "apply" ticked:
+#   applies the pending migrations. Default branch only.
+#
+# Needs repository secret SUPABASE_DB_URL (docs/SETUP.md). Without it the
+# job skips.
+
+on:
+  push:
+    paths: ["supabase/migrations/**"]
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply pending migrations (unticked = dry run)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    environment: production
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      APPLY: ${{ github.event_name == 'workflow_dispatch' && inputs.apply }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same checks as CI, so nothing untested reaches the real database.
+      - name: Migrations and RLS checks (local Postgres)
+        run: ./scripts/test-db.sh
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+
+      - name: Check secret
+        id: check
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::notice::SUPABASE_DB_URL secret not set; skipping. See docs/SETUP.md."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.enabled == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - if: steps.check.outputs.enabled == 'true'
+        name: Pending migrations (dry run)
+        run: |
+          {
+            echo "### Pending migrations"
+            echo '```'
+            supabase db push --db-url "$SUPABASE_DB_URL" --dry-run 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - if: steps.check.outputs.enabled == 'true' && env.APPLY == 'true'
+        name: Apply migrations
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
