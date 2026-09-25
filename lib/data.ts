@@ -1,10 +1,11 @@
 import "server-only";
 import { describeDbError } from "./db-error";
+import type { WarmupStep } from "./warmup";
 import type { Units } from "./units";
 import { createClient } from "./supabase/server";
 
 /**
- * Server-side reads shared by the tab screens. RLS limits every query to the
+ * Server-side reads shared by the screens. RLS limits every query to the
  * signed-in user. Shapes are narrowed here so pages get plain typed objects.
  */
 
@@ -14,26 +15,42 @@ export interface Profile {
   defaultRestSec: number;
 }
 
+export interface Exercise {
+  id: string;
+  name: string;
+  equipment: string;
+  muscleGroups: string[];
+  machineSetting: string | null;
+  perHand: boolean;
+  warmupEnabled: boolean;
+  warmupTemplate: WarmupStep[] | null;
+}
+
 export interface RoutineExercise {
+  id: string;
   sortOrder: number;
   targetSets: number;
   targetReps: number;
   restSec: number | null;
-  exercise: {
-    id: string;
-    name: string;
-    equipment: string;
-    muscleGroups: string[];
-    machineSetting: string | null;
-    perHand: boolean;
-  };
+  exercise: Exercise;
 }
 
 export interface Routine {
   id: string;
+  planId: string;
   name: string;
   sortOrder: number;
   exercises: RoutineExercise[];
+}
+
+export interface Plan {
+  id: string;
+  name: string;
+  template: string | null;
+  daysPerWeek: number | null;
+  isCustom: boolean;
+  isActive: boolean;
+  routineCount: number;
 }
 
 export interface WorkoutSummary {
@@ -44,6 +61,19 @@ export interface WorkoutSummary {
   source: "app" | "sheet_import";
 }
 
+export interface SetRow {
+  id: string;
+  workoutId: string;
+  exerciseId: string;
+  setNo: number;
+  setType: "warmup" | "working";
+  weightKg: number | null;
+  addedKg: number;
+  reps: number | null;
+  rpe: number | null;
+  loggedAt: string;
+}
+
 export interface LastSet {
   weightKg: number | null;
   addedKg: number;
@@ -51,7 +81,17 @@ export interface LastSet {
   loggedAt: string;
 }
 
+export interface PersonalRecord {
+  weightKg: number | null;
+  addedKg: number;
+  reps: number;
+  e1rmKg: number;
+  loggedAt: string;
+}
+
 type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
 
 export async function getProfile(supabase: Supabase): Promise<Profile> {
   const { data: claims } = await supabase.auth.getClaims();
@@ -67,59 +107,124 @@ export async function getProfile(supabase: Supabase): Promise<Profile> {
   };
 }
 
+// Plans ------------------------------------------------------------------------
+
+export async function getPlans(supabase: Supabase): Promise<Plan[]> {
+  const { data, error } = await supabase
+    .from("plans")
+    .select("id, name, template, days_per_week, is_custom, is_active, routines(count)")
+    .order("created_at");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    template: p.template,
+    daysPerWeek: p.days_per_week,
+    isCustom: p.is_custom,
+    isActive: p.is_active,
+    routineCount: (p.routines as unknown as { count: number }[])[0]?.count ?? 0,
+  }));
+}
+
+export async function getPlan(supabase: Supabase, planId: string): Promise<Plan | null> {
+  const plans = await getPlans(supabase);
+  return plans.find((p) => p.id === planId) ?? null;
+}
+
+// Routines ---------------------------------------------------------------------
+
+const EXERCISE_COLS =
+  "id, name, equipment, muscle_groups, machine_setting, per_hand, warmup_enabled, warmup_template";
+
+interface ExerciseRow {
+  id: string;
+  name: string;
+  equipment: string;
+  muscle_groups: string[];
+  machine_setting: string | null;
+  per_hand: boolean;
+  warmup_enabled: boolean;
+  warmup_template: WarmupStep[] | null;
+}
+
 interface RoutineRow {
   id: string;
+  plan_id: string;
   name: string;
   sort_order: number;
   routine_exercises: {
+    id: string;
     sort_order: number;
     target_sets: number;
     target_reps: number;
     rest_sec: number | null;
-    exercises: {
-      id: string;
-      name: string;
-      equipment: string;
-      muscle_groups: string[];
-      machine_setting: string | null;
-      per_hand: boolean;
-    } | null;
+    exercises: ExerciseRow | null;
   }[];
 }
 
-/** Routines in rotation order, each with its exercises in order. */
-export async function getRoutines(supabase: Supabase): Promise<Routine[]> {
-  const { data, error } = await supabase
+export function toExercise(e: ExerciseRow): Exercise {
+  return {
+    id: e.id,
+    name: e.name,
+    equipment: e.equipment,
+    muscleGroups: e.muscle_groups,
+    machineSetting: e.machine_setting,
+    perHand: e.per_hand,
+    warmupEnabled: e.warmup_enabled,
+    warmupTemplate: e.warmup_template,
+  };
+}
+
+/** Routines of one plan (or all), in rotation order, exercises in order. */
+export async function getRoutines(supabase: Supabase, planId?: string): Promise<Routine[]> {
+  let query = supabase
     .from("routines")
     .select(
-      "id, name, sort_order, routine_exercises(sort_order, target_sets, target_reps, rest_sec, exercises(id, name, equipment, muscle_groups, machine_setting, per_hand))",
+      `id, plan_id, name, sort_order, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS}))`,
     )
     .order("sort_order")
     .order("sort_order", { referencedTable: "routine_exercises" });
+  if (planId) query = query.eq("plan_id", planId);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
 
   return ((data ?? []) as unknown as RoutineRow[]).map((r) => ({
     id: r.id,
+    planId: r.plan_id,
     name: r.name,
     sortOrder: r.sort_order,
     exercises: r.routine_exercises
       .filter((re) => re.exercises)
       .map((re) => ({
+        id: re.id,
         sortOrder: re.sort_order,
         targetSets: re.target_sets,
         targetReps: re.target_reps,
         restSec: re.rest_sec,
-        exercise: {
-          id: re.exercises!.id,
-          name: re.exercises!.name,
-          equipment: re.exercises!.equipment,
-          muscleGroups: re.exercises!.muscle_groups,
-          machineSetting: re.exercises!.machine_setting,
-          perHand: re.exercises!.per_hand,
-        },
+        exercise: toExercise(re.exercises!),
       })),
   }));
 }
+
+/** The active plan and its routines; null if the user has no active plan. */
+export async function getActivePlan(supabase: Supabase): Promise<{ plan: Plan; routines: Routine[] } | null> {
+  const plans = await getPlans(supabase);
+  const plan = plans.find((p) => p.isActive);
+  if (!plan) return null;
+  return { plan, routines: await getRoutines(supabase, plan.id) };
+}
+
+export async function getExerciseLibrary(supabase: Supabase): Promise<Exercise[]> {
+  const { data, error } = await supabase
+    .from("exercises")
+    .select(EXERCISE_COLS)
+    .is("archived_at", null)
+    .order("name");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as unknown as ExerciseRow[]).map(toExercise);
+}
+
+// Workouts ---------------------------------------------------------------------
 
 export async function getRecentWorkouts(supabase: Supabase, limit = 200): Promise<WorkoutSummary[]> {
   const { data, error } = await supabase
@@ -137,6 +242,70 @@ export async function getRecentWorkouts(supabase: Supabase, limit = 200): Promis
   }));
 }
 
+function toSet(s: Record<string, unknown>): SetRow {
+  return {
+    id: s.id as string,
+    workoutId: s.workout_id as string,
+    exerciseId: s.exercise_id as string,
+    setNo: s.set_no as number,
+    setType: s.set_type === "warmup" ? "warmup" : "working",
+    weightKg: num(s.weight_kg),
+    addedKg: num(s.added_kg) ?? 0,
+    reps: s.reps as number | null,
+    rpe: num(s.rpe),
+    loggedAt: s.logged_at as string,
+  };
+}
+
+const SET_COLS = "id, workout_id, exercise_id, set_no, set_type, weight_kg, added_kg, reps, rpe, logged_at";
+
+/** Live sets logged in one workout, oldest first. */
+export async function getWorkoutSets(supabase: Supabase, workoutId: string): Promise<SetRow[]> {
+  const { data, error } = await supabase
+    .from("sets")
+    .select(SET_COLS)
+    .eq("workout_id", workoutId)
+    .is("deleted_at", null)
+    .order("logged_at");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(toSet);
+}
+
+/**
+ * For each exercise: the working sets of the most recent *other* workout that
+ * included it, in order. Drives pre-fill, the warm-up ramp and the aim.
+ */
+export async function getPreviousSessions(
+  supabase: Supabase,
+  exerciseIds: string[],
+  excludeWorkoutId?: string,
+): Promise<Map<string, SetRow[]>> {
+  const map = new Map<string, SetRow[]>();
+  if (exerciseIds.length === 0) return map;
+  let query = supabase
+    .from("sets")
+    .select(SET_COLS)
+    .in("exercise_id", exerciseIds)
+    .eq("set_type", "working")
+    .is("deleted_at", null)
+    .order("logged_at", { ascending: false })
+    .limit(2000);
+  if (excludeWorkoutId) query = query.neq("workout_id", excludeWorkoutId);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  const lastWorkout = new Map<string, string>();
+  for (const row of (data ?? []).map(toSet)) {
+    const w = lastWorkout.get(row.exerciseId);
+    if (w === undefined) lastWorkout.set(row.exerciseId, row.workoutId);
+    else if (w !== row.workoutId) continue;
+    const list = map.get(row.exerciseId) ?? [];
+    list.unshift(row); // rows arrive newest first; keep oldest first
+    map.set(row.exerciseId, list);
+  }
+  return map;
+}
+
 /** Latest working set per exercise (warm-ups excluded by the view). */
 export async function getLastWorkingSets(supabase: Supabase): Promise<Map<string, LastSet>> {
   const { data, error } = await supabase
@@ -150,11 +319,29 @@ export async function getLastWorkingSets(supabase: Supabase): Promise<Map<string
   for (const s of data ?? []) {
     if (map.has(s.exercise_id)) continue;
     map.set(s.exercise_id, {
-      // numeric columns arrive as numbers or strings depending on precision.
-      weightKg: s.weight_kg === null ? null : Number(s.weight_kg),
-      addedKg: Number(s.added_kg ?? 0),
+      weightKg: num(s.weight_kg),
+      addedKg: num(s.added_kg) ?? 0,
       reps: s.reps,
       loggedAt: s.logged_at,
+    });
+  }
+  return map;
+}
+
+/** Best working set per exercise by estimated 1RM (the exercise_prs view). */
+export async function getPersonalRecords(supabase: Supabase): Promise<Map<string, PersonalRecord>> {
+  const { data, error } = await supabase
+    .from("exercise_prs")
+    .select("exercise_id, weight_kg, added_kg, reps, e1rm_kg, logged_at");
+  if (error) throw new Error(error.message);
+  const map = new Map<string, PersonalRecord>();
+  for (const p of data ?? []) {
+    map.set(p.exercise_id, {
+      weightKg: num(p.weight_kg),
+      addedKg: num(p.added_kg) ?? 0,
+      reps: p.reps,
+      e1rmKg: Number(p.e1rm_kg),
+      loggedAt: p.logged_at,
     });
   }
   return map;
