@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronLeft, Flame, Minus, Plus, Timer, Trophy, X } from "lucide-react";
+import { Check, ChevronLeft, Flame, Minus, Plus, Timer, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatSet } from "@/lib/format";
+import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
 import type { Row, SessionExercise, SessionExerciseInput } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
@@ -61,18 +62,23 @@ export function Logger(props: {
   const [finishing, setFinishing] = useState(false);
 
   // One clock for the elapsed time and the rest timer; a finished rest
-  // buzzes once and clears.
+  // beeps and buzzes once and clears. The ref keeps the side effects out of
+  // the state updater.
+  const restRef = useRef(rest);
+  useEffect(() => {
+    restRef.current = rest;
+  }, [rest]);
   useEffect(() => {
     const t = setInterval(() => {
       const current = Date.now();
       setNow(current);
-      setRest((r) => {
-        if (r && current >= r.endsAt) {
-          navigator.vibrate?.([200, 100, 200]);
-          return null;
-        }
-        return r;
-      });
+      const r = restRef.current;
+      if (r && current >= r.endsAt) {
+        restRef.current = null;
+        setRest(null);
+        beep(REST_END);
+        navigator.vibrate?.([200, 100, 200]);
+      }
     }, 1000);
     return () => clearInterval(t);
   }, []);
@@ -149,6 +155,7 @@ export function Logger(props: {
     setError(null);
     const restSec = row.setType === "warmup" ? WARMUP_REST_SEC : (item.restSec ?? props.defaultRestSec);
     setRest({ endsAt: secondsFromNow(restSec), total: restSec });
+    beep(REST_START);
     if (row.setType === "working") setFeelKey(row.key);
     if (demo) return;
 
@@ -255,7 +262,8 @@ export function Logger(props: {
           </Button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-semibold">{props.routineName}</h1>
-            <p className="text-xs text-muted-foreground tabular-nums">
+            {/* The elapsed time can differ by a second between server and phone. */}
+            <p className="text-xs text-muted-foreground tabular-nums" suppressHydrationWarning>
               {clock(elapsed)} · {doneCount}/{allRows.length} sets
             </p>
           </div>
@@ -703,6 +711,12 @@ function RestBar({
   onSkip: () => void;
 }) {
   const pct = total > 0 ? (remaining / total) * 100 : 0;
+  // The bar only mounts after a tap, so reading localStorage here is safe.
+  const [sound, setSound] = useState(soundOn);
+  const toggleSound = () => {
+    setSoundOn(!sound);
+    setSound(!sound);
+  };
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-popover pb-[env(safe-area-inset-bottom)]">
       <div className="h-1 bg-primary transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
@@ -711,6 +725,16 @@ function RestBar({
         <p className="flex-1 text-lg font-semibold tabular-nums" aria-live="polite">
           Rest {clock(remaining)}
         </p>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSound}
+          aria-pressed={!sound}
+          aria-label={sound ? "Mute rest beeps" : "Turn rest beeps on"}
+          className="text-muted-foreground"
+        >
+          {sound ? <Volume2 /> : <VolumeX />}
+        </Button>
         <Button variant="secondary" onClick={onAdd}>
           +15s
         </Button>

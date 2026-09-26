@@ -401,3 +401,19 @@ plans, which the spec did not have.
   working weight, so very light exercises warm up at their working
   weight.
 - Working-set progression steps (`stepKg`) are unchanged.
+
+## 2026-09-26: Rest timer beeps (Aman's request)
+
+- Ticking a set plays one short beep (rest starts); the end of the rest
+  plays two higher beeps, alongside the existing vibration. Skipping the
+  rest is silent. Tones are generated with Web Audio (`lib/beep.ts`), so
+  there are no sound files to load or cache.
+- A speaker button on the rest bar mutes them; the choice is stored per
+  device in localStorage.
+- Limits: browsers only allow sound after a tap, which the set tick
+  provides; nothing plays while the phone is locked or the app is in the
+  background; an iPhone on silent stays silent.
+- The end-of-rest side effects moved out of the state updater (a ref
+  holds the current rest), so they cannot fire twice.
+- The workout clock text opts out of hydration checks: the server and
+  phone can disagree by a second, which made React re-render the page.
