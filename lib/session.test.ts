@@ -35,7 +35,7 @@ describe("buildSession", () => {
     const [inc, lat] = buildSession([incline, lateral], previous, []);
     expect(inc.warmups.map((w) => [w.label, w.weightKg, w.reps])).toEqual([
       ["W1", 7.5, 10],
-      ["W2", 11.25, 5],
+      ["W2", 12.5, 5],
     ]);
     expect(lat.warmups).toHaveLength(0);
     // One imported set pre-fills every working set; add-on weight is kept.

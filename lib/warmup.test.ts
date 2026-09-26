@@ -2,19 +2,34 @@ import { describe, expect, it } from "vitest";
 import { roundToIncrement, warmupSets } from "./warmup";
 
 describe("warmupSets (first exercise only: 50%, 75%, then working sets)", () => {
-  it("Incline Bench Press at 15 kg, first exercise: 7.5 x 10, 11.25 x 5", () => {
+  it("Incline Bench Press at 15 kg, first exercise: 7.5 x 10, 12.5 x 5", () => {
     expect(
       warmupSets({ lastWorkingWeightKg: 15, targetReps: 10, isFirstExercise: true, equipment: "machine" }),
     ).toEqual([
       { label: "W1", weightKg: 7.5, reps: 10 },
-      { label: "W2", weightKg: 11.25, reps: 5 },
+      { label: "W2", weightKg: 12.5, reps: 5 },
     ]);
   });
 
-  it("Leg Press at 105 kg: 52.5 x 10, 78.75 x 5", () => {
+  it("Leg Press at 105 kg: 52.5 x 10, 80 x 5", () => {
     expect(
       warmupSets({ lastWorkingWeightKg: 105, targetReps: 8, isFirstExercise: true, equipment: "machine" }).map((w) => w.weightKg),
-    ).toEqual([52.5, 78.75]);
+    ).toEqual([52.5, 80]);
+  });
+
+  it("rounds to 2.5 kg steps: 65 kg gives 32.5 and 50 (not 48.75)", () => {
+    expect(
+      warmupSets({ lastWorkingWeightKg: 65, targetReps: 10, isFirstExercise: true, equipment: "machine" }).map((w) => w.weightKg),
+    ).toEqual([32.5, 50]);
+  });
+
+  it("light weights: at least 2.5 kg, never more than the working weight", () => {
+    expect(
+      warmupSets({ lastWorkingWeightKg: 4, targetReps: 15, isFirstExercise: true, equipment: "cable" }).map((w) => w.weightKg),
+    ).toEqual([2.5, 2.5]);
+    expect(
+      warmupSets({ lastWorkingWeightKg: 2, targetReps: 15, isFirstExercise: true, equipment: "cable" }).map((w) => w.weightKg),
+    ).toEqual([2, 2]);
   });
 
   it("no ramp-up sets after the first exercise", () => {
@@ -42,8 +57,9 @@ describe("warmupSets (first exercise only: 50%, 75%, then working sets)", () => 
 });
 
 describe("roundToIncrement", () => {
-  it("rounds to the nearest 1.25 kg, never below 0", () => {
-    expect(roundToIncrement(10.5)).toBe(10);
+  it("rounds to the nearest 2.5 kg, never below 0", () => {
+    expect(roundToIncrement(48.75)).toBe(50);
+    expect(roundToIncrement(11.2)).toBe(10);
     expect(roundToIncrement(12.75)).toBe(12.5);
     expect(roundToIncrement(0.5)).toBe(0);
     expect(roundToIncrement(-3)).toBe(0);

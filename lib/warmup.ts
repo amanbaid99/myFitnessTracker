@@ -6,7 +6,9 @@
  *
  * W = base weight of the first working set last session (add-on ignored).
  * - No previous weight, or bodyweight: one set, weight blank, reps = target
- * Weights round to the nearest 1.25 kg, minimum 0. A per-exercise template
+ * Weights round to the nearest 2.5 kg (the usual plate and stack step, Aman's
+ * choice), never below 2.5 kg and never above the working weight. A
+ * per-exercise template
  * overrides the ramp; warmupEnabled=false hides it.
  */
 
@@ -21,7 +23,7 @@ export interface WarmupSet {
   reps: number;
 }
 
-export const WARMUP_INCREMENT_KG = 1.25;
+export const WARMUP_INCREMENT_KG = 2.5;
 export const WARMUP_REST_SEC = 45;
 
 export const DEFAULT_RAMP: WarmupStep[] = [
@@ -52,7 +54,8 @@ export function warmupSets(input: {
 
   return steps.map((s, i) => ({
     label: `W${i + 1}`,
-    weightKg: roundToIncrement((w * s.pct) / 100),
+    // At least one step (never 0 kg), at most the working weight itself.
+    weightKg: Math.min(w, Math.max(WARMUP_INCREMENT_KG, roundToIncrement((w * s.pct) / 100))),
     reps: s.reps,
   }));
 }

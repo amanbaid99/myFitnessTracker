@@ -390,3 +390,14 @@ plans, which the spec did not have.
   these rows. With the pin add-on field open the − and + buttons narrow
   to 32 x 44 px, the only case under the 44 px guideline, rather than
   overflow the row.
+
+## 2026-09-26: Warm-up weights round to 2.5 kg (Aman's request)
+
+- Ramp-up weights (50% and 75% of the working weight) now round to the
+  nearest 2.5 kg instead of 1.25 kg, since 2.5 kg is the usual plate and
+  stack step: 65 kg gives 32.5 and 50 (was 48.75), 105 kg gives 52.5
+  and 80.
+- A warm-up is at least 2.5 kg (never 0) and never heavier than the
+  working weight, so very light exercises warm up at their working
+  weight.
+- Working-set progression steps (`stepKg`) are unchanged.
