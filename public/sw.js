@@ -1,6 +1,7 @@
-// Milestone 1 service worker: enough to make the app installable and to show
-// a friendly page instead of the browser's error when opened offline.
-// Full offline logging (cached app shell, Dexie sync) arrives in Milestone 6.
+// Service worker: makes the app installable, caches build assets and shows a
+// friendly page instead of the browser's error when a screen is opened
+// offline. Logging through a dropout is handled in the page itself (the
+// IndexedDB outbox in lib/outbox), not here.
 
 const CACHE = "wt-static-v1";
 const OFFLINE_URL = "/offline.html";

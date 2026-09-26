@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronLeft, ChevronUp, Flame, Minus, Plus, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Plus, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { formatSet, formatSets, settingLabel } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, type Row, type SessionExercise, type SessionExerciseInput } from "@/lib/session";
+import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, type Units } from "@/lib/units";
 import type { ExerciseNote } from "@/lib/data";
@@ -55,7 +56,6 @@ export function Logger(props: {
   const { workoutId, items, units, demo = false } = props;
   const home = demo ? "/demo" : "/";
   const router = useRouter();
-  const supabase = createClient();
 
   const [exercises, setExercises] = useState(props.session);
   const [checked, setChecked] = useState<number[]>([]);
@@ -65,6 +65,50 @@ export function Logger(props: {
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+  // Finished while offline: waiting for the outbox to reach the server.
+  const [finishedOffline, setFinishedOffline] = useState(false);
+  const online = useOnline();
+  const pending = usePendingCount(workoutId);
+
+  // Changes the database refused (not retried) are shown, never silent.
+  useEffect(
+    () => onOutboxFailure((message) => setError(`A change could not be saved: ${message}`)),
+    [],
+  );
+
+  // Opened with changes still on the phone from last time: this page was
+  // rendered without them, so reload once they have reached the server.
+  const reloadAfterSync = useRef(false);
+  useEffect(() => {
+    if (demo) return;
+    pendingCount(workoutId)
+      .then((n) => {
+        if (n > 0) reloadAfterSync.current = true;
+      })
+      .catch(() => {});
+  }, [demo, workoutId]);
+  useEffect(() => {
+    if (pending === 0 && reloadAfterSync.current) {
+      reloadAfterSync.current = false;
+      window.location.reload();
+    }
+  }, [pending]);
+
+  // Finished offline: go to History as soon as everything has synced.
+  useEffect(() => {
+    if (finishedOffline && pending === 0) {
+      router.push(`/history/${workoutId}`);
+      router.refresh();
+    }
+  }, [finishedOffline, pending, router, workoutId]);
+
+  /** Cancelling runs on the server after every queued set, so it needs a connection. */
+  async function readyToCancel(): Promise<string | null> {
+    if (!navigator.onLine) return "You're offline. Cancelling needs a connection.";
+    await flush();
+    const left = await pendingCount(workoutId);
+    return left > 0 ? `${left} ${left === 1 ? "change is" : "changes are"} still syncing. Try again in a moment.` : null;
+  }
   const [notes, setNotes] = useState<Record<string, ExerciseNote>>(props.notes ?? {});
   const [editingNote, setEditingNote] = useState<string | null>(null);
   // Seat or pin settings changed during this workout, by exercise id.
@@ -222,20 +266,20 @@ export function Logger(props: {
     if (row.setType === "working") setFeelKey(row.key);
     if (demo) return;
 
-    const { error } = await supabase.from("sets").insert({
-      id,
-      workout_id: workoutId,
-      exercise_id: item.exercise.id,
-      set_no: row.setNo,
-      set_type: row.setType,
-      weight_kg: row.weightKg,
-      added_kg: row.addedKg,
-      reps: row.reps,
+    // Saved on the phone first, sent when there is a connection.
+    await enqueue(workoutId, {
+      kind: "insertSet",
+      row: {
+        id,
+        workout_id: workoutId,
+        exercise_id: item.exercise.id,
+        set_no: row.setNo,
+        set_type: row.setType,
+        weight_kg: row.weightKg,
+        added_kg: row.addedKg,
+        reps: row.reps,
+      },
     });
-    if (error) {
-      updateRow(exIndex, row.key, { logged: null });
-      setError(`Could not save that set: ${error.message}`);
-    }
   }
 
   async function untick(exIndex: number, row: Row) {
@@ -243,11 +287,7 @@ export function Logger(props: {
     const logged = row.logged;
     updateRow(exIndex, row.key, { logged: null });
     if (demo) return;
-    const { error } = await supabase.from("sets").update({ deleted_at: new Date().toISOString() }).eq("id", logged.id);
-    if (error) {
-      updateRow(exIndex, row.key, { logged });
-      setError(`Could not undo: ${error.message}`);
-    }
+    await enqueue(workoutId, { kind: "deleteSet", id: logged.id, deletedAt: new Date().toISOString() });
   }
 
   async function setFeel(exIndex: number, row: Row, feel: Feel) {
@@ -277,8 +317,7 @@ export function Logger(props: {
     }
 
     if (demo) return;
-    const { error } = await supabase.from("sets").update({ rpe }).eq("id", row.logged.id);
-    if (error) setError(`Could not save how it felt: ${error.message}`);
+    await enqueue(workoutId, { kind: "setRpe", id: row.logged.id, rpe });
   }
 
   /**
@@ -288,13 +327,7 @@ export function Logger(props: {
   async function saveSetting(exerciseId: string, value: string): Promise<boolean> {
     const setting = value.trim().slice(0, 20) || null;
     setError(null);
-    if (!demo) {
-      const { error } = await supabase.from("exercises").update({ machine_setting: setting }).eq("id", exerciseId);
-      if (error) {
-        setError(`Could not save the setting: ${error.message}`);
-        return false;
-      }
-    }
+    if (!demo) await enqueue(workoutId, { kind: "setSetting", exerciseId, setting });
     setSettings((prev) => ({ ...prev, [exerciseId]: setting }));
     return true;
   }
@@ -317,29 +350,19 @@ export function Logger(props: {
     }
     if (!note) {
       if (!existing) return true;
-      const { error } = await supabase.from("exercise_notes").delete().eq("id", existing.id);
-      if (error) return fail(error.message);
+      await enqueue(workoutId, { kind: "deleteNote", id: existing.id });
       put(null);
       return true;
     }
     if (existing) {
-      const { error } = await supabase.from("exercise_notes").update({ note }).eq("id", existing.id);
-      if (error) return fail(error.message);
+      await enqueue(workoutId, { kind: "updateNote", id: existing.id, note });
       put({ ...existing, note });
       return true;
     }
     const id = crypto.randomUUID();
-    const { error } = await supabase
-      .from("exercise_notes")
-      .insert({ id, workout_id: workoutId, exercise_id: exerciseId, note });
-    if (error) return fail(error.message);
+    await enqueue(workoutId, { kind: "insertNote", row: { id, workout_id: workoutId, exercise_id: exerciseId, note } });
     put({ id, note });
     return true;
-
-    function fail(message: string) {
-      setError(`Could not save the note: ${message}`);
-      return false;
-    }
   }
 
   function addSet(exIndex: number) {
@@ -373,6 +396,21 @@ export function Logger(props: {
   const anyLogged = props.hasLoggedSets || doneCount > 0;
   const elapsed = Math.max(0, Math.floor((now - new Date(props.startedAt).getTime()) / 1000));
 
+  if (finishedOffline) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-lg flex-col items-center justify-center px-6 text-center">
+        <CloudOff className="size-10 text-primary" aria-hidden />
+        <h1 className="mt-4 text-2xl font-semibold">Workout finished</h1>
+        <p className="mt-2 text-muted-foreground" aria-live="polite">
+          Saved on this phone.{" "}
+          {pending > 0
+            ? `${pending} ${pending === 1 ? "change" : "changes"} will sync when you're back online. Keep the app open or reopen it later.`
+            : "Syncing now…"}
+        </p>
+      </main>
+    );
+  }
+
   return (
     <div className="min-h-dvh pb-[calc(8rem+env(safe-area-inset-bottom))]">
       <header className="sticky top-0 z-30 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
@@ -392,6 +430,13 @@ export function Logger(props: {
             {/* The elapsed time can differ by a second between server and phone. */}
             <p className="text-xs text-muted-foreground tabular-nums" suppressHydrationWarning>
               {clock(elapsed)} · {doneCount}/{allRows.length} sets
+              {!demo && (pending > 0 || !online) && (
+                <span className="text-primary" aria-live="polite">
+                  {" · "}
+                  {!online ? "Offline" : "Syncing"}
+                  {pending > 0 && `, ${pending} waiting`}
+                </span>
+              )}
             </p>
           </div>
           <Button variant="secondary" onClick={() => setFinishing(true)}>
@@ -647,6 +692,7 @@ export function Logger(props: {
             workoutId={workoutId}
             loggedSets={doneCount}
             className="w-full text-muted-foreground"
+            beforeCancel={readyToCancel}
           />
         )}
       </main>
@@ -666,9 +712,14 @@ export function Logger(props: {
           anyLogged={anyLogged}
           demo={demo}
           onClose={() => setFinishing(false)}
-          onDone={(saved) => {
+          onDone={(result) => {
+            if (result === "queued") {
+              setFinishing(false);
+              setFinishedOffline(true);
+              return;
+            }
             // A finished workout opens its History page, where its analysis appears.
-            router.push(demo ? "/demo?finished=1" : saved ? `/history/${workoutId}` : "/");
+            router.push(demo ? "/demo?finished=1" : result === "saved" ? `/history/${workoutId}` : "/");
             router.refresh();
           }}
         />
@@ -1163,10 +1214,9 @@ function FinishSheet({
   anyLogged: boolean;
   demo: boolean;
   onClose: () => void;
-  /** saved: true when the workout was finished, false when discarded. */
-  onDone: (saved: boolean) => void;
+  /** saved: finished and on the server; queued: finished on this phone, not synced yet; discarded. */
+  onDone: (result: "saved" | "queued" | "discarded") => void;
 }) {
-  const supabase = createClient();
   const [energy, setEnergy] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1174,31 +1224,35 @@ function FinishSheet({
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
   async function save() {
-    if (demo) return onDone(true);
+    if (demo) return onDone("saved");
     setBusy(true);
-    const { error } = await supabase
-      .from("workouts")
-      .update({ ended_at: new Date().toISOString(), energy, notes: notes.trim() || null })
-      .eq("id", workoutId);
-    if (error) {
-      setBusy(false);
-      setError(error.message);
-      return;
-    }
-    onDone(true);
+    // Queued after every set and effort, so it always arrives last.
+    await enqueue(workoutId, {
+      kind: "finishWorkout",
+      id: workoutId,
+      endedAt: new Date().toISOString(),
+      energy,
+      notes: notes.trim() || null,
+    });
+    await flush();
+    onDone((await pendingCount(workoutId)) === 0 ? "saved" : "queued");
   }
 
   async function discard() {
-    if (demo) return onDone(false);
+    if (demo) return onDone("discarded");
+    if (!navigator.onLine) {
+      setError("Discarding needs a connection. Leave it for now and cancel it from Today later.");
+      return;
+    }
     if (!confirm("Discard this workout? Nothing was logged.")) return;
     setBusy(true);
-    const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
+    const { error } = await createClient().from("workouts").delete().eq("id", workoutId);
     if (error) {
       setBusy(false);
       setError(error.message);
       return;
     }
-    onDone(false);
+    onDone("discarded");
   }
 
   return (

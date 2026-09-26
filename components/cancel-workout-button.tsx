@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { flush } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -16,6 +17,7 @@ export function CancelWorkoutButton({
   className,
   variant = "ghost",
   label = "Cancel workout",
+  beforeCancel,
 }: {
   workoutId: string;
   /** Sets logged so far, for the confirmation text; null if unknown. */
@@ -23,6 +25,8 @@ export function CancelWorkoutButton({
   className?: string;
   variant?: "ghost" | "outline" | "secondary";
   label?: string;
+  /** Runs first; a returned message is shown instead of cancelling (e.g. offline). */
+  beforeCancel?: () => Promise<string | null>;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -39,6 +43,15 @@ export function CancelWorkoutButton({
 
     setBusy(true);
     setError(null);
+    const blocked = await beforeCancel?.();
+    if (blocked) {
+      setBusy(false);
+      setError(blocked);
+      return;
+    }
+    // Sets still queued on this phone must land before the cancel, or they
+    // would arrive in a cancelled workout.
+    await flush();
     const { error } = await createClient().rpc("cancel_workout", { p_workout: workoutId });
     if (error) {
       setBusy(false);

@@ -523,3 +523,37 @@ plans, which the spec did not have.
   surface ring, hairline grid, tooltip on touch), top sets (best set of the
   five best sessions) and a session table that doubles as the chart's
   table view.
+
+## 2026-09-26: Offline level 1, logging through a dropout (Aman's choice)
+
+- Scope: a workout started online keeps working when the signal drops.
+  Starting a workout with no signal at all (level 2) and offline History,
+  Progress or plan editing are out of scope for now.
+- Every change the logger makes (log set, undo, effort, finish, note,
+  seat or pin) becomes an op in an IndexedDB outbox (Dexie, per the spec)
+  before it is sent. The screen updates at once and never un-ticks on a
+  network error, as it used to.
+- Ops are sent oldest first and a transient failure (no connection,
+  timeout, 5xx, expired session) stops the run so nothing overtakes it:
+  effort must reach a set before the workout is finished and locked. A
+  permanent refusal is shown on screen and dropped, never silent.
+- Every op is safe to send twice: inserts use the phone-generated id and
+  treat a duplicate key as done; updates only touch rows still in the
+  expected state (set not deleted, workout not finished). Retries can
+  never double a set.
+- `OutboxSync` (root layout) sends on load, on reconnect, on returning to
+  the foreground and every 15 s while anything waits, then refreshes the
+  screen. iPhones have no background sync, so it only runs while the app
+  is open; nothing is lost if it is closed. Storage persistence is
+  requested.
+- The workout header shows "Offline" / "Syncing, N waiting". Finish works
+  offline: a "Workout finished, saved on this phone" screen waits, then
+  opens History once synced (the analysis starts then). Opening a workout
+  that still had queued changes reloads it once they land, since the
+  server rendered it without them. Cancel and discard need a connection
+  and flush the outbox first, so no queued set lands in a cancelled
+  workout.
+- Found in testing: the sync lock was cleared before it was set when the
+  run ended synchronously offline, blocking every later sync. Fixed by
+  clearing it after assignment.
+- No schema change.
