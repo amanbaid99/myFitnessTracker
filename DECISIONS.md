@@ -432,3 +432,12 @@ plans, which the spec did not have.
   lifted.
 - In-session feel adjustments and sets already logged (resume) are
   unchanged.
+
+## 2026-09-26: A logged set's weight carries to the next sets (Aman's request)
+
+- When a working set is ticked, later working sets of the same exercise
+  that are not logged yet take its weight (and pin add-on): 15 kg on set
+  1, 17.5 kg on set 2, and set 3 shows 17.5 kg.
+- A set whose weight was typed by hand keeps it (rows track
+  `weightEdited`); reps are not carried. The feel chips still adjust the
+  next set afterwards, starting from the carried weight.

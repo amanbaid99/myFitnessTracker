@@ -42,6 +42,24 @@ export interface Row {
   addedKg: number;
   reps: number | null;
   logged: SessionSet | null;
+  /** The weight was typed by hand, so it is not overwritten automatically. */
+  weightEdited?: boolean;
+}
+
+/**
+ * After a working set is logged, later working sets not yet logged take its
+ * weight (base and add-on): go up to 17.5 kg on set 2 and set 3 follows.
+ * Sets whose weight was typed by hand keep it. Reps are left alone.
+ */
+export function carryWeightForward(
+  working: Row[],
+  done: { setNo: number; weightKg: number | null; addedKg: number },
+): Row[] {
+  return working.map((r) =>
+    r.setNo > done.setNo && !r.logged && !r.weightEdited
+      ? { ...r, weightKg: done.weightKg, addedKg: done.addedKg }
+      : r,
+  );
 }
 
 export interface SessionExercise {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSession, type SessionExerciseInput, type SessionSet } from "./session";
+import { buildSession, carryWeightForward, type Row, type SessionExerciseInput, type SessionSet } from "./session";
 
 const incline: SessionExerciseInput = {
   exercise: { id: "incline", name: "Incline Bench Press", equipment: "machine", warmupEnabled: true, warmupTemplate: null },
@@ -94,5 +94,39 @@ describe("buildSession", () => {
   it("respects warm-ups switched off", () => {
     const off = { ...incline, exercise: { ...incline.exercise, warmupEnabled: false } };
     expect(buildSession([off], new Map(), [])[0].warmups).toEqual([]);
+  });
+});
+
+describe("carryWeightForward", () => {
+  const row = (setNo: number, weightKg: number | null, extra: Partial<Row> = {}): Row => ({
+    key: `s${setNo}`,
+    setType: "working",
+    setNo,
+    label: String(setNo),
+    weightKg,
+    addedKg: 0,
+    reps: 10,
+    logged: null,
+    ...extra,
+  });
+  const logged = (setNo: number, weightKg: number) =>
+    ({ id: `l${setNo}`, exerciseId: "x", setNo, setType: "working", weightKg, addedKg: 0, reps: 10, rpe: null }) as const;
+
+  it("set 1 at 15 kg, set 2 at 17.5 kg: set 3 follows to 17.5 kg", () => {
+    const rows = [row(1, 15, { logged: logged(1, 15) }), row(2, 17.5, { logged: logged(2, 17.5) }), row(3, 15), row(4, 15)];
+    const out = carryWeightForward(rows, { setNo: 2, weightKg: 17.5, addedKg: 0 });
+    expect(out.map((r) => r.weightKg)).toEqual([15, 17.5, 17.5, 17.5]);
+    expect(out.map((r) => r.reps)).toEqual([10, 10, 10, 10]);
+  });
+
+  it("keeps weights typed by hand, logged sets and earlier sets", () => {
+    const rows = [row(1, 15), row(2, 17.5, { logged: logged(2, 17.5) }), row(3, 20, { weightEdited: true }), row(4, 15, { logged: logged(4, 15) })];
+    const out = carryWeightForward(rows, { setNo: 2, weightKg: 17.5, addedKg: 0 });
+    expect(out.map((r) => r.weightKg)).toEqual([15, 17.5, 20, 15]);
+  });
+
+  it("carries the pin add-on too", () => {
+    const out = carryWeightForward([row(1, 22.5), row(2, 22.5)], { setNo: 1, weightKg: 22.5, addedKg: 3.75 });
+    expect(out[1]).toMatchObject({ weightKg: 22.5, addedKg: 3.75 });
   });
 });

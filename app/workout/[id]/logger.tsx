@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { formatSet, formatSets } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
-import type { Row, SessionExercise, SessionExerciseInput } from "@/lib/session";
+import { carryWeightForward, type Row, type SessionExercise, type SessionExerciseInput } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, type Units } from "@/lib/units";
 import type { WarmupItem } from "@/lib/general-warmup";
@@ -152,6 +152,11 @@ export function Logger(props: {
       rpe: null,
     };
     updateRow(exIndex, row.key, { logged });
+    if (row.setType === "working") {
+      setExercises((prev) =>
+        prev.map((ex, i) => (i === exIndex ? { ...ex, working: carryWeightForward(ex.working, logged) } : ex)),
+      );
+    }
     setError(null);
     const restSec = row.setType === "warmup" ? WARMUP_REST_SEC : (item.restSec ?? props.defaultRestSec);
     setRest({ endsAt: secondsFromNow(restSec), total: restSec });
@@ -503,7 +508,7 @@ function SetRow({
       <NumberField
         label={`Set ${row.label} weight`}
         value={row.weightKg === null ? null : fromKg(row.weightKg, units)}
-        onChange={(v) => onChange({ weightKg: v === null ? null : toKg(v, units) })}
+        onChange={(v) => onChange({ weightKg: v === null ? null : toKg(v, units), weightEdited: true })}
         disabled={done}
         suffix={units}
         className="w-[4.5rem]"
@@ -512,7 +517,7 @@ function SetRow({
         <NumberField
           label={`Set ${row.label} add-on weight`}
           value={row.addedKg ? fromKg(row.addedKg, units) : null}
-          onChange={(v) => onChange({ addedKg: v === null ? 0 : toKg(v, units) })}
+          onChange={(v) => onChange({ addedKg: v === null ? 0 : toKg(v, units), weightEdited: true })}
           disabled={done}
           prefix="+"
           className={stepper ? "w-12" : "w-14"}
