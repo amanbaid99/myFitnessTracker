@@ -12,16 +12,22 @@ import {
   defaultPlanName,
   recommendTemplates,
   TEMPLATES,
+  SETUPS,
   templateDays,
   type TemplateKey,
+  type TrainingSetup,
 } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 
 const DAY_OPTIONS = [2, 3, 4, 5, 6];
 
-/** Days per week, then a template (recommended ones first), then a name. */
-export function NewPlanWizard() {
+/**
+ * Equipment and days per week, then a template (recommended ones first),
+ * then a name. Exercises follow the equipment (lib/templates adaptToSetup).
+ */
+export function NewPlanWizard({ initialSetup = "gym" }: { initialSetup?: TrainingSetup }) {
   const router = useRouter();
+  const [setup, setSetup] = useState<TrainingSetup>(initialSetup);
   const [days, setDays] = useState<number | null>(null);
   const [template, setTemplate] = useState<TemplateKey | null>(null);
   const [name, setName] = useState("");
@@ -32,11 +38,12 @@ export function NewPlanWizard() {
   const ordered = [...TEMPLATES].sort(
     (a, b) => Number(recommended.includes(b.key)) - Number(recommended.includes(a.key)),
   );
-  const routines = template && days ? buildTemplate(template, days) : [];
+  const routines = template && days ? buildTemplate(template, days, setup) : [];
 
   function pickTemplate(key: TemplateKey) {
     setTemplate(key);
-    setName(defaultPlanName(key, days ?? 3));
+    const where = setup === "gym" ? "" : ` · ${SETUPS.find((s) => s.key === setup)!.name.toLowerCase()}`;
+    setName(`${defaultPlanName(key, days ?? 3)}${where}`);
   }
 
   async function create() {
@@ -80,19 +87,39 @@ export function NewPlanWizard() {
       </header>
 
       {step === 1 && (
-        <div className="grid grid-cols-5 gap-2">
-          {DAY_OPTIONS.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setDays(d)}
-              className="flex h-16 flex-col items-center justify-center rounded-xl border bg-card text-xl font-semibold active:bg-muted"
-            >
-              {d}
-              <span className="text-[11px] font-normal text-muted-foreground">days</span>
-            </button>
-          ))}
-        </div>
+        <>
+          <p className="mb-2 text-sm font-medium">Equipment</p>
+          <div className="mb-6 grid grid-cols-3 gap-2" role="group" aria-label="Equipment">
+            {SETUPS.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setSetup(s.key)}
+                aria-pressed={setup === s.key}
+                className={cn(
+                  "min-h-12 rounded-xl border px-2 text-sm leading-tight",
+                  setup === s.key ? "border-primary bg-primary text-primary-foreground" : "bg-card",
+                )}
+              >
+                {s.key === "dumbbells" ? "Dumbbells" : s.key === "bodyweight" ? "Bodyweight" : "Gym"}
+              </button>
+            ))}
+          </div>
+          <p className="mb-2 text-sm font-medium">Days a week</p>
+          <div className="grid grid-cols-5 gap-2">
+            {DAY_OPTIONS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setDays(d)}
+                className="flex h-16 flex-col items-center justify-center rounded-xl border bg-card text-xl font-semibold active:bg-muted"
+              >
+                {d}
+                <span className="text-[11px] font-normal text-muted-foreground">days</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {step === 2 && (
@@ -116,7 +143,7 @@ export function NewPlanWizard() {
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">{t.blurb}</p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {actualDays} days: {buildTemplate(t.key, days!).map((r) => r.name).join(", ")}
+                    {actualDays} days: {buildTemplate(t.key, days!, setup).map((r) => r.name).join(", ")}
                   </p>
                 </button>
               </li>

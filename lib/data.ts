@@ -14,6 +14,8 @@ export interface Profile {
   id: string;
   /** Whether the one-time feedback prompt was answered or dismissed. */
   feedbackPrompted: boolean;
+  /** Whether the welcome flow was completed or skipped. */
+  onboarded: boolean;
   name: string | null;
   units: Units;
   defaultRestSec: number;
@@ -102,7 +104,7 @@ export async function getProfile(supabase: Supabase): Promise<Profile> {
   const id = claims?.claims.sub ?? "";
   const { data, error } = await supabase
     .from("profiles")
-    .select("name, units, default_rest_sec, feedback_prompted_at")
+    .select("name, units, default_rest_sec, feedback_prompted_at, onboarded_at")
     .eq("id", id)
     .maybeSingle();
   return {
@@ -112,6 +114,8 @@ export async function getProfile(supabase: Supabase): Promise<Profile> {
     defaultRestSec: data?.default_rest_sec ?? 90,
     // Unknown counts as prompted, so the prompt never shows when it cannot be recorded.
     feedbackPrompted: Boolean(error || !data || data.feedback_prompted_at),
+    // Unknown counts as done, so an error can never trap someone in the welcome.
+    onboarded: Boolean(error || !data || data.onboarded_at),
   };
 }
 

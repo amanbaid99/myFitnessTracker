@@ -14,6 +14,7 @@ export const DEMO_PROFILE: Profile = {
   units: "kg",
   defaultRestSec: 90,
   feedbackPrompted: true,
+  onboarded: true,
 };
 
 export const DEMO_PLAN: Plan = {

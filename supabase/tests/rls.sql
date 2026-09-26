@@ -332,6 +332,27 @@ select pg_temp.expect(
   and not exists (select 1 from public.workout_muscle_sets where user_id <> '22222222-2222-2222-2222-222222222222'),
   'progress views show only the caller''s own data');
 
+-- Onboarding details --------------------------------------------------------
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+with u as (
+  update public.profiles
+  set gender = 'prefer_not_to_say', body_weight_kg = 72.5, height_cm = 178, experience = 'beginner',
+      training_setup = 'bodyweight', onboarded_at = now()
+  where id = '22222222-2222-2222-2222-222222222222' returning 1)
+select pg_temp.expect((select count(*) from u) = 1, 'a user saves their own onboarding details');
+select pg_temp.expect_error(
+  $$update public.profiles set gender = 'other' where id = '22222222-2222-2222-2222-222222222222'$$,
+  'gender must be one of the offered choices');
+select pg_temp.expect_error(
+  $$update public.profiles set body_weight_kg = 5 where id = '22222222-2222-2222-2222-222222222222'$$,
+  'body weight must be plausible');
+select pg_temp.expect_error(
+  $$update public.profiles set training_setup = 'pool' where id = '22222222-2222-2222-2222-222222222222'$$,
+  'training setup must be gym, dumbbells or bodyweight');
+with u as (update public.profiles set experience = 'advanced'
+           where id = '11111111-1111-1111-1111-111111111111' returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'cannot change another user''s details');
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;

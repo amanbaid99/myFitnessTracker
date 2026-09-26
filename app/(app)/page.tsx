@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ChevronRight, Play, Plus, RotateCcw } from "lucide-react";
 import { startWorkout } from "@/app/actions";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
@@ -30,6 +31,8 @@ export default async function TodayPage() {
     );
   }
   const [active, workouts] = result.data;
+  // A brand-new account: ask a few optional details and suggest a plan first.
+  if (!active && !profile.onboarded) redirect("/welcome");
 
   if (!active) {
     return (

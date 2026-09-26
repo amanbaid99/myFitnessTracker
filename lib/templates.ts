@@ -134,18 +134,94 @@ export function templateDays(key: TemplateKey, days: number): number {
   return supported.reduce((best, d) => (Math.abs(d - days) < Math.abs(best - days) ? d : best), supported[0]);
 }
 
-export function buildTemplate(key: TemplateKey, days: number): TemplateRoutine[] {
+export function buildTemplate(key: TemplateKey, days: number, setup: TrainingSetup = "gym"): TemplateRoutine[] {
   const d = templateDays(key, days);
-  switch (key) {
-    case "full_body":
-      return fullBody(d);
-    case "upper_lower":
-      return upperLower(d);
-    case "ppl":
-      return ppl(d);
-    case "bro_split":
-      return broSplit();
-  }
+  const routines = (() => {
+    switch (key) {
+      case "full_body":
+        return fullBody(d);
+      case "upper_lower":
+        return upperLower(d);
+      case "ppl":
+        return ppl(d);
+      case "bro_split":
+        return broSplit();
+    }
+  })();
+  return adaptToSetup(routines, setup);
+}
+
+// Training setups ------------------------------------------------------------------
+
+export type TrainingSetup = "gym" | "dumbbells" | "bodyweight";
+
+export const SETUPS: { key: TrainingSetup; name: string; blurb: string }[] = [
+  { key: "gym", name: "Gym", blurb: "Machines, cables, barbells and dumbbells" },
+  { key: "dumbbells", name: "Home with dumbbells", blurb: "A pair of adjustable dumbbells and a bench or floor" },
+  { key: "bodyweight", name: "Bodyweight only", blurb: "No equipment: floor, a chair, a door frame, a towel" },
+];
+
+const db = (name: string, muscles: string[]) => (s: number, r: number) => ex(name, "dumbbell", muscles, s, r);
+// Bodyweight moves need more reps to be hard enough.
+const bw = (name: string, muscles: string[], minReps = 12) => (s: number, r: number) =>
+  ex(name, "bodyweight", muscles, s, Math.max(r, minReps));
+
+type Swap = (sets: number, reps: number) => TemplateExercise;
+
+/**
+ * The home version of each gym exercise, same muscles. null drops it (there
+ * is no sensible substitute and the day already covers the muscle).
+ */
+const SWAPS: Record<string, { dumbbells: Swap | null; bodyweight: Swap | null }> = {
+  "Barbell Back Squat": { dumbbells: db("Goblet Squat", ["quads", "glutes"]), bodyweight: bw("Bodyweight Squat", ["quads", "glutes"], 15) },
+  "Leg Press": { dumbbells: db("Dumbbell Step-Up", ["quads", "glutes"]), bodyweight: bw("Reverse Lunge", ["quads", "glutes"]) },
+  "Romanian Deadlift": { dumbbells: db("Dumbbell Romanian Deadlift", ["hamstrings", "glutes"]), bodyweight: bw("Single-Leg Hip Hinge", ["hamstrings", "glutes"]) },
+  "Machine Hip Thrust": { dumbbells: db("Dumbbell Hip Thrust", ["glutes", "hamstrings"]), bodyweight: bw("Single-Leg Glute Bridge", ["glutes", "hamstrings"]) },
+  "Split Squat": { dumbbells: db("Split Squat", ["quads", "glutes"]), bodyweight: bw("Bodyweight Split Squat", ["quads", "glutes"]) },
+  "Leg Extension": { dumbbells: db("Heels-Elevated Goblet Squat", ["quads"]), bodyweight: bw("Wall Sit (seconds)", ["quads"], 30) },
+  "Leg Curl": { dumbbells: db("Dumbbell Leg Curl", ["hamstrings"]), bodyweight: bw("Sliding Leg Curl", ["hamstrings"]) },
+  "Seated Calf Raise": { dumbbells: db("Dumbbell Calf Raise", ["calves"]), bodyweight: bw("Single-Leg Calf Raise", ["calves"], 15) },
+  "Barbell Bench Press": { dumbbells: db("Dumbbell Bench Press", ["chest", "front delts", "triceps"]), bodyweight: bw("Push-Up", ["chest", "front delts", "triceps"]) },
+  "Incline Dumbbell Press": { dumbbells: db("Incline Dumbbell Press", ["chest", "front delts", "triceps"]), bodyweight: bw("Feet-Elevated Push-Up", ["chest", "front delts", "triceps"], 10) },
+  "Cable Fly": { dumbbells: db("Dumbbell Fly", ["chest"]), bodyweight: bw("Wide Push-Up", ["chest", "triceps"]) },
+  "Overhead Press": { dumbbells: db("Dumbbell Shoulder Press", ["front delts", "side delts", "triceps"]), bodyweight: bw("Pike Push-Up", ["front delts", "triceps"], 8) },
+  "Dumbbell Shoulder Press": { dumbbells: db("Dumbbell Shoulder Press", ["front delts", "side delts", "triceps"]), bodyweight: bw("Pike Push-Up", ["front delts", "triceps"], 8) },
+  "Lateral Raise": { dumbbells: db("Dumbbell Lateral Raise", ["side delts"]), bodyweight: bw("Prone Y-T Raise", ["side delts", "rear delts"]) },
+  "Rear Delt Fly": { dumbbells: db("Dumbbell Rear Delt Fly", ["rear delts", "upper back"]), bodyweight: bw("Reverse Snow Angel", ["rear delts", "upper back"]) },
+  "Lat Pulldown": { dumbbells: db("Dumbbell Pullover", ["lats", "chest"]), bodyweight: bw("Door Frame Row", ["lats", "biceps"]) },
+  "Machine Row": { dumbbells: db("One-Arm Dumbbell Row", ["upper back", "lats", "rear delts"]), bodyweight: bw("Table Inverted Row", ["upper back", "lats", "biceps"], 8) },
+  "Barbell Row": { dumbbells: db("Chest-Supported Dumbbell Row", ["upper back", "lats"]), bodyweight: bw("Table Inverted Row", ["upper back", "lats", "biceps"], 8) },
+  "Pull-Up": { dumbbells: db("One-Arm Dumbbell Row", ["upper back", "lats", "rear delts"]), bodyweight: bw("Door Frame Row", ["lats", "biceps"]) },
+  Shrug: { dumbbells: db("Shrug", ["traps"]), bodyweight: bw("Prone Y Raise", ["traps", "upper back"]) },
+  "Biceps Curl": { dumbbells: db("Biceps Curl", ["biceps"]), bodyweight: bw("Towel Biceps Curl", ["biceps"]) },
+  "Hammer Curl": { dumbbells: db("Hammer Curl", ["biceps"]), bodyweight: null },
+  "Cable Triceps Pressdown": { dumbbells: db("Dumbbell Overhead Triceps Extension", ["triceps"]), bodyweight: bw("Chair Dip", ["triceps", "chest"]) },
+  "Rope Triceps Extension": { dumbbells: db("Dumbbell Skull Crusher", ["triceps"]), bodyweight: bw("Diamond Push-Up", ["triceps", "chest"], 8) },
+};
+
+/**
+ * Swaps gym-only exercises for home versions that train the same muscles.
+ * Bodyweight moves already in a template (leg raises) stay. A swap that
+ * repeats an exercise already in the same day is dropped.
+ */
+export function adaptToSetup(routines: TemplateRoutine[], setup: TrainingSetup): TemplateRoutine[] {
+  if (setup === "gym") return routines;
+  return routines.map((r) => {
+    const seen = new Set<string>();
+    const exercises: TemplateExercise[] = [];
+    for (const e of r.exercises) {
+      let out: TemplateExercise | null = e;
+      if (e.equipment !== "bodyweight" && !(setup === "dumbbells" && e.equipment === "dumbbell")) {
+        const swap = SWAPS[e.name]?.[setup];
+        out = swap === undefined ? null : swap ? swap(e.sets, e.reps) : null;
+      }
+      if (out && !seen.has(out.name)) {
+        seen.add(out.name);
+        exercises.push(out);
+      }
+    }
+    return { ...r, exercises };
+  });
 }
 
 export function defaultPlanName(key: TemplateKey, days: number): string {

@@ -48,3 +48,43 @@ describe("buildTemplate", () => {
     }
   });
 });
+
+describe("adaptToSetup", () => {
+  const all = (["full_body", "upper_lower", "ppl", "bro_split"] as const).flatMap((k) =>
+    [2, 3, 4, 5, 6].map((d) => [k, d] as const),
+  );
+
+  it("gym plans are unchanged", () => {
+    expect(buildTemplate("ppl", 3, "gym")).toEqual(buildTemplate("ppl", 3));
+  });
+
+  it("bodyweight plans use only bodyweight moves, with no repeats in a day", () => {
+    for (const [k, d] of all) {
+      for (const r of buildTemplate(k, d, "bodyweight")) {
+        expect(r.exercises.length).toBeGreaterThanOrEqual(3);
+        expect(r.exercises.every((e) => e.equipment === "bodyweight")).toBe(true);
+        expect(new Set(r.exercises.map((e) => e.name)).size).toBe(r.exercises.length);
+        expect(r.exercises.every((e) => e.reps >= 8)).toBe(true);
+      }
+    }
+  });
+
+  it("dumbbell plans use only dumbbells and bodyweight, per hand for dumbbells", () => {
+    for (const [k, d] of all) {
+      for (const r of buildTemplate(k, d, "dumbbells")) {
+        expect(r.exercises.length).toBeGreaterThanOrEqual(3);
+        expect(r.exercises.every((e) => e.equipment === "dumbbell" || e.equipment === "bodyweight")).toBe(true);
+        expect(r.exercises.filter((e) => e.equipment === "dumbbell").every((e) => e.per_hand)).toBe(true);
+        expect(new Set(r.exercises.map((e) => e.name)).size).toBe(r.exercises.length);
+      }
+    }
+  });
+
+  it("keeps the muscles a day trains", () => {
+    const gymLegs = buildTemplate("ppl", 3, "gym")[2];
+    const bwLegs = buildTemplate("ppl", 3, "bodyweight")[2];
+    const primary = (r: typeof gymLegs) => new Set(r.exercises.map((e) => e.muscle_groups[0]));
+    expect([...primary(gymLegs)].every((m) => primary(bwLegs).has(m))).toBe(true);
+    expect(bwLegs.exercises.map((e) => e.name)).toContain("Bodyweight Squat");
+  });
+});

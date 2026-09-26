@@ -565,3 +565,27 @@ plans, which the spec did not have.
   GitHub API, which rate-limits shared runners, so the deploy never ran.
   Both workflows now pin a version (2.118.0), which downloads directly.
   Bump it deliberately when a newer CLI is needed.
+
+## 2026-09-26: Welcome flow for new accounts, and plans for any equipment (Aman's request)
+
+- New accounts land on `/welcome` after confirming (and Today sends
+  anyone with no plan who has not finished or skipped it there). Step 1,
+  all optional: name, gender (male, female, prefer not to say), weight,
+  height, kg or lb, lifting experience. Step 2: where you train (gym, home
+  with dumbbells, bodyweight only) and days a week (3 for newer lifters,
+  4 otherwise, by default). Step 3: the suggested plan with every day and
+  exercise, "Create this plan" or "Choose a different plan".
+- Recommendation: the plan wizard's own ranking by days, except a newer
+  lifter on 3 days always gets Full Body. Exercises follow the setup:
+  every gym exercise has a dumbbell and a bodyweight version training the
+  same muscles (`adaptToSetup` in lib/templates.ts); duplicates in a day
+  are dropped; bodyweight moves get at least 8 to 15 reps. The plan wizard
+  also has the equipment choice now.
+- New optional profile columns (gender, body_weight_kg in kg, height_cm,
+  experience, training_setup, onboarded_at), with check constraints.
+  Existing users with a plan are marked onboarded by the migration, so
+  nobody current sees the welcome. Settings links to "Your details" to
+  edit them later.
+- The sign-up email problem (a link to another site, no code) is Supabase
+  configuration, not app code: Site URL and the Confirm signup template
+  (see docs/SETUP.md step 2).

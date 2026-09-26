@@ -77,14 +77,14 @@ export function LoginForm({
       return { error };
     });
     if (!ok) return;
-    if (confirmed) enterApp();
+    if (confirmed) enterApp("/welcome");
     else go("signup-code");
   }
 
   async function confirmSignup(e: React.FormEvent) {
     e.preventDefault();
     if (await run(() => supabase.auth.verifyOtp({ email: cleanEmail, token: code.trim(), type: "signup" }))) {
-      enterApp();
+      enterApp("/welcome");
     }
   }
 
