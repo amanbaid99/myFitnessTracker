@@ -315,6 +315,60 @@ export async function getExerciseNames(supabase: Supabase, ids: string[]): Promi
   return new Map((data ?? []).map((e) => [e.id as string, e.name as string]));
 }
 
+// Progress (views compute the metrics; spec rule 4) --------------------------------
+
+export interface SessionBest {
+  exerciseId: string;
+  workoutId: string;
+  startedAt: string;
+  weightKg: number | null;
+  addedKg: number;
+  reps: number;
+  e1rmKg: number;
+  workingSets: number;
+  volumeKg: number;
+}
+
+/** Each workout's best set per exercise (optionally one exercise), oldest first. */
+export async function getSessionBests(supabase: Supabase, exerciseId?: string): Promise<SessionBest[]> {
+  let query = supabase
+    .from("exercise_session_best")
+    .select("exercise_id, workout_id, started_at, weight_kg, added_kg, reps, e1rm_kg, working_sets, volume_kg")
+    .order("started_at")
+    .limit(3000);
+  if (exerciseId) query = query.eq("exercise_id", exerciseId);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({
+    exerciseId: r.exercise_id,
+    workoutId: r.workout_id,
+    startedAt: r.started_at,
+    weightKg: num(r.weight_kg),
+    addedKg: Number(r.added_kg ?? 0),
+    reps: Number(r.reps),
+    e1rmKg: Number(r.e1rm_kg),
+    workingSets: Number(r.working_sets),
+    volumeKg: Number(r.volume_kg),
+  }));
+}
+
+export interface MuscleSets {
+  startedAt: string;
+  muscle: string;
+  sets: number;
+}
+
+/** Working sets per muscle per workout since a date. */
+export async function getMuscleSets(supabase: Supabase, sinceIso: string): Promise<MuscleSets[]> {
+  const { data, error } = await supabase
+    .from("workout_muscle_sets")
+    .select("started_at, muscle, sets")
+    .gte("started_at", sinceIso)
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({ startedAt: r.started_at, muscle: r.muscle, sets: Number(r.sets) }));
+}
+
 // Exercise notes -----------------------------------------------------------------
 // Reads return empty on error, so screens keep working if the notes table
 // is missing (e.g. before its migration has run).

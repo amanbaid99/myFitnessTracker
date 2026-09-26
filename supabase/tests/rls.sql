@@ -303,6 +303,35 @@ with d as (delete from public.exercise_notes returning 1)
 select pg_temp.expect((select count(*) from d) = 1, 'a user can clear their own note');
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 
+-- Progress views ------------------------------------------------------------
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect(
+  (select count(*) from public.exercise_session_best) > 0
+  and not exists (select 1 from public.exercise_session_best eb
+                  join public.sets s on s.workout_id = eb.workout_id and s.exercise_id = eb.exercise_id
+                  where s.set_type = 'working' and s.deleted_at is null and s.reps > 0
+                    and (s.weight_kg + s.added_kg) * (1 + s.reps / 30.0) > eb.e1rm_kg + 0.0001),
+  'exercise_session_best holds each workout''s best working set');
+select pg_temp.expect(
+  (select weight_kg = 15 and reps = 8 and working_sets = 1
+   from public.exercise_session_best
+   where workout_id = 'cccccccc-0000-0000-0000-000000000001'
+     and exercise_id = 'aaaaaaaa-0000-0000-0000-000000000001'),
+  'best set skips the warm-up and the deleted 22.5 + 3.75 x 14 set');
+update public.exercises set muscle_groups = '{chest,triceps}'
+  where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+select pg_temp.expect(
+  (select sets from public.workout_muscle_sets
+   where workout_id = 'cccccccc-0000-0000-0000-000000000001' and muscle = 'chest') = 1
+  and (select sets from public.workout_muscle_sets
+       where workout_id = 'cccccccc-0000-0000-0000-000000000001' and muscle = 'triceps') = 0.5,
+  'workout_muscle_sets: 1 per working set for the primary muscle, 0.5 for others');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pg_temp.expect(
+  not exists (select 1 from public.exercise_session_best where user_id <> '22222222-2222-2222-2222-222222222222')
+  and not exists (select 1 from public.workout_muscle_sets where user_id <> '22222222-2222-2222-2222-222222222222'),
+  'progress views show only the caller''s own data');
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;

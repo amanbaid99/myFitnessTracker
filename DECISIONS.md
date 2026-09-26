@@ -500,3 +500,26 @@ plans, which the spec did not have.
   scrolls into view when the last exercise is finished. Ticks are kept
   per device like the warm-up's. Warm-up and cool-down now share one
   `ChecklistCard` component.
+
+## 2026-09-26: Progress screen (spec Milestone 5, Aman's request)
+
+- Metrics come from two new security-invoker views over `working_sets`
+  (spec rules 4 and 5: computed, never stored; warm-ups, deleted sets and
+  cancelled workouts excluded): `exercise_session_best` (each workout's
+  best set per exercise by Epley e1RM, with that exercise's set count and
+  volume) and `workout_muscle_sets` (working sets per muscle per workout:
+  1 for the primary muscle, 0.5 for each other).
+- Weeks, the streak and the calendar are bucketed in the browser, in the
+  viewer's local time (Monday start); the server runs in UTC. Those
+  sections render after hydration (skeleton first) to avoid mismatches.
+- Streak = weeks in a row with at least one workout; the current week does
+  not break it until it is over. Daily streaks do not fit lifting.
+- Progress tab: consistency (streak, workouts this week, 12-week calendar),
+  sets per muscle this week vs last (top 8, "Show all"), and every exercise
+  with its best set, e1RM and a 12-session sparkline.
+- Exercise page: best and latest e1RM, an e1RM-per-session line chart
+  (Recharts, per the spec; one series so no legend; straight segments so
+  the line never implies values between sessions; 2px line, dots with a
+  surface ring, hairline grid, tooltip on touch), top sets (best set of the
+  five best sessions) and a session table that doubles as the chart's
+  table view.

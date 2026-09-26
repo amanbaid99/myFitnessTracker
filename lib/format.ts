@@ -40,3 +40,8 @@ export function formatSets(sets: SetLike[], units: Units): string {
 export function settingLabel(setting: string): string {
   return /^\d+(\.\d+)?$/.test(setting.trim()) ? `Seat ${setting.trim()}` : setting.trim();
 }
+
+/** An estimated 1RM, to one decimal: "38.5 kg". */
+export function formatE1rm(kg: number, units: Units): string {
+  return `${Math.round(fromKg(kg, units) * 10) / 10} ${units}`;
+}
