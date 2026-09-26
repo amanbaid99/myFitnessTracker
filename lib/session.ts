@@ -1,8 +1,9 @@
 /**
  * Builds what the logger shows for one workout: for each exercise, its
- * warm-up rows then its working rows, pre-filled from last session and
- * merged with anything already logged in this workout (so a workout can be
- * resumed). Pure, so it is unit tested.
+ * warm-up rows then its working rows, pre-filled with this session's aim
+ * (last session's numbers when there is no aim) and merged with anything
+ * already logged in this workout (so a workout can be resumed). Last
+ * session's sets come along for reference. Pure, so it is unit tested.
  */
 
 import { aimForSession, type Aim } from "./progression";
@@ -48,6 +49,8 @@ export interface SessionExercise {
   warmups: Row[];
   working: Row[];
   aim: Aim | null;
+  /** Last session's working sets, in order, shown for reference. */
+  last: { weightKg: number | null; addedKg: number; reps: number | null }[];
 }
 
 export function buildSession(
@@ -62,8 +65,16 @@ export function buildSession(
     const find = (type: "warmup" | "working", no: number) =>
       mine.find((s) => s.setType === type && s.setNo === no) ?? null;
 
+    const aim = aimForSession({
+      lastSets: prev.map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps, rpe: s.rpe })),
+      targetSets: item.targetSets,
+      targetReps: item.targetReps,
+      equipment: item.exercise.equipment,
+    });
+
+    // Ramp up towards today's working weight: the aim if there is one.
     const warmupPlan = warmupSets({
-      lastWorkingWeightKg: prev[0]?.weightKg ?? null,
+      lastWorkingWeightKg: aim?.weightKg ?? prev[0]?.weightKg ?? null,
       targetReps: item.targetReps,
       isFirstExercise: index === 0,
       equipment: item.exercise.equipment,
@@ -89,7 +100,9 @@ export function buildSession(
     const working: Row[] = Array.from({ length: count }, (_, i) => {
       const no = i + 1;
       const done = find("working", no);
-      const source = prev[i] ?? prev[prev.length - 1];
+      // Every working set starts at the aim; without one (no usable
+      // history), at the same set last session.
+      const source = aim ?? prev[i] ?? prev[prev.length - 1];
       return {
         key: `${id}-s${no}`,
         setType: "working",
@@ -102,13 +115,7 @@ export function buildSession(
       };
     });
 
-    const aim = aimForSession({
-      lastSets: prev.map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps, rpe: s.rpe })),
-      targetSets: item.targetSets,
-      targetReps: item.targetReps,
-      equipment: item.exercise.equipment,
-    });
-
-    return { exerciseId: id, warmups, working, aim };
+    const last = prev.map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps }));
+    return { exerciseId: id, warmups, working, aim, last };
   });
 }

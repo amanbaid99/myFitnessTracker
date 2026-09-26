@@ -19,3 +19,16 @@ export function formatSet(set: SetLike, units: Units): string {
   if (!load) return set.reps === null ? "" : `${set.reps} reps`;
   return `${load} × ${set.reps ?? "?"}`;
 }
+
+/**
+ * Several sets in one short line: "80 kg × 6, 6, 5" when the load is the
+ * same throughout, otherwise "80 kg × 6 · 82.5 kg × 5".
+ */
+export function formatSets(sets: SetLike[], units: Units): string {
+  if (sets.length === 0) return "";
+  const first = sets[0];
+  const sameLoad = sets.every((s) => s.weightKg === first.weightKg && s.addedKg === first.addedKg);
+  const load = formatLoad(first.weightKg, first.addedKg, units);
+  if (sameLoad && load) return `${load} × ${sets.map((s) => s.reps ?? "?").join(", ")}`;
+  return sets.map((s) => formatSet(s, units)).join(" · ");
+}

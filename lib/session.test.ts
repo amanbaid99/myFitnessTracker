@@ -39,19 +39,33 @@ describe("buildSession", () => {
     ]);
     expect(lat.warmups).toHaveLength(0);
     // One imported set pre-fills every working set; add-on weight is kept.
+    // Every working set starts at the aim (15 kg, one more rep); last
+    // session stays available for reference.
     expect(inc.working.map((w) => [w.label, w.weightKg, w.reps])).toEqual([
-      ["1", 15, 8],
-      ["2", 15, 8],
-      ["3", 15, 8],
+      ["1", 15, 9],
+      ["2", 15, 9],
+      ["3", 15, 9],
     ]);
+    expect(inc.last).toEqual([{ weightKg: 15, addedKg: 0, reps: 8 }]);
     expect(lat.working[0].addedKg).toBe(0.6);
     expect(inc.aim).toMatchObject({ weightKg: 15, reps: 9 });
   });
 
-  it("pre-fills each working set from the same set last session", () => {
+  it("pre-fills every working set with the aim, not last session's numbers", () => {
     const previous = new Map([["incline", [set("incline", "working", 1, 17.5, 10), set("incline", "working", 2, 17.5, 9), set("incline", "working", 3, 15, 10)]]]);
     const [inc] = buildSession([incline], previous, []);
-    expect(inc.working.map((w) => [w.weightKg, w.reps])).toEqual([[17.5, 10], [17.5, 9], [15, 10]]);
+    expect(inc.aim).toMatchObject({ weightKg: 17.5, reps: 10 });
+    expect(inc.working.map((w) => [w.weightKg, w.reps])).toEqual([[17.5, 10], [17.5, 10], [17.5, 10]]);
+    expect(inc.last.map((s) => [s.weightKg, s.reps])).toEqual([[17.5, 10], [17.5, 9], [15, 10]]);
+  });
+
+  it("when ready to add weight, the sets and the warm-up ramp use the new weight", () => {
+    const previous = new Map([["incline", [1, 2, 3].map((n) => set("incline", "working", n, 20, 10, { rpe: 7.5 }))]]);
+    const [inc] = buildSession([incline], previous, []);
+    expect(inc.aim).toMatchObject({ weightKg: 22.5, reps: 10, readyToIncrease: true });
+    expect(inc.working.every((w) => w.weightKg === 22.5 && w.reps === 10)).toBe(true);
+    // 50% and 75% of 22.5 kg, rounded to 2.5 kg.
+    expect(inc.warmups.map((w) => w.weightKg)).toEqual([12.5, 17.5]);
   });
 
   it("no history: blank weight at target reps, one blank warm-up", () => {

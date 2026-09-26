@@ -4,7 +4,8 @@
  * Aman's rule: hit target reps on every working set last time -> add the
  * smallest step at target reps; otherwise same weight, one more rep. How the
  * sets felt (rpe) tempers it: a hard or maximal session repeats the weight.
- * The logger still pre-fills last session's numbers; this is a suggestion.
+ * The logger pre-fills every working set with the aim; last session's sets
+ * are shown alongside for reference.
  */
 
 export type Feel = "easy" | "good" | "hard" | "max";

@@ -417,3 +417,18 @@ plans, which the spec did not have.
   holds the current rest), so they cannot fire twice.
 - The workout clock text opts out of hydration checks: the server and
   phone can disagree by a second, which made React re-render the page.
+
+## 2026-09-26: Working sets start at the aim (Aman's request)
+
+- Every working set not yet logged is pre-filled with this session's aim
+  (weight and reps) instead of last session's numbers, so the usual case
+  is one tap per set. Without an aim (no usable history) it falls back to
+  last session, then to blank weight at target reps, as before.
+- Last session's working sets are shown under the aim for reference, in
+  one line: "Last time: 80 kg × 6, 6, 6, 6" (each set in full when the
+  load varied).
+- The ramp-up warm-ups now take 50% and 75% of today's aimed weight
+  rather than last session's, so they lead into the weight actually
+  lifted.
+- In-session feel adjustments and sets already logged (resume) are
+  unchanged.

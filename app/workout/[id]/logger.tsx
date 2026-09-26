@@ -7,7 +7,7 @@ import { Check, ChevronLeft, Flame, Minus, Plus, Timer, Trophy, Volume2, VolumeX
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatSet } from "@/lib/format";
+import { formatSet, formatSets } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
 import type { Row, SessionExercise, SessionExerciseInput } from "@/lib/session";
@@ -356,6 +356,9 @@ export function Logger(props: {
                       <span className="font-medium text-primary">Aim: {formatSet(ex.aim, units)}</span>{" "}
                       <span className="text-muted-foreground">· {ex.aim.reason}</span>
                     </p>
+                  )}
+                  {ex.last.length > 0 && (
+                    <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
                   )}
                 </div>
               </div>
