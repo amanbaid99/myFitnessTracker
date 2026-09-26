@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Logger } from "@/app/workout/[id]/logger";
 import { DEMO_PREVIOUS, DEMO_PROFILE, DEMO_PRS, demoRoutine } from "@/lib/demo";
+import { routineCooldown } from "@/lib/general-cooldown";
 import { routineWarmup } from "@/lib/general-warmup";
 import { buildSession } from "@/lib/session";
 
@@ -14,9 +15,8 @@ export default async function DemoWorkoutPage({ params }: PageProps<"/demo/worko
   if (!routine) notFound();
 
   const session = buildSession(routine.exercises, DEMO_PREVIOUS, []);
-  const checklist = routineWarmup(
-    routine.exercises.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups })),
-  );
+  const warmupInput = routine.exercises.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups }));
+  const checklist = routineWarmup(warmupInput);
 
   return (
     <Logger
@@ -27,6 +27,7 @@ export default async function DemoWorkoutPage({ params }: PageProps<"/demo/worko
       items={routine.exercises}
       session={session}
       checklist={checklist}
+      cooldown={routineCooldown(warmupInput)}
       prs={Object.fromEntries(DEMO_PRS)}
       units={DEMO_PROFILE.units}
       defaultRestSec={DEMO_PROFILE.defaultRestSec}

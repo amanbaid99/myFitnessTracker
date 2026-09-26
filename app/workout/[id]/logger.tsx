@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronLeft, ChevronUp, Flame, Minus, Plus, StickyNote, Timer, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronUp, Flame, Minus, Plus, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export function Logger(props: {
   items: Item[];
   session: SessionExercise[];
   checklist: WarmupItem[];
+  cooldown: WarmupItem[];
   prs: Record<string, PR>;
   units: Units;
   defaultRestSec: number;
@@ -71,19 +72,27 @@ export function Logger(props: {
   // One exercise open at a time; finishing one opens the next unfinished.
   const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(props.session));
   const [warmupOpen, setWarmupOpen] = useState(() => !props.hasLoggedSets);
+  // The cool-down opens once every exercise is done.
+  const [cooldownOpen, setCooldownOpen] = useState(() => nextOpenExercise(props.session) === null);
   const scrollTo = useRef<string | null>(null);
 
   function openExercise(id: string | null) {
     scrollTo.current = id;
     setOpenId(id);
+    if (id === null) {
+      setCooldownOpen(true);
+      scrollTo.current = "cooldown";
+    }
   }
 
   // Bring a newly opened exercise to the top, below the sticky header.
   useEffect(() => {
-    if (!openId || scrollTo.current !== openId) return;
+    const target = scrollTo.current;
+    if (!target || (target !== openId && !(target === "cooldown" && cooldownOpen))) return;
     scrollTo.current = null;
-    document.getElementById(`ex-${openId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [openId]);
+    const el = document.getElementById(target === "cooldown" ? "cooldown" : `ex-${target}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [openId, cooldownOpen]);
 
   // One clock for the elapsed time and the rest timer; a finished rest
   // beeps and buzzes once and clears. The ref keeps the side effects out of
@@ -137,6 +146,29 @@ export function Logger(props: {
       // Storage unavailable: start unticked.
     }
   }, [storageKey]);
+
+  // Cool-down ticks, per device like the warm-up's.
+  const [cooled, setCooled] = useState<number[]>([]);
+  const cooldownKey = `wt-cooldown-${workoutId}`;
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(cooldownKey);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring browser-only state after hydration
+      if (saved) setCooled(JSON.parse(saved));
+    } catch {
+      // Storage unavailable: start unticked.
+    }
+  }, [cooldownKey]);
+
+  function toggleCooldown(i: number) {
+    setCooled((prev) => {
+      const next = prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i];
+      try {
+        localStorage.setItem(cooldownKey, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }
 
   function toggleChecklist(i: number) {
     setChecked((prev) => {
@@ -381,58 +413,20 @@ export function Logger(props: {
           </p>
         )}
 
-        <section className="rounded-2xl border bg-card px-4 py-2">
-          <h2>
-            <button
-              type="button"
-              onClick={() => setWarmupOpen((o) => !o)}
-              aria-expanded={warmupOpen}
-              className="flex min-h-11 w-full items-center gap-2 text-left font-semibold"
-            >
-              <Flame className="size-4 text-primary" aria-hidden /> Warm-up
-              <span className="ml-auto text-xs font-normal text-muted-foreground">
-                {checked.length}/{props.checklist.length}
-              </span>
-              {warmupOpen ? (
-                <ChevronUp className="size-5 text-muted-foreground" aria-hidden />
-              ) : (
-                <ChevronDown className="size-5 text-muted-foreground" aria-hidden />
-              )}
-            </button>
-          </h2>
-          {warmupOpen && (
-            <>
-              <ul className="mt-1">
-                {props.checklist.map((item, i) => {
-                  const on = checked.includes(i);
-                  return (
-                    <li key={item.text}>
-                      <button
-                        type="button"
-                        onClick={() => toggleChecklist(i)}
-                        className="flex min-h-11 w-full items-center gap-3 py-1 text-left text-sm"
-                        aria-pressed={on}
-                      >
-                        <TickCircle on={on} small />
-                        <span className="min-w-0">
-                          <span className={cn("block", on && "text-muted-foreground line-through")}>{item.text}</span>
-                          {item.forExercises.length > 0 && (
-                            <span className="block text-xs text-muted-foreground">for {item.forExercises.join(", ")}</span>
-                          )}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              {items[0] && exercises[0]?.warmups.length > 0 && (
-                <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
-                  Then ramp up on {items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.
-                </p>
-              )}
-            </>
-          )}
-        </section>
+        <ChecklistCard
+          title="Warm-up"
+          icon={<Flame className="size-4 text-primary" aria-hidden />}
+          items={props.checklist}
+          checked={checked}
+          onToggle={toggleChecklist}
+          open={warmupOpen}
+          onOpenChange={setWarmupOpen}
+          footer={
+            items[0] && exercises[0]?.warmups.length > 0
+              ? `Then ramp up on ${items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.`
+              : undefined
+          }
+        />
 
         {exercises.map((ex, exIndex) => {
           const item = items[exIndex];
@@ -627,6 +621,18 @@ export function Logger(props: {
           );
         })}
 
+        <div id="cooldown" className="scroll-mt-20">
+          <ChecklistCard
+            title="Cool-down"
+            icon={<Wind className="size-4 text-primary" aria-hidden />}
+            items={props.cooldown}
+            checked={cooled}
+            onToggle={toggleCooldown}
+            open={cooldownOpen}
+            onOpenChange={setCooldownOpen}
+          />
+        </div>
+
         <Button size="lg" className="w-full" onClick={() => setFinishing(true)}>
           Finish workout
         </Button>
@@ -768,6 +774,78 @@ function SetRow({
         <TickCircle on={done} small={warmup} />
       </button>
     </div>
+  );
+}
+
+/** A collapsible checklist card: the warm-up before, the cool-down after. */
+function ChecklistCard({
+  title,
+  icon,
+  items,
+  checked,
+  onToggle,
+  open,
+  onOpenChange,
+  footer,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  items: WarmupItem[];
+  checked: number[];
+  onToggle: (i: number) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  footer?: string;
+}) {
+  return (
+    <section className="rounded-2xl border bg-card px-4 py-2">
+      <h2>
+        <button
+          type="button"
+          onClick={() => onOpenChange(!open)}
+          aria-expanded={open}
+          className="flex min-h-11 w-full items-center gap-2 text-left font-semibold"
+        >
+          {icon} {title}
+          <span className="ml-auto text-xs font-normal text-muted-foreground">
+            {checked.length}/{items.length}
+          </span>
+          {open ? (
+            <ChevronUp className="size-5 text-muted-foreground" aria-hidden />
+          ) : (
+            <ChevronDown className="size-5 text-muted-foreground" aria-hidden />
+          )}
+        </button>
+      </h2>
+      {open && (
+        <>
+          <ul className="mt-1">
+            {items.map((item, i) => {
+              const on = checked.includes(i);
+              return (
+                <li key={item.text}>
+                  <button
+                    type="button"
+                    onClick={() => onToggle(i)}
+                    className="flex min-h-11 w-full items-center gap-3 py-1 text-left text-sm"
+                    aria-pressed={on}
+                  >
+                    <TickCircle on={on} small />
+                    <span className="min-w-0">
+                      <span className={cn("block", on && "text-muted-foreground line-through")}>{item.text}</span>
+                      {item.forExercises.length > 0 && (
+                        <span className="block text-xs text-muted-foreground">for {item.forExercises.join(", ")}</span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {footer && <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">{footer}</p>}
+        </>
+      )}
+    </section>
   );
 }
 

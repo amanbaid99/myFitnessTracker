@@ -484,3 +484,19 @@ plans, which the spec did not have.
   editor's seat field. No schema change.
 - Labels: a bare number reads "Seat 5"; text with words ("pin 7") shows
   as typed, in the logger and on Routines.
+
+## 2026-09-26: Exercise-specific cool-down (Aman's request)
+
+- Every workout ends with a cool-down checklist built from its exercises,
+  like the warm-up: 3 easy minutes to bring the heart rate down, then up
+  to five static stretches for the muscle areas the day worked, the
+  most-worked first (primary muscle counts double; ties keep routine
+  order), each naming the exercises it follows. `lib/general-cooldown.ts`
+  shares the muscle-to-area map with the warm-up.
+- Works for every plan, template or custom, since it only needs each
+  exercise's muscle groups. Template exercises all have them, which is
+  also why template days already had personalised warm-ups.
+- The card sits above Finish, closed while training, and opens and
+  scrolls into view when the last exercise is finished. Ticks are kept
+  per device like the warm-up's. Warm-up and cool-down now share one
+  `ChecklistCard` component.

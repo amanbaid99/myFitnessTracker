@@ -17,7 +17,7 @@ export interface WarmupItem {
   forExercises: string[];
 }
 
-type Area =
+export type Area =
   | "chest"
   | "shoulders"
   | "upper back"
@@ -31,7 +31,7 @@ type Area =
   | "calves"
   | "core";
 
-const AREA_OF: Record<string, Area> = {
+export const AREA_OF: Record<string, Area> = {
   chest: "chest",
   "front delts": "shoulders",
   "side delts": "shoulders",
