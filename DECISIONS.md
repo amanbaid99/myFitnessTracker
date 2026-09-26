@@ -344,3 +344,36 @@ plans, which the spec did not have.
 - Not done yet: running Vercel functions in the same region as the
   Supabase project (needs the project's region), and moving Supabase to
   asymmetric JWT signing keys so `getClaims()` verifies locally.
+
+## 2026-09-26: Automatic post-workout analysis (Aman's design, approved plan)
+
+- Flow: finishing a workout sets `ended_at`, a Database Webhook on
+  UPDATE of `public.workouts` calls the Edge Function `analyze-workout`,
+  which fires the Claude routine with `{"text":"workout_id=<id>"}`; the
+  routine writes a `workout_review` row in `public.insights`, which the
+  app shows.
+- The function fires only when `ended_at` goes from null to set,
+  `cancelled_at` is null and `source = 'app'`, so cancels, imports and
+  later edits never trigger a run. It checks an `x-webhook-secret`
+  header (constant-time compare) and is deployed with JWT verification
+  off, since the webhook authenticates with that secret. Secrets
+  (`WEBHOOK_SECRET`, `CLAUDE_ROUTINE_URL`, `CLAUDE_ROUTINE_TOKEN`) live
+  only in Supabase; logs carry the workout id and HTTP status, never the
+  token or the routine's response body. Logic is in `handler.ts` (plain
+  fetch/Request) so it is unit tested under Node; `index.ts` is the Deno
+  entry.
+- The webhook is created in the dashboard, not a migration, so the
+  shared secret never lands in git.
+- `public.insights` had been created directly on the live database; its
+  two migrations are now copied into the repo verbatim so `supabase db
+  push` keeps working.
+- Clients may update only `insights.read_at` (column-level grant); the
+  existing policy alone let a user rewrite their insight's text.
+- App: Finish now opens the workout's History page (`/history/[id]`),
+  which shows the analysis card. With no analysis yet it polls every 20 s
+  for 10 minutes after the workout ended, then says it is not ready; a
+  day later the card is hidden (older workouts predate the feature).
+  Only title and summary are shown; markdown via `react-markdown` with
+  raw HTML dropped. Shown reviews are marked read. The History tab is now
+  a list of finished workouts.
+- Summary length is controlled by the routine's prompt, not the app.

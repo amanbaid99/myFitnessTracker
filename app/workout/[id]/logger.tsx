@@ -442,8 +442,9 @@ export function Logger(props: {
           anyLogged={anyLogged}
           demo={demo}
           onClose={() => setFinishing(false)}
-          onDone={() => {
-            router.push(demo ? "/demo?finished=1" : "/");
+          onDone={(saved) => {
+            // A finished workout opens its History page, where its analysis appears.
+            router.push(demo ? "/demo?finished=1" : saved ? `/history/${workoutId}` : "/");
             router.refresh();
           }}
         />
@@ -656,7 +657,8 @@ function FinishSheet({
   anyLogged: boolean;
   demo: boolean;
   onClose: () => void;
-  onDone: () => void;
+  /** saved: true when the workout was finished, false when discarded. */
+  onDone: (saved: boolean) => void;
 }) {
   const supabase = createClient();
   const [energy, setEnergy] = useState<number | null>(null);
@@ -666,7 +668,7 @@ function FinishSheet({
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
   async function save() {
-    if (demo) return onDone();
+    if (demo) return onDone(true);
     setBusy(true);
     const { error } = await supabase
       .from("workouts")
@@ -677,11 +679,11 @@ function FinishSheet({
       setError(error.message);
       return;
     }
-    onDone();
+    onDone(true);
   }
 
   async function discard() {
-    if (demo) return onDone();
+    if (demo) return onDone(false);
     if (!confirm("Discard this workout? Nothing was logged.")) return;
     setBusy(true);
     const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
@@ -690,7 +692,7 @@ function FinishSheet({
       setError(error.message);
       return;
     }
-    onDone();
+    onDone(false);
   }
 
   return (

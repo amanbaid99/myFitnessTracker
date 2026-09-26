@@ -255,6 +255,66 @@ export async function getWorkout(supabase: Supabase, workoutId: string): Promise
   return data && { id: data.id, routineId: data.routine_id, startedAt: data.started_at, endedAt: data.ended_at };
 }
 
+// History ----------------------------------------------------------------------
+
+export interface HistoryWorkout {
+  id: string;
+  routineName: string | null;
+  startedAt: string;
+  endedAt: string;
+  source: "app" | "sheet_import";
+  energy: number | null;
+  notes: string | null;
+}
+
+const HISTORY_COLS = "id, started_at, ended_at, source, energy, notes, routines(name)";
+
+function toHistoryWorkout(w: Record<string, unknown>): HistoryWorkout {
+  const routine = w.routines as { name: string } | null;
+  return {
+    id: w.id as string,
+    routineName: routine?.name ?? null,
+    startedAt: w.started_at as string,
+    endedAt: w.ended_at as string,
+    source: w.source === "sheet_import" ? "sheet_import" : "app",
+    energy: (w.energy as number | null) ?? null,
+    notes: (w.notes as string | null) ?? null,
+  };
+}
+
+/** Finished, not cancelled workouts, newest first. */
+export async function getFinishedWorkouts(supabase: Supabase, limit = 100): Promise<HistoryWorkout[]> {
+  const { data, error } = await supabase
+    .from("workouts")
+    .select(HISTORY_COLS)
+    .not("ended_at", "is", null)
+    .is("cancelled_at", null)
+    .order("started_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(toHistoryWorkout);
+}
+
+export async function getFinishedWorkout(supabase: Supabase, workoutId: string): Promise<HistoryWorkout | null> {
+  const { data, error } = await supabase
+    .from("workouts")
+    .select(HISTORY_COLS)
+    .eq("id", workoutId)
+    .not("ended_at", "is", null)
+    .is("cancelled_at", null)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data && toHistoryWorkout(data);
+}
+
+/** Exercise names by id, for labelling a workout's sets. */
+export async function getExerciseNames(supabase: Supabase, ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase.from("exercises").select("id, name").in("id", ids);
+  if (error) throw new Error(error.message);
+  return new Map((data ?? []).map((e) => [e.id as string, e.name as string]));
+}
+
 export async function getExerciseLibrary(supabase: Supabase): Promise<Exercise[]> {
   const { data, error } = await supabase
     .from("exercises")

@@ -232,6 +232,40 @@ set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 select pg_temp.expect((select count(*) from public.feedback) = 0, 'users cannot read each other''s feedback');
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 
+-- Insights ------------------------------------------------------------------
+-- Written by the analysis task with the service role (here: postgres).
+reset role;
+insert into public.insights (id, user_id, kind, period_start, period_end, title, summary, workout_id) values
+  ('ffffffff-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'workout_review',
+   current_date, current_date, 'Solid push day', '- Bench up 2.5 kg', 'cccccccc-0000-0000-0000-000000000001');
+set role authenticated;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect(
+  (select count(*) from public.insights where kind = 'workout_review'
+     and workout_id = 'cccccccc-0000-0000-0000-000000000001') = 1,
+  'a user reads their own workout review');
+with u as (update public.insights set read_at = now() returning 1)
+select pg_temp.expect((select count(*) from u) = 1, 'a user can mark their insight read');
+select pg_temp.expect_error(
+  $$update public.insights set title = 'Edited'$$,
+  'a user cannot edit an insight''s text');
+select pg_temp.expect_error(
+  $$update public.insights set user_id = '22222222-2222-2222-2222-222222222222'$$,
+  'a user cannot reassign an insight');
+select pg_temp.expect_error(
+  $$insert into public.insights (user_id, kind, period_start, period_end, title, summary, workout_id)
+    values ('11111111-1111-1111-1111-111111111111', 'workout_review', current_date, current_date, 'x', 'y',
+            'cccccccc-0000-0000-0000-000000000001')$$,
+  'a user cannot write insights');
+with d as (delete from public.insights returning 1)
+select pg_temp.expect((select count(*) from d) = 0, 'a user cannot delete insights');
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pg_temp.expect((select count(*) from public.insights) = 0, 'users cannot read each other''s insights');
+with u as (update public.insights set read_at = now() returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'users cannot mark each other''s insights read');
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;
