@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronLeft, Flame, Minus, Plus, Timer, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronUp, Flame, Minus, Plus, Timer, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatSet, formatSets } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
-import { carryWeightForward, type Row, type SessionExercise, type SessionExerciseInput } from "@/lib/session";
+import { carryWeightForward, isExerciseDone, nextOpenExercise, type Row, type SessionExercise, type SessionExerciseInput } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, type Units } from "@/lib/units";
 import type { WarmupItem } from "@/lib/general-warmup";
@@ -60,6 +60,22 @@ export function Logger(props: {
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+  // One exercise open at a time; finishing one opens the next unfinished.
+  const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(props.session));
+  const [warmupOpen, setWarmupOpen] = useState(() => !props.hasLoggedSets);
+  const scrollTo = useRef<string | null>(null);
+
+  function openExercise(id: string | null) {
+    scrollTo.current = id;
+    setOpenId(id);
+  }
+
+  // Bring a newly opened exercise to the top, below the sticky header.
+  useEffect(() => {
+    if (!openId || scrollTo.current !== openId) return;
+    scrollTo.current = null;
+    document.getElementById(`ex-${openId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [openId]);
 
   // One clock for the elapsed time and the rest timer; a finished rest
   // beeps and buzzes once and clears. The ref keeps the side effects out of
@@ -117,6 +133,7 @@ export function Logger(props: {
   function toggleChecklist(i: number) {
     setChecked((prev) => {
       const next = prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i];
+      if (next.length === props.checklist.length) setWarmupOpen(false);
       try {
         localStorage.setItem(storageKey, JSON.stringify(next));
       } catch {}
@@ -153,6 +170,7 @@ export function Logger(props: {
     };
     updateRow(exIndex, row.key, { logged });
     if (row.setType === "working") {
+      setWarmupOpen(false);
       setExercises((prev) =>
         prev.map((ex, i) => (i === exIndex ? { ...ex, working: carryWeightForward(ex.working, logged) } : ex)),
       );
@@ -201,6 +219,9 @@ export function Logger(props: {
     // Tweak the next unticked working set from how this one felt.
     const ex = exercises[exIndex];
     const next = ex.working.find((r) => r.setNo > row.setNo && !r.logged);
+    // That was the last set: close this exercise and open the next one.
+    const lastSetNo = Math.max(...ex.working.map((r) => r.setNo));
+    if (row.setNo === lastSetNo && isExerciseDone(ex)) openExercise(nextOpenExercise(exercises, exIndex));
     if (next) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
       const adjusted = adjustNextSet({
@@ -291,40 +312,56 @@ export function Logger(props: {
           </p>
         )}
 
-        <section className="rounded-2xl border bg-card p-4">
-          <h2 className="flex items-center gap-2 font-semibold">
-            <Flame className="size-4 text-primary" aria-hidden /> Warm-up
-            <span className="ml-auto text-xs font-normal text-muted-foreground">
-              {checked.length}/{props.checklist.length}
-            </span>
+        <section className="rounded-2xl border bg-card px-4 py-2">
+          <h2>
+            <button
+              type="button"
+              onClick={() => setWarmupOpen((o) => !o)}
+              aria-expanded={warmupOpen}
+              className="flex min-h-11 w-full items-center gap-2 text-left font-semibold"
+            >
+              <Flame className="size-4 text-primary" aria-hidden /> Warm-up
+              <span className="ml-auto text-xs font-normal text-muted-foreground">
+                {checked.length}/{props.checklist.length}
+              </span>
+              {warmupOpen ? (
+                <ChevronUp className="size-5 text-muted-foreground" aria-hidden />
+              ) : (
+                <ChevronDown className="size-5 text-muted-foreground" aria-hidden />
+              )}
+            </button>
           </h2>
-          <ul className="mt-2">
-            {props.checklist.map((item, i) => {
-              const on = checked.includes(i);
-              return (
-                <li key={item.text}>
-                  <button
-                    type="button"
-                    onClick={() => toggleChecklist(i)}
-                    className="flex min-h-11 w-full items-center gap-3 py-1 text-left text-sm"
-                    aria-pressed={on}
-                  >
-                    <TickCircle on={on} small />
-                    <span className="min-w-0">
-                      <span className={cn("block", on && "text-muted-foreground line-through")}>{item.text}</span>
-                      {item.forExercises.length > 0 && (
-                        <span className="block text-xs text-muted-foreground">for {item.forExercises.join(", ")}</span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          {items[0] && exercises[0]?.warmups.length > 0 && (
-            <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
-              Then ramp up on {items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.
-            </p>
+          {warmupOpen && (
+            <>
+              <ul className="mt-1">
+                {props.checklist.map((item, i) => {
+                  const on = checked.includes(i);
+                  return (
+                    <li key={item.text}>
+                      <button
+                        type="button"
+                        onClick={() => toggleChecklist(i)}
+                        className="flex min-h-11 w-full items-center gap-3 py-1 text-left text-sm"
+                        aria-pressed={on}
+                      >
+                        <TickCircle on={on} small />
+                        <span className="min-w-0">
+                          <span className={cn("block", on && "text-muted-foreground line-through")}>{item.text}</span>
+                          {item.forExercises.length > 0 && (
+                            <span className="block text-xs text-muted-foreground">for {item.forExercises.join(", ")}</span>
+                          )}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              {items[0] && exercises[0]?.warmups.length > 0 && (
+                <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
+                  Then ramp up on {items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.
+                </p>
+              )}
+            </>
           )}
         </section>
 
@@ -333,8 +370,49 @@ export function Logger(props: {
           const pr = props.prs[item.exercise.id];
           const workingDone = ex.working.length > 0 && ex.working.every((r) => r.logged);
           const showWarmups = ex.warmups.length > 0 && !skipped.includes(ex.exerciseId);
+          const open = openId === ex.exerciseId;
+          if (!open) {
+            const loggedCount = ex.working.filter((r) => r.logged).length;
+            return (
+              <section
+                key={ex.exerciseId}
+                id={`ex-${ex.exerciseId}`}
+                className={cn("scroll-mt-20 rounded-2xl border bg-card", workingDone && "border-success/50")}
+              >
+                <h2>
+                  <button
+                    type="button"
+                    onClick={() => openExercise(ex.exerciseId)}
+                    aria-expanded={false}
+                    className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className={cn("block truncate font-semibold", workingDone && "text-muted-foreground")}>
+                        {item.exercise.name}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {ex.aim ? `Aim ${formatSet(ex.aim, units)}` : `${item.targetSets} × ${item.targetReps}`}
+                      </span>
+                    </span>
+                    {workingDone ? (
+                      <Check className="size-5 shrink-0 text-success" aria-label="Done" />
+                    ) : (
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {loggedCount}/{ex.working.length}
+                      </span>
+                    )}
+                    <ChevronDown className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                  </button>
+                </h2>
+              </section>
+            );
+          }
           return (
-            <section key={ex.exerciseId} className={cn("rounded-2xl border bg-card", workingDone && "border-success/50")}>
+            <section
+              key={ex.exerciseId}
+              id={`ex-${ex.exerciseId}`}
+              className={cn("scroll-mt-20 rounded-2xl border bg-card", workingDone && "border-success/50")}
+            >
               <div className="px-4 pt-4">
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
@@ -348,7 +426,17 @@ export function Logger(props: {
                       {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
                     </div>
                   </div>
-                  {workingDone && <Check className="mt-0.5 size-6 text-success" aria-label="Exercise done" />}
+                  {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="-mr-2 -mt-1 shrink-0 text-muted-foreground"
+                    onClick={() => setOpenId(null)}
+                    aria-expanded
+                    aria-label={`Collapse ${item.exercise.name}`}
+                  >
+                    <ChevronUp />
+                  </Button>
                 </div>
                 <div className="mt-2 space-y-0.5 text-xs">
                   {pr && (

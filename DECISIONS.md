@@ -441,3 +441,16 @@ plans, which the spec did not have.
 - A set whose weight was typed by hand keeps it (rows track
   `weightEdited`); reps are not carried. The feel chips still adjust the
   next set afterwards, starting from the carried weight.
+
+## 2026-09-26: One exercise open at a time in the logger (Aman's request)
+
+- The logger opens only the first unfinished exercise; the others show a
+  one-line header (name, aim, sets done or a check) and open on tap,
+  which collapses the current one. Order stays flexible.
+- Picking how the last working set felt closes that exercise and opens
+  the next unfinished one (wrapping to any skipped earlier), scrolled to
+  the top under the sticky header. Waiting for the feel keeps its chips
+  reachable; ticking alone does not collapse.
+- The warm-up checklist collapses when every item is ticked or the first
+  working set is logged, and can be reopened. On resume the logger opens
+  the first unfinished exercise.

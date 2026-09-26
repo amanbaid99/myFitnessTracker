@@ -137,3 +137,23 @@ export function buildSession(
     return { exerciseId: id, warmups, working, aim, last };
   });
 }
+
+/** An exercise is done when it has working sets and all are logged. */
+export function isExerciseDone(ex: Pick<SessionExercise, "working">): boolean {
+  return ex.working.length > 0 && ex.working.every((r) => r.logged);
+}
+
+/**
+ * Which exercise the logger opens: the first unfinished one after `from`,
+ * wrapping round to earlier ones skipped out of order; null when all are
+ * done. `from = -1` finds the first unfinished exercise.
+ */
+export function nextOpenExercise(exercises: Pick<SessionExercise, "exerciseId" | "working">[], from = -1): string | null {
+  const n = exercises.length;
+  for (let step = 1; step <= n; step++) {
+    const i = (((from + step) % n) + n) % n;
+    if (from >= 0 && i === from) continue;
+    if (!isExerciseDone(exercises[i])) return exercises[i].exerciseId;
+  }
+  return null;
+}

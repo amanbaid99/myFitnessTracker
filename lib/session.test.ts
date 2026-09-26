@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSession, carryWeightForward, type Row, type SessionExerciseInput, type SessionSet } from "./session";
+import { buildSession, carryWeightForward, nextOpenExercise, type Row, type SessionExerciseInput, type SessionSet } from "./session";
 
 const incline: SessionExerciseInput = {
   exercise: { id: "incline", name: "Incline Bench Press", equipment: "machine", warmupEnabled: true, warmupTemplate: null },
@@ -128,5 +128,32 @@ describe("carryWeightForward", () => {
   it("carries the pin add-on too", () => {
     const out = carryWeightForward([row(1, 22.5), row(2, 22.5)], { setNo: 1, weightKg: 22.5, addedKg: 3.75 });
     expect(out[1]).toMatchObject({ weightKg: 22.5, addedKg: 3.75 });
+  });
+});
+
+describe("nextOpenExercise", () => {
+  const ex = (exerciseId: string, done: boolean[]) => ({
+    exerciseId,
+    working: done.map((d, i) => ({
+      key: `${exerciseId}${i}`, setType: "working" as const, setNo: i + 1, label: String(i + 1),
+      weightKg: 10, addedKg: 0, reps: 10,
+      logged: d ? { id: `${exerciseId}${i}`, exerciseId, setNo: i + 1, setType: "working" as const, weightKg: 10, addedKg: 0, reps: 10, rpe: null } : null,
+    })),
+  });
+
+  it("opens the first unfinished exercise", () => {
+    expect(nextOpenExercise([ex("a", [true, true]), ex("b", [true, false]), ex("c", [false])])).toBe("b");
+    expect(nextOpenExercise([ex("a", [false]), ex("b", [false])])).toBe("a");
+  });
+
+  it("after finishing one, moves to the next unfinished, wrapping to skipped ones", () => {
+    const list = [ex("a", [false]), ex("b", [true]), ex("c", [true]), ex("d", [false])];
+    expect(nextOpenExercise(list, 2)).toBe("d");
+    expect(nextOpenExercise([ex("a", [false]), ex("b", [true]), ex("c", [true])], 2)).toBe("a");
+  });
+
+  it("null when everything is done", () => {
+    expect(nextOpenExercise([ex("a", [true]), ex("b", [true])], 1)).toBeNull();
+    expect(nextOpenExercise([ex("a", [true])])).toBeNull();
   });
 });
