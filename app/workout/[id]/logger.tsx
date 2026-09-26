@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronLeft, Flame, Plus, Timer, Trophy, X } from "lucide-react";
+import { Check, ChevronLeft, Flame, Minus, Plus, Timer, Trophy, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -474,10 +474,19 @@ function SetRow({
 }) {
   const done = row.logged !== null;
   const [showAddOn, setShowAddOn] = useState(row.addedKg > 0);
+  // Working sets not yet logged get − and + around the reps, so adjusting
+  // them is a tap instead of typing.
+  const stepper = !warmup && !done;
 
   return (
-    <div className={cn("flex min-h-14 items-center gap-2 px-2", warmup && "text-muted-foreground")}>
-      <span className={cn("w-7 shrink-0 text-center text-sm tabular-nums", warmup ? "text-xs" : "font-semibold")}>
+    <div className={cn("flex min-h-14 items-center px-2", stepper ? "gap-1" : "gap-2", warmup && "text-muted-foreground")}>
+      <span
+        className={cn(
+          "shrink-0 text-center text-sm tabular-nums",
+          stepper ? "w-5" : "w-7",
+          warmup ? "text-xs" : "font-semibold",
+        )}
+      >
         {row.label}
       </span>
       <NumberField
@@ -495,7 +504,7 @@ function SetRow({
           onChange={(v) => onChange({ addedKg: v === null ? 0 : toKg(v, units) })}
           disabled={done}
           prefix="+"
-          className="w-14"
+          className={stepper ? "w-12" : "w-14"}
         />
       ) : (
         !done &&
@@ -510,16 +519,27 @@ function SetRow({
           </button>
         )
       )}
-      <span className="text-muted-foreground">×</span>
-      <NumberField
-        label={`Set ${row.label} reps`}
-        value={row.reps}
-        onChange={(v) => onChange({ reps: v === null ? null : Math.round(v) })}
-        disabled={done}
-        integer
-        className="w-12"
-      />
-      {perHand && !warmup && <span className="hidden text-[10px] text-muted-foreground min-[380px]:inline">/hand</span>}
+      {stepper ? (
+        <RepsStepper
+          label={row.label}
+          value={row.reps}
+          compact={showAddOn}
+          onChange={(reps) => onChange({ reps })}
+        />
+      ) : (
+        <>
+          <span className="text-muted-foreground">×</span>
+          <NumberField
+            label={`Set ${row.label} reps`}
+            value={row.reps}
+            onChange={(v) => onChange({ reps: v === null ? null : Math.round(v) })}
+            disabled={done}
+            integer
+            className="w-12"
+          />
+          {perHand && !warmup && <span className="hidden text-[10px] text-muted-foreground min-[380px]:inline">/hand</span>}
+        </>
+      )}
       <button
         type="button"
         onClick={done ? onUntick : onTick}
@@ -528,6 +548,62 @@ function SetRow({
         aria-pressed={done}
       >
         <TickCircle on={done} small={warmup} />
+      </button>
+    </div>
+  );
+}
+
+const MAX_REPS = 100;
+
+/** Reps with − and + buttons; the number itself can still be typed. */
+function RepsStepper({
+  label,
+  value,
+  compact,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  /** Narrower buttons when the pin add-on field also needs room. */
+  compact: boolean;
+  onChange: (reps: number | null) => void;
+}) {
+  const step = (delta: number) => onChange(Math.min(MAX_REPS, Math.max(1, (value ?? 0) + delta)));
+  const button = cn(
+    "flex h-11 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40",
+    compact ? "w-8" : "w-11",
+  );
+  return (
+    // One bordered pill, so − 10 + reads as a unit next to the pin add-on +.
+    <div
+      className="flex h-11 shrink-0 items-center overflow-hidden rounded-lg border bg-background"
+      role="group"
+      aria-label={`Set ${label} reps`}
+    >
+      <button
+        type="button"
+        className={button}
+        onClick={() => step(-1)}
+        disabled={value === null || value <= 1}
+        aria-label={`One rep fewer on set ${label}`}
+      >
+        <Minus className="size-4" />
+      </button>
+      <NumberField
+        label={`Set ${label} reps`}
+        value={value}
+        onChange={(v) => onChange(v === null ? null : Math.round(v))}
+        integer
+        className="h-full w-8 rounded-none border-0 bg-transparent"
+      />
+      <button
+        type="button"
+        className={button}
+        onClick={() => step(1)}
+        disabled={value !== null && value >= MAX_REPS}
+        aria-label={`One rep more on set ${label}`}
+      >
+        <Plus className="size-4" />
       </button>
     </div>
   );

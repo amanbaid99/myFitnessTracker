@@ -377,3 +377,16 @@ plans, which the spec did not have.
   raw HTML dropped. Shown reviews are marked read. The History tab is now
   a list of finished workouts.
 - Summary length is controlled by the routine's prompt, not the app.
+
+## 2026-09-26: − and + for reps on working sets (Aman's request)
+
+- Each working set not yet logged shows its reps as a − 10 + pill, so a
+  rep more or fewer is one tap instead of opening the keyboard; the
+  number can still be typed. Reps stay between 1 and 100. Warm-up rows
+  and logged sets keep the plain layout.
+- The three controls sit in one bordered pill so they do not read as one
+  row of pluses with the pin add-on button beside the weight.
+- Fit at 390px and 360px: the set number column and gaps are narrower on
+  these rows. With the pin add-on field open the − and + buttons narrow
+  to 32 x 44 px, the only case under the 44 px guideline, rather than
+  overflow the row.
