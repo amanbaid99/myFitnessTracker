@@ -472,3 +472,15 @@ plans, which the spec did not have.
   and is where a pin would go.
 - Reads return nothing on error, so the app keeps working before the
   migration lands; saving then shows an error.
+
+## 2026-09-26: Set the seat or pin mid-workout (Aman's request)
+
+- The exercise header in the logger shows the machine setting as a
+  tappable badge ("Seat 5", "pin 7"), or "+ Seat / pin" when there is
+  none. Tapping opens an inline field (Save, Enter or Cancel); an empty
+  value clears it.
+- It saves to `exercises.machine_setting`, so it applies to that
+  exercise in every plan and every later workout, same as the plan
+  editor's seat field. No schema change.
+- Labels: a bare number reads "Seat 5"; text with words ("pin 7") shows
+  as typed, in the logger and on Routines.

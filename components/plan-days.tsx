@@ -1,7 +1,7 @@
 import { Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Routine } from "@/lib/data";
-import { formatSet, type SetLike } from "@/lib/format";
+import { formatSet, settingLabel, type SetLike } from "@/lib/format";
 import type { Units } from "@/lib/units";
 
 /** Every day of a plan with each exercise's targets, PR and last set. */
@@ -34,7 +34,7 @@ export function PlanDays({
                     <div className="min-w-0">
                       <p className="font-medium leading-snug">{exercise.name}</p>
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {exercise.machineSetting && <Badge variant="accent">Seat {exercise.machineSetting}</Badge>}
+                        {exercise.machineSetting && <Badge variant="accent">{settingLabel(exercise.machineSetting)}</Badge>}
                         {exercise.perHand && <Badge variant="outline">per hand</Badge>}
                       </div>
                     </div>

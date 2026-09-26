@@ -7,7 +7,7 @@ import { Check, ChevronDown, ChevronLeft, ChevronUp, Flame, Minus, Plus, StickyN
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatSet, formatSets } from "@/lib/format";
+import { formatSet, formatSets, settingLabel } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, type Row, type SessionExercise, type SessionExerciseInput } from "@/lib/session";
@@ -66,6 +66,8 @@ export function Logger(props: {
   const [finishing, setFinishing] = useState(false);
   const [notes, setNotes] = useState<Record<string, ExerciseNote>>(props.notes ?? {});
   const [editingNote, setEditingNote] = useState<string | null>(null);
+  // Seat or pin settings changed during this workout, by exercise id.
+  const [settings, setSettings] = useState<Record<string, string | null>>({});
   // One exercise open at a time; finishing one opens the next unfinished.
   const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(props.session));
   const [warmupOpen, setWarmupOpen] = useState(() => !props.hasLoggedSets);
@@ -245,6 +247,24 @@ export function Logger(props: {
     if (demo) return;
     const { error } = await supabase.from("sets").update({ rpe }).eq("id", row.logged.id);
     if (error) setError(`Could not save how it felt: ${error.message}`);
+  }
+
+  /**
+   * Sets the exercise's seat or pin setting (empty clears it). It belongs
+   * to the exercise, so it shows in every plan and every later workout.
+   */
+  async function saveSetting(exerciseId: string, value: string): Promise<boolean> {
+    const setting = value.trim().slice(0, 20) || null;
+    setError(null);
+    if (!demo) {
+      const { error } = await supabase.from("exercises").update({ machine_setting: setting }).eq("id", exerciseId);
+      if (error) {
+        setError(`Could not save the setting: ${error.message}`);
+        return false;
+      }
+    }
+    setSettings((prev) => ({ ...prev, [exerciseId]: setting }));
+    return true;
   }
 
   /** Saves, changes or (with empty text) removes an exercise's note. */
@@ -473,7 +493,10 @@ export function Logger(props: {
                       <Badge variant="muted">
                         {item.targetSets} × {item.targetReps}
                       </Badge>
-                      {item.exercise.machineSetting && <Badge variant="accent">Seat {item.exercise.machineSetting}</Badge>}
+                      <SettingBadge
+                        value={ex.exerciseId in settings ? settings[ex.exerciseId] : item.exercise.machineSetting}
+                        onSave={(v) => saveSetting(ex.exerciseId, v)}
+                      />
                       {item.exercise.perHand && <Badge variant="outline">per hand</Badge>}
                       {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
                     </div>
@@ -745,6 +768,71 @@ function SetRow({
         <TickCircle on={done} small={warmup} />
       </button>
     </div>
+  );
+}
+
+/**
+ * The seat or pin badge in an exercise header. Tap to change it; with no
+ * setting yet it offers "+ Seat / pin".
+ */
+function SettingBadge({ value, onSave }: { value: string | null; onSave: (v: string) => Promise<boolean> }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(value ?? "");
+  const [busy, setBusy] = useState(false);
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setText(value ?? "");
+          setEditing(true);
+        }}
+        className="-my-2 flex min-h-11 items-center"
+        aria-label={value ? `Change setting: ${settingLabel(value)}` : "Add seat or pin setting"}
+      >
+        {value ? (
+          <Badge variant="accent">{settingLabel(value)}</Badge>
+        ) : (
+          <Badge variant="outline">+ Seat / pin</Badge>
+        )}
+      </button>
+    );
+  }
+
+  const save = async (v: string) => {
+    setBusy(true);
+    const ok = await onSave(v);
+    setBusy(false);
+    if (ok) setEditing(false);
+  };
+  return (
+    <form
+      className="flex w-full items-center gap-1.5 pt-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save(text);
+      }}
+    >
+      <label className="sr-only" htmlFor="machine-setting">
+        Seat or pin setting
+      </label>
+      <input
+        id="machine-setting"
+        autoFocus
+        value={text}
+        maxLength={20}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="e.g. 5 or pin 7"
+        className="h-11 min-w-0 flex-1 rounded-lg border bg-background px-3 text-base outline-none focus-visible:border-ring"
+      />
+      <Button type="submit" disabled={busy}>
+        {busy ? "…" : "Save"}
+      </Button>
+      <Button type="button" variant="ghost" onClick={() => setEditing(false)} disabled={busy}>
+        Cancel
+      </Button>
+    </form>
   );
 }
 

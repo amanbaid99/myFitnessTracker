@@ -32,3 +32,11 @@ export function formatSets(sets: SetLike[], units: Units): string {
   if (sameLoad && load) return `${load} × ${sets.map((s) => s.reps ?? "?").join(", ")}`;
   return sets.map((s) => formatSet(s, units)).join(" · ");
 }
+
+/**
+ * A machine's seat or pin setting as a label: a bare number reads as
+ * "Seat 5"; anything with words ("pin 7", "seat 3, handles 2") as typed.
+ */
+export function settingLabel(setting: string): string {
+  return /^\d+(\.\d+)?$/.test(setting.trim()) ? `Seat ${setting.trim()}` : setting.trim();
+}

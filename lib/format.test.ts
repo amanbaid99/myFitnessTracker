@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatLoad, formatSet, formatSets } from "./format";
+import { formatLoad, formatSet, formatSets, settingLabel } from "./format";
 
 describe("formatSet", () => {
   it.each([
@@ -32,5 +32,14 @@ describe("formatSets", () => {
   it("bodyweight and empty", () => {
     expect(formatSets([s(null, 12), s(null, 10)], "kg")).toBe("12 reps · 10 reps");
     expect(formatSets([], "kg")).toBe("");
+  });
+});
+
+describe("settingLabel", () => {
+  it("numbers read as a seat, words as typed", () => {
+    expect(settingLabel("5")).toBe("Seat 5");
+    expect(settingLabel(" 4.5 ")).toBe("Seat 4.5");
+    expect(settingLabel("pin 7")).toBe("pin 7");
+    expect(settingLabel("seat 3, handles 2")).toBe("seat 3, handles 2");
   });
 });
