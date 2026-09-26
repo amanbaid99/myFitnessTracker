@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, StickyNote } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { LocalDate } from "@/components/local-date";
 import { Badge } from "@/components/ui/badge";
 import { WorkoutReviewCard } from "@/components/workout-review-card";
-import { getExerciseNames, getFinishedWorkout, getProfile, getWorkoutSets, load, type SetRow } from "@/lib/data";
+import {
+  getExerciseNames,
+  getFinishedWorkout,
+  getProfile,
+  getWorkoutNotes,
+  getWorkoutSets,
+  load,
+  type SetRow,
+} from "@/lib/data";
 import { formatSet } from "@/lib/format";
 import { fetchWorkoutReview } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/server";
@@ -21,13 +29,14 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
   const [profile, result] = await Promise.all([
     getProfile(supabase),
     load(async () => {
-      const [workout, sets, review] = await Promise.all([
+      const [workout, sets, review, notes] = await Promise.all([
         getFinishedWorkout(supabase, id),
         getWorkoutSets(supabase, id),
         fetchWorkoutReview(supabase, id),
+        getWorkoutNotes(supabase, id),
       ]);
       const names = await getExerciseNames(supabase, [...new Set(sets.map((s) => s.exerciseId))]);
-      return { workout, sets, review, names };
+      return { workout, sets, review, notes, names };
     }),
   ]);
 
@@ -45,7 +54,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
       </>
     );
   }
-  const { workout, sets, review, names } = result.data;
+  const { workout, sets, review, notes, names } = result.data;
   if (!workout) notFound();
 
   const byExercise = new Map<string, SetRow[]>();
@@ -94,6 +103,12 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
                 </li>
               ))}
             </ol>
+            {notes.get(exerciseId) && (
+              <p className="mt-2 flex gap-2 rounded-xl bg-secondary/60 px-3 py-2 text-sm">
+                <StickyNote className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 whitespace-pre-wrap break-words">{notes.get(exerciseId)!.note}</span>
+              </p>
+            )}
           </section>
         ))}
         {sets.length === 0 && <p className="text-sm text-muted-foreground">No sets were logged.</p>}

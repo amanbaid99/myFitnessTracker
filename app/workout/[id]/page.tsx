@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { DataError } from "@/components/data-error";
 import {
+  getLastNotes,
   getPersonalRecords,
   getPreviousSessions,
   getProfile,
   getRoutine,
   getWorkout,
+  getWorkoutNotes,
   getWorkoutSets,
   load,
 } from "@/lib/data";
@@ -27,13 +29,15 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     if (!workout) return null;
     const routine = workout.routineId ? await getRoutine(supabase, workout.routineId) : null;
     const exerciseIds = routine?.exercises.map((e) => e.exercise.id) ?? [];
-    const [profile, logged, previous, prs] = await Promise.all([
+    const [profile, logged, previous, prs, notes, lastNotes] = await Promise.all([
       getProfile(supabase),
       getWorkoutSets(supabase, id),
       getPreviousSessions(supabase, exerciseIds, id),
       getPersonalRecords(supabase),
+      getWorkoutNotes(supabase, id),
+      getLastNotes(supabase, exerciseIds, id),
     ]);
-    return { workout, routine, profile, logged, previous, prs };
+    return { workout, routine, profile, logged, previous, prs, notes, lastNotes };
   });
 
   if (result.error !== null) {
@@ -44,7 +48,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { workout, routine, profile, logged, previous, prs } = result.data;
+  const { workout, routine, profile, logged, previous, prs, notes, lastNotes } = result.data;
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
@@ -65,6 +69,8 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       units={profile.units}
       defaultRestSec={profile.defaultRestSec}
       hasLoggedSets={logged.length > 0}
+      notes={Object.fromEntries(notes)}
+      lastNotes={Object.fromEntries(lastNotes)}
     />
   );
 }

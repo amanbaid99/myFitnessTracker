@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, ChevronLeft, ChevronUp, Flame, Minus, Plus, Timer, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronUp, Flame, Minus, Plus, StickyNote, Timer, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/l
 import { carryWeightForward, isExerciseDone, nextOpenExercise, type Row, type SessionExercise, type SessionExerciseInput } from "@/lib/session";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, type Units } from "@/lib/units";
+import type { ExerciseNote } from "@/lib/data";
 import type { WarmupItem } from "@/lib/general-warmup";
 import { cn } from "@/lib/utils";
 import { WARMUP_REST_SEC } from "@/lib/warmup";
@@ -46,6 +47,9 @@ export function Logger(props: {
   hasLoggedSets: boolean;
   /** Public demo: sample data, nothing is saved. */
   demo?: boolean;
+  /** This workout's notes and the last note from another workout, by exercise id. */
+  notes?: Record<string, ExerciseNote>;
+  lastNotes?: Record<string, string>;
 }) {
   const { workoutId, items, units, demo = false } = props;
   const home = demo ? "/demo" : "/";
@@ -60,6 +64,8 @@ export function Logger(props: {
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
+  const [notes, setNotes] = useState<Record<string, ExerciseNote>>(props.notes ?? {});
+  const [editingNote, setEditingNote] = useState<string | null>(null);
   // One exercise open at a time; finishing one opens the next unfinished.
   const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(props.session));
   const [warmupOpen, setWarmupOpen] = useState(() => !props.hasLoggedSets);
@@ -241,6 +247,49 @@ export function Logger(props: {
     if (error) setError(`Could not save how it felt: ${error.message}`);
   }
 
+  /** Saves, changes or (with empty text) removes an exercise's note. */
+  async function saveNote(exerciseId: string, text: string): Promise<boolean> {
+    const note = text.trim().slice(0, NOTE_MAX);
+    const existing = notes[exerciseId];
+    const put = (n: ExerciseNote | null) =>
+      setNotes((prev) => {
+        const next = { ...prev };
+        if (n) next[exerciseId] = n;
+        else delete next[exerciseId];
+        return next;
+      });
+    setError(null);
+    if (demo) {
+      put(note ? { id: existing?.id ?? crypto.randomUUID(), note } : null);
+      return true;
+    }
+    if (!note) {
+      if (!existing) return true;
+      const { error } = await supabase.from("exercise_notes").delete().eq("id", existing.id);
+      if (error) return fail(error.message);
+      put(null);
+      return true;
+    }
+    if (existing) {
+      const { error } = await supabase.from("exercise_notes").update({ note }).eq("id", existing.id);
+      if (error) return fail(error.message);
+      put({ ...existing, note });
+      return true;
+    }
+    const id = crypto.randomUUID();
+    const { error } = await supabase
+      .from("exercise_notes")
+      .insert({ id, workout_id: workoutId, exercise_id: exerciseId, note });
+    if (error) return fail(error.message);
+    put({ id, note });
+    return true;
+
+    function fail(message: string) {
+      setError(`Could not save the note: ${message}`);
+      return false;
+    }
+  }
+
   function addSet(exIndex: number) {
     setExercises((prev) =>
       prev.map((ex, i) => {
@@ -394,6 +443,9 @@ export function Logger(props: {
                         {ex.aim ? `Aim ${formatSet(ex.aim, units)}` : `${item.targetSets} × ${item.targetReps}`}
                       </span>
                     </span>
+                    {notes[ex.exerciseId] && (
+                      <StickyNote className="size-4 shrink-0 text-muted-foreground" aria-label="Has a note" />
+                    )}
                     {workingDone ? (
                       <Check className="size-5 shrink-0 text-success" aria-label="Done" />
                     ) : (
@@ -453,6 +505,12 @@ export function Logger(props: {
                   {ex.last.length > 0 && (
                     <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
                   )}
+                  {props.lastNotes?.[ex.exerciseId] && (
+                    <p className="flex gap-1.5 text-muted-foreground">
+                      <StickyNote className="mt-0.5 size-3 shrink-0" aria-hidden />
+                      <span>Last note: {props.lastNotes[ex.exerciseId]}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -501,13 +559,46 @@ export function Logger(props: {
                     )}
                   </div>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => addSet(exIndex)}
-                  className="flex min-h-11 w-full items-center justify-center gap-1 text-sm text-muted-foreground"
-                >
-                  <Plus className="size-4" /> Add set
-                </button>
+                {editingNote === ex.exerciseId ? (
+                  <NoteEditor
+                    initial={notes[ex.exerciseId]?.note ?? ""}
+                    canRemove={Boolean(notes[ex.exerciseId])}
+                    onSave={async (text) => {
+                      if (await saveNote(ex.exerciseId, text)) setEditingNote(null);
+                    }}
+                    onCancel={() => setEditingNote(null)}
+                  />
+                ) : (
+                  <>
+                    {notes[ex.exerciseId] && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingNote(ex.exerciseId)}
+                        className="mx-2 mt-1 flex w-[calc(100%-1rem)] gap-2 rounded-xl bg-secondary/60 px-3 py-2 text-left text-sm"
+                        aria-label={`Edit note: ${notes[ex.exerciseId].note}`}
+                      >
+                        <StickyNote className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                        <span className="min-w-0 whitespace-pre-wrap break-words">{notes[ex.exerciseId].note}</span>
+                      </button>
+                    )}
+                    <div className="grid grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => addSet(exIndex)}
+                        className="flex min-h-11 items-center justify-center gap-1 text-sm text-muted-foreground"
+                      >
+                        <Plus className="size-4" /> Add set
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingNote(ex.exerciseId)}
+                        className="flex min-h-11 items-center justify-center gap-1 text-sm text-muted-foreground"
+                      >
+                        <StickyNote className="size-4" /> {notes[ex.exerciseId] ? "Edit note" : "Add note"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </section>
           );
@@ -653,6 +744,59 @@ function SetRow({
       >
         <TickCircle on={done} small={warmup} />
       </button>
+    </div>
+  );
+}
+
+const NOTE_MAX = 500;
+
+/** Inline note box; opens only when asked for, saves on Save. */
+function NoteEditor({
+  initial,
+  canRemove,
+  onSave,
+  onCancel,
+}: {
+  initial: string;
+  canRemove: boolean;
+  onSave: (text: string) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const save = async (value: string) => {
+    setBusy(true);
+    await onSave(value);
+    setBusy(false);
+  };
+  return (
+    <div className="space-y-2 px-2 pb-3 pt-1">
+      <label className="sr-only" htmlFor="exercise-note">
+        Note for this exercise
+      </label>
+      <textarea
+        id="exercise-note"
+        autoFocus
+        value={text}
+        maxLength={NOTE_MAX}
+        onChange={(e) => setText(e.target.value)}
+        rows={2}
+        placeholder="e.g. seat felt low, left shoulder twinge"
+        className="w-full rounded-xl border bg-background p-3 text-base outline-none focus-visible:border-ring"
+      />
+      <div className="flex gap-2">
+        <Button className="flex-1" onClick={() => save(text)} disabled={busy}>
+          {busy ? "Saving…" : "Save note"}
+        </Button>
+        {canRemove && (
+          <Button variant="ghost" className="text-destructive" onClick={() => save("")} disabled={busy}>
+            Remove
+          </Button>
+        )}
+        <Button variant="ghost" onClick={onCancel} disabled={busy}>
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }

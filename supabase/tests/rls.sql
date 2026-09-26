@@ -266,6 +266,43 @@ select pg_temp.expect((select count(*) from public.insights) = 0, 'users cannot 
 with u as (update public.insights set read_at = now() returning 1)
 select pg_temp.expect((select count(*) from u) = 0, 'users cannot mark each other''s insights read');
 
+-- Exercise notes ------------------------------------------------------------
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into public.exercise_notes (workout_id, exercise_id, note) values
+  ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Seat felt low');
+select pg_temp.expect(
+  (select user_id from public.exercise_notes) = '11111111-1111-1111-1111-111111111111',
+  'a user adds a note to their own workout, owned by them');
+update public.exercise_notes set note = 'Seat 6 next time';
+select pg_temp.expect((select note from public.exercise_notes) = 'Seat 6 next time', 'a user edits their note');
+select pg_temp.expect_error(
+  $$update public.exercise_notes set workout_id = 'cccccccc-0000-0000-0000-000000000009'$$,
+  'a note cannot be moved to another workout');
+select pg_temp.expect_error(
+  $$insert into public.exercise_notes (workout_id, exercise_id, note)
+    values ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'twice')$$,
+  'one note per exercise per workout');
+select pg_temp.expect_error(
+  $$insert into public.exercise_notes (workout_id, exercise_id, note)
+    values ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '   ')$$,
+  'a note cannot be blank');
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pg_temp.expect((select count(*) from public.exercise_notes) = 0, 'users cannot read each other''s notes');
+select pg_temp.expect_error(
+  $$insert into public.exercise_notes (workout_id, exercise_id, note)
+    values ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'x')$$,
+  'cannot add a note to another user''s workout');
+with u as (update public.exercise_notes set note = 'hijack' returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'cannot edit another user''s note');
+with d as (delete from public.exercise_notes returning 1)
+select pg_temp.expect((select count(*) from d) = 0, 'cannot delete another user''s note');
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+with d as (delete from public.exercise_notes returning 1)
+select pg_temp.expect((select count(*) from d) = 1, 'a user can clear their own note');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;

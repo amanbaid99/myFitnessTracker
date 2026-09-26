@@ -454,3 +454,21 @@ plans, which the spec did not have.
 - The warm-up checklist collapses when every item is ticked or the first
   working set is logged, and can be reopened. On resume the logger opens
   the first unfinished exercise.
+
+## 2026-09-26: Notes per exercise per workout (Aman's choices)
+
+- One optional note per exercise per workout, in a new `exercise_notes`
+  table (unique on workout and exercise; RLS owner-only with the same
+  cross-owner checks as `sets`; only `note` is updatable, `updated_at` set
+  by trigger; deletable to clear). Notes are not sets, so editing them
+  does not touch the append-only rule.
+- The note box opens only when "Add note" is tapped (Aman's rule), never
+  automatically. It sits beside "+ Add set"; a saved note shows as a
+  tappable line to edit or remove. Collapsed exercises show a note icon.
+- Next time the exercise comes up, the logger shows the most recent note
+  from another, non-cancelled workout under "Last time". The History page
+  shows each exercise's note under its sets.
+- No pinned (always shown) notes for now; `exercises.notes` stays unused
+  and is where a pin would go.
+- Reads return nothing on error, so the app keeps working before the
+  migration lands; saving then shows an error.

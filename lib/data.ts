@@ -315,6 +315,51 @@ export async function getExerciseNames(supabase: Supabase, ids: string[]): Promi
   return new Map((data ?? []).map((e) => [e.id as string, e.name as string]));
 }
 
+// Exercise notes -----------------------------------------------------------------
+// Reads return empty on error, so screens keep working if the notes table
+// is missing (e.g. before its migration has run).
+
+export interface ExerciseNote {
+  id: string;
+  note: string;
+}
+
+/** This workout's notes by exercise id. */
+export async function getWorkoutNotes(supabase: Supabase, workoutId: string): Promise<Map<string, ExerciseNote>> {
+  const { data, error } = await supabase
+    .from("exercise_notes")
+    .select("id, exercise_id, note")
+    .eq("workout_id", workoutId);
+  if (error) return new Map();
+  return new Map((data ?? []).map((n) => [n.exercise_id as string, { id: n.id as string, note: n.note as string }]));
+}
+
+/**
+ * For each exercise, the most recent note from another workout that was
+ * not cancelled, shown next time the exercise comes up.
+ */
+export async function getLastNotes(
+  supabase: Supabase,
+  exerciseIds: string[],
+  excludeWorkoutId: string,
+): Promise<Map<string, string>> {
+  if (exerciseIds.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from("exercise_notes")
+    .select("exercise_id, note, created_at, workouts!inner(cancelled_at)")
+    .in("exercise_id", exerciseIds)
+    .neq("workout_id", excludeWorkoutId)
+    .is("workouts.cancelled_at", null)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) return new Map();
+  const last = new Map<string, string>();
+  for (const n of data ?? []) {
+    if (!last.has(n.exercise_id as string)) last.set(n.exercise_id as string, n.note as string);
+  }
+  return last;
+}
+
 export async function getExerciseLibrary(supabase: Supabase): Promise<Exercise[]> {
   const { data, error } = await supabase
     .from("exercises")
