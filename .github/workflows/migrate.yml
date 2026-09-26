@@ -77,7 +77,8 @@ jobs:
       - if: steps.check.outputs.enabled == 'true'
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned: "latest" asks the GitHub API, which rate-limits shared runners.
+          version: 2.118.0
 
       - if: steps.check.outputs.enabled == 'true'
         name: Database status (read-only)

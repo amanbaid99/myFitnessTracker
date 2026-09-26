@@ -557,3 +557,11 @@ plans, which the spec did not have.
   run ended synchronously offline, blocking every later sync. Fixed by
   clearing it after assignment.
 - No schema change.
+
+## 2026-09-26: Pin the Supabase CLI in CI
+
+- The migrate job failed with "Failed to resolve latest Supabase CLI
+  release: rate limit exceeded": `version: latest` makes setup-cli ask the
+  GitHub API, which rate-limits shared runners, so the deploy never ran.
+  Both workflows now pin a version (2.118.0), which downloads directly.
+  Bump it deliberately when a newer CLI is needed.
