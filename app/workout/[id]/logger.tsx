@@ -19,6 +19,7 @@ import { ExerciseSheet } from "@/components/plan/exercise-sheet";
 import type { Exercise, ExerciseNote, Plan, RoutineExercise } from "@/lib/data";
 import {
   addExercise,
+  exerciseIdFor,
   friendlyError,
   markCustom,
   moveExercise,
@@ -27,6 +28,7 @@ import {
   swapExercise,
   type DbResult,
 } from "@/lib/routine-edits";
+import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
 import type { WarmupItem } from "@/lib/general-warmup";
 import { cn } from "@/lib/utils";
 import { WARMUP_REST_SEC } from "@/lib/warmup";
@@ -71,10 +73,12 @@ export function Logger(props: {
   /** This workout's notes and the last note from another workout, by exercise id. */
   notes?: Record<string, ExerciseNote>;
   lastNotes?: Record<string, string>;
-  /** Edit the day's exercises mid-workout; every edit also updates the plan. */
+  /** Edit the day's exercises mid-workout: in the plan, or for this workout only. */
   editing?: WorkoutEditing;
 }) {
   const { workoutId, items, units, demo = false, editing } = props;
+  // The day's exercises as they are in the plan; extras for today come after.
+  const dayItems = items.filter((i) => !isExtraItem(i));
   const home = demo ? "/demo" : "/";
   const router = useRouter();
 
@@ -124,8 +128,9 @@ export function Logger(props: {
   }, [finishedOffline, pending, router, workoutId]);
 
   /**
-   * Applies an edit to the day's exercises in the plan, then refreshes the
-   * page, which remounts the logger with the new exercises. Queued sets are
+   * Applies an edit to the day's exercises (in the plan, or for this workout
+   * only), then refreshes the page, which remounts the logger with the new
+   * exercises. Queued sets are
    * sent first so nothing lands against a changed day. Needs a connection.
    */
   async function applyEdit(
@@ -133,7 +138,7 @@ export function Logger(props: {
     structural = true,
   ): Promise<string | null> {
     if (!editing) return null;
-    if (!navigator.onLine) return "You're offline. Changing the plan needs a connection.";
+    if (!navigator.onLine) return "You're offline. Changing exercises needs a connection.";
     await flush();
     const left = await pendingCount(workoutId);
     if (left > 0) return `${left} ${left === 1 ? "change is" : "changes are"} still syncing. Try again in a moment.`;
@@ -162,6 +167,7 @@ export function Logger(props: {
   // Editing the day: which exercise's sheet is open, or the add picker.
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [addingExercise, setAddingExercise] = useState(false);
+  const [addToPlan, setAddToPlan] = useState(false);
   const uiKey = `wt-ui-${workoutId}`;
 
   // Seat or pin settings changed during this workout, by exercise id.
@@ -606,10 +612,48 @@ export function Logger(props: {
                       />
                       {item.exercise.perHand && <Badge variant="outline">per hand</Badge>}
                       {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
+                      {isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}
                     </div>
+                    {editing && isExtraItem(item) && (
+                      <div className="-ml-2 mt-1 flex flex-wrap">
+                        <Button
+                          variant="ghost"
+                          className="px-2 text-primary"
+                          onClick={async () => {
+                            const err = await applyEdit(async (s) => {
+                              const res = await addExercise(s, editing.routineId, dayItems, {
+                                exerciseId: item.exercise.id,
+                                name: item.exercise.name,
+                                equipment: item.exercise.equipment,
+                              });
+                              if (!res.error) removeExtra(workoutId, item.exercise.id);
+                              return res;
+                            });
+                            if (err) setError(err);
+                          }}
+                        >
+                          <Plus /> Add to {props.routineName}
+                        </Button>
+                        {![...ex.warmups, ...ex.working].some((r) => r.logged) && (
+                          <Button
+                            variant="ghost"
+                            className="px-2 text-muted-foreground"
+                            onClick={async () => {
+                              const err = await applyEdit(async () => {
+                                removeExtra(workoutId, item.exercise.id);
+                                return { error: null };
+                              }, false);
+                              if (err) setError(err);
+                            }}
+                          >
+                            <X /> Remove
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
-                  {editing && (
+                  {editing && !isExtraItem(item) && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -748,14 +792,47 @@ export function Logger(props: {
         {editing &&
           (addingExercise ? (
             <section className="rounded-2xl border bg-card p-2">
-              <p className="px-2 pt-2 text-sm font-medium">Add an exercise to {props.routineName}</p>
-              <p className="px-2 text-xs text-muted-foreground">It is added to your plan too.</p>
+              <p className="px-2 pt-2 text-sm font-medium">Add an exercise</p>
+              <div role="radiogroup" aria-label="Add it to" className="mx-2 mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+                {[
+                  { plan: false, label: "This workout only" },
+                  { plan: true, label: `Also add to ${props.routineName}` },
+                ].map((o) => (
+                  <button
+                    key={o.label}
+                    type="button"
+                    role="radio"
+                    aria-checked={addToPlan === o.plan}
+                    onClick={() => setAddToPlan(o.plan)}
+                    className={cn(
+                      "min-h-11 truncate rounded-lg px-2 text-sm",
+                      addToPlan === o.plan ? "bg-card font-medium shadow-sm" : "text-muted-foreground",
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p className="px-2 pt-1.5 text-xs text-muted-foreground">
+                {addToPlan
+                  ? `It stays in ${props.routineName} for next time.`
+                  : `Just for today. ${props.routineName} in your plan stays as it is.`}
+              </p>
               <AddExercise
                 library={editing.library}
                 existingIds={items.map((i) => i.exercise.id)}
                 onCancel={() => setAddingExercise(false)}
                 onAdd={async (pick) => {
-                  const err = await applyEdit((s) => addExercise(s, editing.routineId, items, pick));
+                  const err = await applyEdit(
+                    addToPlan
+                      ? (s) => addExercise(s, editing.routineId, dayItems, pick)
+                      : async (s) => {
+                          const { id, error } = await exerciseIdFor(s, pick);
+                          if (id) addExtra(workoutId, id);
+                          return { error };
+                        },
+                    addToPlan,
+                  );
                   if (err) setError(err);
                 }}
               />
@@ -807,8 +884,8 @@ export function Logger(props: {
       )}
 
       {editing && editItemId && (() => {
-        const index = items.findIndex((i) => i.id === editItemId);
-        const item = items[index];
+        const index = dayItems.findIndex((i) => i.id === editItemId);
+        const item = dayItems[index];
         if (!item) return null;
         return (
           <ExerciseSheet
@@ -816,12 +893,12 @@ export function Logger(props: {
             item={item}
             defaultRestSec={props.defaultRestSec}
             canMoveUp={index > 0}
-            canMoveDown={index < items.length - 1}
+            canMoveDown={index < dayItems.length - 1}
             library={editing.library}
             existingIds={items.map((i) => i.exercise.id)}
             onSave={(edits) => applyEdit((s) => saveExerciseEdits(s, item, edits), false)}
             onMove={async (dir) => {
-              const err = await applyEdit((s) => moveExercise(s, items, item, dir));
+              const err = await applyEdit((s) => moveExercise(s, dayItems, item, dir));
               if (err) setError(err);
             }}
             onSwap={(pick) => applyEdit((s) => swapExercise(s, item, pick))}

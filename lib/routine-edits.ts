@@ -1,7 +1,7 @@
 /**
  * Changes to a day's exercises, shared by the plan editor and the workout
- * screen (where every edit also updates the plan). Browser Supabase client;
- * RLS keeps every write to the signed-in user's own rows.
+ * screen. Browser Supabase client; RLS keeps every write to the signed-in
+ * user's own rows.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -12,7 +12,7 @@ import type { RoutineExercise } from "./data";
 export type DbResult = { error: { message: string; code?: string } | null };
 
 /** The exercise id for a pick, creating a new exercise when it is not in the library yet. */
-async function exerciseIdFor(supabase: SupabaseClient, pick: ExercisePick): Promise<{ id: string | null } & DbResult> {
+export async function exerciseIdFor(supabase: SupabaseClient, pick: ExercisePick): Promise<{ id: string | null } & DbResult> {
   if (pick.exerciseId) return { id: pick.exerciseId, error: null };
   const { data, error } = await supabase
     .from("exercises")

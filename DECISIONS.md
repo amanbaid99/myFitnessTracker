@@ -609,3 +609,18 @@ plans, which the spec did not have.
 - Edits need a connection, and queued offline sets are sent first, so
   nothing lands against a changed day. Removing an exercise with sets
   logged today keeps those sets in history (the confirm says so).
+
+## 2026-10-05: Adding an exercise mid-workout: this workout only, or the plan
+
+- Aman asked for a choice when adding an exercise during a workout. The add
+  card now has "This workout only" (the default) and "Also add to <day>".
+  Other edits (sets, reps, swap, move, remove) still update the plan.
+- No migration. Workout-only exercises are kept in a cookie per workout
+  (`wt-extra-<id>`, two days) that the workout page reads on the server, so
+  they survive a reload and get last-time numbers and aims like any other
+  exercise. Once a set is logged they also come back from the workout's
+  own sets, so a cleared cookie or another device still shows them.
+- They are listed after the day's exercises with a "This workout only"
+  badge, start at 3 x 10, and can be added to the plan later from the card.
+  Remove is offered only until a set is logged, since logged sets are
+  history.
