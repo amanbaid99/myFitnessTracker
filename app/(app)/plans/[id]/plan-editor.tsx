@@ -7,10 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Exercise, Plan, Routine, RoutineExercise } from "@/lib/data";
-import { EQUIPMENT } from "@/lib/muscles";
 import { createClient } from "@/lib/supabase/client";
 import { MakeActiveButton } from "../plan-actions";
-import { ExerciseSheet, type ExerciseEdits } from "./exercise-sheet";
+import { AddExercise } from "@/components/plan/add-exercise";
+import { ExerciseSheet, type ExerciseEdits } from "@/components/plan/exercise-sheet";
+import {
+  addExercise,
+  friendlyError,
+  moveExercise,
+  removeExercise,
+  saveExerciseEdits,
+  swapExercise,
+} from "@/lib/routine-edits";
 
 type Result = { error: { message: string; code?: string } | null } | void;
 type Run = (fn: () => PromiseLike<Result>, markCustom?: boolean) => Promise<string | null>;
@@ -133,62 +141,25 @@ function RoutineEditor({
   const editingItem = editingIndex === -1 ? null : items[editingIndex];
 
   async function move(item: RoutineExercise, dir: -1 | 1) {
-    const other = items[items.indexOf(item) + dir];
-    if (!other) return;
-    await run(async () => {
-      const r1 = await supabase.from("routine_exercises").update({ sort_order: other.sortOrder }).eq("id", item.id);
-      if (r1.error) return r1;
-      return supabase.from("routine_exercises").update({ sort_order: item.sortOrder }).eq("id", other.id);
-    });
+    await run(() => moveExercise(supabase, items, item, dir));
   }
 
   async function remove(item: RoutineExercise) {
     if (!confirm(`Remove ${item.exercise.name} from ${routine.name}? Its history is kept.`)) return;
-    const err = await run(() => supabase.from("routine_exercises").delete().eq("id", item.id));
+    const err = await run(() => removeExercise(supabase, item));
     if (!err) setEditing(null);
   }
 
   async function save(item: RoutineExercise, edits: ExerciseEdits): Promise<string | null> {
-    const e = item.exercise;
-    const x = edits.exercise;
-    const exerciseChanged =
-      x.name !== e.name ||
-      x.equipment !== e.equipment ||
-      x.machineSetting !== e.machineSetting ||
-      x.perHand !== e.perHand ||
-      x.muscleGroups.join() !== e.muscleGroups.join();
-    const slotChanged =
-      edits.slot.targetSets !== item.targetSets ||
-      edits.slot.targetReps !== item.targetReps ||
-      edits.slot.restSec !== item.restSec;
-
-    if (exerciseChanged) {
-      // The exercise itself: not a change to the plan's structure.
-      const err = await run(
-        () =>
-          supabase
-            .from("exercises")
-            .update({
-              name: x.name,
-              equipment: x.equipment,
-              machine_setting: x.machineSetting,
-              per_hand: x.perHand,
-              muscle_groups: x.muscleGroups,
-            })
-            .eq("id", e.id),
-        false,
-      );
-      if (err) return err;
-    }
-    if (slotChanged) {
-      return run(() =>
-        supabase
-          .from("routine_exercises")
-          .update({ target_sets: edits.slot.targetSets, target_reps: edits.slot.targetReps, rest_sec: edits.slot.restSec })
-          .eq("id", item.id),
-      );
-    }
-    return null;
+    // Exercise-level edits (name, seat, muscles) do not mark a template custom; slot edits do.
+    let slotChanged = false;
+    const err = await run(async () => {
+      const res = await saveExerciseEdits(supabase, item, edits);
+      slotChanged = res.slotChanged;
+      return res;
+    }, false);
+    if (err || !slotChanged) return err;
+    return run(async () => ({ error: null }));
   }
 
   async function deleteRoutine() {
@@ -247,26 +218,7 @@ function RoutineEditor({
             existingIds={items.map((i) => i.exercise.id)}
             onCancel={() => setAdding(false)}
             onAdd={async (pick) => {
-              const err = await run(async () => {
-                let exerciseId = pick.exerciseId;
-                if (!exerciseId) {
-                  const { data, error } = await supabase
-                    .from("exercises")
-                    .insert({ name: pick.name, equipment: pick.equipment, per_hand: pick.equipment === "dumbbell" })
-                    .select("id")
-                    .single();
-                  if (error) return { error };
-                  exerciseId = data.id;
-                }
-                const sort = items.length ? Math.max(...items.map((i) => i.sortOrder)) + 1 : 1;
-                return supabase.from("routine_exercises").insert({
-                  routine_id: routine.id,
-                  exercise_id: exerciseId,
-                  sort_order: sort,
-                  target_sets: 3,
-                  target_reps: 10,
-                });
-              });
+              const err = await run(() => addExercise(supabase, routine.id, items, pick));
               if (!err) setAdding(false);
             }}
           />
@@ -287,75 +239,17 @@ function RoutineEditor({
           onSave={(edits) => save(editingItem, edits)}
           onMove={(dir) => move(editingItem, dir)}
           onRemove={() => remove(editingItem)}
+          library={library}
+          existingIds={items.map((i) => i.exercise.id)}
+          onSwap={async (pick) => {
+            const err = await run(() => swapExercise(supabase, editingItem, pick));
+            if (!err) setEditing(null);
+            return err;
+          }}
           onClose={() => setEditing(null)}
         />
       )}
     </section>
-  );
-}
-
-function AddExercise({
-  library,
-  existingIds,
-  onAdd,
-  onCancel,
-}: {
-  library: Exercise[];
-  existingIds: string[];
-  onAdd: (pick: { exerciseId: string | null; name: string; equipment: string }) => void;
-  onCancel: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [equipment, setEquipment] = useState<string>("machine");
-  const q = query.trim().toLowerCase();
-  const matches = library
-    .filter((e) => !existingIds.includes(e.id) && (!q || e.name.toLowerCase().includes(q)))
-    .slice(0, 6);
-  const exact = library.find((e) => e.name.toLowerCase() === q);
-
-  return (
-    <div className="space-y-2 p-2">
-      <Input autoFocus placeholder="Search or type a new exercise" value={query} onChange={(e) => setQuery(e.target.value)} />
-      <ul className="divide-y rounded-xl border">
-        {matches.map((e) => (
-          <li key={e.id}>
-            <button
-              type="button"
-              className="flex min-h-11 w-full items-center justify-between px-3 text-left text-sm active:bg-muted"
-              onClick={() => onAdd({ exerciseId: e.id, name: e.name, equipment: e.equipment })}
-            >
-              <span>{e.name}</span>
-              <span className="text-xs text-muted-foreground">{e.equipment}</span>
-            </button>
-          </li>
-        ))}
-        {q && !exact && (
-          <li className="space-y-2 p-3">
-            <p className="text-sm">
-              New exercise: <span className="font-medium">{query.trim()}</span>
-            </p>
-            <select
-              aria-label="Equipment"
-              value={equipment}
-              onChange={(e) => setEquipment(e.target.value)}
-              className="h-11 w-full rounded-xl border bg-card px-3 text-base capitalize"
-            >
-              {EQUIPMENT.map((eq) => (
-                <option key={eq} value={eq}>
-                  {eq}
-                </option>
-              ))}
-            </select>
-            <Button className="w-full" onClick={() => onAdd({ exerciseId: null, name: query.trim(), equipment })}>
-              <Plus /> Add new exercise
-            </Button>
-          </li>
-        )}
-      </ul>
-      <Button variant="ghost" className="w-full" onClick={onCancel}>
-        Cancel
-      </Button>
-    </div>
   );
 }
 
@@ -412,11 +306,4 @@ function InlineName({
       className={className}
     />
   );
-}
-
-function friendlyError(error: { message: string; code?: string }): string {
-  if (error.code === "23505" || /duplicate key|exercises_user_name_live_idx/i.test(error.message)) {
-    return "You already have an exercise with that name. Pick a different name.";
-  }
-  return error.message;
 }

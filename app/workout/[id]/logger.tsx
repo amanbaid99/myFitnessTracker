@@ -3,28 +3,47 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Plus, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Plus, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatSet, formatSets, settingLabel } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
-import { carryWeightForward, isExerciseDone, nextOpenExercise, type Row, type SessionExercise, type SessionExerciseInput } from "@/lib/session";
+import { carryWeightForward, isExerciseDone, nextOpenExercise, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, type Units } from "@/lib/units";
-import type { ExerciseNote } from "@/lib/data";
+import { AddExercise } from "@/components/plan/add-exercise";
+import { ExerciseSheet } from "@/components/plan/exercise-sheet";
+import type { Exercise, ExerciseNote, Plan, RoutineExercise } from "@/lib/data";
+import {
+  addExercise,
+  friendlyError,
+  markCustom,
+  moveExercise,
+  removeExercise,
+  saveExerciseEdits,
+  swapExercise,
+  type DbResult,
+} from "@/lib/routine-edits";
 import type { WarmupItem } from "@/lib/general-warmup";
 import { cn } from "@/lib/utils";
 import { WARMUP_REST_SEC } from "@/lib/warmup";
 
-interface Item extends SessionExerciseInput {
-  exercise: SessionExerciseInput["exercise"] & {
-    machineSetting: string | null;
-    perHand: boolean;
-    muscleGroups: string[];
-  };
+type Item = RoutineExercise;
+
+/** What the logger needs to edit the day's exercises (absent in the demo). */
+export interface WorkoutEditing {
+  routineId: string;
+  plan: Pick<Plan, "id" | "template" | "isCustom">;
+  library: Exercise[];
+}
+
+/** UI state kept across the remount that follows an edit. */
+interface SavedUi {
+  rest: { endsAt: number; total: number } | null;
+  openId: string | null;
 }
 
 interface PR {
@@ -52,8 +71,10 @@ export function Logger(props: {
   /** This workout's notes and the last note from another workout, by exercise id. */
   notes?: Record<string, ExerciseNote>;
   lastNotes?: Record<string, string>;
+  /** Edit the day's exercises mid-workout; every edit also updates the plan. */
+  editing?: WorkoutEditing;
 }) {
-  const { workoutId, items, units, demo = false } = props;
+  const { workoutId, items, units, demo = false, editing } = props;
   const home = demo ? "/demo" : "/";
   const router = useRouter();
 
@@ -102,6 +123,33 @@ export function Logger(props: {
     }
   }, [finishedOffline, pending, router, workoutId]);
 
+  /**
+   * Applies an edit to the day's exercises in the plan, then refreshes the
+   * page, which remounts the logger with the new exercises. Queued sets are
+   * sent first so nothing lands against a changed day. Needs a connection.
+   */
+  async function applyEdit(
+    op: (supabase: ReturnType<typeof createClient>) => PromiseLike<DbResult & { slotChanged?: boolean }>,
+    structural = true,
+  ): Promise<string | null> {
+    if (!editing) return null;
+    if (!navigator.onLine) return "You're offline. Changing the plan needs a connection.";
+    await flush();
+    const left = await pendingCount(workoutId);
+    if (left > 0) return `${left} ${left === 1 ? "change is" : "changes are"} still syncing. Try again in a moment.`;
+    const supabase = createClient();
+    const res = await op(supabase);
+    if (res.error) return friendlyError(res.error);
+    if (structural || res.slotChanged) await markCustom(supabase, editing.plan);
+    try {
+      sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi));
+    } catch {}
+    setEditItemId(null);
+    setAddingExercise(false);
+    router.refresh();
+    return null;
+  }
+
   /** Cancelling runs on the server after every queued set, so it needs a connection. */
   async function readyToCancel(): Promise<string | null> {
     if (!navigator.onLine) return "You're offline. Cancelling needs a connection.";
@@ -111,6 +159,11 @@ export function Logger(props: {
   }
   const [notes, setNotes] = useState<Record<string, ExerciseNote>>(props.notes ?? {});
   const [editingNote, setEditingNote] = useState<string | null>(null);
+  // Editing the day: which exercise's sheet is open, or the add picker.
+  const [editItemId, setEditItemId] = useState<string | null>(null);
+  const [addingExercise, setAddingExercise] = useState(false);
+  const uiKey = `wt-ui-${workoutId}`;
+
   // Seat or pin settings changed during this workout, by exercise id.
   const [settings, setSettings] = useState<Record<string, string | null>>({});
   // One exercise open at a time; finishing one opens the next unfinished.
@@ -118,6 +171,21 @@ export function Logger(props: {
   const [warmupOpen, setWarmupOpen] = useState(() => !props.hasLoggedSets);
   // The cool-down opens once every exercise is done.
   const [cooldownOpen, setCooldownOpen] = useState(() => nextOpenExercise(props.session) === null);
+  // After an edit the logger remounts; bring back the rest timer and the open exercise.
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(uiKey);
+      if (!saved) return;
+      sessionStorage.removeItem(uiKey);
+      const ui = JSON.parse(saved) as SavedUi;
+      /* eslint-disable react-hooks/set-state-in-effect -- restoring browser-only state after a remount */
+      if (ui.rest && isFuture(ui.rest.endsAt)) setRest(ui.rest);
+      if (ui.openId) setOpenId(ui.openId);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    } catch {
+      // Nothing saved or storage unavailable.
+    }
+  }, [uiKey]);
   const scrollTo = useRef<string | null>(null);
 
   function openExercise(id: string | null) {
@@ -541,6 +609,17 @@ export function Logger(props: {
                     </div>
                   </div>
                   {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
+                  {editing && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="-mt-1 shrink-0 text-muted-foreground"
+                      onClick={() => setEditItemId(item.id)}
+                      aria-label={`Edit ${item.exercise.name}`}
+                    >
+                      <Pencil />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -666,6 +745,27 @@ export function Logger(props: {
           );
         })}
 
+        {editing &&
+          (addingExercise ? (
+            <section className="rounded-2xl border bg-card p-2">
+              <p className="px-2 pt-2 text-sm font-medium">Add an exercise to {props.routineName}</p>
+              <p className="px-2 text-xs text-muted-foreground">It is added to your plan too.</p>
+              <AddExercise
+                library={editing.library}
+                existingIds={items.map((i) => i.exercise.id)}
+                onCancel={() => setAddingExercise(false)}
+                onAdd={async (pick) => {
+                  const err = await applyEdit((s) => addExercise(s, editing.routineId, items, pick));
+                  if (err) setError(err);
+                }}
+              />
+            </section>
+          ) : (
+            <Button variant="outline" className="w-full" onClick={() => setAddingExercise(true)}>
+              <Plus /> Add exercise
+            </Button>
+          ))}
+
         <div id="cooldown" className="scroll-mt-20">
           <ChecklistCard
             title="Cool-down"
@@ -705,6 +805,39 @@ export function Logger(props: {
           onSkip={() => setRest(null)}
         />
       )}
+
+      {editing && editItemId && (() => {
+        const index = items.findIndex((i) => i.id === editItemId);
+        const item = items[index];
+        if (!item) return null;
+        return (
+          <ExerciseSheet
+            key={item.id}
+            item={item}
+            defaultRestSec={props.defaultRestSec}
+            canMoveUp={index > 0}
+            canMoveDown={index < items.length - 1}
+            library={editing.library}
+            existingIds={items.map((i) => i.exercise.id)}
+            onSave={(edits) => applyEdit((s) => saveExerciseEdits(s, item, edits), false)}
+            onMove={async (dir) => {
+              const err = await applyEdit((s) => moveExercise(s, items, item, dir));
+              if (err) setError(err);
+            }}
+            onSwap={(pick) => applyEdit((s) => swapExercise(s, item, pick))}
+            onRemove={async () => {
+              const logged = exercises[index]?.working.some((r) => r.logged) || exercises[index]?.warmups.some((r) => r.logged);
+              const msg = `Remove ${item.exercise.name} from ${props.routineName} in your plan?${
+                logged ? " Sets you logged for it today stay in your history." : ""
+              }`;
+              if (!confirm(msg)) return;
+              const err = await applyEdit((s) => removeExercise(s, item));
+              if (err) setError(err);
+            }}
+            onClose={() => setEditItemId(null)}
+          />
+        );
+      })()}
 
       {finishing && (
         <FinishSheet
@@ -1323,6 +1456,11 @@ function FinishSheet({
       </div>
     </div>
   );
+}
+
+/** Whether a timestamp is still ahead (a restored rest that already ended is dropped). */
+function isFuture(ms: number): boolean {
+  return ms > Date.now();
 }
 
 function secondsFromNow(sec: number): number {

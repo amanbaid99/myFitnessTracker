@@ -589,3 +589,23 @@ plans, which the spec did not have.
 - The sign-up email problem (a link to another site, no code) is Supabase
   configuration, not app code: Site URL and the Confirm signup template
   (see docs/SETUP.md step 2).
+
+## 2026-10-05: Edit the day during a workout (Aman's choices)
+
+- Each open exercise in the logger has an Edit button opening the same
+  sheet as the plan editor: sets, reps, rest, name, seat, equipment,
+  muscles, move up or down, remove, and a new Swap (another exercise in the
+  same slot, keeping its position, sets, reps and rest). "Add exercise"
+  sits below the list (library search or a new exercise).
+- Aman chose: every edit made during a workout also updates the plan (no
+  "just today" option). Structural edits mark a template plan custom, as
+  in the plan editor.
+- How: the edit operations moved to `lib/routine-edits.ts` and the sheet
+  and add picker to `components/plan/`, shared by the plan editor and the
+  logger. After an edit the page refreshes and the logger remounts (keyed
+  on the day's exercises), so it rebuilds from the server with logged sets
+  intact; the rest timer and open exercise are kept across the remount via
+  sessionStorage. Typed but unlogged values are not kept.
+- Edits need a connection, and queued offline sets are sent first, so
+  nothing lands against a changed day. Removing an exercise with sets
+  logged today keeps those sets in history (the confirm says so).

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { DataError } from "@/components/data-error";
 import {
+  getExerciseLibrary,
   getLastNotes,
   getPersonalRecords,
+  getPlan,
   getPreviousSessions,
   getProfile,
   getRoutine,
@@ -30,15 +32,17 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     if (!workout) return null;
     const routine = workout.routineId ? await getRoutine(supabase, workout.routineId) : null;
     const exerciseIds = routine?.exercises.map((e) => e.exercise.id) ?? [];
-    const [profile, logged, previous, prs, notes, lastNotes] = await Promise.all([
+    const [profile, logged, previous, prs, notes, lastNotes, plan, library] = await Promise.all([
       getProfile(supabase),
       getWorkoutSets(supabase, id),
       getPreviousSessions(supabase, exerciseIds, id),
       getPersonalRecords(supabase),
       getWorkoutNotes(supabase, id),
       getLastNotes(supabase, exerciseIds, id),
+      routine ? getPlan(supabase, routine.planId) : Promise.resolve(null),
+      getExerciseLibrary(supabase),
     ]);
-    return { workout, routine, profile, logged, previous, prs, notes, lastNotes };
+    return { workout, routine, profile, logged, previous, prs, notes, lastNotes, plan, library };
   });
 
   if (result.error !== null) {
@@ -49,7 +53,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { workout, routine, profile, logged, previous, prs, notes, lastNotes } = result.data;
+  const { workout, routine, profile, logged, previous, prs, notes, lastNotes, plan, library } = result.data;
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
@@ -57,8 +61,15 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   const warmupInput = routine.exercises.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups }));
   const checklist = routineWarmup(warmupInput);
 
+  // Editing the day during the workout changes this, which remounts the
+  // logger with the new exercises (logged sets come back from the server).
+  const structure = routine.exercises
+    .map((e) => [e.id, e.exercise.id, e.exercise.name, e.targetSets, e.targetReps, e.restSec, e.exercise.equipment].join(":"))
+    .join("|");
+
   return (
     <Logger
+      key={structure}
       workoutId={workout.id}
       startedAt={workout.startedAt}
       routineName={routine.name}
@@ -72,6 +83,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       hasLoggedSets={logged.length > 0}
       notes={Object.fromEntries(notes)}
       lastNotes={Object.fromEntries(lastNotes)}
+      editing={plan ? { routineId: routine.id, plan, library } : undefined}
     />
   );
 }
