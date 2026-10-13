@@ -13,8 +13,8 @@ describe("aimForSession", () => {
     expect(aim).toMatchObject({ weightKg: 17.5, reps: 10, readyToIncrease: true });
   });
 
-  it("uses 1.25 kg steps on cables and dumbbells and keeps the add-on weight", () => {
-    const aim = aimForSession({ lastSets: [set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75)], targetSets: 3, targetReps: 12, equipment: "cable" });
+  it("steps by the exercise's weight step (1.25 kg here) and keeps the add-on weight", () => {
+    const aim = aimForSession({ lastSets: [set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75)], targetSets: 3, targetReps: 12, equipment: "cable", weightStepKg: 1.25 });
     expect(aim).toMatchObject({ weightKg: 36.25, addedKg: 3.75, reps: 12 });
   });
 
@@ -74,8 +74,24 @@ describe("feel and steps", () => {
     for (const feel of ["easy", "good", "hard", "max"] as const) expect(feelFromRpe(FEEL_RPE[feel])).toBe(feel);
     expect(feelFromRpe(null)).toBeNull();
   });
-  it("step sizes by equipment", () => {
+  it("steps by 2.5 kg for any loaded equipment unless the exercise says otherwise", () => {
     expect([stepKg("barbell"), stepKg("machine"), stepKg("cable"), stepKg("dumbbell"), stepKg("bodyweight"), stepKg("other")])
-      .toEqual([2.5, 2.5, 1.25, 1.25, null, null]);
+      .toEqual([2.5, 2.5, 2.5, 2.5, null, null]);
+    expect([stepKg("cable", 1.25), stepKg("barbell", 5), stepKg("bodyweight", 1.25)]).toEqual([1.25, 5, null]);
+  });
+  it("uses the exercise's weight step for the aim and an easy set", () => {
+    const lastSets = [10, 10, 10].map((reps) => ({ weightKg: 20, addedKg: 0, reps, rpe: 7 }));
+    expect(aimForSession({ lastSets, targetSets: 3, targetReps: 10, equipment: "cable", weightStepKg: 1.25 })?.weightKg).toBe(21.25);
+    expect(aimForSession({ lastSets, targetSets: 3, targetReps: 10, equipment: "cable" })?.weightKg).toBe(22.5);
+    expect(
+      adjustNextSet({
+        done: { weightKg: 20, reps: 10 },
+        planned: { weightKg: 20, reps: 10 },
+        targetReps: 10,
+        feel: "easy",
+        equipment: "machine",
+        weightStepKg: 5,
+      }).weightKg,
+    ).toBe(25);
   });
 });

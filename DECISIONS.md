@@ -624,3 +624,17 @@ plans, which the spec did not have.
   badge, start at 3 x 10, and can be added to the plan later from the card.
   Remove is offered only until a set is logged, since logged sets are
   history.
+
+## 2026-10-13: Weight step per exercise (Aman's request)
+
+- Each exercise has a weight step: the smallest plate or stack jump it
+  uses. It is set in the exercise's edit sheet (plan editor, or the pencil
+  during a workout) from 0.5, 1, 1.25, 2, 2.5 and 5 kg. Stored in kg in
+  `exercises.weight_step_kg`, default 2.5 for every exercise, existing ones
+  included (Aman: "by default keep it 2.5 for all").
+- The aim for the session, the "easy" bump to the next set, and warm-up
+  rounding all use it. This replaces the fixed steps by equipment (2.5 for
+  barbell and machine, 1.25 for cable and dumbbell): cables and dumbbells
+  now step by 2.5 kg too until changed. Bodyweight and other still
+  progress by reps, so the option is hidden for them.
+- Choices are shown in kg for now; pounds users would see kg steps here.

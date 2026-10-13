@@ -34,6 +34,8 @@ interface DemoExercise {
   muscles: string[];
   seat?: string;
   perHand?: boolean;
+  /** Weight step in kg; 2.5 unless given. */
+  step?: number;
   sets: number;
   reps: number;
   restSec?: number;
@@ -51,7 +53,7 @@ const DAYS: { slug: string; name: string; exercises: DemoExercise[] }[] = [
       { slug: "bench", name: "Barbell Bench Press", equipment: "barbell", muscles: ["chest", "front delts", "triceps"], sets: 4, reps: 6, restSec: 150, last: [[80, 6, 7], [80, 6, 7.5], [80, 6, 7.5], [80, 6, 8]] },
       { slug: "incline-db", name: "Incline Dumbbell Press", equipment: "dumbbell", muscles: ["chest", "front delts"], perHand: true, sets: 3, reps: 10, last: [[28, 10, 7.5], [28, 9, 9], [28, 8, 9]] },
       { slug: "shoulder-press", name: "Machine Shoulder Press", equipment: "machine", muscles: ["front delts", "side delts", "triceps"], seat: "4", sets: 3, reps: 10, last: [[50, 10, 7.5], [50, 10, 9], [50, 10, 9]] },
-      { slug: "lateral", name: "Cable Lateral Raise", equipment: "cable", muscles: ["side delts"], perHand: true, sets: 3, reps: 15, restSec: 60, last: [[7.5, 15, 7], [7.5, 14, 8], [7.5, 12, 9]] },
+      { slug: "lateral", name: "Cable Lateral Raise", equipment: "cable", muscles: ["side delts"], perHand: true, step: 1.25, sets: 3, reps: 15, restSec: 60, last: [[7.5, 15, 7], [7.5, 14, 8], [7.5, 12, 9]] },
       { slug: "pushdown", name: "Triceps Rope Pushdown", equipment: "cable", muscles: ["triceps"], sets: 3, reps: 12, restSec: 60, last: [[30, 12, 7], [30, 12, 7.5], [30, 12, 8]] },
     ],
   },
@@ -109,6 +111,7 @@ export const DEMO_ROUTINES: Routine[] = DAYS.map((day, dayIndex) => ({
       perHand: e.perHand ?? false,
       warmupEnabled: true,
       warmupTemplate: null,
+      weightStepKg: e.step ?? 2.5,
     },
   })),
 }));

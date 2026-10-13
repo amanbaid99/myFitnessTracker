@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import type { Exercise, RoutineExercise } from "@/lib/data";
 import { AddExercise, type ExercisePick } from "./add-exercise";
 import { EQUIPMENT, MUSCLE_GROUPS, REST_OPTIONS } from "@/lib/muscles";
+import { stepKg } from "@/lib/progression";
 import { cn } from "@/lib/utils";
+
+/** Plate and stack steps to choose from, in kg. */
+const WEIGHT_STEPS = [0.5, 1, 1.25, 2, 2.5, 5];
 
 export interface ExerciseEdits {
   exercise: {
@@ -16,6 +20,7 @@ export interface ExerciseEdits {
     machineSetting: string | null;
     muscleGroups: string[];
     perHand: boolean;
+    weightStepKg: number;
   };
   slot: { targetSets: number; targetReps: number; restSec: number | null };
 }
@@ -23,7 +28,7 @@ export interface ExerciseEdits {
 /**
  * Bottom sheet for one exercise in a day: rename it (applies everywhere the
  * exercise is used, history included), targets for this day, seat, equipment,
- * muscles, per hand; move, swap for another exercise, or remove it.
+ * weight step, muscles, per hand; move, swap for another exercise, or remove it.
  */
 export function ExerciseSheet({
   item,
@@ -60,6 +65,10 @@ export function ExerciseSheet({
   const [equipment, setEquipment] = useState(e.equipment);
   const [muscles, setMuscles] = useState<string[]>(e.muscleGroups);
   const [perHand, setPerHand] = useState(e.perHand);
+  const [weightStep, setWeightStep] = useState(e.weightStepKg);
+  const stepOptions = WEIGHT_STEPS.includes(e.weightStepKg)
+    ? WEIGHT_STEPS
+    : [...WEIGHT_STEPS, e.weightStepKg].sort((a, b) => a - b);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
@@ -83,6 +92,7 @@ export function ExerciseSheet({
         machineSetting: seat.trim() || null,
         muscleGroups: muscles,
         perHand,
+        weightStepKg: weightStep,
       },
       slot: { targetSets: sets, targetReps: reps, restSec: rest },
     });
@@ -176,6 +186,34 @@ export function ExerciseSheet({
                   </select>
                 </Field>
               </div>
+
+              {stepKg(equipment) !== null && (
+                <div role="radiogroup" aria-labelledby="ex-step-label">
+                  <p id="ex-step-label" className="text-sm font-medium">
+                    Weight steps
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    The smallest plate or stack jump. Aims and warm-ups go up by this.
+                  </p>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {stepOptions.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        role="radio"
+                        aria-checked={weightStep === s}
+                        onClick={() => setWeightStep(s)}
+                        className={cn(
+                          "h-11 rounded-xl border text-sm tabular-nums",
+                          weightStep === s ? "border-primary bg-accent font-medium text-accent-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        {s} kg
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <label className="flex min-h-11 items-center justify-between gap-3 rounded-xl border bg-card px-4">
                 <span className="text-sm">

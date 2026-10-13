@@ -384,6 +384,7 @@ export function Logger(props: {
         targetReps: items[exIndex].targetReps,
         feel,
         equipment: items[exIndex].exercise.equipment,
+        weightStepKg: items[exIndex].exercise.weightStepKg,
       });
       if (adjusted.weightKg !== planned.weightKg || adjusted.reps !== planned.reps) {
         updateRow(exIndex, next.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });

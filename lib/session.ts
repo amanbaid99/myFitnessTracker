@@ -27,6 +27,7 @@ export interface SessionExerciseInput {
     equipment: string;
     warmupEnabled: boolean;
     warmupTemplate: WarmupStep[] | null;
+    weightStepKg?: number;
   };
   targetSets: number;
   targetReps: number;
@@ -88,6 +89,7 @@ export function buildSession(
       targetSets: item.targetSets,
       targetReps: item.targetReps,
       equipment: item.exercise.equipment,
+      weightStepKg: item.exercise.weightStepKg,
     });
 
     // Ramp up towards today's working weight: the aim if there is one.
@@ -98,6 +100,7 @@ export function buildSession(
       equipment: item.exercise.equipment,
       warmupEnabled: item.exercise.warmupEnabled,
       template: item.exercise.warmupTemplate,
+      weightStepKg: item.exercise.weightStepKg,
     });
     const warmups: Row[] = warmupPlan.map((w, i) => {
       const done = find("warmup", i + 1);

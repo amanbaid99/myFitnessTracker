@@ -77,7 +77,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   // Editing the day during the workout changes this, which remounts the
   // logger with the new exercises (logged sets come back from the server).
   const structure = items
-    .map((e) => [e.id, e.exercise.id, e.exercise.name, e.targetSets, e.targetReps, e.restSec, e.exercise.equipment].join(":"))
+    .map((e) => [e.id, e.exercise.id, e.exercise.name, e.targetSets, e.targetReps, e.restSec, e.exercise.equipment, e.exercise.weightStepKg].join(":"))
     .join("|");
 
   return (

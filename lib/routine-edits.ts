@@ -81,6 +81,7 @@ export async function saveExerciseEdits(
     x.equipment !== e.equipment ||
     x.machineSetting !== e.machineSetting ||
     x.perHand !== e.perHand ||
+    x.weightStepKg !== e.weightStepKg ||
     x.muscleGroups.join() !== e.muscleGroups.join();
   const slotChanged =
     edits.slot.targetSets !== item.targetSets ||
@@ -95,6 +96,7 @@ export async function saveExerciseEdits(
         equipment: x.equipment,
         machine_setting: x.machineSetting,
         per_hand: x.perHand,
+        weight_step_kg: x.weightStepKg,
         muscle_groups: x.muscleGroups,
       })
       .eq("id", e.id);

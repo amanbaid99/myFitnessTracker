@@ -6,10 +6,9 @@
  *
  * W = base weight of the first working set last session (add-on ignored).
  * - No previous weight, or bodyweight: one set, weight blank, reps = target
- * Weights round to the nearest 2.5 kg (the usual plate and stack step, Aman's
- * choice), never below 2.5 kg and never above the working weight. A
- * per-exercise template
- * overrides the ramp; warmupEnabled=false hides it.
+ * Weights round to the exercise's weight step (2.5 kg unless Aman set
+ * another), never below one step and never above the working weight. A
+ * per-exercise template overrides the ramp; warmupEnabled=false hides it.
  */
 
 export interface WarmupStep {
@@ -32,7 +31,8 @@ export const DEFAULT_RAMP: WarmupStep[] = [
 ];
 
 export function roundToIncrement(kg: number, step = WARMUP_INCREMENT_KG): number {
-  return Math.max(0, Math.round(kg / step) * step);
+  // Rounded to the gram so steps like 1.25 do not pick up float noise.
+  return Math.max(0, Math.round(Math.round(kg / step) * step * 100) / 100);
 }
 
 export function warmupSets(input: {
@@ -42,6 +42,7 @@ export function warmupSets(input: {
   equipment: string;
   warmupEnabled?: boolean;
   template?: WarmupStep[] | null;
+  weightStepKg?: number;
 }): WarmupSet[] {
   if (input.warmupEnabled === false || !input.isFirstExercise) return [];
 
@@ -51,11 +52,12 @@ export function warmupSets(input: {
   }
 
   const steps = input.template && input.template.length > 0 ? input.template : DEFAULT_RAMP;
+  const inc = input.weightStepKg && input.weightStepKg > 0 ? input.weightStepKg : WARMUP_INCREMENT_KG;
 
   return steps.map((s, i) => ({
     label: `W${i + 1}`,
     // At least one step (never 0 kg), at most the working weight itself.
-    weightKg: Math.min(w, Math.max(WARMUP_INCREMENT_KG, roundToIncrement((w * s.pct) / 100))),
+    weightKg: Math.min(w, Math.max(inc, roundToIncrement((w * s.pct) / 100, inc))),
     reps: s.reps,
   }));
 }

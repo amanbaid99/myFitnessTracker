@@ -1,6 +1,7 @@
 import "server-only";
 import { describeDbError } from "./db-error";
 import type { WarmupStep } from "./warmup";
+import { DEFAULT_WEIGHT_STEP_KG } from "./progression";
 import type { Units } from "./units";
 import { createClient } from "./supabase/server";
 
@@ -30,6 +31,8 @@ export interface Exercise {
   perHand: boolean;
   warmupEnabled: boolean;
   warmupTemplate: WarmupStep[] | null;
+  /** How much the weight goes up by (the plate or stack step), in kg. */
+  weightStepKg: number;
 }
 
 export interface RoutineExercise {
@@ -146,7 +149,7 @@ export async function getPlan(supabase: Supabase, planId: string): Promise<Plan 
 // Routines ---------------------------------------------------------------------
 
 const EXERCISE_COLS =
-  "id, name, equipment, muscle_groups, machine_setting, per_hand, warmup_enabled, warmup_template";
+  "id, name, equipment, muscle_groups, machine_setting, per_hand, warmup_enabled, warmup_template, weight_step_kg";
 
 interface ExerciseRow {
   id: string;
@@ -157,6 +160,7 @@ interface ExerciseRow {
   per_hand: boolean;
   warmup_enabled: boolean;
   warmup_template: WarmupStep[] | null;
+  weight_step_kg: number | string | null;
 }
 
 interface RoutineRow {
@@ -184,6 +188,7 @@ export function toExercise(e: ExerciseRow): Exercise {
     perHand: e.per_hand,
     warmupEnabled: e.warmup_enabled,
     warmupTemplate: e.warmup_template,
+    weightStepKg: Number(e.weight_step_kg) || DEFAULT_WEIGHT_STEP_KG,
   };
 }
 

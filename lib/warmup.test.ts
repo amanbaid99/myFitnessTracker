@@ -32,6 +32,17 @@ describe("warmupSets (first exercise only: 50%, 75%, then working sets)", () => 
     ).toEqual([2, 2]);
   });
 
+  it("rounds to the exercise's weight step", () => {
+    expect(
+      warmupSets({ lastWorkingWeightKg: 21.25, targetReps: 10, isFirstExercise: true, equipment: "cable", weightStepKg: 1.25 })
+        .map((w) => w.weightKg),
+    ).toEqual([11.25, 16.25]);
+    expect(
+      warmupSets({ lastWorkingWeightKg: 105, targetReps: 8, isFirstExercise: true, equipment: "barbell", weightStepKg: 5 })
+        .map((w) => w.weightKg),
+    ).toEqual([55, 80]);
+  });
+
   it("no ramp-up sets after the first exercise", () => {
     expect(warmupSets({ lastWorkingWeightKg: 1.25, targetReps: 20, isFirstExercise: false, equipment: "cable" })).toEqual([]);
     expect(warmupSets({ lastWorkingWeightKg: 105, targetReps: 8, isFirstExercise: false, equipment: "machine" })).toEqual([]);

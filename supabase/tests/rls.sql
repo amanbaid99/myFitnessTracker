@@ -353,6 +353,25 @@ with u as (update public.profiles set experience = 'advanced'
            where id = '11111111-1111-1111-1111-111111111111' returning 1)
 select pg_temp.expect((select count(*) from u) = 0, 'cannot change another user''s details');
 
+-- Weight step ---------------------------------------------------------------
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect(
+  (select weight_step_kg from public.exercises where id = 'aaaaaaaa-0000-0000-0000-000000000001') = 2.5,
+  'an exercise''s weight step starts at 2.5 kg');
+with u as (update public.exercises set weight_step_kg = 1.25
+           where id = 'aaaaaaaa-0000-0000-0000-000000000001' returning 1)
+select pg_temp.expect((select count(*) from u) = 1, 'a user sets the weight step on their own exercise');
+select pg_temp.expect_error(
+  $$update public.exercises set weight_step_kg = 0 where id = 'aaaaaaaa-0000-0000-0000-000000000001'$$,
+  'weight step must be above zero');
+select pg_temp.expect_error(
+  $$update public.exercises set weight_step_kg = 25 where id = 'aaaaaaaa-0000-0000-0000-000000000001'$$,
+  'weight step must be plausible');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+with u as (update public.exercises set weight_step_kg = 5
+           where id = 'aaaaaaaa-0000-0000-0000-000000000001' returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'cannot change another user''s weight step');
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;

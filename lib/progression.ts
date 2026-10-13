@@ -37,15 +37,20 @@ export interface Aim {
   readyToIncrease: boolean;
 }
 
-/** Smallest sensible load step for the equipment; null means progress by reps. */
-export function stepKg(equipment: string): number | null {
+/** The weight step every exercise starts with (Aman's choice: 2.5 kg for all). */
+export const DEFAULT_WEIGHT_STEP_KG = 2.5;
+
+/**
+ * How much the load goes up by: the exercise's own weight step (the plates
+ * or stack it uses), or null to progress by reps instead.
+ */
+export function stepKg(equipment: string, weightStepKg: number = DEFAULT_WEIGHT_STEP_KG): number | null {
   switch (equipment) {
     case "barbell":
     case "machine":
-      return 2.5;
     case "cable":
     case "dumbbell":
-      return 1.25;
+      return weightStepKg > 0 ? weightStepKg : DEFAULT_WEIGHT_STEP_KG;
     default:
       return null; // bodyweight, other (e.g. fixed weighted bags)
   }
@@ -56,6 +61,7 @@ export function aimForSession(input: {
   targetSets: number;
   targetReps: number;
   equipment: string;
+  weightStepKg?: number;
 }): Aim | null {
   const sets = input.lastSets.filter((s) => s.reps !== null);
   if (sets.length === 0) return null;
@@ -64,7 +70,7 @@ export function aimForSession(input: {
   const allHit = sets.length >= input.targetSets && sets.every((s) => (s.reps ?? 0) >= input.targetReps);
   const rpes = sets.map((s) => s.rpe).filter((r): r is number => r !== null);
   const hardest = rpes.length ? Math.max(...rpes) : null;
-  const step = stepKg(input.equipment);
+  const step = stepKg(input.equipment, input.weightStepKg);
   const lowestReps = Math.min(...sets.map((s) => s.reps ?? 0));
 
   // Bodyweight or no weight recorded: progress by reps.
@@ -120,8 +126,9 @@ export function adjustNextSet(input: {
   targetReps: number;
   feel: Feel;
   equipment: string;
+  weightStepKg?: number;
 }): { weightKg: number | null; reps: number } {
-  const step = stepKg(input.equipment);
+  const step = stepKg(input.equipment, input.weightStepKg);
   const doneReps = input.done.reps ?? input.planned.reps;
   if (input.feel === "easy") {
     if (doneReps < input.targetReps) {
