@@ -6,6 +6,9 @@ import { ArrowLeft, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PlanDraftEditor } from "@/components/plan/plan-draft-editor";
+import type { Exercise } from "@/lib/data";
+import { exerciseCatalog, isEdited } from "@/lib/plan-draft";
 import { createClient } from "@/lib/supabase/client";
 import {
   buildTemplate,
@@ -15,6 +18,7 @@ import {
   SETUPS,
   templateDays,
   type TemplateKey,
+  type TemplateRoutine,
   type TrainingSetup,
 } from "@/lib/templates";
 import { cn } from "@/lib/utils";
@@ -23,9 +27,10 @@ const DAY_OPTIONS = [2, 3, 4, 5, 6];
 
 /**
  * Equipment and days per week, then a template (recommended ones first),
- * then a name. Exercises follow the equipment (lib/templates adaptToSetup).
+ * then a name and any changes: day order, names and exercises. Exercises
+ * follow the equipment (lib/templates adaptToSetup).
  */
-export function NewPlanWizard({ initialSetup = "gym" }: { initialSetup?: TrainingSetup }) {
+export function NewPlanWizard({ initialSetup = "gym", library }: { initialSetup?: TrainingSetup; library: Exercise[] }) {
   const router = useRouter();
   const [setup, setSetup] = useState<TrainingSetup>(initialSetup);
   const [days, setDays] = useState<number | null>(null);
@@ -39,22 +44,27 @@ export function NewPlanWizard({ initialSetup = "gym" }: { initialSetup?: Trainin
     (a, b) => Number(recommended.includes(b.key)) - Number(recommended.includes(a.key)),
   );
   const routines = template && days ? buildTemplate(template, days, setup) : [];
+  // The plan as the user adjusts it before creating it.
+  const [draft, setDraft] = useState<TemplateRoutine[]>([]);
+  const emptyDay = draft.find((r) => r.exercises.length === 0);
 
   function pickTemplate(key: TemplateKey) {
     setTemplate(key);
+    setDraft(buildTemplate(key, days ?? 3, setup));
     const where = setup === "gym" ? "" : ` · ${SETUPS.find((s) => s.key === setup)!.name.toLowerCase()}`;
     setName(`${defaultPlanName(key, days ?? 3)}${where}`);
   }
 
   async function create() {
-    if (!template || !days) return;
+    if (!template || !days || emptyDay) return;
     setBusy(true);
     setError(null);
-    const { error } = await createClient().rpc("create_plan", {
+    const supabase = createClient();
+    const { data: planId, error } = await supabase.rpc("create_plan", {
       p_name: name.trim() || defaultPlanName(template, days),
       p_template: template,
-      p_days: templateDays(template, days),
-      p_routines: routines,
+      p_days: draft.length,
+      p_routines: draft.map((r) => ({ ...r, name: r.name.trim() || "Day" })),
       p_activate: true,
     });
     if (error) {
@@ -62,6 +72,8 @@ export function NewPlanWizard({ initialSetup = "gym" }: { initialSetup?: Trainin
       setError(error.message);
       return;
     }
+    // Changed before creating: it is the user's own version of the template.
+    if (isEdited(draft, routines) && planId) await supabase.from("plans").update({ is_custom: true }).eq("id", planId);
     router.push("/");
     router.refresh();
   }
@@ -82,7 +94,7 @@ export function NewPlanWizard({ initialSetup = "gym" }: { initialSetup?: Trainin
         )}
         <p className="text-xs font-medium uppercase tracking-wider text-primary">New plan · Step {step} of 3</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          {step === 1 ? "How many days a week do you train?" : step === 2 ? "Pick a template" : "Name your plan"}
+          {step === 1 ? "How many days a week do you train?" : step === 2 ? "Pick a template" : "Make it yours"}
         </h1>
       </header>
 
@@ -159,29 +171,16 @@ export function NewPlanWizard({ initialSetup = "gym" }: { initialSetup?: Trainin
           </label>
           <Input id="plan-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />
 
-          <h2 className="mb-2 mt-6 text-sm font-medium text-muted-foreground">What you get</h2>
-          <ul className="space-y-3">
-            {routines.map((r) => (
-              <li key={r.name} className="rounded-xl border bg-card p-4">
-                <p className="font-medium">{r.name}</p>
-                <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
-                  {r.exercises.map((e) => (
-                    <li key={e.name} className="flex justify-between gap-3">
-                      <span>{e.name}</span>
-                      <span className="tabular-nums">
-                        {e.sets} × {e.reps}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
+          <h2 className="mb-2 mt-6 text-sm font-medium">Your days</h2>
+          <PlanDraftEditor days={draft} onChange={setDraft} catalog={exerciseCatalog(library, setup)} />
           <p className="mt-3 text-xs text-muted-foreground">
-            You can change everything after creating it. Editing a template makes it a custom plan.
+            You can still change everything after creating it. Changing a template makes it a custom plan.
           </p>
+          {emptyDay && (
+            <p className="mt-3 text-sm text-destructive">Add an exercise to {emptyDay.name || "the empty day"}, or remove it.</p>
+          )}
 
-          <Button size="lg" className="mt-6 w-full" onClick={create} disabled={busy || !name.trim()}>
+          <Button size="lg" className="mt-6 w-full" onClick={create} disabled={busy || !name.trim() || Boolean(emptyDay)}>
             <Check /> {busy ? "Creating…" : "Create and make active"}
           </Button>
           {error && (

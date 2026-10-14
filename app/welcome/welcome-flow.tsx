@@ -15,7 +15,10 @@ import {
   type Gender,
 } from "@/lib/onboarding";
 import { createClient } from "@/lib/supabase/client";
-import { buildTemplate, SETUPS, type TrainingSetup } from "@/lib/templates";
+import { PlanDraftEditor } from "@/components/plan/plan-draft-editor";
+import type { Exercise } from "@/lib/data";
+import { exerciseCatalog, isEdited } from "@/lib/plan-draft";
+import { buildTemplate, SETUPS, type TemplateRoutine, type TrainingSetup } from "@/lib/templates";
 import { cmToFtIn, fromKg, ftInToCm, toKg, type HeightUnit, type Units } from "@/lib/units";
 import { cn } from "@/lib/utils";
 
@@ -37,11 +40,13 @@ export function WelcomeFlow({
   initial,
   detailsOnly,
   hasPlan,
+  library,
 }: {
   userId: string;
   initial: WelcomeDetails;
   detailsOnly: boolean;
   hasPlan: boolean;
+  library: Exercise[];
 }) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -135,16 +140,19 @@ export function WelcomeFlow({
 
   const rec = setup ? recommendPlan(experience, days, setup) : null;
   const routines = rec && setup ? buildTemplate(rec.template, rec.days, setup) : [];
+  // The suggested plan as the user adjusts it, set when step 3 opens.
+  const [draft, setDraft] = useState<TemplateRoutine[]>([]);
+  const emptyDay = draft.find((r) => r.exercises.length === 0);
 
   async function createPlan() {
-    if (!rec || !setup) return;
+    if (!rec || !setup || emptyDay) return;
     setBusy(true);
     setError(null);
-    const { error } = await supabase.rpc("create_plan", {
+    const { data: planId, error } = await supabase.rpc("create_plan", {
       p_name: rec.name,
       p_template: rec.template,
-      p_days: rec.days,
-      p_routines: routines,
+      p_days: draft.length,
+      p_routines: draft.map((r) => ({ ...r, name: r.name.trim() || "Day" })),
       p_activate: true,
     });
     if (error) {
@@ -152,6 +160,8 @@ export function WelcomeFlow({
       setError(error.message);
       return;
     }
+    // Changed before creating: it is the user's own version of the template.
+    if (isEdited(draft, routines) && planId) await supabase.from("plans").update({ is_custom: true }).eq("id", planId);
     await finish("/");
   }
 
@@ -311,7 +321,10 @@ export function WelcomeFlow({
             </div>
           </div>
 
-          <Button size="lg" className="mt-8 w-full" disabled={!setup} onClick={() => setStep(3)}>
+          <Button size="lg" className="mt-8 w-full" disabled={!setup} onClick={() => {
+            setDraft(routines);
+            setStep(3);
+          }}>
             See my plan
           </Button>
         </>
@@ -323,30 +336,19 @@ export function WelcomeFlow({
           <p className="text-xs font-medium uppercase tracking-wider text-primary">Welcome · Step 3 of 3</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Your suggested plan</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {rec.name}. You can rename it, swap exercises and change sets later in Plans.
+            {rec.name}. Change the order of the days or the exercises now, or later in Plans.
           </p>
 
-          <div className="mt-5 space-y-3">
-            {routines.map((r) => (
-              <section key={r.name} className="rounded-2xl border bg-card p-4">
-                <h2 className="font-semibold">{r.name}</h2>
-                <ul className="mt-2 space-y-1 text-sm">
-                  {r.exercises.map((e) => (
-                    <li key={e.name} className="flex justify-between gap-3">
-                      <span className="min-w-0">{e.name}</span>
-                      <span className="shrink-0 tabular-nums text-muted-foreground">
-                        {e.sets} × {e.reps}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+          <div className="mt-5">
+            <PlanDraftEditor days={draft} onChange={setDraft} catalog={exerciseCatalog(library, setup ?? "gym")} />
           </div>
+          {emptyDay && (
+            <p className="mt-3 text-sm text-destructive">Add an exercise to {emptyDay.name || "the empty day"}, or remove it.</p>
+          )}
 
           {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
           <div className="mt-8 space-y-2">
-            <Button size="lg" className="w-full" onClick={createPlan} disabled={busy}>
+            <Button size="lg" className="w-full" onClick={createPlan} disabled={busy || Boolean(emptyDay)}>
               {busy ? "Creating…" : "Create this plan"}
             </Button>
             <Button variant="outline" className="w-full" onClick={() => finish(`/plans/new?setup=${setup}`)} disabled={busy}>

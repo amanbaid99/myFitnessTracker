@@ -723,3 +723,18 @@ plans, which the spec did not have.
   above the two fields. Feet and inches are two boxes; switching converts
   what was typed. Height is still stored in cm (one decimal), so no
   migration; the choice is not saved and starts at ft & in for lb users.
+
+## 2026-10-14: Adjust a plan before creating it (Aman's request)
+
+- The last step of the new-plan wizard ("Make it yours") and the welcome
+  flow's suggested plan are now editable before anything is saved: move
+  days up or down (the rotation order), rename, add or remove days, and per
+  exercise change sets and reps, move it, remove it, or add one. A day with
+  no exercises blocks creating until it gets one or is removed.
+- Add exercise offers the user's library plus every exercise the built-in
+  templates use for their equipment, so a new account has plenty to pick.
+- The draft is plain TemplateRoutine data (lib/plan-draft.ts, unit tested)
+  sent to create_plan as before; days per week is the draft's day count.
+  If the draft differs from the template, the plan is created custom.
+- The plan editor can now reorder days too (arrows on each day), which
+  changes the rotation; it swaps the two days' sort_order.

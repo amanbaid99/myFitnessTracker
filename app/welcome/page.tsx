@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getActivePlan, getProfile, load } from "@/lib/data";
+import { getActivePlan, getExerciseLibrary, getProfile, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { WelcomeFlow, type WelcomeDetails } from "./welcome-flow";
 
@@ -14,13 +14,15 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
   const { details } = await searchParams;
   const supabase = await createClient();
   const profile = await getProfile(supabase);
-  const [{ data }, active] = await Promise.all([
+  const [{ data }, active, library] = await Promise.all([
     supabase
       .from("profiles")
       .select("gender, body_weight_kg, height_cm, experience, training_setup")
       .eq("id", profile.id)
       .maybeSingle(),
     load(() => getActivePlan(supabase)),
+    // For "Add exercise" while adjusting the suggested plan.
+    getExerciseLibrary(supabase).catch(() => []),
   ]);
 
   const initial: WelcomeDetails = {
@@ -40,6 +42,7 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
         initial={initial}
         detailsOnly={details === "1"}
         hasPlan={Boolean(active.data)}
+        library={library}
       />
     </main>
   );

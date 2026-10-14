@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +83,9 @@ export function PlanEditor({
           className="mt-1 text-2xl font-semibold tracking-tight"
           onSave={(name) => run(() => supabase.from("plans").update({ name }).eq("id", plan.id), false)}
         />
-        <p className="text-xs text-muted-foreground">Tap a name to rename it. Tap an exercise to edit it.</p>
+        <p className="text-xs text-muted-foreground">
+          Tap a name to rename it. Tap an exercise to edit it. Days run in this order; use the arrows to change it.
+        </p>
         {!plan.isActive && (
           <div className="mt-3 grid grid-cols-2 gap-2">
             <MakeActiveButton planId={plan.id} />
@@ -101,8 +103,26 @@ export function PlanEditor({
       )}
 
       <div className="space-y-5">
-        {routines.map((routine) => (
-          <RoutineEditor key={routine.id} routine={routine} library={library} defaultRestSec={defaultRestSec} run={run} />
+        {routines.map((routine, i) => (
+          <RoutineEditor
+            key={routine.id}
+            routine={routine}
+            library={library}
+            defaultRestSec={defaultRestSec}
+            run={run}
+            onMove={(dir) => {
+              const other = routines[i + dir];
+              if (!other) return;
+              // Swap the two days' places in the rotation.
+              run(async () => {
+                const first = await supabase.from("routines").update({ sort_order: other.sortOrder }).eq("id", routine.id);
+                if (first.error) return first;
+                return supabase.from("routines").update({ sort_order: routine.sortOrder }).eq("id", other.id);
+              });
+            }}
+            first={i === 0}
+            last={i === routines.length - 1}
+          />
         ))}
       </div>
 
@@ -127,11 +147,17 @@ function RoutineEditor({
   library,
   defaultRestSec,
   run,
+  onMove,
+  first,
+  last,
 }: {
   routine: Routine;
   library: Exercise[];
   defaultRestSec: number;
   run: Run;
+  onMove: (dir: -1 | 1) => void;
+  first: boolean;
+  last: boolean;
 }) {
   const supabase = createClient();
   const [adding, setAdding] = useState(false);
@@ -176,6 +202,12 @@ function RoutineEditor({
           className="min-w-0 flex-1 text-lg font-semibold"
           onSave={(name) => run(() => supabase.from("routines").update({ name }).eq("id", routine.id))}
         />
+        <Button variant="ghost" size="icon" aria-label={`Move ${routine.name} earlier`} disabled={first} onClick={() => onMove(-1)}>
+          <ArrowUp className="text-muted-foreground" />
+        </Button>
+        <Button variant="ghost" size="icon" aria-label={`Move ${routine.name} later`} disabled={last} onClick={() => onMove(1)}>
+          <ArrowDown className="text-muted-foreground" />
+        </Button>
         <Button variant="ghost" size="icon" aria-label={`Remove ${routine.name}`} onClick={deleteRoutine}>
           <Trash2 className="text-muted-foreground" />
         </Button>
