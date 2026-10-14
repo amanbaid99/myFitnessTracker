@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatWeight, fromKg, toKg } from "./units";
+import { cmToFtIn, formatWeight, fromKg, ftInToCm, toKg } from "./units";
 
 describe("units", () => {
   it("leaves kg alone", () => {
@@ -21,5 +21,14 @@ describe("units", () => {
     expect(formatWeight(15, "kg")).toBe("15 kg");
     expect(formatWeight(15, "lb")).toBe("33.1 lb");
     expect(formatWeight(null, "kg")).toBe("");
+  });
+});
+
+describe("height", () => {
+  it("converts between cm and feet and inches", () => {
+    expect(cmToFtIn(175)).toEqual({ ft: 5, inches: 9 });
+    expect(cmToFtIn(182.9)).toEqual({ ft: 6, inches: 0 });
+    expect(ftInToCm(5, 9)).toBe(175.3);
+    expect(ftInToCm(6, 0)).toBe(182.9);
   });
 });

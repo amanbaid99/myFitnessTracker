@@ -16,7 +16,7 @@ import {
 } from "@/lib/onboarding";
 import { createClient } from "@/lib/supabase/client";
 import { buildTemplate, SETUPS, type TrainingSetup } from "@/lib/templates";
-import { fromKg, toKg, type Units } from "@/lib/units";
+import { cmToFtIn, fromKg, ftInToCm, toKg, type HeightUnit, type Units } from "@/lib/units";
 import { cn } from "@/lib/utils";
 
 export interface WelcomeDetails {
@@ -50,6 +50,11 @@ export function WelcomeFlow({
   const [gender, setGender] = useState<Gender | null>(initial.gender);
   const [weight, setWeight] = useState(initial.bodyWeightKg === null ? "" : String(fromKg(initial.bodyWeightKg, initial.units)));
   const [height, setHeight] = useState(initial.heightCm === null ? "" : String(initial.heightCm));
+  // Height is stored in cm; feet and inches are only how it is typed.
+  const [heightUnit, setHeightUnit] = useState<HeightUnit>(initial.units === "lb" ? "ftin" : "cm");
+  const startFtIn = initial.heightCm === null ? null : cmToFtIn(initial.heightCm);
+  const [feet, setFeet] = useState(startFtIn ? String(startFtIn.ft) : "");
+  const [inches, setInches] = useState(startFtIn ? String(startFtIn.inches) : "");
   const [experience, setExperience] = useState<Experience | null>(initial.experience);
   const [setup, setSetup] = useState<TrainingSetup | null>(initial.setup);
   const [days, setDays] = useState<number>(defaultDays(initial.experience));
@@ -74,15 +79,39 @@ export function WelcomeFlow({
     return true;
   }
 
+  /** The height as typed, in cm, or null if empty or not a number. */
+  function heightCm(): number | null {
+    if (heightUnit === "cm") {
+      const h = Number(height.replace(",", "."));
+      return height.trim() && Number.isFinite(h) ? Math.round(h * 10) / 10 : null;
+    }
+    const ft = Number(feet || "0");
+    const inch = Number((inches || "0").replace(",", "."));
+    if (!feet.trim() && !inches.trim()) return null;
+    return Number.isFinite(ft) && Number.isFinite(inch) ? ftInToCm(ft, inch) : null;
+  }
+
+  function switchHeight(next: HeightUnit) {
+    if (next === heightUnit) return;
+    const cm = heightCm();
+    if (cm !== null && next === "ftin") {
+      const { ft, inches: i } = cmToFtIn(cm);
+      setFeet(String(ft));
+      setInches(String(i));
+    } else if (cm !== null) {
+      setHeight(String(cm));
+    }
+    setHeightUnit(next);
+  }
+
   function detailsPatch() {
     const w = Number(weight.replace(",", "."));
-    const h = Number(height.replace(",", "."));
     return {
       name: name.trim() || null,
       units,
       gender,
       body_weight_kg: weight.trim() && Number.isFinite(w) ? toKg(w, units) : null,
-      height_cm: height.trim() && Number.isFinite(h) ? Math.round(h * 10) / 10 : null,
+      height_cm: heightCm(),
       experience,
     };
   }
@@ -161,29 +190,51 @@ export function WelcomeFlow({
             />
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label={`Weight (${units})`} htmlFor="w-weight">
-                <Input id="w-weight" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="e.g. 72" />
-              </Field>
-              <Field label="Height (cm)" htmlFor="w-height">
-                <Input id="w-height" inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="e.g. 175" />
-              </Field>
+              <Chips
+                label="Weight in"
+                options={[
+                  { key: "kg", label: "kg" },
+                  { key: "lb", label: "lb" },
+                ]}
+                value={units}
+                allowNone={false}
+                onChange={(v) => {
+                  const next = (v ?? "kg") as Units;
+                  const w = Number(weight.replace(",", "."));
+                  if (weight.trim() && Number.isFinite(w) && next !== units) setWeight(String(fromKg(toKg(w, units), next)));
+                  setUnits(next);
+                }}
+              />
+              <Chips
+                label="Height in"
+                options={[
+                  { key: "cm", label: "cm" },
+                  { key: "ftin", label: "ft & in" },
+                ]}
+                value={heightUnit}
+                allowNone={false}
+                onChange={(v) => switchHeight((v ?? "cm") as HeightUnit)}
+              />
             </div>
 
-            <Chips
-              label="Weights in"
-              options={[
-                { key: "kg", label: "kg" },
-                { key: "lb", label: "lb" },
-              ]}
-              value={units}
-              allowNone={false}
-              onChange={(v) => {
-                const next = (v ?? "kg") as Units;
-                const w = Number(weight.replace(",", "."));
-                if (weight.trim() && Number.isFinite(w) && next !== units) setWeight(String(fromKg(toKg(w, units), next)));
-                setUnits(next);
-              }}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={`Weight (${units})`} htmlFor="w-weight">
+                <Input id="w-weight" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder={units === "kg" ? "e.g. 72" : "e.g. 160"} />
+              </Field>
+              {heightUnit === "cm" ? (
+                <Field label="Height (cm)" htmlFor="w-height">
+                  <Input id="w-height" inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="e.g. 175" />
+                </Field>
+              ) : (
+                <div className="space-y-1.5">
+                  <p className="text-sm font-medium">Height (ft, in)</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input aria-label="Feet" inputMode="numeric" value={feet} onChange={(e) => setFeet(e.target.value)} placeholder="ft" />
+                    <Input aria-label="Inches" inputMode="decimal" value={inches} onChange={(e) => setInches(e.target.value)} placeholder="in" />
+                  </div>
+                </div>
+              )}
+            </div>
 
             <Chips
               label="Lifting experience"

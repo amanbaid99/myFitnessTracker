@@ -716,3 +716,10 @@ plans, which the spec did not have.
   the installed app) cannot sign in, but the email is already confirmed by
   then; /auth/confirm now sends the user to sign in with "Your email is
   confirmed" instead of an error.
+
+## 2026-10-14: Height in cm or feet and inches (Aman's request)
+
+- The details step shows "Weight in: kg / lb" and "Height in: cm / ft & in"
+  above the two fields. Feet and inches are two boxes; switching converts
+  what was typed. Height is still stored in cm (one decimal), so no
+  migration; the choice is not saved and starts at ft & in for lb users.

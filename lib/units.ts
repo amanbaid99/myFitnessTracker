@@ -28,3 +28,17 @@ function round(value: number, decimals: number): number {
   const f = 10 ** decimals;
   return Math.round(value * f) / f;
 }
+
+export type HeightUnit = "cm" | "ftin";
+const CM_PER_INCH = 2.54;
+
+/** Centimetres to whole feet and inches (inches rounded), for display. */
+export function cmToFtIn(cm: number): { ft: number; inches: number } {
+  const total = Math.round(cm / CM_PER_INCH);
+  return { ft: Math.floor(total / 12), inches: total % 12 };
+}
+
+/** Feet and inches back to centimetres, to one decimal, for storage. */
+export function ftInToCm(ft: number, inches: number): number {
+  return round((ft * 12 + inches) * CM_PER_INCH, 1);
+}
