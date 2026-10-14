@@ -738,3 +738,11 @@ plans, which the spec did not have.
   If the draft differs from the template, the plan is created custom.
 - The plan editor can now reorder days too (arrows on each day), which
   changes the rotation; it swaps the two days' sort_order.
+
+## 2026-10-14: More room under the iPhone status bar
+
+- In the installed iOS app the first line (the date on Today) was hidden
+  under the status bar. pt-safe now adds 0.75rem below the notch inset and,
+  in the installed app on iOS only, never less than 3.75rem, because iOS can
+  report a zero inset on a cold start. Browsers and Android are unchanged
+  apart from the small extra gap.

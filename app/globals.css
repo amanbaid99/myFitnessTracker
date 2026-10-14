@@ -59,9 +59,19 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* iPhone notch and home indicator. Needs viewport-fit=cover (layout.tsx). */
+/*
+ * iPhone notch and home indicator. Needs viewport-fit=cover (layout.tsx).
+ * The installed iOS app draws under a see-through status bar, so the top
+ * gets room below the notch, and a floor: iOS sometimes reports a zero
+ * inset when the installed app cold-starts, which hid the first line.
+ */
 @utility pt-safe {
-  padding-top: max(env(safe-area-inset-top), 1rem);
+  padding-top: max(calc(env(safe-area-inset-top) + 0.75rem), 1rem);
+  @supports (-webkit-touch-callout: none) {
+    @media (display-mode: standalone) {
+      padding-top: max(calc(env(safe-area-inset-top) + 0.75rem), 3.75rem);
+    }
+  }
 }
 @utility pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
