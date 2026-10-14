@@ -5,11 +5,13 @@ import { startWorkout } from "@/app/actions";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { DataError } from "@/components/data-error";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
+import { HomeHero, type LastWorkout } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getActivePlan, getProfile, getRecentWorkouts, load } from "@/lib/data";
 import { shouldPromptFeedback } from "@/lib/feedback";
+import { fetchWorkoutReview } from "@/lib/insights";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,6 +24,31 @@ export default async function TodayPage() {
   ]);
   const greeting = profile.name ? `Hi, ${profile.name}` : "Today";
 
+  if (result.error === null && !result.data[0] && !profile.onboarded) redirect("/welcome");
+  const workouts = result.error === null ? result.data[1] : [];
+  // Every finished workout counts for the streak, imported ones included.
+  const finishedAll = workouts.filter((w) => w.endedAt);
+  const lastFinished = finishedAll.find((w) => w.source === "app");
+  const review = lastFinished ? await fetchWorkoutReview(supabase, lastFinished.id) : null;
+  const routineName = (id: string | null) => result.data?.[0]?.routines.find((r) => r.id === id)?.name ?? null;
+  const hero = (
+    <HomeHero
+      name={profile.name}
+      workoutDates={finishedAll.map((w) => w.startedAt)}
+      daysPerWeek={result.data?.[0]?.plan.daysPerWeek ?? null}
+      last={
+        lastFinished
+          ? ({
+              id: lastFinished.id,
+              dayName: routineName(lastFinished.routineId),
+              endedAt: lastFinished.endedAt!,
+              reviewTitle: review?.title ?? null,
+            } satisfies LastWorkout)
+          : null
+      }
+    />
+  );
+
   if (result.error !== null) {
     return (
       <>
@@ -30,14 +57,13 @@ export default async function TodayPage() {
       </>
     );
   }
-  const [active, workouts] = result.data;
-  // A brand-new account: ask a few optional details and suggest a plan first.
-  if (!active && !profile.onboarded) redirect("/welcome");
+  // A brand-new account was sent to the welcome flow above.
+  const [active] = result.data;
 
   if (!active) {
     return (
       <>
-        <h1 className="text-2xl font-semibold tracking-tight">{greeting}</h1>
+        {hero}
         <div className="mt-6 rounded-2xl border border-dashed p-6 text-center">
           <p className="text-lg font-medium">No active workout plan</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -69,12 +95,7 @@ export default async function TodayPage() {
   return (
     <>
       {askFeedback && <FeedbackPrompt userId={profile.id} />}
-      <p className="text-sm text-muted-foreground">{greeting}</p>
-      <Link href="/plans" className="mt-1 flex items-center gap-2 py-1">
-        <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">{plan.name}</h1>
-        {plan.isCustom && plan.template && <Badge variant="outline">Custom</Badge>}
-        <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-      </Link>
+      {hero}
 
       {open && (
         <div className="mt-5 rounded-2xl border border-primary/50 bg-accent/40 p-4">
@@ -100,6 +121,11 @@ export default async function TodayPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-primary">Next up</p>
             <p className="text-xs text-muted-foreground">{relativeDay(lastDone.get(next.id))}</p>
           </div>
+          <Link href="/plans" className="mt-0.5 flex min-h-6 items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="truncate">{plan.name}</span>
+            {plan.isCustom && plan.template && <Badge variant="outline">Custom</Badge>}
+            <ChevronRight className="size-3.5 shrink-0" aria-hidden />
+          </Link>
           <h2 className="mt-1 text-3xl font-semibold tracking-tight">{next.name}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Warm-up, then {next.exercises.length} exercises:{" "}

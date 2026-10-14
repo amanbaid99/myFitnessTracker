@@ -695,3 +695,13 @@ plans, which the spec did not have.
   plan, day and exercise names), in both analyze-workout and ask-coach.
   Weights, set lists and dates are left alone. Identity (name, email,
   user id) was never sent.
+
+## 2026-10-14: Home page leads with your streak (Aman's request)
+
+- The top of Today is now a greeting (by local time of day), a card with
+  the week streak, this week's workouts against the plan's days per week
+  (a bar and a Monday to Sunday row of days), and the total logged, then a
+  link to the last workout showing its AI analysis title.
+- Weeks and "today" are the viewer's own, so the card renders in the
+  browser once mounted, like Progress. Imported workouts count for the
+  streak and total. The plan name moved into the Next up card.
