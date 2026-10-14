@@ -126,7 +126,7 @@ describe("analyzeWorkout", () => {
       .filter(([u]) => String(u).startsWith("https://openrouter.ai"))
       .map(([, init]) => JSON.parse(String(init?.body)).model);
     expect(models).toEqual(MODELS);
-    expect(log).toHaveBeenCalledWith("analyze-workout: model refused", { model: MODELS[0], status: 429 });
+    expect(log).toHaveBeenCalledWith("analyze-workout: model refused", { model: MODELS[0], status: 429, reason: "rate limited" });
   });
 
   it("saves nothing when every model fails, and never leaks the key", async () => {

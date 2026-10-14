@@ -305,8 +305,10 @@ export async function askModels(
         signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       });
       if (!res.ok) {
-        await res.body?.cancel();
-        log("analyze-workout: model refused", { model, status: res.status });
+        // OpenRouter's error text says why (rate limit, privacy setting, no
+        // provider); it never contains the key.
+        const reason = (await res.text().catch(() => "")).slice(0, 300);
+        log("analyze-workout: model refused", { model, status: res.status, reason });
         continue;
       }
       const body = (await res.json()) as {
@@ -316,7 +318,10 @@ export async function askModels(
       const choice = body.choices?.[0];
       // Some thinking models leave the answer at the end of their reasoning.
       const review = parseReview(choice?.message?.content) ?? parseReview(choice?.message?.reasoning);
-      if (review) return { review, model: body.model ?? model };
+      if (review) {
+        log("analyze-workout: reviewed", { asked: model, answered: body.model ?? null });
+        return { review, model: body.model ?? model };
+      }
       log("analyze-workout: unusable reply", {
         model,
         finish: choice?.finish_reason ?? null,
