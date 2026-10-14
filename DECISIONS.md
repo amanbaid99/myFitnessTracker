@@ -658,3 +658,24 @@ plans, which the spec did not have.
   History card says it was skipped.
 - The Claude routine is no longer called; its secrets can be removed.
 - Phase 2 (an "Ask coach" chat with a per-user daily limit) comes next.
+
+## 2026-10-14: "Ask coach" chat (Aman's request)
+
+- An "Ask coach" button on Progress, and "Ask about this" on a workout's
+  analysis card, open a chat sheet answered by free OpenRouter models
+  (Nemotron 3 Super, then Nemotron 3.5 Lightning, then the free router).
+  From an analysis, that workout is marked in the context so "explain
+  this" and "what should I change" are about it.
+- The `ask-coach` Edge Function (JWT required) reads with the caller's own
+  token, so RLS applies, and sends a compact summary: profile basics, the
+  active plan, the last 4 weeks' best sets (at most 16 sessions), sets per
+  muscle per week, and the last 3 analyses. No names, emails or ids.
+- Answers: at most about 80 words. Pain or injury questions get "see a
+  doctor or physio". The coach cannot change the plan; it says what to
+  change in the app.
+- Chats are not stored. The app sends the conversation so far (last 8
+  messages) with each question, so follow-ups and "I felt tired today"
+  work within one sheet; closing it ends the chat.
+- 10 answered questions per user per day (UTC), counted in `coach_usage`
+  by `count_coach_question()` (security definer, caller only). Unanswered
+  questions do not count. Users can read their count but not write it.

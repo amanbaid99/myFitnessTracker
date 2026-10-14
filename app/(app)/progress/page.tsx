@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AskCoach } from "@/components/coach/ask-coach";
 import { DataError } from "@/components/data-error";
 import { ProgressOverview, type ExerciseProgress } from "@/components/progress/progress-overview";
 import { ScreenHeader } from "@/components/screen-header";
@@ -48,6 +49,7 @@ export default async function ProgressPage() {
   return (
     <>
       <ScreenHeader title="Progress" subtitle="Estimated 1RM, sets per muscle and your streak." />
+      <AskCoach className="mb-6 w-full" />
       <ProgressOverview
         workoutDates={workouts.filter((w) => w.startedAt >= since).map((w) => w.startedAt)}
         muscleRows={muscleRows}

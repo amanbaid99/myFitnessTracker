@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown from "react-markdown";
 import { Loader2, Sparkles } from "lucide-react";
 import {
   fetchWorkoutReview,
@@ -12,27 +12,12 @@ import {
   type WorkoutReview,
 } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/client";
-
-// Compact styling for the summary. Raw HTML in the markdown is dropped (skipHtml).
-const MD: Components = {
-  p: (props) => <p className="mt-2 first:mt-0" {...props} />,
-  ul: (props) => <ul className="mt-2 list-disc space-y-1 pl-5 first:mt-0" {...props} />,
-  ol: (props) => <ol className="mt-2 list-decimal space-y-1 pl-5 first:mt-0" {...props} />,
-  strong: (props) => <strong className="font-semibold text-foreground" {...props} />,
-  h1: (props) => <p className="mt-3 font-semibold text-foreground first:mt-0" {...props} />,
-  h2: (props) => <p className="mt-3 font-semibold text-foreground first:mt-0" {...props} />,
-  h3: (props) => <p className="mt-3 font-semibold text-foreground first:mt-0" {...props} />,
-  a: ({ href, children }) => (
-    <a href={href} target="_blank" rel="noreferrer noopener" className="text-primary underline underline-offset-4">
-      {children}
-    </a>
-  ),
-  img: () => null,
-};
+import { AskCoach } from "@/components/coach/ask-coach";
+import { MD } from "@/components/compact-markdown";
 
 /**
  * The post-workout analysis. Shows it if it exists; otherwise, within 10
- * minutes of finishing, checks every 20 s until it arrives.
+ * minutes of finishing, checks every 10 s until it arrives.
  */
 export function WorkoutReviewCard({
   workoutId,
@@ -85,6 +70,7 @@ export function WorkoutReviewCard({
           <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
             <ReactMarkdown components={MD} skipHtml>{review.summary}</ReactMarkdown>
           </div>
+          <AskCoach workoutId={workoutId} label="Ask about this" className="mt-3 w-full" />
         </>
       ) : state === "polling" ? (
         <p className="flex items-center gap-2 text-sm">

@@ -372,6 +372,22 @@ with u as (update public.exercises set weight_step_kg = 5
            where id = 'aaaaaaaa-0000-0000-0000-000000000001' returning 1)
 select pg_temp.expect((select count(*) from u) = 0, 'cannot change another user''s weight step');
 
+-- Ask coach usage -----------------------------------------------------------
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect(public.count_coach_question() = 1, 'the first coach question of the day counts 1');
+select pg_temp.expect(public.count_coach_question() = 2, 'the next one counts 2');
+select pg_temp.expect(
+  (select questions from public.coach_usage where user_id = '11111111-1111-1111-1111-111111111111') = 2,
+  'a user reads their own coach count');
+select pg_temp.expect_error(
+  $$update public.coach_usage set questions = 0 where user_id = '11111111-1111-1111-1111-111111111111'$$,
+  'users cannot reset their coach count');
+select pg_temp.expect_error(
+  $$insert into public.coach_usage (user_id, day) values ('11111111-1111-1111-1111-111111111111', '2000-01-01')$$,
+  'users cannot write coach counts directly');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pg_temp.expect((select count(*) from public.coach_usage) = 0, 'coach counts are private');
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;
@@ -381,6 +397,7 @@ select pg_temp.expect((select count(*) from public.feedback) = 0, 'anon sees no 
 select pg_temp.expect_error(
   $$insert into public.feedback (kind, rating) values ('feedback', 'good')$$,
   'anon cannot send feedback');
+select pg_temp.expect_error($$select public.count_coach_question()$$, 'anon cannot count coach questions');
 reset role;
 
 \o
