@@ -16,9 +16,11 @@ type Mode = "signin" | "signup" | "signup-code" | "forgot" | "forgot-code";
 
 export function LoginForm({
   initialError,
+  initialNotice,
   initialMode = "signin",
 }: {
   initialError: string | null;
+  initialNotice?: string | null;
   initialMode?: "signin" | "signup";
 }) {
   const router = useRouter();
@@ -28,7 +30,7 @@ export function LoginForm({
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(initialNotice ?? null);
 
   function go(next: Mode) {
     setMode(next);
@@ -204,7 +206,7 @@ export function LoginForm({
 
       {mode === "signup-code" && (
         <form onSubmit={confirmSignup} className="space-y-4">
-          <SentTo email={cleanEmail} what="Enter the code from the email to confirm your account." />
+          <SentTo email={cleanEmail} what="Tap the link in the email to confirm your account, or enter the code if the email has one." />
           {codeField}
           <Button type="submit" size="lg" className="w-full" disabled={busy || code.length < 6}>
             {busy ? "Checking…" : "Confirm"}
@@ -219,7 +221,7 @@ export function LoginForm({
       {mode === "forgot" && (
         <form onSubmit={sendResetCode} className="space-y-4">
           <h2 className="text-lg font-medium">Reset password</h2>
-          <p className="text-sm text-muted-foreground">We will email you a 6-digit code.</p>
+          <p className="text-sm text-muted-foreground">We will email you a link to reset it.</p>
           {emailField}
           <Button type="submit" size="lg" className="w-full" disabled={busy || !email}>
             {busy ? "Sending…" : "Send code"}
@@ -230,7 +232,7 @@ export function LoginForm({
 
       {mode === "forgot-code" && (
         <form onSubmit={verifyResetCode} className="space-y-4">
-          <SentTo email={cleanEmail} what="Enter the code from the email, then choose a new password." />
+          <SentTo email={cleanEmail} what="Tap the link in the email, or enter the code if it has one, then choose a new password." />
           {codeField}
           <Button type="submit" size="lg" className="w-full" disabled={busy || code.length < 6}>
             {busy ? "Checking…" : "Continue"}

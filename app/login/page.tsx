@@ -7,7 +7,7 @@ import { LoginForm } from "./login-form";
 export const metadata: Metadata = { title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { error, mode } = await searchParams;
+  const { error, mode, confirmed } = await searchParams;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 pb-safe pt-safe">
@@ -17,6 +17,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       </p>
       <LoginForm
         initialError={typeof error === "string" ? error : null}
+        initialNotice={confirmed === "1" ? "Your email is confirmed. Sign in with your password." : null}
         initialMode={mode === "signup" ? "signup" : "signin"}
       />
       <div className="mt-8 border-t pt-6 text-center">

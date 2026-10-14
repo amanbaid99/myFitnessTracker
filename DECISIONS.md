@@ -705,3 +705,14 @@ plans, which the spec did not have.
 - Weeks and "today" are the viewer's own, so the card renders in the
   browser once mounted, like Progress. Imported workouts count for the
   streak and total. The plan name moved into the Next up card.
+
+## 2026-10-14: Sign-up works with Supabase's default (link-only) email
+
+- Supabase now requires custom SMTP before email templates can be edited,
+  so the code-in-the-email templates in SETUP.md cannot be applied yet.
+  The sign-up and reset screens now say "tap the link, or enter the code
+  if the email has one".
+- A confirm link opened in another browser (iPhone Mail opens Safari, not
+  the installed app) cannot sign in, but the email is already confirmed by
+  then; /auth/confirm now sends the user to sign in with "Your email is
+  confirmed" instead of an error.

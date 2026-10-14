@@ -8,6 +8,11 @@ import { createClient } from "@/lib/supabase/server";
  * - `?token_hash=…&type=signup|recovery` from the templates in docs/SETUP.md.
  * - `?code=…` from Supabase's default templates (PKCE; same browser only).
  * Recovery links continue to /reset-password to choose a new password.
+ *
+ * A `?code=` link opened in another browser (on iPhone, Mail opens Safari,
+ * not the installed app) cannot sign in, but Supabase has already
+ * confirmed the email by then, so the user is told to sign in instead of
+ * seeing an error.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
@@ -28,6 +33,11 @@ export async function GET(request: NextRequest) {
     error = result.error?.message ?? null;
   }
 
+  if (error && code && !recovery) {
+    const url = new URL("/login", origin);
+    url.searchParams.set("confirmed", "1");
+    return NextResponse.redirect(url);
+  }
   if (error) {
     const url = new URL("/login", origin);
     url.searchParams.set("error", error);
