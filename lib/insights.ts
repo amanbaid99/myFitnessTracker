@@ -1,6 +1,6 @@
 /**
- * Post-workout analysis: the Claude routine writes a workout_review row in
- * public.insights; the app reads it (server first, then by polling).
+ * Post-workout analysis: the analyze-workout Edge Function asks a free model
+ * on OpenRouter and writes a workout_review row in public.insights; the app reads it (server first, then by polling).
  * Safe for both server and browser Supabase clients.
  */
 
@@ -13,7 +13,7 @@ export interface WorkoutReview {
   readAt: string | null;
 }
 
-export const POLL_EVERY_MS = 20_000;
+export const POLL_EVERY_MS = 10_000;
 /** How long after finishing the app keeps checking for the analysis. */
 export const POLL_WINDOW_MS = 10 * 60_000;
 /** After this, a workout without an analysis shows no card at all. */

@@ -638,3 +638,23 @@ plans, which the spec did not have.
   now step by 2.5 kg too until changed. Bodyweight and other still
   progress by reps, so the option is hidden for them.
 - Choices are shown in kg for now; pounds users would see kg steps here.
+
+## 2026-10-14: Workout analysis moves to free models on OpenRouter
+
+- Aman chose free OpenRouter models over the Claude routine, so every user
+  gets an analysis, not only Aman. Privacy accepted: only exercise names,
+  numbers, how sets felt and exercise notes are sent; no names, emails or
+  ids. Free tier for now (50 requests a day for the whole app).
+- `analyze-workout` now loads the workout itself (service role, server
+  only), builds a few lines per exercise (today against last time, feel,
+  new heaviest, note) and asks Nemotron 3 Super, then Nemotron 3.5
+  Lightning, then OpenRouter's any-free-model router. It answers the
+  webhook at once and does the work in the background
+  (EdgeRuntime.waitUntil), so a slow model never holds up the database.
+- Replies must be JSON {title, summary}: at most 6 words and about 60
+  words, as Aman asked for quick and simple. Saved as a workout_review
+  insight with generated_by 'openrouter' and the model in details; a re-run
+  updates the same row. If no model answers, nothing is saved and the
+  History card says it was skipped.
+- The Claude routine is no longer called; its secrets can be removed.
+- Phase 2 (an "Ask coach" chat with a per-user daily limit) comes next.

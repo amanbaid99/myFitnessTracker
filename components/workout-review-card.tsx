@@ -93,7 +93,7 @@ export function WorkoutReviewCard({
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          The analysis is not ready yet. Check back later.
+          No analysis for this one. The free AI was busy, so it was skipped.
         </p>
       )}
     </section>
