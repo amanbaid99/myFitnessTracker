@@ -49,6 +49,11 @@ describe("parseReview", () => {
     expect(parseReview("no json here")).toBeNull();
     expect(parseReview('{"title": "", "summary": "x"}')).toBeNull();
     expect(parseReview('{"title": 3, "summary": "x"}')).toBeNull();
+    expect(parseReview('{"title": "...", "summary": "..."}')).toBeNull();
+  });
+  it("finds the answer at the end of thinking that quotes the prompt", () => {
+    const reasoning = 'Format is {"title": "...", "summary": "..."}. Bench {went} up. {"title":"Bench up","summary":"82.5kg for 6."}';
+    expect(parseReview(reasoning)).toEqual({ title: "Bench up", summary: "82.5kg for 6." });
   });
 });
 

@@ -22,7 +22,8 @@ export const MODELS = [
   "openrouter/free",
 ];
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL_TIMEOUT_MS = 45_000;
+// Three tries must fit in the time a background task is allowed to run.
+const MODEL_TIMEOUT_MS = 25_000;
 const DB_TIMEOUT_MS = 10_000;
 
 export interface SetData {
@@ -105,24 +106,35 @@ export const SYSTEM_PROMPT = [
 export function parseReview(content: string | null | undefined): Review | null {
   if (!content) return null;
   const text = content.replace(/<think>[\s\S]*?<\/think>/g, "");
-  const start = text.indexOf("{");
+  // The answer is the last JSON object in the text: try each "{" from the
+  // end, so thinking or chatter before it does not get in the way.
   const end = text.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
+  for (let start = text.lastIndexOf("{", end); start !== -1; start = text.lastIndexOf("{", start - 1)) {
+    const review = toReview(text.slice(start, end + 1));
+    if (review) return review;
+    if (start === 0) break;
+  }
+  return null;
+}
+
+function toReview(json: string): Review | null {
   let raw: unknown;
   try {
-    raw = JSON.parse(text.slice(start, end + 1));
+    raw = JSON.parse(json);
   } catch {
     return null;
   }
   const r = raw as { title?: unknown; summary?: unknown };
-  if (typeof r.title !== "string" || typeof r.summary !== "string") return null;
+  if (typeof r?.title !== "string" || typeof r.summary !== "string") return null;
   const tidy = (s: string, max: number) => {
-    const t = s.replace(/\s*[—–]\s*/g, ", ").replace(/\s+/g, " ").trim();
+    const t = s.replace(/\s*[\u2014\u2013]\s*/g, ", ").replace(/\s+/g, " ").trim();
     return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
   };
   const title = tidy(r.title, 80);
   const summary = tidy(r.summary, 600);
-  return title && summary ? { title, summary } : null;
+  // The prompt's own example ("...") is not an answer.
+  const real = (t: string) => t.replace(/[.\s…]/g, "").length > 0;
+  return real(title) && real(summary) ? { title, summary } : null;
 }
 
 // ------------------------------------------------------------- database ----
@@ -285,9 +297,10 @@ export async function askModels(
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: summary },
           ],
-          max_tokens: 1200,
+          // Room for models that think before answering; the answer itself is short.
+          max_tokens: 4000,
           temperature: 0.4,
-          reasoning: { effort: "low", exclude: true },
+          reasoning: { effort: "low" },
         }),
         signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       });
@@ -296,10 +309,20 @@ export async function askModels(
         log("analyze-workout: model refused", { model, status: res.status });
         continue;
       }
-      const body = (await res.json()) as { choices?: { message?: { content?: string } }[]; model?: string };
-      const review = parseReview(body.choices?.[0]?.message?.content);
+      const body = (await res.json()) as {
+        choices?: { message?: { content?: string | null; reasoning?: string | null }; finish_reason?: string }[];
+        model?: string;
+      };
+      const choice = body.choices?.[0];
+      // Some thinking models leave the answer at the end of their reasoning.
+      const review = parseReview(choice?.message?.content) ?? parseReview(choice?.message?.reasoning);
       if (review) return { review, model: body.model ?? model };
-      log("analyze-workout: unusable reply", { model });
+      log("analyze-workout: unusable reply", {
+        model,
+        finish: choice?.finish_reason ?? null,
+        contentLength: choice?.message?.content?.length ?? 0,
+        reasoningLength: choice?.message?.reasoning?.length ?? 0,
+      });
     } catch (e) {
       log("analyze-workout: model error", { model, error: e instanceof Error ? e.name : "unknown" });
     }
