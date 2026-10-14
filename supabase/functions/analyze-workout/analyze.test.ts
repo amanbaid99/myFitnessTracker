@@ -37,6 +37,13 @@ describe("buildSummary", () => {
   });
 });
 
+describe("buildSummary privacy", () => {
+  it("strips contact details from notes", () => {
+    const text = buildSummary({ ...DATA, notes: { "Bench Press": "Trainer is jo@gym.com, 07700 900123" } });
+    expect(text).toContain('note: "Trainer is [email], [phone]"');
+  });
+});
+
 describe("parseReview", () => {
   it("reads JSON wrapped in other text or thinking, and tidies dashes", () => {
     expect(parseReview('<think>hmm {"x":1}</think>Sure! {"title":"Solid push day","summary":"Bench went up — nice."}')).toEqual({

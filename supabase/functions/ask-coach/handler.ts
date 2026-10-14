@@ -5,13 +5,16 @@
  * Every database read uses the caller's own token, so RLS keeps it to their
  * data. The context sent to the model is a short summary (plan, the last
  * four weeks, sets per muscle, recent analyses), with no names, emails or
- * ids. Each user gets DAILY_LIMIT answered questions a day, so nobody can
+ * ids, and contact details in anything the user typed are stripped
+ * (redact.ts). Each user gets DAILY_LIMIT answered questions a day, so nobody can
  * use up the app's shared free quota. Chats are not stored: the app sends
  * the conversation so far with each question.
  *
  * Plain Request/Response/fetch only, so it runs on Deno (index.ts) and is
  * unit tested under Node.
  */
+
+import { redact } from "./redact.ts";
 
 export interface Env {
   SUPABASE_URL?: string;
@@ -32,6 +35,7 @@ const MAX_MESSAGES = 8;
 const MAX_MESSAGE_CHARS = 1000;
 const WEEKS = 4;
 const MAX_SESSIONS = 16;
+export const RECENT_WORKOUTS = 3;
 
 type Log = (message: string, fields?: Record<string, unknown>) => void;
 
@@ -60,7 +64,7 @@ export function readMessages(body: unknown): ChatMessage[] | null {
     const role = (m as { role?: unknown })?.role;
     const content = (m as { content?: unknown })?.content;
     if ((role !== "user" && role !== "assistant") || typeof content !== "string" || !content.trim()) return null;
-    messages.push({ role, content: content.trim().slice(0, MAX_MESSAGE_CHARS) });
+    messages.push({ role, content: redact(content.trim().slice(0, MAX_MESSAGE_CHARS)) });
   }
   return messages[messages.length - 1].role === "user" ? messages : null;
 }
@@ -80,6 +84,8 @@ export interface CoachData {
   analyses: { date: string; title: string; summary: string; workoutId: string | null }[];
   /** The session the user opened the chat from, if any. */
   focusWorkoutId: string | null;
+  /** Every working set of the latest workouts, when the user asked about them. */
+  recent?: { date: string; day: string | null; exercises: string[] }[];
 }
 
 const num = (n: number) => String(Math.round(n * 100) / 100);
@@ -102,6 +108,14 @@ export function buildContext(d: CoachData): string {
   lines.push("", "Average working sets per week by muscle:");
   lines.push(muscles.length ? `- ${muscles.map(([m, n]) => `${m} ${num(n)}`).join(", ")}` : "- no data");
 
+  if (d.recent?.length) {
+    lines.push("", `Their last ${d.recent.length} workouts in detail (they want to talk about these; feel is how the set felt):`);
+    for (const w of d.recent) {
+      lines.push(`- ${w.date} ${w.day ?? "Workout"}:`);
+      for (const e of w.exercises) lines.push(`  - ${e}`);
+    }
+  }
+
   if (d.analyses.length) {
     lines.push("", "Recent post-workout analyses:");
     for (const a of d.analyses) {
@@ -109,7 +123,8 @@ export function buildContext(d: CoachData): string {
       lines.push(`- ${a.date}${focus}: ${a.title}. ${a.summary}`);
     }
   }
-  return lines.join("\n");
+  // Plan, day and exercise names are typed by the user: strip contact details.
+  return redact(lines.join("\n"));
 }
 
 export const SYSTEM_PROMPT = [
@@ -164,6 +179,7 @@ export async function loadCoachData(
   fetchFn: typeof fetch,
   focusWorkoutId: string | null,
   now: Date,
+  detailLast = 0,
 ): Promise<CoachData> {
   const since = new Date(now.getTime() - WEEKS * 7 * 86_400_000).toISOString();
   const [profiles, routines, workouts, bests, muscles, insights] = await Promise.all([
@@ -213,8 +229,11 @@ export async function loadCoachData(
   for (const m of muscles) muscleTotals[m.muscle] = (muscleTotals[m.muscle] ?? 0) + Number(m.sets);
   for (const k of Object.keys(muscleTotals)) muscleTotals[k] = Math.round((muscleTotals[k] / WEEKS) * 10) / 10;
 
+  const recent = detailLast > 0 ? await loadRecent(env, token, fetchFn, detailLast) : undefined;
+
   const profile = profiles[0];
   return {
+    recent,
     units: profile?.units ?? "kg",
     experience: profile?.experience ?? null,
     setup: profile?.training_setup ?? null,
@@ -233,6 +252,36 @@ export async function loadCoachData(
     analyses: insights.map((i) => ({ date: i.period_start, title: i.title, summary: i.summary, workoutId: i.workout_id })),
     focusWorkoutId,
   };
+}
+
+const FEEL = (rpe: number) => (rpe <= 6.5 ? "easy" : rpe <= 8 ? "good" : rpe < 10 ? "hard" : "max");
+
+/** Every working set of the latest finished workouts, oldest first. */
+async function loadRecent(env: Required<Env>, token: string, fetchFn: typeof fetch, count: number): Promise<CoachData["recent"]> {
+  const workouts = await read<{ id: string; started_at: string; routines: { name: string } | null }[]>(
+    env, token, fetchFn,
+    `workouts?select=id,started_at,routines(name)&ended_at=not.is.null&cancelled_at=is.null&order=started_at.desc&limit=${count}`,
+  );
+  if (workouts.length === 0) return [];
+  const sets = await read<{ workout_id: string; weight_kg: number | string | null; added_kg: number | string; reps: number | null; rpe: number | string | null; exercises: { name: string } | null }[]>(
+    env, token, fetchFn,
+    `sets?workout_id=in.(${workouts.map((w) => encodeURIComponent(w.id)).join(",")})&set_type=eq.working&deleted_at=is.null` +
+      "&select=workout_id,weight_kg,added_kg,reps,rpe,exercises(name)&order=logged_at",
+  );
+  return [...workouts].reverse().map((w) => {
+    const byExercise = new Map<string, string[]>();
+    for (const s of sets.filter((x) => x.workout_id === w.id)) {
+      const name = s.exercises?.name ?? "Exercise";
+      const load = s.weight_kg === null ? "bodyweight" : `${num(Number(s.weight_kg))}${Number(s.added_kg) ? `+${num(Number(s.added_kg))}` : ""}kg`;
+      const feel = s.rpe === null ? "" : ` (${FEEL(Number(s.rpe))})`;
+      byExercise.set(name, [...(byExercise.get(name) ?? []), `${load}x${s.reps ?? "?"}${feel}`]);
+    }
+    return {
+      date: w.started_at.slice(0, 10),
+      day: w.routines?.name ?? null,
+      exercises: [...byExercise].map(([name, list]) => `${name}: ${list.join(", ")}`),
+    };
+  });
 }
 
 // --------------------------------------------------------------- model ----
@@ -311,13 +360,15 @@ export async function handle(
   if (!messages) return json(400, { error: "no question" });
   const workoutId = (body as { workoutId?: unknown }).workoutId;
   const focus = typeof workoutId === "string" && /^[0-9a-f-]{36}$/i.test(workoutId) ? workoutId : null;
+  // "recent": the user wants to talk about their latest workouts set by set.
+  const detailLast = (body as { scope?: unknown }).scope === "recent" ? RECENT_WORKOUTS : 0;
 
   try {
     const today = now();
     const asked = await questionsToday(cfg, token, fetchFn, today);
     if (asked >= DAILY_LIMIT) return json(429, { error: "limit", remaining: 0 });
 
-    const context = buildContext(await loadCoachData(cfg, token, fetchFn, focus, today));
+    const context = buildContext(await loadCoachData(cfg, token, fetchFn, focus, today, detailLast));
     const reply = await askModels(cfg, fetchFn, context, messages, log);
     if (!reply) return json(503, { error: "busy", remaining: DAILY_LIMIT - asked });
 

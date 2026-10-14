@@ -13,7 +13,12 @@ describe("readMessages", () => {
     expect(out[0]).toEqual({ role: "assistant", content: "m3" });
     expect(out[7]).toEqual({ role: "user", content: "m10" });
   });
-  it("rejects anything else", () => {
+  it("strips contact details from what the user typed", () => {
+    expect(readMessages({ messages: [{ role: "user", content: "email me at a@b.com" }] })).toEqual([
+      { role: "user", content: "email me at [email]" },
+    ]);
+  });
+    it("rejects anything else", () => {
     expect(readMessages({})).toBeNull();
     expect(readMessages({ messages: [] })).toBeNull();
     expect(readMessages({ messages: [{ role: "system", content: "x" }] })).toBeNull();
@@ -55,6 +60,23 @@ describe("buildContext", () => {
   });
 });
 
+describe("buildContext with recent workouts", () => {
+  it("lists every set of the latest workouts when asked about them", () => {
+    const text = buildContext({
+      ...DATA,
+      analyses: [],
+      recent: [{ date: "2026-10-13", day: "Upper 2", exercises: ["Lat Pulldown: 23.5kgx9 (hard), 47kgx9 (hard)"] }],
+    });
+    expect(text).toContain(
+      [
+        "Their last 1 workouts in detail (they want to talk about these; feel is how the set felt):",
+        "- 2026-10-13 Upper 2:",
+        "  - Lat Pulldown: 23.5kgx9 (hard), 47kgx9 (hard)",
+      ].join("\n"),
+    );
+  });
+});
+
 describe("cleanReply", () => {
   it("drops thinking and em dashes, and empty replies", () => {
     expect(cleanReply("<think>hmm</think> Add a set — easy.")).toBe("Add a set, easy.");
@@ -78,6 +100,15 @@ function fakeFetch({ asked = 0, models = [] as (Response | Error)[] } = {}) {
     if (url.includes("/rpc/count_coach_question")) return json(asked + 1);
     if (url.includes("/profiles?")) return json([{ units: "kg", experience: null, training_setup: "gym" }]);
     if (url.includes("/routines?")) return json([]);
+    if (url.includes("/workouts?") && url.includes("limit=3")) {
+      return json([{ id: W1, started_at: "2026-10-13T04:00:00Z", routines: { name: "Upper 2" } }]);
+    }
+    if (url.includes("/sets?workout_id=in.")) {
+      return json([
+        { workout_id: W1, weight_kg: "23.50", added_kg: "0", reps: 9, rpe: "9", exercises: { name: "Lat Pulldown" } },
+        { workout_id: W1, weight_kg: "47.00", added_kg: "0", reps: 9, rpe: null, exercises: { name: "Lat Pulldown" } },
+      ]);
+    }
     if (url.includes("/workouts?")) return json([{ id: W1, started_at: "2026-10-13T04:00:00Z", routines: { name: "Upper 2" } }]);
     if (url.includes("/exercise_session_best?")) return json([{ workout_id: W1, exercise_id: "e1", weight_kg: "47.00", added_kg: "0", reps: 9 }]);
     if (url.includes("/exercises?")) return json([{ id: "e1", name: "Lat Pulldown" }]);
@@ -114,6 +145,20 @@ describe("handle", () => {
     expect(sent.messages[0].content).toContain("- 2026-10-13 Upper 2: Lat Pulldown 47x9");
     expect(sent.messages[0].content).toContain("lats 1");
     expect(sent.messages.slice(1)).toEqual(question.messages);
+  });
+
+  it("adds every set of the last 3 workouts when the scope is recent", async () => {
+    const fetchFn = fakeFetch({ models: [modelOk("Good week.")] });
+    const res = await handle(ask({ ...question, scope: "recent" }), ENV, fetchFn, () => {}, NOW);
+    expect(res.status).toBe(200);
+    const sent = JSON.parse(String(fetchFn.mock.calls.find(([u]) => String(u).startsWith("https://openrouter.ai"))![1]?.body));
+    expect(sent.messages[0].content).toContain("  - Lat Pulldown: 23.5kgx9 (hard), 47kgx9");
+  });
+
+  it("leaves the detail out otherwise", async () => {
+    const fetchFn = fakeFetch({ models: [modelOk("Ok.")] });
+    await handle(ask(question), ENV, fetchFn, () => {}, NOW);
+    expect(fetchFn.mock.calls.some(([u]) => String(u).includes("/sets?workout_id=in."))).toBe(false);
   });
 
   it("stops at the daily limit without asking a model", async () => {

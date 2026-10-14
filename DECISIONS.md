@@ -679,3 +679,19 @@ plans, which the spec did not have.
 - 10 answered questions per user per day (UTC), counted in `coach_usage`
   by `count_coach_question()` (security definer, caller only). Unanswered
   questions do not count. Users can read their count but not write it.
+
+## 2026-10-14: Coach tab, "last 3 workouts", and stripping contact details
+
+- Coach is now a bottom tab (six tabs; fits at 360px). Its chat is kept for
+  the browser tab (sessionStorage), so switching tabs does not lose it; a
+  New chat button clears it. Progress links to it; a workout's analysis
+  card keeps "Ask about this" as a sheet focused on that workout.
+- A "Last 3 workouts" / "Last 4 weeks" switch picks what the coach looks
+  at. Last 3 adds every working set of the three latest workouts, with how
+  each felt; the starter "How did my last 3 workouts go?" switches to it.
+- Privacy guardrail (Aman asked): before anything goes to an outside model,
+  email addresses, phone numbers and links are replaced with [email],
+  [phone] and [link] in everything the user typed (chat messages, notes,
+  plan, day and exercise names), in both analyze-workout and ask-coach.
+  Weights, set lists and dates are left alone. Identity (name, email,
+  user id) was never sent.

@@ -4,10 +4,13 @@
  * review, and save it as a workout_review insight.
  *
  * Only exercise names, numbers, how sets felt and the user's exercise notes
- * are sent. No names, emails or ids. Plain fetch against PostgREST with the
+ * are sent. No names, emails or ids, and contact details typed into notes
+ * or names are stripped (redact.ts). Plain fetch against PostgREST with the
  * service role (this runs on the server only), so it is unit tested under
  * Node.
  */
+
+import { redact } from "./redact.ts";
 
 export interface AnalyzeEnv {
   SUPABASE_URL: string;
@@ -90,7 +93,8 @@ export function buildSummary(d: WorkoutData): string {
     if (d.notes[name]) parts.push(`note: "${d.notes[name].slice(0, 200)}"`);
     lines.push(parts.join("; ") + ".");
   }
-  return lines.join("\n");
+  // Names and notes are typed by the user: strip contact details.
+  return redact(lines.join("\n"));
 }
 
 export const SYSTEM_PROMPT = [

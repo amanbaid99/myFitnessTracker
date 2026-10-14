@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { AskCoach } from "@/components/coach/ask-coach";
+import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { ProgressOverview, type ExerciseProgress } from "@/components/progress/progress-overview";
 import { ScreenHeader } from "@/components/screen-header";
+import { Button } from "@/components/ui/button";
 import { getExerciseNames, getFinishedWorkouts, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
 import { progressWindowStart } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
@@ -49,7 +51,11 @@ export default async function ProgressPage() {
   return (
     <>
       <ScreenHeader title="Progress" subtitle="Estimated 1RM, sets per muscle and your streak." />
-      <AskCoach className="mb-6 w-full" />
+      <Button asChild variant="outline" className="mb-6 w-full">
+        <Link href="/coach">
+          <MessageCircle /> Ask coach about your progress
+        </Link>
+      </Button>
       <ProgressOverview
         workoutDates={workouts.filter((w) => w.startedAt >= since).map((w) => w.startedAt)}
         muscleRows={muscleRows}
