@@ -8,6 +8,7 @@
  */
 
 import type { Exercise, RoutineExercise } from "./data";
+import type { Targets } from "./default-targets";
 
 const PREFIX = "wt-extra-";
 const MAX_AGE_SEC = 60 * 60 * 24 * 2;
@@ -31,14 +32,14 @@ export function extraExerciseIds(cookieIds: string[], loggedIds: string[], dayId
   return [...new Set([...cookieIds, ...loggedIds])].filter((id) => !day.has(id));
 }
 
-/** An extra exercise as a day item: 3 x 10 with the default rest, like a new plan exercise. */
-export function extraItem(exercise: Exercise, index: number): RoutineExercise {
+/** An extra exercise as a day item, with targets from lib/default-targets. */
+export function extraItem(exercise: Exercise, index: number, targets: Targets): RoutineExercise {
   return {
     id: `${ITEM_PREFIX}${exercise.id}`,
     sortOrder: 10000 + index,
-    targetSets: 3,
-    targetReps: 10,
-    restSec: null,
+    targetSets: targets.sets,
+    targetReps: targets.reps,
+    restSec: targets.restSec,
     exercise,
   };
 }

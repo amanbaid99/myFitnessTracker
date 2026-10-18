@@ -10,6 +10,7 @@ import {
   getPreviousSessions,
   getProfile,
   getRoutine,
+  getRoutines,
   getWorkout,
   getWorkoutNotes,
   getWorkoutSets,
@@ -20,6 +21,7 @@ import { routineWarmup } from "@/lib/general-warmup";
 import { buildSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { extraExerciseIds, extraItem, extrasCookieName, parseExtras } from "@/lib/workout-extras";
+import { defaultTargets, slots } from "@/lib/default-targets";
 import { Logger } from "./logger";
 
 export const metadata: Metadata = { title: "Workout" };
@@ -39,12 +41,16 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       getWorkoutSets(supabase, id),
       getExerciseLibrary(supabase),
     ]);
+    // Every day of the plan, so an added exercise takes its usual sets and reps.
+    const planRoutines = routine ? await getRoutines(supabase, routine.planId) : [];
+    const planSlots = slots(planRoutines.flatMap((r) => r.exercises));
+    const daySlots = slots(routine?.exercises ?? []);
     // Exercises added to this workout only, after the day's own.
     const dayIds = routine?.exercises.map((e) => e.exercise.id) ?? [];
     const extras = extraExerciseIds(cookieIds, logged.map((s) => s.exerciseId), dayIds)
       .map((exId) => library.find((e) => e.id === exId))
       .filter((e) => e !== undefined)
-      .map(extraItem);
+      .map((e, i) => extraItem(e, i, defaultTargets(e.id, daySlots, planSlots)));
     const items = [...(routine?.exercises ?? []), ...extras];
     const exerciseIds = items.map((e) => e.exercise.id);
     const [profile, previous, prs, notes, lastNotes, plan] = await Promise.all([
@@ -55,7 +61,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       getLastNotes(supabase, exerciseIds, id),
       routine ? getPlan(supabase, routine.planId) : Promise.resolve(null),
     ]);
-    return { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library };
+    return { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots };
   });
 
   if (result.error !== null) {
@@ -66,7 +72,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library } = result.data;
+  const { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots } = result.data;
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
@@ -96,7 +102,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       hasLoggedSets={logged.length > 0}
       notes={Object.fromEntries(notes)}
       lastNotes={Object.fromEntries(lastNotes)}
-      editing={plan ? { routineId: routine.id, plan, library } : undefined}
+      editing={plan ? { routineId: routine.id, plan, library, planSlots } : undefined}
     />
   );
 }

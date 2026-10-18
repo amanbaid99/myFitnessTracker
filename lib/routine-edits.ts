@@ -8,6 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExercisePick } from "@/components/plan/add-exercise";
 import type { ExerciseEdits } from "@/components/plan/exercise-sheet";
 import type { RoutineExercise } from "./data";
+import { defaultTargets, slots, type Targets } from "./default-targets";
 
 export type DbResult = { error: { message: string; code?: string } | null };
 
@@ -27,16 +28,20 @@ export async function addExercise(
   routineId: string,
   items: RoutineExercise[],
   pick: ExercisePick,
+  /** Defaults to what the day mostly uses (lib/default-targets). */
+  targets?: Targets,
 ): Promise<DbResult> {
   const { id, error } = await exerciseIdFor(supabase, pick);
   if (error || !id) return { error: error ?? { message: "Could not create the exercise." } };
   const sort = items.length ? Math.max(...items.map((i) => i.sortOrder)) + 1 : 1;
+  const t = targets ?? defaultTargets(id, slots(items));
   return supabase.from("routine_exercises").insert({
     routine_id: routineId,
     exercise_id: id,
     sort_order: sort,
-    target_sets: 3,
-    target_reps: 10,
+    target_sets: t.sets,
+    target_reps: t.reps,
+    rest_sec: t.restSec,
   });
 }
 

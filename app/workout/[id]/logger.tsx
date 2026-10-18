@@ -29,6 +29,7 @@ import {
   type DbResult,
 } from "@/lib/routine-edits";
 import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
+import { defaultTargets, slots } from "@/lib/default-targets";
 import type { WarmupItem } from "@/lib/general-warmup";
 import { cn } from "@/lib/utils";
 import { WARMUP_REST_SEC } from "@/lib/warmup";
@@ -40,6 +41,8 @@ export interface WorkoutEditing {
   routineId: string;
   plan: Pick<Plan, "id" | "template" | "isCustom">;
   library: Exercise[];
+  /** Every exercise in the plan with its targets, for adding one with matching sets and reps. */
+  planSlots: ReturnType<typeof slots>;
 }
 
 /** UI state kept across the remount that follows an edit. */
@@ -622,11 +625,13 @@ export function Logger(props: {
                           className="px-2 text-primary"
                           onClick={async () => {
                             const err = await applyEdit(async (s) => {
-                              const res = await addExercise(s, editing.routineId, dayItems, {
-                                exerciseId: item.exercise.id,
-                                name: item.exercise.name,
-                                equipment: item.exercise.equipment,
-                              });
+                              const res = await addExercise(
+                                s,
+                                editing.routineId,
+                                dayItems,
+                                { exerciseId: item.exercise.id, name: item.exercise.name, equipment: item.exercise.equipment },
+                                { sets: item.targetSets, reps: item.targetReps, restSec: item.restSec },
+                              );
                               if (!res.error) removeExtra(workoutId, item.exercise.id);
                               return res;
                             });
@@ -826,7 +831,8 @@ export function Logger(props: {
                 onAdd={async (pick) => {
                   const err = await applyEdit(
                     addToPlan
-                      ? (s) => addExercise(s, editing.routineId, dayItems, pick)
+                      ? (s) =>
+                          addExercise(s, editing.routineId, dayItems, pick, defaultTargets(pick.exerciseId, slots(dayItems), editing.planSlots))
                       : async (s) => {
                           const { id, error } = await exerciseIdFor(s, pick);
                           if (id) addExtra(workoutId, id);

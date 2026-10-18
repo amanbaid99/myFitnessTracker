@@ -746,3 +746,16 @@ plans, which the spec did not have.
   in the installed app on iOS only, never less than 3.75rem, because iOS can
   report a zero inset on a cold start. Browsers and Android are unchanged
   apart from the small extra gap.
+
+## 2026-10-18: Added exercises match the plan's sets and reps (Aman's request)
+
+- An exercise added to a day (this workout only, also to the plan, or in
+  the plan editor) no longer starts at 3 x 10. If it is already elsewhere
+  in the plan it takes those sets, reps and rest; otherwise the day's most
+  common sets x reps (ties: the earlier); 3 x 10 only for an empty day
+  (lib/default-targets.ts). Adding a workout-only exercise to the plan
+  keeps the targets it had.
+- PRs: records, last-time numbers and progress are per exercise from every
+  working set, whatever the day or workout, so sets of an added exercise
+  count toward that exercise's PR when it is picked from the list (a newly
+  typed name is a new exercise with its own record).

@@ -16,9 +16,9 @@ describe("extraExerciseIds", () => {
 });
 
 describe("extraItem", () => {
-  it("is 3 x 10 and marked as an extra", () => {
-    const item = extraItem({ id: "e1", name: "Curl" } as Exercise, 0);
-    expect(item).toMatchObject({ targetSets: 3, targetReps: 10, restSec: null });
+  it("takes the given targets and is marked as an extra", () => {
+    const item = extraItem({ id: "e1", name: "Curl" } as Exercise, 0, { sets: 2, reps: 15, restSec: 60 });
+    expect(item).toMatchObject({ targetSets: 2, targetReps: 15, restSec: 60 });
     expect(isExtraItem(item)).toBe(true);
     expect(isExtraItem({ id: "9b1c" })).toBe(false);
   });
