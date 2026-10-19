@@ -1,5 +1,6 @@
 import { BottomNav } from "@/components/bottom-nav";
 import { ProfileButton } from "@/components/profile-button";
+import { UpdateBanner } from "@/components/update/update-banner";
 import { getProfile } from "@/lib/data";
 import { initials } from "@/lib/initials";
 import { createClient } from "@/lib/supabase/server";
@@ -19,6 +20,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
         {children}
       </main>
+      <UpdateBanner />
       <BottomNav />
     </>
   );

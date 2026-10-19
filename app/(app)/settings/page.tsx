@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FeedbackButtons } from "@/components/feedback-buttons";
 import Link from "next/link";
 import { InstallButton } from "@/components/install-button";
+import { UpdateCheck } from "@/components/update/update-check";
 import { ThemePicker } from "@/components/theme-picker";
 import { cookies } from "next/headers";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
@@ -46,7 +47,10 @@ export default async function SettingsPage() {
 
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-medium">App</h2>
-        <InstallButton />
+        <UpdateCheck />
+        <div className="mt-3">
+          <InstallButton />
+        </div>
       </section>
 
       <section className="mt-8">

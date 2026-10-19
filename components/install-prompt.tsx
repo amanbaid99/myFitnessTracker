@@ -117,7 +117,7 @@ export function InstallPrompt() {
         <img src="/icons/icon-192.png" alt="" className="size-11 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
           <p id="install-title" className="font-medium">
-            Add Workouts to your Home Screen
+            Add Repd to your Home Screen
           </p>
           {platform === "ios" ? (
             <p className="mt-1 text-sm text-muted-foreground">

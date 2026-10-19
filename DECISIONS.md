@@ -857,3 +857,19 @@ plans, which the spec did not have.
   rest was interrupted.
 - The bar's spacing was tightened so the extra button fits at 390px; every
   button stays 44px tall.
+
+## 2026-10-19: "Update ready" banner and Check for updates (Aman's request)
+
+- Each build carries an id (the commit, set in next.config.ts from
+  GITHUB_SHA). /api/version returns the id of the build that is live now.
+  When they differ, the open app is out of date.
+- The app checks 3 s after opening, whenever it comes back to the
+  foreground (installed iPhone apps resume rather than restart), when it
+  comes back online, and every 15 minutes; at most once a minute.
+- A banner above the tab bar says "A new version of Repd is ready" with
+  Update (reloads) and a dismiss for that version. It is only on the tabbed
+  screens, never in the workout logger, so it never interrupts a set.
+- Settings > App shows the version (short commit and build date) and a
+  "Check for updates" button that turns into "Update now".
+- Pages always come from the network (public/sw.js), so a reload is all an
+  update needs; no service worker change.
