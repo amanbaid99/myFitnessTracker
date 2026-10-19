@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { FeedbackButtons } from "@/components/feedback-buttons";
 import Link from "next/link";
 import { InstallButton } from "@/components/install-button";
+import { ThemePicker } from "@/components/theme-picker";
+import { cookies } from "next/headers";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -35,6 +38,11 @@ export default async function SettingsPage() {
       <Button asChild variant="outline" className="mt-3 w-full">
         <Link href="/welcome?details=1">Your details: gender, weight, height, experience</Link>
       </Button>
+
+      <section className="mt-8">
+        <h2 className="mb-3 text-sm font-medium">Appearance</h2>
+        <ThemePicker initial={parseTheme((await cookies()).get(THEME_COOKIE)?.value)} />
+      </section>
 
       <section className="mt-8">
         <h2 className="mb-2 text-sm font-medium">App</h2>

@@ -800,3 +800,20 @@ plans, which the spec did not have.
 - While drafting, a progress screen shows paced steps and a filling bar
   ("Usually 10 to 30 seconds"). A timeout now says the AI took too long and
   that the text is kept, instead of a generic error.
+
+## 2026-10-19: Themes, and a fitness disclaimer on AI plans
+
+- Settings > Appearance lets each person pick a background (Dark, Light,
+  Beige) and one of 10 accent colours. The choice is a cookie (`wt-theme`)
+  so the server renders the right colours on first paint, with no flash.
+  It is per device, not synced; that keeps it free of a migration.
+- Each accent has two shades: a bright one on Dark and a deeper one on
+  Light and Beige. A unit test checks every pair reaches 4.5:1 contrast
+  against its background and against white button text.
+- The installed iPhone app reads its status bar style at launch, so a
+  change there shows after reopening the app. The picker says so.
+- AI-built plans now show a standard fitness disclaimer (not medical
+  advice, talk to your doctor first, stop if you feel pain or dizziness),
+  and "Approve and create" stays disabled until the person ticks "I have
+  checked this plan. I understand it is not medical advice and I exercise
+  at my own risk."

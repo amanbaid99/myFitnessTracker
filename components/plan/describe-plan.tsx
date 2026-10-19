@@ -48,6 +48,8 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
   const [busy, setBusy] = useState(false);
   // While the AI drafts, a progress screen replaces the form.
   const [drafting, setDrafting] = useState(false);
+  // The user must confirm the disclaimer before an AI plan is created.
+  const [understood, setUnderstood] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const emptyDay = days?.find((d) => d.exercises.length === 0);
 
@@ -61,6 +63,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
     setBusy(false);
     setDrafting(false);
     if (data?.draft && !error) {
+      setUnderstood(false);
       setDays(data.draft.days);
       setName(data.draft.name);
       return;
@@ -126,6 +129,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
         />
         <p className="mt-2 text-xs text-muted-foreground">
           Sent to a free AI model to build the draft. Leave out names and contact details. Uses one of your 10 daily AI requests.
+          The result is general fitness information, not medical advice.
         </p>
         <Button size="lg" className="mt-5 w-full" onClick={draft} disabled={busy || text.trim().length < 10}>
           {busy ? (
@@ -157,10 +161,18 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
 
       <div role="note" className="mb-5 flex gap-3 rounded-2xl border border-primary/40 bg-accent/30 p-4 text-sm">
         <TriangleAlert className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-        <p>
-          A free AI made this from your description and can get things wrong. Check every exercise, the order, and the sets and reps, and
-          change anything before you create it. Not medical advice.
-        </p>
+        <div className="space-y-2">
+          <p className="font-medium">Check this plan before you use it</p>
+          <p>
+            A free AI made this from your description and can get things wrong. Check every exercise, the order, and the sets and reps,
+            and change anything before you create it.
+          </p>
+          <p>
+            This is general fitness information, not medical advice. Talk to your doctor before starting a new exercise programme,
+            especially if you have a medical condition or injury, are pregnant, or have not exercised in a while. Use weights you can
+            control with good form. Stop and get help if you feel pain, dizziness, chest discomfort or unusual shortness of breath.
+          </p>
+        </div>
       </div>
 
       <label htmlFor="plan-name" className="mb-1.5 block text-sm font-medium">
@@ -172,7 +184,17 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
       <PlanDraftEditor days={days} onChange={setDays} catalog={exerciseCatalog(library, setup)} />
       {emptyDay && <p className="mt-3 text-sm text-destructive">Add an exercise to {emptyDay.name || "the empty day"}, or remove it.</p>}
 
-      <Button size="lg" className="mt-6 w-full" onClick={create} disabled={busy || !name.trim() || Boolean(emptyDay)}>
+      <label className="mt-6 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border bg-card p-3 text-sm">
+        <input
+          type="checkbox"
+          checked={understood}
+          onChange={(e) => setUnderstood(e.target.checked)}
+          className="mt-0.5 size-5 shrink-0 accent-[var(--primary)]"
+        />
+        <span>I have checked this plan. I understand it is not medical advice and I exercise at my own risk.</span>
+      </label>
+
+      <Button size="lg" className="mt-4 w-full" onClick={create} disabled={busy || !understood || !name.trim() || Boolean(emptyDay)}>
         <Check /> {busy ? "Creating…" : "Approve and create"}
       </Button>
       {error && (

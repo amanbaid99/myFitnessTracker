@@ -4,31 +4,83 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------------------
-   Palette: dark by default (spec). One yellow accent, carried over from the
-   old app, reserved for the primary action on a screen.
+   Palette. A base (dark by default, light, beige) and an accent, chosen in
+   Settings and set as data-base and data-accent on <html> (lib/theme.ts).
+   Each accent has a bright shade for the dark base and a deeper one for the
+   light bases, so text in the accent colour stays readable (4.5:1, tested in
+   lib/theme.test.ts, which also checks these values match lib/theme.ts).
 --------------------------------------------------------------------------- */
 :root {
   --radius: 0.875rem;
 
+  /* Accent: yellow by default. */
+  --accent-bright: #f2d24b;
+  --accent-deep: #806200;
+
+  /* Dark base. */
   --background: #0c0c0d;
   --foreground: #f2f1ee;
   --card: #17171a;
   --card-foreground: var(--foreground);
   --popover: #17171a;
   --popover-foreground: var(--foreground);
-  --primary: #f2d24b;
-  --primary-foreground: #17150c;
+  --primary: var(--accent-bright);
+  --primary-foreground: #121212;
   --secondary: #232327;
   --secondary-foreground: var(--foreground);
   --muted: #1d1d21;
   --muted-foreground: #9a9890;
-  --accent: #2a2716;
-  --accent-foreground: #f2d24b;
+  --accent: color-mix(in srgb, var(--primary) 15%, var(--background));
+  --accent-foreground: var(--primary);
   --destructive: #e5654f;
   --success: #5fbf7f;
   --border: #2b2b30;
   --input: #2b2b30;
-  --ring: #f2d24b;
+  --ring: var(--primary);
+}
+
+[data-accent="orange"] { --accent-bright: #ff9a3c; --accent-deep: #ac4f08; }
+[data-accent="coral"] { --accent-bright: #ff6b5e; --accent-deep: #c0392b; }
+[data-accent="pink"] { --accent-bright: #ff7ab6; --accent-deep: #be185d; }
+[data-accent="purple"] { --accent-bright: #b18cff; --accent-deep: #6d28d9; }
+[data-accent="blue"] { --accent-bright: #6aa8ff; --accent-deep: #1d4ed8; }
+[data-accent="cyan"] { --accent-bright: #4fd1e8; --accent-deep: #0d6f8a; }
+[data-accent="teal"] { --accent-bright: #3fd6b0; --accent-deep: #0f766e; }
+[data-accent="green"] { --accent-bright: #6fd67a; --accent-deep: #147a3a; }
+[data-accent="lime"] { --accent-bright: #b8e04a; --accent-deep: #46720d; }
+
+:root[data-base="light"] {
+  --background: #f7f7f5;
+  --foreground: #17171a;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --primary: var(--accent-deep);
+  --primary-foreground: #ffffff;
+  --secondary: #ebebe8;
+  --muted: #efefec;
+  --muted-foreground: #66655f;
+  --accent: color-mix(in srgb, var(--primary) 12%, var(--card));
+  --destructive: #c4402c;
+  --success: #1f7a45;
+  --border: #e0dfdb;
+  --input: #d6d5d0;
+}
+
+:root[data-base="beige"] {
+  --background: #f3ede2;
+  --foreground: #2b2620;
+  --card: #fbf7f0;
+  --popover: #fbf7f0;
+  --primary: var(--accent-deep);
+  --primary-foreground: #ffffff;
+  --secondary: #e8e0d1;
+  --muted: #ece4d6;
+  --muted-foreground: #6e6456;
+  --accent: color-mix(in srgb, var(--primary) 12%, var(--card));
+  --destructive: #b83c28;
+  --success: #24703f;
+  --border: #ddd2bf;
+  --input: #d3c7b2;
 }
 
 @theme inline {
@@ -73,6 +125,16 @@
     }
   }
 }
+/* On a light base the installed iOS app uses the normal status bar (dark
+   text, content starts below it), so the floor above is not needed. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    html[data-base="light"] .pt-safe,
+    html[data-base="beige"] .pt-safe {
+      padding-top: max(calc(env(safe-area-inset-top) + 0.75rem), 1rem);
+    }
+  }
+}
 @utility pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
@@ -83,6 +145,12 @@
   }
   html {
     color-scheme: dark;
+  }
+  html[data-base="light"],
+  html[data-base="beige"] {
+    color-scheme: light;
+  }
+  html {
     -webkit-tap-highlight-color: transparent;
   }
   body {
