@@ -22,12 +22,12 @@ async function currentTheme() {
 }
 
 const baseMetadata: Metadata = {
-  title: { default: "Workout Tracker", template: "%s · Workout Tracker" },
+  title: { default: "Repd", template: "%s · Repd" },
   description: "Log every set, warm-ups included, and see progression.",
-  applicationName: "Workout Tracker",
+  applicationName: "Repd",
   appleWebApp: {
     capable: true,
-    title: "Workouts",
+    title: "Repd",
     statusBarStyle: "black-translucent",
   },
   icons: {
@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const { base } = await currentTheme();
   // On a light base the iPhone status bar needs dark text.
   return isLightBase(base)
-    ? { ...baseMetadata, appleWebApp: { capable: true, title: "Workouts", statusBarStyle: "default" } }
+    ? { ...baseMetadata, appleWebApp: { capable: true, title: "Repd", statusBarStyle: "default" } }
     : baseMetadata;
 }
 

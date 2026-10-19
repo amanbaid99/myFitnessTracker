@@ -835,3 +835,16 @@ plans, which the spec did not have.
   `lib/legal.ts` adds an email address to both pages once Aman picks one.
 - These are templates, not legal advice; worth a lawyer's look if the app
   grows beyond friends.
+
+## 2026-10-19: The app is called Repd (Aman's request)
+
+- "Repd", short for "repped". It is used for the browser title, the
+  installed app's name and home screen label, the login heading, and the
+  Privacy and Terms pages. The icon has no text, so it stays.
+- The repo, database and code names stay as they are; only what people
+  see changes.
+- The OpenRouter `X-Title` header in the Edge Functions says Repd too. It
+  only labels requests in the OpenRouter dashboard, and goes live the next
+  time the functions are deployed.
+- The Supabase email templates are set in the dashboard, not the repo.
+  docs/SETUP.md now shows the Repd wording to paste in.

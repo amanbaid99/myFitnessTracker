@@ -48,14 +48,14 @@ include the code (the link is a fallback):
 
 *Confirm signup*
 ```html
-<h2>Confirm your Workout Tracker account</h2>
+<h2>Confirm your Repd account</h2>
 <p>Enter this code in the app: <strong>{{ .Token }}</strong></p>
 <p>Or <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup">tap to confirm</a>.</p>
 ```
 
 *Reset Password*
 ```html
-<h2>Reset your Workout Tracker password</h2>
+<h2>Reset your Repd password</h2>
 <p>Enter this code in the app: <strong>{{ .Token }}</strong></p>
 <p>Or <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery">tap to reset</a>.</p>
 <p>If you did not ask for this, ignore this email.</p>

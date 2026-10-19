@@ -240,7 +240,7 @@ async function askModel(
   try {
     const res = await fetchFn(OPENROUTER_URL, {
       method: "POST",
-      headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, "Content-Type": "application/json", "X-Title": "Workout Tracker" },
+      headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, "Content-Type": "application/json", "X-Title": "Repd" },
       body: JSON.stringify({
         model,
         messages: [

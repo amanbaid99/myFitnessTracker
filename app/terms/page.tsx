@@ -9,7 +9,7 @@ export default function TermsPage() {
     <LegalPage title="Terms of Use">
       <section>
         <p>
-          By creating an account or using Workout Tracker you agree to these terms. If you do not agree, please do not use the app.
+          By creating an account or using Repd you agree to these terms. If you do not agree, please do not use the app.
         </p>
       </section>
 

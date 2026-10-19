@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Workout Tracker",
-    short_name: "Workouts",
+    name: "Repd",
+    short_name: "Repd",
     description: "Log every set, warm-ups included, and see progression.",
     start_url: "/",
     scope: "/",

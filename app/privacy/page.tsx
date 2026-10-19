@@ -9,7 +9,7 @@ export default function PrivacyPage() {
     <LegalPage title="Privacy Policy">
       <section>
         <p>
-          Workout Tracker is a small personal app run by one person, not a company. This page explains what it stores about you, why, who
+          Repd is a small personal app run by one person, not a company. This page explains what it stores about you, why, who
           else sees it, and how to have it removed.
         </p>
       </section>

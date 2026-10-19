@@ -351,7 +351,7 @@ async function askModel(
       headers: {
         Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "X-Title": "Workout Tracker",
+        "X-Title": "Repd",
       },
       body: JSON.stringify({
         model,

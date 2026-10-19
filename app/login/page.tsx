@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 pb-safe pt-safe">
-      <h1 className="text-3xl font-semibold tracking-tight">Workout Tracker</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Repd</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Sign in with your email and password.
       </p>

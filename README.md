@@ -1,4 +1,4 @@
-# Workout Tracker
+# Repd (Workout Tracker)
 
 A mobile-first PWA for logging gym workouts: every set kept permanently,
 warm-ups included, with progression charts. Next.js, Supabase, Vercel.
