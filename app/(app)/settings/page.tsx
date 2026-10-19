@@ -55,6 +55,19 @@ export default async function SettingsPage() {
         <FeedbackButtons />
       </section>
 
+      <section className="mt-8">
+        <h2 className="mb-1 text-sm font-medium">About</h2>
+        <p className="mb-3 text-xs text-muted-foreground">How your data is used, and the rules for using the app.</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Button asChild variant="outline">
+            <Link href="/privacy">Privacy Policy</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/terms">Terms of Use</Link>
+          </Button>
+        </div>
+      </section>
+
       <form action="/auth/signout" method="post" className="mt-8">
         <Button type="submit" variant="outline" size="lg" className="w-full">
           Sign out

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LegalLinks } from "@/components/legal-page";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -28,6 +29,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </Link>
         </Button>
       </div>
+      <LegalLinks className="mt-8" />
     </main>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
@@ -200,6 +201,17 @@ export function LoginForm({
           >
             {busy ? "Creating…" : "Create account"}
           </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            By creating an account you agree to the{" "}
+            <Link href="/terms" className="underline underline-offset-2">
+              Terms of Use
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            .
+          </p>
           <BackButton onClick={() => go("signin")} />
         </form>
       )}

@@ -817,3 +817,21 @@ plans, which the spec did not have.
   and "Approve and create" stays disabled until the person ticks "I have
   checked this plan. I understand it is not medical advice and I exercise
   at my own risk."
+
+## 2026-10-19: Privacy Policy and Terms of Use (Aman's request)
+
+- Other people now use the app, it stores health-adjacent details (weight,
+  height, gender) and the AI features send workout data to OpenRouter, so
+  the app needs a plain-language Privacy Policy and Terms of Use.
+- Pages at /privacy and /terms, readable without signing in. Linked from
+  the login page footer, under "Create account" ("By creating an account
+  you agree to..."), and from Settings > About.
+- The privacy page only claims what the code does: the AI gets workout
+  sets, exercise names, experience, where you train and typed text (with
+  emails, phones and links removed), never name, email, gender, weight or
+  height. It says free model providers may keep what is sent.
+- There is no in-app account deletion yet. Requests go through Give
+  feedback, handled by hand within 30 days. `CONTACT_EMAIL` in
+  `lib/legal.ts` adds an email address to both pages once Aman picks one.
+- These are templates, not legal advice; worth a lawyer's look if the app
+  grows beyond friends.
