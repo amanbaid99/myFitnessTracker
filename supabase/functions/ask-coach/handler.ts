@@ -29,7 +29,10 @@ export const MODELS = [
   "openrouter/free",
 ];
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL_TIMEOUT_MS = 25_000;
+// A backup model starts if the current one is slow; the whole thing gives
+// up in time to answer before a phone browser does (about 60 seconds).
+const STAGGER_MS = 10_000;
+const DEADLINE_MS = 50_000;
 const DB_TIMEOUT_MS = 10_000;
 const MAX_MESSAGES = 8;
 const MAX_MESSAGE_CHARS = 1000;
@@ -286,45 +289,106 @@ async function loadRecent(env: Required<Env>, token: string, fetchFn: typeof fet
 
 // --------------------------------------------------------------- model ----
 
-async function askModels(
+/**
+ * Runs attempts side by side: the first starts at once, each next one
+ * after `staggerMs` or as soon as an earlier one fails. The first non-null
+ * result wins and the rest are aborted; null if all fail or the deadline
+ * passes. Keeps the whole request under a phone browser's patience (about
+ * a minute) even when a free model is slow. Same as in draft-plan; keep them
+ * identical.
+ */
+export function race<T>(
+  attempts: ((signal: AbortSignal) => Promise<T | null>)[],
+  staggerMs: number,
+  deadlineMs: number,
+): Promise<T | null> {
+  return new Promise((resolve) => {
+    const controllers: AbortController[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let next = 0;
+    let running = 0;
+    let done = false;
+    const finish = (value: T | null) => {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      controllers.forEach((c) => c.abort());
+      resolve(value);
+    };
+    const start = () => {
+      if (done || next >= attempts.length) return;
+      const controller = new AbortController();
+      controllers.push(controller);
+      const attempt = attempts[next++];
+      running++;
+      if (next < attempts.length) timers.push(setTimeout(start, staggerMs));
+      attempt(controller.signal)
+        .catch(() => null)
+        .then((value) => {
+          running--;
+          if (value !== null) finish(value);
+          else if (next < attempts.length) start();
+          else if (running === 0) finish(null);
+        });
+    };
+    timers.push(setTimeout(() => finish(null), deadlineMs));
+    start();
+  });
+}
+
+async function askModel(
+  env: Required<Env>,
+  fetchFn: typeof fetch,
+  model: string,
+  context: string,
+  messages: ChatMessage[],
+  log: Log,
+  signal: AbortSignal,
+): Promise<string | null> {
+  try {
+    const res = await fetchFn(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "X-Title": "Workout Tracker",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: `${SYSTEM_PROMPT}\n\nAthlete data:\n${context}` }, ...messages],
+        max_tokens: 2000,
+        temperature: 0.5,
+        reasoning: { effort: "low", exclude: true },
+      }),
+      signal,
+    });
+    if (!res.ok) {
+      const reason = (await res.text().catch(() => "")).slice(0, 300);
+      log("ask-coach: model refused", { model, status: res.status, reason });
+      return null;
+    }
+    const body = (await res.json()) as { choices?: { message?: { content?: string | null }; finish_reason?: string }[]; model?: string };
+    const reply = cleanReply(body.choices?.[0]?.message?.content);
+    if (!reply) log("ask-coach: empty reply", { model, finish: body.choices?.[0]?.finish_reason ?? null });
+    return reply;
+  } catch (e) {
+    if (!signal.aborted) log("ask-coach: model error", { model, error: e instanceof Error ? e.name : "unknown" });
+    return null;
+  }
+}
+
+function askModels(
   env: Required<Env>,
   fetchFn: typeof fetch,
   context: string,
   messages: ChatMessage[],
   log: Log,
 ): Promise<string | null> {
-  for (const model of MODELS) {
-    try {
-      const res = await fetchFn(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "X-Title": "Workout Tracker",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "system", content: `${SYSTEM_PROMPT}\n\nAthlete data:\n${context}` }, ...messages],
-          max_tokens: 2000,
-          temperature: 0.5,
-          reasoning: { effort: "low", exclude: true },
-        }),
-        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        const reason = (await res.text().catch(() => "")).slice(0, 300);
-        log("ask-coach: model refused", { model, status: res.status, reason });
-        continue;
-      }
-      const body = (await res.json()) as { choices?: { message?: { content?: string | null }; finish_reason?: string }[]; model?: string };
-      const reply = cleanReply(body.choices?.[0]?.message?.content);
-      if (reply) return reply;
-      log("ask-coach: empty reply", { model, finish: body.choices?.[0]?.finish_reason ?? null });
-    } catch (e) {
-      log("ask-coach: model error", { model, error: e instanceof Error ? e.name : "unknown" });
-    }
-  }
-  return null;
+  return race(
+    MODELS.map((model) => (signal: AbortSignal) => askModel(env, fetchFn, model, context, messages, log, signal)),
+    STAGGER_MS,
+    DEADLINE_MS,
+  );
 }
 
 // -------------------------------------------------------------- handler ----

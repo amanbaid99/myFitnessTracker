@@ -27,7 +27,10 @@ export const MODELS = [
   "openrouter/free",
 ];
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL_TIMEOUT_MS = 40_000;
+// A backup model starts if the current one is slow; the whole thing gives
+// up in time to answer before a phone browser does (about 60 seconds).
+const STAGGER_MS = 12_000;
+const DEADLINE_MS = 50_000;
 const DB_TIMEOUT_MS = 10_000;
 export const MIN_CHARS = 10;
 export const MAX_CHARS = 3000;
@@ -178,7 +181,98 @@ async function read<T>(env: Required<Env>, token: string, fetchFn: typeof fetch,
 
 // ----------------------------------------------------------------- model ----
 
-async function askModels(
+/**
+ * Runs attempts side by side: the first starts at once, each next one
+ * after `staggerMs` or as soon as an earlier one fails. The first non-null
+ * result wins and the rest are aborted; null if all fail or the deadline
+ * passes. Keeps the whole request under a phone browser's patience (about
+ * a minute) even when a free model is slow.
+ */
+export function race<T>(
+  attempts: ((signal: AbortSignal) => Promise<T | null>)[],
+  staggerMs: number,
+  deadlineMs: number,
+): Promise<T | null> {
+  return new Promise((resolve) => {
+    const controllers: AbortController[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let next = 0;
+    let running = 0;
+    let done = false;
+    const finish = (value: T | null) => {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      controllers.forEach((c) => c.abort());
+      resolve(value);
+    };
+    const start = () => {
+      if (done || next >= attempts.length) return;
+      const controller = new AbortController();
+      controllers.push(controller);
+      const attempt = attempts[next++];
+      running++;
+      if (next < attempts.length) timers.push(setTimeout(start, staggerMs));
+      attempt(controller.signal)
+        .catch(() => null)
+        .then((value) => {
+          running--;
+          if (value !== null) finish(value);
+          else if (next < attempts.length) start();
+          else if (running === 0) finish(null);
+        });
+    };
+    timers.push(setTimeout(() => finish(null), deadlineMs));
+    start();
+  });
+}
+
+async function askModel(
+  env: Required<Env>,
+  fetchFn: typeof fetch,
+  model: string,
+  system: string,
+  description: string,
+  libraryNames: string[],
+  log: Log,
+  signal: AbortSignal,
+): Promise<Draft | null> {
+  try {
+    const res = await fetchFn(OPENROUTER_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, "Content-Type": "application/json", "X-Title": "Workout Tracker" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: description },
+        ],
+        max_tokens: 3000,
+        temperature: 0.3,
+        // Turning a description into a list needs no long thinking, and
+        // thinking is what made the free models take over 40 seconds.
+        reasoning: { enabled: false },
+      }),
+      signal,
+    });
+    if (!res.ok) {
+      const reason = (await res.text().catch(() => "")).slice(0, 300);
+      log("draft-plan: model refused", { model, status: res.status, reason });
+      return null;
+    }
+    const body = (await res.json()) as { choices?: { message?: { content?: string | null; reasoning?: string | null } }[] };
+    const msg = body.choices?.[0]?.message;
+    const draft = toDraft(lastJson(msg?.content) ?? lastJson(msg?.reasoning), libraryNames);
+    if (!draft) log("draft-plan: unusable reply", { model });
+    else log("draft-plan: drafted", { model });
+    return draft;
+  } catch (e) {
+    if (!signal.aborted) log("draft-plan: model error", { model, error: e instanceof Error ? e.name : "unknown" });
+    return null;
+  }
+}
+
+function askModels(
   env: Required<Env>,
   fetchFn: typeof fetch,
   system: string,
@@ -186,38 +280,11 @@ async function askModels(
   libraryNames: string[],
   log: Log,
 ): Promise<Draft | null> {
-  for (const model of MODELS) {
-    try {
-      const res = await fetchFn(OPENROUTER_URL, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, "Content-Type": "application/json", "X-Title": "Workout Tracker" },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: system },
-            { role: "user", content: description },
-          ],
-          max_tokens: 6000,
-          temperature: 0.3,
-          reasoning: { effort: "low" },
-        }),
-        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        const reason = (await res.text().catch(() => "")).slice(0, 300);
-        log("draft-plan: model refused", { model, status: res.status, reason });
-        continue;
-      }
-      const body = (await res.json()) as { choices?: { message?: { content?: string | null; reasoning?: string | null } }[] };
-      const msg = body.choices?.[0]?.message;
-      const draft = toDraft(lastJson(msg?.content) ?? lastJson(msg?.reasoning), libraryNames);
-      if (draft) return draft;
-      log("draft-plan: unusable reply", { model });
-    } catch (e) {
-      log("draft-plan: model error", { model, error: e instanceof Error ? e.name : "unknown" });
-    }
-  }
-  return null;
+  return race(
+    MODELS.map((model) => (signal: AbortSignal) => askModel(env, fetchFn, model, system, description, libraryNames, log, signal)),
+    STAGGER_MS,
+    DEADLINE_MS,
+  );
 }
 
 // --------------------------------------------------------------- handler ----

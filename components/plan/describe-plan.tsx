@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FunctionsHttpError } from "@supabase/supabase-js";
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
 import { ArrowLeft, Check, Loader2, Sparkles, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import type { Exercise } from "@/lib/data";
 import { exerciseCatalog } from "@/lib/plan-draft";
 import { createClient } from "@/lib/supabase/client";
 import type { TemplateRoutine, TrainingSetup } from "@/lib/templates";
+import { BuildingProgress } from "./building-progress";
 import { PlanDraftEditor } from "./plan-draft-editor";
 
 const EXAMPLE = `Full body, 3 days.
@@ -23,6 +24,11 @@ async function whyNot(error: unknown): Promise<string> {
     if (body.error === "limit") return "You have used today's AI requests (shared with Coach). Try again tomorrow, or pick a template.";
     if (body.error === "busy") return "The free AI is busy or could not read that. Try again in a minute, or add more detail.";
     if (body.error === "too short") return "Add a bit more detail: the days and the exercises you want.";
+  }
+  // The request itself failed or timed out: the free AI was too slow.
+  if (error instanceof FunctionsFetchError || error instanceof FunctionsRelayError) {
+    if (typeof navigator !== "undefined" && !navigator.onLine) return "You're offline. Building a plan with AI needs a connection.";
+    return "The free AI took too long this time. Your text is kept, so try again in a minute.";
   }
   if (typeof navigator !== "undefined" && !navigator.onLine) return "You're offline. Building a plan with AI needs a connection.";
   return "Something went wrong. Try again in a minute.";
@@ -40,16 +46,20 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
   const [days, setDays] = useState<TemplateRoutine[] | null>(null);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  // While the AI drafts, a progress screen replaces the form.
+  const [drafting, setDrafting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const emptyDay = days?.find((d) => d.exercises.length === 0);
 
   async function draft() {
     setBusy(true);
+    setDrafting(true);
     setError(null);
     const { data, error } = await createClient().functions.invoke<{ draft: { name: string; days: TemplateRoutine[] } }>("draft-plan", {
       body: { description: text, setup },
     });
     setBusy(false);
+    setDrafting(false);
     if (data?.draft && !error) {
       setDays(data.draft.days);
       setName(data.draft.name);
@@ -87,6 +97,8 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
       <ArrowLeft className="size-4" /> {days ? "Change description" : "Back"}
     </button>
   );
+
+  if (drafting) return <BuildingProgress />;
 
   if (!days) {
     return (

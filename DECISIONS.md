@@ -785,3 +785,18 @@ plans, which the spec did not have.
 - It is placed by the tab layout, level with the first line of the page;
   headers that start at the top leave room for it (pr-14). Screens that
   start with a back link line up with it naturally.
+
+## 2026-10-19: AI plan drafts were timing out; progress screen
+
+- Live logs: both Nemotron models spent their whole 40 s thinking before
+  answering, and the three models ran one after another, so a draft took
+  80 s or more. iPhone Safari gives up on a request after about a minute,
+  so the app showed "Something went wrong".
+- draft-plan now turns thinking off (it only restructures text) and races
+  the models: the first starts at once, a backup after 12 s or as soon as
+  one fails, the first usable draft wins and the rest are aborted, and it
+  always answers within 50 s. ask-coach races the same way (backup after
+  10 s, 50 s cap) but keeps its short thinking for better answers.
+- While drafting, a progress screen shows paced steps and a filling bar
+  ("Usually 10 to 30 seconds"). A timeout now says the AI took too long and
+  that the text is kept, instead of a generic error.

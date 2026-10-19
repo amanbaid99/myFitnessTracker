@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DAILY_LIMIT, handle, lastJson, MODELS, toDraft } from "./handler";
+import { DAILY_LIMIT, handle, lastJson, MODELS, race, toDraft } from "./handler";
 import { MUSCLE_GROUPS, EQUIPMENT } from "../../../lib/muscles";
 import { MUSCLES, EQUIPMENT as FN_EQUIPMENT } from "./handler";
 
@@ -124,5 +124,35 @@ describe("handle", () => {
     expect((await handle(req({ description: "three full body days" }), ENV, fakeFetch({ asked: DAILY_LIMIT }), () => {}, NOW)).status).toBe(429);
     expect((await handle(req({ description: "legs" }), ENV, fakeFetch(), () => {}, NOW)).status).toBe(400);
     expect((await handle(req({ description: "three full body days" }, null), ENV, fakeFetch(), () => {}, NOW)).status).toBe(401);
+  });
+});
+
+describe("race", () => {
+  const wait = (ms: number, value: string | null, log: string[], name: string) => (signal: AbortSignal) =>
+    new Promise<string | null>((resolve) => {
+      log.push(`start ${name}`);
+      const t = setTimeout(() => resolve(value), ms);
+      signal.addEventListener("abort", () => {
+        clearTimeout(t);
+        log.push(`abort ${name}`);
+        resolve(null);
+      });
+    });
+
+  it("lets a later, faster attempt win and aborts the slow one", async () => {
+    const log: string[] = [];
+    const out = await race([wait(300, "slow", log, "a"), wait(20, "fast", log, "b")], 30, 1000);
+    expect(out).toBe("fast");
+    expect(log).toEqual(["start a", "start b", "abort a", "abort b"]);
+  });
+  it("starts the next attempt at once when one fails", async () => {
+    const log: string[] = [];
+    const t0 = Date.now();
+    expect(await race([wait(5, null, log, "a"), wait(5, "ok", log, "b")], 5000, 1000)).toBe("ok");
+    expect(Date.now() - t0).toBeLessThan(500);
+  });
+  it("gives up at the deadline or when all fail", async () => {
+    expect(await race([wait(500, "late", [], "a")], 1000, 40)).toBeNull();
+    expect(await race([wait(5, null, [], "a"), wait(5, null, [], "b")], 1, 1000)).toBeNull();
   });
 });
