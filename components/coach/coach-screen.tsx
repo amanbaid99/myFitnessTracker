@@ -46,7 +46,7 @@ export function CoachScreen() {
 
   return (
     <>
-      <header className="mb-4 flex items-start justify-between gap-3">
+      <header className="mb-4 flex items-start justify-between gap-3 pr-14">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Coach</h1>
           <p className="mt-1 text-sm text-muted-foreground">Free AI that reads your logged training. Not medical advice.</p>

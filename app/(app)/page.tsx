@@ -52,7 +52,7 @@ export default async function TodayPage() {
   if (result.error !== null) {
     return (
       <>
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight">{greeting}</h1>
+        <h1 className="mb-6 pr-14 text-2xl font-semibold tracking-tight">{greeting}</h1>
         <DataError message={result.error} />
       </>
     );

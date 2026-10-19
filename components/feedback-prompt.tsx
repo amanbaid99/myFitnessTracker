@@ -33,7 +33,7 @@ export function FeedbackPrompt({ userId }: { userId: string }) {
     <FeedbackSheet
       kind="feedback"
       title="How is the app working for you?"
-      intro="You have trained with it on a couple of days now. A quick rating helps make it better. You can always send more from Settings."
+      intro="You have trained with it on a couple of days now. A quick rating helps make it better. You can always send more from your profile, the initials at the top right."
       onClose={close}
     />
   );

@@ -46,8 +46,8 @@ export default async function RoutinesPage() {
   return (
     <>
       <header className="mb-6">
-        <p className="text-sm text-muted-foreground">Active plan</p>
-        <div className="mt-1 flex items-center gap-2">
+        <p className="pr-14 text-sm text-muted-foreground">Active plan</p>
+        <div className="mt-1 flex items-center gap-2 pr-14">
           <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">{plan.name}</h1>
           {plan.isCustom && plan.template && <Badge variant="outline">Custom</Badge>}
         </div>

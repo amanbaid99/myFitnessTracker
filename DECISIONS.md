@@ -775,3 +775,13 @@ plans, which the spec did not have.
 - The draft opens in the same plan editor ("Check and approve") under a
   disclaimer that AI can get it wrong and it is not medical advice. Nothing
   is saved until "Approve and create"; the plan is created with no template.
+
+## 2026-10-19: Settings moves to an initials button, top right (Aman's request)
+
+- The bottom bar drops Settings (five tabs: Today, History, Progress,
+  Coach, Routines). A round 44px button with the user's initials (first and
+  last name, one letter for one name, else the email's first letter) sits
+  top right on every tab screen and opens Settings; it fills in while there.
+- It is placed by the tab layout, level with the first line of the page;
+  headers that start at the top leave room for it (pr-14). Screens that
+  start with a back link line up with it naturally.

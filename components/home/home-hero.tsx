@@ -70,8 +70,8 @@ export function HomeHero({
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground">{dateLine}</p>
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <p className="pr-14 text-sm text-muted-foreground">{dateLine}</p>
+      <h1 className="pr-14 text-2xl font-semibold tracking-tight">
         {greetingFor(now.getHours())}
         {name ? `, ${name}` : ""}
       </h1>

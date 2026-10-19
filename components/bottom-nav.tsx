@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Dumbbell, History, LineChart, MessageCircle, Settings } from "lucide-react";
+import { CalendarDays, Dumbbell, History, LineChart, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -11,7 +11,6 @@ const TABS = [
   { href: "/progress", label: "Progress", icon: LineChart },
   { href: "/coach", label: "Coach", icon: MessageCircle },
   { href: "/routines", label: "Routines", icon: CalendarDays },
-  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -26,7 +25,7 @@ export function BottomNav() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-6">
+      <ul className="mx-auto grid max-w-lg grid-cols-5">
         {TABS.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
