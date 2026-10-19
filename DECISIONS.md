@@ -848,3 +848,12 @@ plans, which the spec did not have.
   time the functions are deployed.
 - The Supabase email templates are set in the dashboard, not the repo.
   docs/SETUP.md now shows the Repd wording to paste in.
+
+## 2026-10-19: Restart button on the rest timer (Aman's request)
+
+- The rest bar has a restart button (circular arrow) between the sound
+  toggle and +15s. It starts the countdown again from the full rest time,
+  including any +15s already added. Useful when a set is redone or the
+  rest was interrupted.
+- The bar's spacing was tightened so the extra button fits at 390px; every
+  button stays 44px tall.

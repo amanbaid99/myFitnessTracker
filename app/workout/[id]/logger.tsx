@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Plus, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Plus, RotateCcw, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -886,6 +886,7 @@ export function Logger(props: {
           remaining={Math.max(0, Math.ceil((rest.endsAt - now) / 1000))}
           total={rest.total}
           onAdd={() => setRest((r) => r && { endsAt: r.endsAt + 15000, total: r.total + 15 })}
+          onReset={() => setRest((r) => r && { endsAt: secondsFromNow(r.total), total: r.total })}
           onSkip={() => setRest(null)}
         />
       )}
@@ -1377,11 +1378,14 @@ function RestBar({
   remaining,
   total,
   onAdd,
+  onReset,
   onSkip,
 }: {
   remaining: number;
   total: number;
   onAdd: () => void;
+  /** Start the countdown again from the full rest time. */
+  onReset: () => void;
   onSkip: () => void;
 }) {
   const pct = total > 0 ? (remaining / total) * 100 : 0;
@@ -1394,9 +1398,9 @@ function RestBar({
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-popover pb-[env(safe-area-inset-bottom)]">
       <div className="h-1 bg-primary transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
-      <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-2">
-        <Timer className="size-5 text-primary" aria-hidden />
-        <p className="flex-1 text-lg font-semibold tabular-nums" aria-live="polite">
+      <div className="mx-auto flex max-w-lg items-center gap-1.5 px-4 py-2">
+        <Timer className="mr-1 size-5 shrink-0 text-primary" aria-hidden />
+        <p className="flex-1 whitespace-nowrap text-lg font-semibold tabular-nums" aria-live="polite">
           Rest {clock(remaining)}
         </p>
         <Button
@@ -1409,10 +1413,13 @@ function RestBar({
         >
           {sound ? <Volume2 /> : <VolumeX />}
         </Button>
-        <Button variant="secondary" onClick={onAdd}>
+        <Button variant="ghost" size="icon" onClick={onReset} aria-label="Restart rest timer" className="text-muted-foreground">
+          <RotateCcw />
+        </Button>
+        <Button variant="secondary" className="px-3" onClick={onAdd}>
           +15s
         </Button>
-        <Button variant="ghost" onClick={onSkip}>
+        <Button variant="ghost" className="px-3" onClick={onSkip}>
           Skip
         </Button>
       </div>
