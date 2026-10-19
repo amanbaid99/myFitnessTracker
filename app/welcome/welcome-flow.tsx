@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Dumbbell, Home, PersonStanding } from "lucide-react";
+import { ArrowLeft, Check, Dumbbell, Home, PersonStanding, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -353,6 +353,9 @@ export function WelcomeFlow({
             </Button>
             <Button variant="outline" className="w-full" onClick={() => finish(`/plans/new?setup=${setup}`)} disabled={busy}>
               Choose a different plan
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => finish(`/plans/new?describe=1&setup=${setup}`)} disabled={busy}>
+              <Sparkles /> Describe my own plan instead
             </Button>
             {hasPlan && (
               <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => finish("/")} disabled={busy}>

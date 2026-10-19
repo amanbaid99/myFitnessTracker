@@ -4,8 +4,8 @@
  * addresses, phone numbers and web links. Workout numbers and dates are
  * left alone. Pure.
  *
- * The same file is in analyze-workout and ask-coach (each Edge Function is
- * deployed on its own); keep them identical.
+ * The same file is in analyze-workout, ask-coach and draft-plan (each Edge
+ * Function is deployed on its own); keep them identical.
  */
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const URL_RE = /\b(?:https?:\/\/|www\.)\S+/gi;

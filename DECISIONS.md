@@ -759,3 +759,19 @@ plans, which the spec did not have.
   working set, whatever the day or workout, so sets of an added exercise
   count toward that exercise's PR when it is picked from the list (a newly
   typed name is a new exercise with its own record).
+
+## 2026-10-19: Describe a plan in your own words, AI drafts it (Aman's request)
+
+- New plan step 1 leads with "Describe it in your own words"; the welcome
+  flow's suggested plan has "Describe my own plan instead" (it finishes
+  onboarding, then opens the same screen via /plans/new?describe=1).
+- The text goes to the draft-plan Edge Function (JWT required): contact
+  details stripped, the user's own exercise names sent so the AI reuses
+  them, free OpenRouter models with fallbacks. The reply is checked and
+  cleaned before the app sees it: known equipment and muscles only, sets 1
+  to 10, reps 1 to 50, at most 7 days of 12 exercises, names matched to the
+  library. Uses one of the user's 10 daily AI requests (shared with Coach,
+  coach_usage); failures do not count. No migration.
+- The draft opens in the same plan editor ("Check and approve") under a
+  disclaimer that AI can get it wrong and it is not medical advice. Nothing
+  is saved until "Approve and create"; the plan is created with no template.

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DescribePlan } from "@/components/plan/describe-plan";
 import { PlanDraftEditor } from "@/components/plan/plan-draft-editor";
 import type { Exercise } from "@/lib/data";
 import { exerciseCatalog, isEdited } from "@/lib/plan-draft";
@@ -30,7 +31,16 @@ const DAY_OPTIONS = [2, 3, 4, 5, 6];
  * then a name and any changes: day order, names and exercises. Exercises
  * follow the equipment (lib/templates adaptToSetup).
  */
-export function NewPlanWizard({ initialSetup = "gym", library }: { initialSetup?: TrainingSetup; library: Exercise[] }) {
+export function NewPlanWizard({
+  initialSetup = "gym",
+  library,
+  initialDescribe = false,
+}: {
+  initialSetup?: TrainingSetup;
+  library: Exercise[];
+  /** Open on "Describe it in your own words" (from the welcome flow). */
+  initialDescribe?: boolean;
+}) {
   const router = useRouter();
   const [setup, setSetup] = useState<TrainingSetup>(initialSetup);
   const [days, setDays] = useState<number | null>(null);
@@ -79,6 +89,9 @@ export function NewPlanWizard({ initialSetup = "gym", library }: { initialSetup?
   }
 
   const step = days === null ? 1 : template === null ? 2 : 3;
+  const [describing, setDescribing] = useState(initialDescribe);
+
+  if (describing) return <DescribePlan setup={setup} library={library} onBack={() => setDescribing(false)} />;
 
   return (
     <>
@@ -100,6 +113,19 @@ export function NewPlanWizard({ initialSetup = "gym", library }: { initialSetup?
 
       {step === 1 && (
         <>
+          <button
+            type="button"
+            onClick={() => setDescribing(true)}
+            className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-primary/50 bg-accent/30 p-4 text-left active:bg-muted"
+          >
+            <Sparkles className="size-5 shrink-0 text-primary" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">Describe it in your own words</span>
+              <span className="block text-sm text-muted-foreground">Already have a plan? Type it and AI sets it up. You check it first.</span>
+            </span>
+            <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+          </button>
+          <p className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Or start from a template</p>
           <p className="mb-2 text-sm font-medium">Equipment</p>
           <div className="mb-6 grid grid-cols-3 gap-2" role="group" aria-label="Equipment">
             {SETUPS.map((s) => (
