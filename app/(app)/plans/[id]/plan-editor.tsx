@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
@@ -63,7 +64,15 @@ export function PlanEditor({
   };
 
   async function deletePlan() {
-    if (!confirm(`Delete "${plan.name}"? Its days are removed; logged workouts stay in your history.`)) return;
+    if (
+      !(await confirmDialog({
+        title: `Delete "${plan.name}"?`,
+        message: "Its days are removed. Logged workouts stay in your history.",
+        confirmLabel: "Delete plan",
+        destructive: true,
+      }))
+    )
+      return;
     const err = await run(() => supabase.from("plans").delete().eq("id", plan.id), false);
     if (!err) router.push("/plans");
   }
@@ -171,7 +180,15 @@ function RoutineEditor({
   }
 
   async function remove(item: RoutineExercise) {
-    if (!confirm(`Remove ${item.exercise.name} from ${routine.name}? Its history is kept.`)) return;
+    if (
+      !(await confirmDialog({
+        title: `Remove ${item.exercise.name}?`,
+        message: `It comes out of ${routine.name}. Its history is kept.`,
+        confirmLabel: "Remove",
+        destructive: true,
+      }))
+    )
+      return;
     const err = await run(() => removeExercise(supabase, item));
     if (!err) setEditing(null);
   }
@@ -189,7 +206,15 @@ function RoutineEditor({
   }
 
   async function deleteRoutine() {
-    if (!confirm(`Remove ${routine.name} from this plan? Logged workouts stay in your history.`)) return;
+    if (
+      !(await confirmDialog({
+        title: `Remove ${routine.name}?`,
+        message: "It comes out of this plan. Logged workouts stay in your history.",
+        confirmLabel: "Remove day",
+        destructive: true,
+      }))
+    )
+      return;
     await run(() => supabase.from("routines").delete().eq("id", routine.id));
   }
 

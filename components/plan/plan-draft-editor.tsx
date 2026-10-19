@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,8 +77,11 @@ export function PlanDraftEditor({
               size="icon"
               aria-label={`Remove ${day.name}`}
               disabled={days.length <= 1}
-              onClick={() => {
-                if (day.exercises.length === 0 || confirm(`Remove ${day.name} from the plan?`)) {
+              onClick={async () => {
+                if (
+                  day.exercises.length === 0 ||
+                  (await confirmDialog({ title: `Remove ${day.name}?`, message: "It comes out of this plan.", confirmLabel: "Remove day", destructive: true }))
+                ) {
                   setOpen(null);
                   onChange(removeDay(days, d));
                 }

@@ -873,3 +873,20 @@ plans, which the spec did not have.
   "Check for updates" button that turns into "Update now".
 - Pages always come from the network (public/sw.js), so a reload is all an
   update needs; no service worker change.
+
+## 2026-10-19: App-styled confirm sheets; colours in onboarding (Aman's request)
+
+- The 7 "Are you sure?" prompts (delete plan, remove day or exercise,
+  discard or cancel a workout, remove a day from a draft) used the
+  browser's confirm box, which on iPhone is a grey system alert that
+  ignores the theme. They now use `confirmDialog()` from
+  components/confirm-dialog.tsx: a bottom sheet in the same style as the
+  feedback sheet, in the chosen colours, with a red button for anything
+  destructive and Cancel focused first. Escape or tapping outside cancels.
+- `<ConfirmHost />` is mounted once in the root layout, above other sheets
+  (z-60), so it also works over the exercise editor in the logger.
+- The first welcome step ends with "Your colours" (the same picker as
+  Settings), so new people choose a look on day one and see it straight
+  away. It is not shown when editing "Your details" later, since Settings
+  has the picker. Kept inside step 1 rather than a new step, to keep
+  onboarding at three steps.

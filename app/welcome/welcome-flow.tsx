@@ -16,6 +16,8 @@ import {
 } from "@/lib/onboarding";
 import { createClient } from "@/lib/supabase/client";
 import { PlanDraftEditor } from "@/components/plan/plan-draft-editor";
+import { ThemePicker } from "@/components/theme-picker";
+import type { Theme } from "@/lib/theme";
 import type { Exercise } from "@/lib/data";
 import { exerciseCatalog, isEdited } from "@/lib/plan-draft";
 import { buildTemplate, SETUPS, type TemplateRoutine, type TrainingSetup } from "@/lib/templates";
@@ -41,12 +43,15 @@ export function WelcomeFlow({
   detailsOnly,
   hasPlan,
   library,
+  theme,
 }: {
   userId: string;
   initial: WelcomeDetails;
   detailsOnly: boolean;
   hasPlan: boolean;
   library: Exercise[];
+  /** The colours in use now, for the "Your colours" picker on first run. */
+  theme: Theme;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -252,6 +257,16 @@ export function WelcomeFlow({
               value={experience}
               onChange={(v) => setExperience(v as Experience | null)}
             />
+
+            {!detailsOnly && (
+              <section aria-labelledby="w-colours" className="border-t pt-6">
+                <h2 id="w-colours" className="text-base font-medium">
+                  Your colours
+                </h2>
+                <p className="mb-4 mt-1 text-sm text-muted-foreground">Pick a look. You can change it any time in Settings.</p>
+                <ThemePicker initial={theme} />
+              </section>
+            )}
           </div>
 
           {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}

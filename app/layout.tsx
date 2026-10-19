@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
+import { ConfirmHost } from "@/components/confirm-dialog";
 import { InstallPrompt } from "@/components/install-prompt";
 import { OutboxSync } from "@/components/outbox-sync";
 import { ServiceWorkerRegister } from "@/components/sw-register";
@@ -68,6 +69,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         {children}
         <InstallPrompt />
+        <ConfirmHost />
         <ServiceWorkerRegister />
         <OutboxSync />
       </body>

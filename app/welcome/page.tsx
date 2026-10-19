@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { getActivePlan, getExerciseLibrary, getProfile, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { WelcomeFlow, type WelcomeDetails } from "./welcome-flow";
@@ -43,6 +45,7 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
         detailsOnly={details === "1"}
         hasPlan={Boolean(active.data)}
         library={library}
+        theme={parseTheme((await cookies()).get(THEME_COOKIE)?.value)}
       />
     </main>
   );

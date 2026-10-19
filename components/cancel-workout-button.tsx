@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
@@ -39,7 +40,16 @@ export function CancelWorkoutButton({
         : loggedSets === null
           ? "Any sets you logged in it will be removed from your history, PRs and progress."
           : `The ${loggedSets} set${loggedSets === 1 ? "" : "s"} you logged will be removed from your history, PRs and progress.`;
-    if (!confirm(`Cancel this workout? ${detail}`)) return;
+    if (
+      !(await confirmDialog({
+        title: "Cancel this workout?",
+        message: detail,
+        confirmLabel: "Cancel workout",
+        cancelLabel: "Keep it",
+        destructive: true,
+      }))
+    )
+      return;
 
     setBusy(true);
     setError(null);

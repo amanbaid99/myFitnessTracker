@@ -1,5 +1,6 @@
 "use client";
 
+import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -912,10 +913,13 @@ export function Logger(props: {
             onSwap={(pick) => applyEdit((s) => swapExercise(s, item, pick))}
             onRemove={async () => {
               const logged = exercises[index]?.working.some((r) => r.logged) || exercises[index]?.warmups.some((r) => r.logged);
-              const msg = `Remove ${item.exercise.name} from ${props.routineName} in your plan?${
-                logged ? " Sets you logged for it today stay in your history." : ""
-              }`;
-              if (!confirm(msg)) return;
+              const ok = await confirmDialog({
+                title: `Remove ${item.exercise.name}?`,
+                message: `It comes out of ${props.routineName} in your plan.${logged ? " Sets you logged for it today stay in your history." : ""}`,
+                confirmLabel: "Remove",
+                destructive: true,
+              });
+              if (!ok) return;
               const err = await applyEdit((s) => removeExercise(s, item));
               if (err) setError(err);
             }}
@@ -1468,7 +1472,15 @@ function FinishSheet({
       setError("Discarding needs a connection. Leave it for now and cancel it from Today later.");
       return;
     }
-    if (!confirm("Discard this workout? Nothing was logged.")) return;
+    if (
+      !(await confirmDialog({
+        title: "Discard this workout?",
+        message: "Nothing was logged.",
+        confirmLabel: "Discard",
+        destructive: true,
+      }))
+    )
+      return;
     setBusy(true);
     const { error } = await createClient().from("workouts").delete().eq("id", workoutId);
     if (error) {
