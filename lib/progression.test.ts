@@ -4,6 +4,22 @@ import { adjustNextSet, aimForSession, feelFromRpe, FEEL_RPE, parseWeightStep, s
 const set = (weightKg: number | null, reps: number | null, rpe: number | null = null, addedKg = 0) => ({ weightKg, addedKg, reps, rpe });
 
 describe("aimForSession", () => {
+  it("builds from the heaviest weight when it went up during the session", () => {
+    // Aman's incline press: 12.5 x 12, then 15 x 9 and 15 x 10, target 3 x 12.
+    const aim = aimForSession({ lastSets: [set(12.5, 12), set(15, 9), set(15, 10)], targetSets: 3, targetReps: 12, equipment: "dumbbell" });
+    expect(aim).toMatchObject({ weightKg: 15, reps: 10, reason: "Your top weight last time, one more rep", readyToIncrease: false });
+  });
+
+  it("adds a step on top of the heaviest weight when every set hit", () => {
+    const aim = aimForSession({ lastSets: [set(12.5, 12), set(15, 12), set(15, 12)], targetSets: 3, targetReps: 12, equipment: "dumbbell" });
+    expect(aim).toMatchObject({ weightKg: 17.5, reps: 12, readyToIncrease: true });
+  });
+
+  it("uses how the top sets felt, not a lighter first set", () => {
+    const aim = aimForSession({ lastSets: [set(12.5, 12, 6), set(15, 12, 9.5), set(15, 12, 9.5)], targetSets: 3, targetReps: 12, equipment: "dumbbell" });
+    expect(aim).toMatchObject({ weightKg: 15, reps: 12 });
+  });
+
   it("returns null with no history", () => {
     expect(aimForSession({ lastSets: [], targetSets: 3, targetReps: 10, equipment: "machine" })).toBeNull();
   });

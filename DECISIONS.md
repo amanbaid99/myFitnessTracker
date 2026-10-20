@@ -900,3 +900,13 @@ plans, which the spec did not have.
 - A saved step that is not a preset now shows as "Custom: 1.75 kg" with
   the value filled in, instead of being added to the preset buttons.
 - No migration: the column already allows any value in that range.
+
+## 2026-10-20: Aims build from the heaviest weight of last time (bug fix)
+
+- aimForSession took the first working set's weight, assuming straight
+  sets. When the weight went up mid-session (12.5 x 12, then 15 x 9 and
+  15 x 10), the aim dropped back to 12.5 kg.
+- It now builds from the heaviest load used last time. Below target: stay
+  at that weight, one more rep than the weakest set at it ("Your top weight
+  last time, one more rep"). Every set hit: add a step on top of it. How it
+  felt (RPE) is read from the sets at that weight.

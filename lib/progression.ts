@@ -66,12 +66,20 @@ export function aimForSession(input: {
   const sets = input.lastSets.filter((s) => s.reps !== null);
   if (sets.length === 0) return null;
 
-  const first = sets[0];
+  // The weight can change within a session (a lighter first set, then
+  // heavier ones), so build from the heaviest weight used, not the first
+  // set: the aim never drops below what was lifted last time.
+  const loadOf = (s: LoggedSet) => (s.weightKg ?? 0) + s.addedKg;
+  const weighted = sets.filter((s) => s.weightKg !== null);
+  const first = weighted.length ? weighted.reduce((top, s) => (loadOf(s) > loadOf(top) ? s : top)) : sets[0];
+  const topSets = weighted.length ? weighted.filter((s) => loadOf(s) === loadOf(first)) : sets;
+  const mixed = topSets.length < sets.length;
+
   const allHit = sets.length >= input.targetSets && sets.every((s) => (s.reps ?? 0) >= input.targetReps);
-  const rpes = sets.map((s) => s.rpe).filter((r): r is number => r !== null);
+  const rpes = topSets.map((s) => s.rpe).filter((r): r is number => r !== null);
   const hardest = rpes.length ? Math.max(...rpes) : null;
   const step = stepKg(input.equipment, input.weightStepKg);
-  const lowestReps = Math.min(...sets.map((s) => s.reps ?? 0));
+  const lowestReps = Math.min(...topSets.map((s) => s.reps ?? 0));
 
   // Bodyweight or no weight recorded: progress by reps.
   if (first.weightKg === null || step === null) {
@@ -109,7 +117,7 @@ export function aimForSession(input: {
     weightKg: first.weightKg,
     addedKg: first.addedKg,
     reps: Math.min(input.targetReps, lowestReps + 1),
-    reason: "Same weight, one more rep",
+    reason: mixed ? "Your top weight last time, one more rep" : "Same weight, one more rep",
     readyToIncrease: false,
   };
 }
