@@ -50,6 +50,9 @@ export interface Routine {
   name: string;
   sortOrder: number;
   exercises: RoutineExercise[];
+  /** The day's own warm-up and cool-down lines; null means automatic (lib/routine-prep.ts). */
+  warmup: string[] | null;
+  cooldown: string[] | null;
 }
 
 export interface Plan {
@@ -168,6 +171,8 @@ interface RoutineRow {
   plan_id: string;
   name: string;
   sort_order: number;
+  warmup: string[] | null;
+  cooldown: string[] | null;
   routine_exercises: {
     id: string;
     sort_order: number;
@@ -206,7 +211,7 @@ async function queryRoutines(
   let query = supabase
     .from("routines")
     .select(
-      `id, plan_id, name, sort_order, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS}))${activePlan}`,
+      `id, plan_id, name, sort_order, warmup, cooldown, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS}))${activePlan}`,
     )
     .order("sort_order")
     .order("sort_order", { referencedTable: "routine_exercises" });
@@ -221,6 +226,8 @@ async function queryRoutines(
     planId: r.plan_id,
     name: r.name,
     sortOrder: r.sort_order,
+    warmup: r.warmup?.length ? r.warmup : null,
+    cooldown: r.cooldown?.length ? r.cooldown : null,
     exercises: r.routine_exercises
       .filter((re) => re.exercises)
       .map((re) => ({

@@ -943,3 +943,26 @@ plans, which the spec did not have.
 - How the set felt still adjusts the next one afterwards: Easy adds a rep
   (or a weight step at target reps), Max matches the reps done, Good and
   Hard keep the copied numbers.
+
+## 2026-10-20: Each day's own warm-up and cool-down, editable, with AI (Aman's request)
+
+- New nullable `routines.warmup` and `routines.cooldown` (text[]): up to 12
+  lines of 1 to 200 characters, text only, no sets or reps. Null means
+  automatic: the rule-based lists from the day's exercises (unchanged), so
+  every day has one from the moment the plan is created, and it keeps up
+  when exercises change. A list is the person's own and stays as written.
+- Why not store the automatic list at creation: it would go stale the
+  first time an exercise is added or swapped. Storing only edits keeps
+  automatic days always right and custom days exactly as written.
+- Plan editor: a "Warm-up & cool-down" row on each day opens a sheet with
+  two text boxes (one step per line), "Write with AI", "Back to automatic"
+  and Save. Saving the automatic text unchanged, or clearing it, keeps the
+  day automatic. Saving does not mark a template plan custom.
+- AI: draft-plan has a `mode: "prep"` that writes one day's warm-up (4 to 6
+  lines) and cool-down (3 to 5 lines) from its exercises and muscles. It
+  counts as one of the 10 daily AI requests and is only filled in for the
+  person to check; nothing is saved until they tap Save.
+- AI-described plans keep a warm-up or cool-down the person described
+  (create_plan now stores "warmup"/"cooldown" when a day has them); the
+  model is told to leave them out otherwise, so drafts stay short and fast.
+- The workout logger uses the day's own lines when set, else automatic.

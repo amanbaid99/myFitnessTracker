@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DAILY_LIMIT, handle, lastJson, MODELS, race, toDraft } from "./handler";
+import { DAILY_LIMIT, handle, lastJson, MODELS, prepMessage, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
 import { MUSCLE_GROUPS, EQUIPMENT } from "../../../lib/muscles";
 import { MUSCLES, EQUIPMENT as FN_EQUIPMENT } from "./handler";
 
@@ -154,5 +154,64 @@ describe("race", () => {
   it("gives up at the deadline or when all fail", async () => {
     expect(await race([wait(500, "late", [], "a")], 1000, 40)).toBeNull();
     expect(await race([wait(5, null, [], "a"), wait(5, null, [], "b")], 1, 1000)).toBeNull();
+  });
+});
+
+describe("warm-up and cool-down", () => {
+  it("keeps a described warm-up on a drafted day, and leaves it out otherwise", () => {
+    const draft = toDraft({
+      days: [
+        { name: "Day 1", warmup: ["10 min treadmill", " ", "- Hip circles"], cooldown: [], exercises: [{ name: "Squat" }] },
+        { name: "Day 2", exercises: [{ name: "Row" }] },
+      ],
+    })!;
+    expect(draft.days[0].warmup).toEqual(["10 min treadmill", "Hip circles"]);
+    expect(draft.days[0].cooldown).toBeUndefined();
+    expect("warmup" in draft.days[1]).toBe(false);
+  });
+  it("cleans lines: bullets and numbers off, dashes tidied, capped at 12 of 200 characters", () => {
+    expect(toLines(["1. Bike — easy", "2) Arm circles", { text: "Band pull-aparts" }, 5, ""])).toEqual([
+      "Bike - easy",
+      "Arm circles",
+      "Band pull-aparts",
+    ]);
+    expect(toLines(Array.from({ length: 20 }, () => "x".repeat(300)))).toHaveLength(12);
+    expect(toLines(["x".repeat(300)])[0]).toHaveLength(200);
+  });
+  it("needs both lists from the model", () => {
+    expect(toPrep({ warmup: ["Bike"], cooldown: ["Stretch"] })).toEqual({ warmup: ["Bike"], cooldown: ["Stretch"] });
+    expect(toPrep({ warmup: ["Bike"], cooldown: [] })).toBeNull();
+    expect(toPrep(null)).toBeNull();
+  });
+  it("checks the day the app sends", () => {
+    expect(toPrepDay({ name: "Push", exercises: [{ name: "Bench Press", muscles: ["chest", "wings", "triceps"] }, { name: "" }] })).toEqual({
+      name: "Push",
+      exercises: [{ name: "Bench Press", muscles: ["chest", "triceps"] }],
+    });
+    expect(toPrepDay({ name: "Push", exercises: [] })).toBeNull();
+    expect(prepMessage({ name: "Push", exercises: [{ name: "Bench Press", muscles: ["chest"] }] })).toBe("Day: Push\n1. Bench Press (chest)");
+  });
+  it("writes a day's warm-up and cool-down and counts it", async () => {
+    const fetchFn = fakeFetch({
+      asked: 2,
+      models: [reply('Thinking about {"warmup": ["..."]}. {"warmup":["5 min rower","Arm circles"],"cooldown":["Chest stretch, 30 s"]}')],
+    });
+    const res = await handle(
+      req({ mode: "prep", day: { name: "Push", exercises: [{ name: "Bench Press", muscles: ["chest"] }] }, setup: "gym" }),
+      ENV,
+      fetchFn,
+      () => {},
+      NOW,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.prep).toEqual({ warmup: ["5 min rower", "Arm circles"], cooldown: ["Chest stretch, 30 s"] });
+    expect(body.remaining).toBe(DAILY_LIMIT - 3);
+    const sent = JSON.parse(String(fetchFn.mock.calls.find(([u]) => String(u).startsWith("https://openrouter.ai"))![1]?.body));
+    expect(sent.messages[0].content).toContain("warm-up and cool-down");
+    expect(sent.messages[1].content).toBe("Day: Push\n1. Bench Press (chest)");
+  });
+  it("refuses a day with no exercises", async () => {
+    expect((await handle(req({ mode: "prep", day: { name: "Push", exercises: [] } }), ENV, fakeFetch(), () => {}, NOW)).status).toBe(400);
   });
 });

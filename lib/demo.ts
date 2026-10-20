@@ -96,6 +96,8 @@ export const DEMO_ROUTINES: Routine[] = DAYS.map((day, dayIndex) => ({
   planId: DEMO_PLAN.id,
   name: day.name,
   sortOrder: dayIndex,
+  warmup: null,
+  cooldown: null,
   exercises: day.exercises.map((e, i) => ({
     id: `${day.slug}-${i}`,
     sortOrder: i,

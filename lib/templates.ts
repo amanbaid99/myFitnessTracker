@@ -20,6 +20,9 @@ export interface TemplateExercise {
 export interface TemplateRoutine {
   name: string;
   exercises: TemplateExercise[];
+  /** The day's own warm-up and cool-down lines; left out means automatic. */
+  warmup?: string[];
+  cooldown?: string[];
 }
 
 const ex = (

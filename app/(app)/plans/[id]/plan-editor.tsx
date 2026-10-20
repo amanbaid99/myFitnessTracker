@@ -3,7 +3,7 @@
 import { confirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Flame, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MakeActiveButton } from "../plan-actions";
 import { AddExercise } from "@/components/plan/add-exercise";
 import { ExerciseSheet, type ExerciseEdits } from "@/components/plan/exercise-sheet";
+import { PrepSheet } from "@/components/plan/prep-sheet";
 import {
   addExercise,
   friendlyError,
@@ -171,7 +172,9 @@ function RoutineEditor({
   const supabase = createClient();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+  const [prepOpen, setPrepOpen] = useState(false);
   const items = routine.exercises;
+  const custom = Boolean(routine.warmup || routine.cooldown);
   const editingIndex = items.findIndex((i) => i.id === editing);
   const editingItem = editingIndex === -1 ? null : items[editingIndex];
 
@@ -285,6 +288,33 @@ function RoutineEditor({
           </Button>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={() => setPrepOpen(true)}
+        className="flex min-h-14 w-full items-center gap-3 border-t px-4 py-3 text-left active:bg-muted"
+      >
+        <Flame className="size-4 shrink-0 text-primary" aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium">Warm-up & cool-down</span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {custom ? "Your own" : "Automatic, from this day's exercises"}
+          </span>
+        </span>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </button>
+
+      {prepOpen && (
+        <PrepSheet
+          dayName={routine.name}
+          exercises={items.map((i) => ({ name: i.exercise.name, muscleGroups: i.exercise.muscleGroups }))}
+          warmup={routine.warmup}
+          cooldown={routine.cooldown}
+          // Warm-ups do not change the plan's structure, so a template stays a template.
+          onSave={(warmup, cooldown) => run(() => supabase.from("routines").update({ warmup, cooldown }).eq("id", routine.id), false)}
+          onClose={() => setPrepOpen(false)}
+        />
+      )}
 
       {editingItem && (
         <ExerciseSheet

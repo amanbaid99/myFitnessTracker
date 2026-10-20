@@ -16,8 +16,7 @@ import {
   getWorkoutSets,
   load,
 } from "@/lib/data";
-import { routineCooldown } from "@/lib/general-cooldown";
-import { routineWarmup } from "@/lib/general-warmup";
+import { dayPrep } from "@/lib/routine-prep";
 import { buildSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { extraExerciseIds, extraItem, extrasCookieName, parseExtras } from "@/lib/workout-extras";
@@ -78,7 +77,8 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
 
   const session = buildSession(items, previous, logged);
   const warmupInput = items.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups }));
-  const checklist = routineWarmup(warmupInput);
+  // The day's own warm-up and cool-down, or automatic ones from its exercises.
+  const prep = dayPrep(warmupInput, routine.warmup, routine.cooldown);
 
   // Editing the day during the workout changes this, which remounts the
   // logger with the new exercises (logged sets come back from the server).
@@ -94,8 +94,8 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       routineName={routine.name}
       items={items}
       session={session}
-      checklist={checklist}
-      cooldown={routineCooldown(warmupInput)}
+      checklist={prep.warmup}
+      cooldown={prep.cooldown}
       prs={Object.fromEntries(prs)}
       units={profile.units}
       defaultRestSec={profile.defaultRestSec}

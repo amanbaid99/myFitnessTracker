@@ -52,6 +52,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
   const [understood, setUnderstood] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const emptyDay = days?.find((d) => d.exercises.length === 0);
+  const described = (days ?? []).filter((d) => d.warmup?.length || d.cooldown?.length).map((d) => d.name || "a day");
 
   async function draft() {
     setBusy(true);
@@ -183,6 +184,12 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
       <h2 className="mb-2 mt-6 text-sm font-medium">Your days</h2>
       <PlanDraftEditor days={days} onChange={setDays} catalog={exerciseCatalog(library, setup)} />
       {emptyDay && <p className="mt-3 text-sm text-destructive">Add an exercise to {emptyDay.name || "the empty day"}, or remove it.</p>}
+      <p className="mt-3 text-xs text-muted-foreground">
+        {described.length
+          ? `The warm-up or cool-down from your description is saved with ${described.join(", ")}. Other days get an automatic one from their exercises.`
+          : "Each day gets an automatic warm-up and cool-down from its exercises."}{" "}
+        You can edit them, or write them with AI, from the plan after you create it.
+      </p>
 
       <label className="mt-6 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border bg-card p-3 text-sm">
         <input

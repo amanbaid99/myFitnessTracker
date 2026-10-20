@@ -372,6 +372,40 @@ with u as (update public.exercises set weight_step_kg = 5
            where id = 'aaaaaaaa-0000-0000-0000-000000000001' returning 1)
 select pg_temp.expect((select count(*) from u) = 0, 'cannot change another user''s weight step');
 
+-- Warm-up and cool-down per day ---------------------------------------------
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect(
+  (select warmup is null and cooldown is null from public.routines where id = 'bbbbbbbb-0000-0000-0000-000000000001'),
+  'a day starts with an automatic warm-up and cool-down');
+update public.routines set warmup = array['5 min bike', 'Arm circles'], cooldown = array['Chest stretch']
+  where id = 'bbbbbbbb-0000-0000-0000-000000000001';
+select pg_temp.expect(
+  (select warmup = array['5 min bike', 'Arm circles'] from public.routines where id = 'bbbbbbbb-0000-0000-0000-000000000001'),
+  'the owner saves their own warm-up');
+select pg_temp.expect_error(
+  $$update public.routines set warmup = array['ok', '  '] where id = 'bbbbbbbb-0000-0000-0000-000000000001'$$,
+  'warm-up lines cannot be blank');
+select pg_temp.expect_error(
+  $$update public.routines set cooldown = array_fill('x'::text, array[13]) where id = 'bbbbbbbb-0000-0000-0000-000000000001'$$,
+  'at most 12 cool-down lines');
+select pg_temp.expect_error(
+  $$update public.routines set warmup = array[repeat('x', 201)] where id = 'bbbbbbbb-0000-0000-0000-000000000001'$$,
+  'warm-up lines are short');
+select pg_temp.expect_error(
+  $$update public.routines set warmup = '{}' where id = 'bbbbbbbb-0000-0000-0000-000000000001'$$,
+  'an empty list is stored as automatic (null), not as no lines');
+select pg_temp.expect(
+  (select r.warmup = array['10 min treadmill', 'Hip circles'] and r.cooldown is null
+   from public.routines r
+   where r.plan_id = public.create_plan('Prep plan', null, 1::smallint,
+     '[{"name":"Day 1","warmup":["  10 min treadmill ","", "Hip circles"],"cooldown":[],
+        "exercises":[{"name":"Incline Bench Press","sets":3,"reps":8}]}]'::jsonb, false)),
+  'create_plan keeps a described warm-up and leaves an empty cool-down automatic');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+with u as (update public.routines set warmup = array['hacked']
+           where id = 'bbbbbbbb-0000-0000-0000-000000000001' returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'cannot change another user''s warm-up');
+
 -- Ask coach usage -----------------------------------------------------------
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 select pg_temp.expect(public.count_coach_question() = 1, 'the first coach question of the day counts 1');
