@@ -890,3 +890,13 @@ plans, which the spec did not have.
   away. It is not shown when editing "Your details" later, since Settings
   has the picker. Kept inside step 1 rather than a new step, to keep
   onboarding at three steps.
+
+## 2026-10-20: Custom weight step (Aman's request)
+
+- The weight-step picker in Edit exercise gains a "Custom" option under
+  the six presets. It opens a kg box that takes any step above 0 and up to
+  20 kg (the database limit), rounded to 0.01 kg like the column; "1,5"
+  works as well as "1.5". An invalid value shows a message and blocks Save.
+- A saved step that is not a preset now shows as "Custom: 1.75 kg" with
+  the value filled in, instead of being added to the preset buttons.
+- No migration: the column already allows any value in that range.

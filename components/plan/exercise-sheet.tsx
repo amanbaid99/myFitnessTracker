@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import type { Exercise, RoutineExercise } from "@/lib/data";
 import { AddExercise, type ExercisePick } from "./add-exercise";
 import { EQUIPMENT, MUSCLE_GROUPS, REST_OPTIONS } from "@/lib/muscles";
-import { stepKg } from "@/lib/progression";
+import { MAX_WEIGHT_STEP_KG, parseWeightStep, stepKg } from "@/lib/progression";
 import { cn } from "@/lib/utils";
 
 /** Plate and stack steps to choose from, in kg. */
@@ -66,9 +66,10 @@ export function ExerciseSheet({
   const [muscles, setMuscles] = useState<string[]>(e.muscleGroups);
   const [perHand, setPerHand] = useState(e.perHand);
   const [weightStep, setWeightStep] = useState(e.weightStepKg);
-  const stepOptions = WEIGHT_STEPS.includes(e.weightStepKg)
-    ? WEIGHT_STEPS
-    : [...WEIGHT_STEPS, e.weightStepKg].sort((a, b) => a - b);
+  // A step that is not one of the presets is a custom one, typed in kg.
+  const [customStep, setCustomStep] = useState(!WEIGHT_STEPS.includes(e.weightStepKg));
+  const [customText, setCustomText] = useState(WEIGHT_STEPS.includes(e.weightStepKg) ? "" : String(e.weightStepKg));
+  const customValue = parseWeightStep(customText);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
@@ -83,6 +84,11 @@ export function ExerciseSheet({
       setError("Give the exercise a name.");
       return;
     }
+    const step = customStep && stepKg(equipment) !== null ? customValue : weightStep;
+    if (step === null) {
+      setError(`Enter a weight step above 0 and up to ${MAX_WEIGHT_STEP_KG} kg, or pick one.`);
+      return;
+    }
     setBusy(true);
     setError(null);
     const err = await onSave({
@@ -92,7 +98,7 @@ export function ExerciseSheet({
         machineSetting: seat.trim() || null,
         muscleGroups: muscles,
         perHand,
-        weightStepKg: weightStep,
+        weightStepKg: step,
       },
       slot: { targetSets: sets, targetReps: reps, restSec: rest },
     });
@@ -196,22 +202,62 @@ export function ExerciseSheet({
                     The smallest plate or stack jump. Aims and warm-ups go up by this.
                   </p>
                   <div className="mt-2 grid grid-cols-3 gap-2">
-                    {stepOptions.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        role="radio"
-                        aria-checked={weightStep === s}
-                        onClick={() => setWeightStep(s)}
-                        className={cn(
-                          "h-11 rounded-xl border text-sm tabular-nums",
-                          weightStep === s ? "border-primary bg-accent font-medium text-accent-foreground" : "text-muted-foreground",
-                        )}
-                      >
-                        {s} kg
-                      </button>
-                    ))}
+                    {WEIGHT_STEPS.map((s) => {
+                      const on = !customStep && weightStep === s;
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          onClick={() => {
+                            setCustomStep(false);
+                            setWeightStep(s);
+                          }}
+                          className={cn(
+                            "h-11 rounded-xl border text-sm tabular-nums",
+                            on ? "border-primary bg-accent font-medium text-accent-foreground" : "text-muted-foreground",
+                          )}
+                        >
+                          {s} kg
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={customStep}
+                      onClick={() => setCustomStep(true)}
+                      className={cn(
+                        "col-span-3 h-11 rounded-xl border text-sm",
+                        customStep ? "border-primary bg-accent font-medium text-accent-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {customStep && customValue !== null ? `Custom: ${customValue} kg` : "Custom"}
+                    </button>
                   </div>
+                  {customStep && (
+                    <div className="mt-2">
+                      <label htmlFor="ex-step-custom" className="sr-only">
+                        Custom weight step in kg
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="ex-step-custom"
+                          inputMode="decimal"
+                          autoFocus={!customText}
+                          value={customText}
+                          onChange={(ev) => setCustomText(ev.target.value)}
+                          placeholder="e.g. 0.25 or 3.75"
+                          aria-invalid={customText.trim() !== "" && customValue === null}
+                        />
+                        <span className="text-sm text-muted-foreground">kg</span>
+                      </div>
+                      {customText.trim() !== "" && customValue === null && (
+                        <p className="mt-1 text-xs text-destructive">Enter a number above 0 and up to {MAX_WEIGHT_STEP_KG}.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

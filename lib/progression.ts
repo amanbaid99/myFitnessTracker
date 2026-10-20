@@ -148,3 +148,17 @@ export function adjustNextSet(input: {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+/** Largest weight step the database accepts, in kg. */
+export const MAX_WEIGHT_STEP_KG = 20;
+
+/**
+ * A typed custom weight step in kg ("1.5", "0,25"), rounded to 0.01 like
+ * the database column. Null when empty, not a number, 0 or less, or over 20.
+ */
+export function parseWeightStep(text: string): number | null {
+  const n = Number(text.trim().replace(",", "."));
+  if (!text.trim() || !Number.isFinite(n)) return null;
+  const rounded = Math.round(n * 100) / 100;
+  return rounded > 0 && rounded <= MAX_WEIGHT_STEP_KG ? rounded : null;
+}

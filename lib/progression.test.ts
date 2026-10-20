@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustNextSet, aimForSession, feelFromRpe, FEEL_RPE, stepKg } from "./progression";
+import { adjustNextSet, aimForSession, feelFromRpe, FEEL_RPE, parseWeightStep, stepKg } from "./progression";
 
 const set = (weightKg: number | null, reps: number | null, rpe: number | null = null, addedKg = 0) => ({ weightKg, addedKg, reps, rpe });
 
@@ -93,5 +93,17 @@ describe("feel and steps", () => {
         weightStepKg: 5,
       }).weightKg,
     ).toBe(25);
+  });
+});
+
+describe("parseWeightStep", () => {
+  it("reads a typed step in kg, with a comma or a point", () => {
+    expect(parseWeightStep("1.5")).toBe(1.5);
+    expect(parseWeightStep(" 0,25 ")).toBe(0.25);
+    expect(parseWeightStep("3.755")).toBe(3.76);
+    expect(parseWeightStep("20")).toBe(20);
+  });
+  it("rejects empty, zero, negative, too large and non-numbers", () => {
+    for (const bad of ["", " ", "0", "0.001", "-1", "20.5", "abc"]) expect(parseWeightStep(bad)).toBeNull();
   });
 });
