@@ -1016,7 +1016,7 @@ function SetRow({
           label={row.label}
           value={row.reps}
           compact={showAddOn}
-          onChange={(reps) => onChange({ reps })}
+          onChange={(reps) => onChange({ reps, repsEdited: true })}
         />
       ) : (
         <>
@@ -1024,7 +1024,7 @@ function SetRow({
           <NumberField
             label={`Set ${row.label} reps`}
             value={row.reps}
-            onChange={(v) => onChange({ reps: v === null ? null : Math.round(v) })}
+            onChange={(v) => onChange({ reps: v === null ? null : Math.round(v), repsEdited: true })}
             disabled={done}
             integer
             className="w-12"

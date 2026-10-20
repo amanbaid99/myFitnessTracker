@@ -930,3 +930,16 @@ plans, which the spec did not have.
   exercise is gone. The set rows are already filled in with the aim, so it
   only repeated them. PR, last time and last note stay. The aim logic is
   unchanged (lib/progression.ts).
+
+## 2026-10-20: Later sets copy the reps too when the weight changes (Aman's request)
+
+- Logging a working set already carried its weight to the later unlogged
+  sets. Now, when that changes a set's weight, it also takes the reps just
+  done, because the planned reps were for the old weight: 15 kg x 10 on set
+  2 makes set 3 15 kg x 10 instead of 15 kg x 12.
+- Reps or weights changed by hand on a later set are kept (new
+  `repsEdited` flag, like `weightEdited`). With no weight change, reps stay
+  as planned, as before.
+- How the set felt still adjusts the next one afterwards: Easy adds a rep
+  (or a weight step at target reps), Max matches the reps done, Good and
+  Hard keep the copied numbers.

@@ -45,22 +45,28 @@ export interface Row {
   logged: SessionSet | null;
   /** The weight was typed by hand, so it is not overwritten automatically. */
   weightEdited?: boolean;
+  /** The reps were changed by hand, so they are not overwritten automatically. */
+  repsEdited?: boolean;
 }
 
 /**
  * After a working set is logged, later working sets not yet logged take its
  * weight (base and add-on): go up to 17.5 kg on set 2 and set 3 follows.
- * Sets whose weight was typed by hand keep it. Reps are left alone.
+ * When that changes a set's weight, it takes the reps just done too, since
+ * the planned reps were for the old weight: 15 kg x 10 on set 2 makes set 3
+ * 15 kg x 10, not 15 kg x 12. Weights or reps changed by hand are kept. How
+ * the set felt can then adjust the next one (adjustNextSet: Easy adds).
  */
 export function carryWeightForward(
   working: Row[],
-  done: { setNo: number; weightKg: number | null; addedKg: number },
+  done: { setNo: number; weightKg: number | null; addedKg: number; reps?: number | null },
 ): Row[] {
-  return working.map((r) =>
-    r.setNo > done.setNo && !r.logged && !r.weightEdited
-      ? { ...r, weightKg: done.weightKg, addedKg: done.addedKg }
-      : r,
-  );
+  return working.map((r) => {
+    if (r.setNo <= done.setNo || r.logged || r.weightEdited) return r;
+    const loadChanged = r.weightKg !== done.weightKg || r.addedKg !== done.addedKg;
+    const reps = loadChanged && !r.repsEdited && done.reps != null ? done.reps : r.reps;
+    return { ...r, weightKg: done.weightKg, addedKg: done.addedKg, reps };
+  });
 }
 
 export interface SessionExercise {

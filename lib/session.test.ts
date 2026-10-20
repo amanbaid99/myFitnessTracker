@@ -125,6 +125,23 @@ describe("carryWeightForward", () => {
     expect(out.map((r) => r.weightKg)).toEqual([15, 17.5, 20, 15]);
   });
 
+  it("takes the reps too when the weight changes: 15 kg x 10 on set 2 makes set 3 15 kg x 10", () => {
+    const rows = [
+      row(1, 12.5, { reps: 12, logged: { ...logged(1, 12.5), reps: 12 } }),
+      row(2, 15, { reps: 10, weightEdited: true, logged: { ...logged(2, 15), reps: 10 } }),
+      row(3, 12.5, { reps: 12 }),
+    ];
+    const out = carryWeightForward(rows, { setNo: 2, weightKg: 15, addedKg: 0, reps: 10 });
+    expect(out[2]).toMatchObject({ weightKg: 15, reps: 10 });
+  });
+
+  it("leaves reps alone when the weight stays the same, or when they were changed by hand", () => {
+    const same = carryWeightForward([row(1, 15), row(2, 15, { reps: 12 })], { setNo: 1, weightKg: 15, addedKg: 0, reps: 9 });
+    expect(same[1].reps).toBe(12);
+    const typed = carryWeightForward([row(1, 15), row(2, 12.5, { reps: 8, repsEdited: true })], { setNo: 1, weightKg: 15, addedKg: 0, reps: 10 });
+    expect(typed[1]).toMatchObject({ weightKg: 15, reps: 8 });
+  });
+
   it("carries the pin add-on too", () => {
     const out = carryWeightForward([row(1, 22.5), row(2, 22.5)], { setNo: 1, weightKg: 22.5, addedKg: 3.75 });
     expect(out[1]).toMatchObject({ weightKg: 22.5, addedKg: 3.75 });
