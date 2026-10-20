@@ -40,6 +40,9 @@ export function ContactLine() {
 export function LegalLinks({ className }: { className?: string }) {
   return (
     <nav aria-label="Legal" className={`flex justify-center gap-2 text-xs text-muted-foreground ${className ?? ""}`}>
+      <Link href="/faq" className="inline-flex min-h-11 items-center px-2 underline-offset-2 hover:underline">
+        Help
+      </Link>
       <Link href="/privacy" className="inline-flex min-h-11 items-center px-2 underline-offset-2 hover:underline">
         Privacy Policy
       </Link>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { FeedbackButtons } from "@/components/feedback-buttons";
 import Link from "next/link";
+import { CircleHelp } from "lucide-react";
 import { InstallButton } from "@/components/install-button";
 import { UpdateCheck } from "@/components/update/update-check";
 import { ThemePicker } from "@/components/theme-picker";
@@ -60,8 +61,13 @@ export default async function SettingsPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="mb-1 text-sm font-medium">About</h2>
-        <p className="mb-3 text-xs text-muted-foreground">How your data is used, and the rules for using the app.</p>
+        <h2 className="mb-1 text-sm font-medium">Help and about</h2>
+        <p className="mb-3 text-xs text-muted-foreground">How the app works, how your data is used, and the rules for using it.</p>
+        <Button asChild variant="secondary" size="lg" className="mb-3 w-full">
+          <Link href="/faq">
+            <CircleHelp /> Help & FAQ
+          </Link>
+        </Button>
         <div className="grid grid-cols-2 gap-3">
           <Button asChild variant="outline">
             <Link href="/privacy">Privacy Policy</Link>

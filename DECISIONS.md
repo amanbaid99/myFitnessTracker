@@ -988,3 +988,16 @@ plans, which the spec did not have.
 - Migration: workouts.source allows 'baseline'; new `correct_set` function
   (security invoker, so row-level security limits it to the caller's sets;
   not callable by anon).
+
+## 2026-10-20: Help & FAQ page (Aman's request)
+
+- /faq: 27 questions in six topics (getting started, during a workout,
+  records and progress, plans, AI and Coach, account and data), each a
+  tap-to-open answer of a few sentences, with topic chips and a search box
+  that matches question and answer text. Public like the Privacy page, so it
+  can be read before signing up.
+- Linked from Settings ("Help and about", above Privacy and Terms) and the
+  login page footer. Content lives in lib/faq.ts; a test checks every
+  question has an answer, none repeat, and none use em dashes. Answers were
+  checked against the code (aim logic, feel buttons, e1RM formula, streak,
+  AI limit), so keep them in step when behaviour changes.
