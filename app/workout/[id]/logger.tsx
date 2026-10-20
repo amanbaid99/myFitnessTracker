@@ -688,12 +688,7 @@ export function Logger(props: {
                       <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
                     </p>
                   )}
-                  {ex.aim && (
-                    <p>
-                      <span className="font-medium text-primary">Aim: {formatSet(ex.aim, units)}</span>{" "}
-                      <span className="text-muted-foreground">· {ex.aim.reason}</span>
-                    </p>
-                  )}
+                  {/* No "Aim" line: the set rows are already filled in with it. */}
                   {ex.last.length > 0 && (
                     <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
                   )}

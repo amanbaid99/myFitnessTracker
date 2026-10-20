@@ -923,3 +923,10 @@ plans, which the spec did not have.
 - The prompt asks for 3 sentences (up to 75 words): how today compared
   with last time, one thing to watch, what to aim for next. No migration;
   it is an Edge Function change, deployed by hand like before.
+
+## 2026-10-20: No "Aim" line in the logger (Aman's request)
+
+- The "Aim: 20 kg x 13 · Same weight, one more rep" line under each
+  exercise is gone. The set rows are already filled in with the aim, so it
+  only repeated them. PR, last time and last note stay. The aim logic is
+  unchanged (lib/progression.ts).
