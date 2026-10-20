@@ -910,3 +910,16 @@ plans, which the spec did not have.
   at that weight, one more rep than the weakest set at it ("Your top weight
   last time, one more rep"). Every set hit: add a step on top of it. How it
   felt (RPE) is read from the sets at that weight.
+
+## 2026-10-20: Workout reviews compare with the same day last time (Aman's request)
+
+- The review already compared each exercise with the last time it was
+  done and flagged a new heaviest weight. It now also finds the last
+  finished, not cancelled session of the same day (this Legs against last
+  Legs) and adds: how many days ago, its length, working sets and kg moved,
+  today's sets and kg moved with the % change, and exercises skipped or new.
+- "kg moved" is load x reps summed, per-hand loads counted twice, so the
+  number reflects both dumbbells.
+- The prompt asks for 3 sentences (up to 75 words): how today compared
+  with last time, one thing to watch, what to aim for next. No migration;
+  it is an Edge Function change, deployed by hand like before.

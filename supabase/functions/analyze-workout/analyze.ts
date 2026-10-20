@@ -1,7 +1,9 @@
 /**
  * The workout analysis itself: load one finished workout, turn it into a
  * short plain-text summary, ask a free model on OpenRouter for a brief
- * review, and save it as a workout_review insight.
+ * review, and save it as a workout_review insight. The summary compares
+ * each exercise with the last time it was done, and the whole session with
+ * the last session of the same day (this Legs against last Legs).
  *
  * Only exercise names, numbers, how sets felt and the user's exercise notes
  * are sent. No names, emails or ids, and contact details typed into notes
@@ -52,6 +54,8 @@ export interface WorkoutData {
   /** Heaviest weight ever before today, by exercise name. */
   bestBefore: Record<string, number>;
   notes: Record<string, string>;
+  /** The last finished session of the same day (routine), if any. */
+  previous?: { startedAt: string; endedAt: string; sets: SetData[] } | null;
 }
 
 export interface Review {
@@ -70,12 +74,47 @@ function setText(s: SetData): string {
   return `${load}x${s.reps ?? "?"}`;
 }
 
+/** Working sets and total weight moved (load x reps; per-hand loads count twice). Pure. */
+export function sessionStats(sets: SetData[]): { sets: number; volumeKg: number } {
+  let volumeKg = 0;
+  for (const s of sets) {
+    const load = (s.weightKg ?? 0) + s.addedKg;
+    volumeKg += load * (s.perHand ? 2 : 1) * (s.reps ?? 0);
+  }
+  return { sets: sets.filter((s) => s.reps !== null).length, volumeKg: Math.round(volumeKg) };
+}
+
+const minutesBetween = (start: string, end: string) => Math.max(1, Math.round((Date.parse(end) - Date.parse(start)) / 60_000));
+const setsText = (n: number) => `${n} working set${n === 1 ? "" : "s"}`;
+const thousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+/** Today against the last session of the same day, as a few lines. Pure. */
+export function compareWithPrevious(d: WorkoutData): string[] {
+  const prev = d.previous;
+  if (!prev || prev.sets.length === 0) return [];
+  const day = d.dayName ?? "this day";
+  const daysAgo = Math.max(0, Math.round((Date.parse(d.startedAt) - Date.parse(prev.startedAt)) / 86_400_000));
+  const then = sessionStats(prev.sets);
+  const now = sessionStats(d.today);
+  const change = then.volumeKg > 0 ? Math.round(((now.volumeKg - then.volumeKg) / then.volumeKg) * 100) : null;
+  const lines = [
+    `Last ${day} session, ${daysAgo === 1 ? "1 day" : `${daysAgo} days`} earlier: ${minutesBetween(prev.startedAt, prev.endedAt)} min, ${setsText(then.sets)}, ${thousands(then.volumeKg)} kg moved.`,
+    `Today against it: ${setsText(now.sets)}, ${thousands(now.volumeKg)} kg moved${change === null ? "" : ` (${change >= 0 ? "+" : ""}${change}%)`}.`,
+  ];
+  const before = [...new Set(prev.sets.map((s) => s.exercise))];
+  const today = new Set(d.today.map((s) => s.exercise));
+  const skipped = before.filter((e) => !today.has(e));
+  const added = [...today].filter((e) => !before.includes(e));
+  if (skipped.length) lines.push(`Done last ${day} but not today: ${skipped.join(", ")}.`);
+  if (added.length) lines.push(`New compared with last ${day}: ${added.join(", ")}.`);
+  return lines;
+}
+
 const FEEL = (rpe: number) => (rpe <= 6.5 ? "easy" : rpe <= 8 ? "good" : rpe < 10 ? "hard" : "max");
 
 /** The workout as a few short lines the model can read. Pure. */
 export function buildSummary(d: WorkoutData): string {
-  const minutes = Math.max(1, Math.round((Date.parse(d.endedAt) - Date.parse(d.startedAt)) / 60_000));
-  const lines = [`Session: ${d.dayName ?? "Workout"}, ${minutes} min.`];
+  const lines = [`Session: ${d.dayName ?? "Workout"}, ${minutesBetween(d.startedAt, d.endedAt)} min.`, ...compareWithPrevious(d)];
   const byExercise = new Map<string, SetData[]>();
   for (const s of d.today) byExercise.set(s.exercise, [...(byExercise.get(s.exercise) ?? []), s]);
   if (byExercise.size === 0) lines.push("No working sets were logged.");
@@ -99,10 +138,11 @@ export function buildSummary(d: WorkoutData): string {
 
 export const SYSTEM_PROMPT = [
   "You are a concise strength coach reviewing one gym session from the data given.",
-  "Use only that data. Weights are kg. Easy/good/hard/max is how the set felt.",
+  "Use only that data. Weights are kg. Easy/good/hard/max is how the set felt. 'kg moved' is load times reps, summed.",
+  "When the last session of the same day is given, compare today with it: more or less work overall, which lifts went up or dropped, and anything skipped.",
   'Reply with JSON only, no other text: {"title": "...", "summary": "..."}.',
   "title: at most 6 words.",
-  "summary: 2 or 3 short sentences, at most 60 words in total: what went well, one thing to watch, and what to aim for next time.",
+  "summary: 3 short sentences, at most 75 words in total: how today compared with last time, one thing to watch, and what to aim for next time.",
   "Be specific with exercise names and numbers. No medical advice. Do not use em dashes.",
 ].join("\n");
 
@@ -194,8 +234,8 @@ function toSet(r: SetRow): SetData {
 export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workoutId: string): Promise<WorkoutData | null> {
   const id = encodeURIComponent(workoutId);
   const [workout] = await getJson<
-    { user_id: string; started_at: string; ended_at: string | null; routines: { name: string } | null }[]
-  >(env, fetchFn, `workouts?id=eq.${id}&select=user_id,started_at,ended_at,routines(name)`);
+    { user_id: string; routine_id: string | null; started_at: string; ended_at: string | null; routines: { name: string } | null }[]
+  >(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,routines(name)`);
   if (!workout?.ended_at) return null;
 
   const todayRows = await getJson<SetRow[]>(
@@ -237,6 +277,26 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     for (const n of noteRows) notes[names.get(n.exercise_id) ?? "Exercise"] = n.note;
   }
 
+  // The last finished, not cancelled, session of the same day before this one.
+  let previous: WorkoutData["previous"] = null;
+  if (workout.routine_id) {
+    const [prev] = await getJson<{ id: string; started_at: string; ended_at: string }[]>(
+      env,
+      fetchFn,
+      `workouts?user_id=eq.${encodeURIComponent(workout.user_id)}&routine_id=eq.${encodeURIComponent(workout.routine_id)}` +
+        `&id=neq.${id}&ended_at=not.is.null&cancelled_at=is.null&started_at=lt.${encodeURIComponent(workout.started_at)}` +
+        `&select=id,started_at,ended_at&order=started_at.desc&limit=1`,
+    );
+    if (prev) {
+      const prevRows = await getJson<SetRow[]>(
+        env,
+        fetchFn,
+        `sets?workout_id=eq.${encodeURIComponent(prev.id)}&set_type=eq.working&deleted_at=is.null&select=${SET_SELECT}&order=logged_at`,
+      );
+      previous = { startedAt: prev.started_at, endedAt: prev.ended_at, sets: prevRows.map(toSet) };
+    }
+  }
+
   return {
     userId: workout.user_id,
     dayName: workout.routines?.name ?? null,
@@ -246,6 +306,7 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     last,
     bestBefore,
     notes,
+    previous,
   };
 }
 
