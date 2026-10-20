@@ -406,6 +406,40 @@ with u as (update public.routines set warmup = array['hacked']
            where id = 'bbbbbbbb-0000-0000-0000-000000000001' returning 1)
 select pg_temp.expect((select count(*) from u) = 0, 'cannot change another user''s warm-up');
 
+-- Starting weights and fixing a set ----------------------------------------
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into public.workouts (id, started_at, ended_at, source)
+  values ('cccccccc-0000-0000-0000-0000000000b1', now(), now(), 'baseline');
+insert into public.sets (id, workout_id, exercise_id, set_no, weight_kg, reps)
+  values ('dddddddd-0000-0000-0000-0000000000b1', 'cccccccc-0000-0000-0000-0000000000b1',
+          'aaaaaaaa-0000-0000-0000-000000000001', 1, 200, 5);
+select pg_temp.expect(
+  (select count(*) from public.sets where workout_id = 'cccccccc-0000-0000-0000-0000000000b1') = 1,
+  'starting weights save as a baseline workout');
+select pg_temp.expect_error(
+  $$insert into public.workouts (started_at, ended_at, source) values (now(), now(), 'made_up')$$,
+  'only known workout sources');
+select pg_temp.expect(
+  public.correct_set('dddddddd-0000-0000-0000-0000000000b1', 20, 0, 5) is not null,
+  'the owner fixes a wrongly logged set');
+select pg_temp.expect(
+  (select weight_kg = 20 and reps = 5 and set_no = 1 from public.sets
+   where workout_id = 'cccccccc-0000-0000-0000-0000000000b1' and deleted_at is null)
+  and (select count(*) from public.sets
+       where workout_id = 'cccccccc-0000-0000-0000-0000000000b1' and deleted_at is not null) = 1,
+  'the fix replaces the set: the wrong one is kept, soft-deleted');
+select pg_temp.expect_error(
+  $$select public.correct_set('dddddddd-0000-0000-0000-0000000000b1', 25, 0, 5)$$,
+  'a set already replaced cannot be fixed again');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pg_temp.expect_error(
+  $$select public.correct_set((select id from public.sets where workout_id = 'cccccccc-0000-0000-0000-0000000000b1' and deleted_at is null), 1, 0, 1)$$,
+  'cannot fix another user''s set');
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect(
+  (select weight_kg = 20 from public.sets where workout_id = 'cccccccc-0000-0000-0000-0000000000b1' and deleted_at is null),
+  'another user''s attempt changed nothing');
+
 -- Ask coach usage -----------------------------------------------------------
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 select pg_temp.expect(public.count_coach_question() = 1, 'the first coach question of the day counts 1');
@@ -432,6 +466,7 @@ select pg_temp.expect_error(
   $$insert into public.feedback (kind, rating) values ('feedback', 'good')$$,
   'anon cannot send feedback');
 select pg_temp.expect_error($$select public.count_coach_question()$$, 'anon cannot count coach questions');
+select pg_temp.expect_error($$select public.correct_set(gen_random_uuid(), 1, 0, 1)$$, 'anon cannot fix sets');
 reset role;
 
 \o

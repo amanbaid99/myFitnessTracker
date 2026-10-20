@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronRight, Play, Plus, RotateCcw } from "lucide-react";
+import { ChevronRight, Dumbbell, Play, Plus, RotateCcw } from "lucide-react";
 import { startWorkout } from "@/app/actions";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { DataError } from "@/components/data-error";
@@ -26,8 +26,9 @@ export default async function TodayPage() {
 
   if (result.error === null && !result.data[0] && !profile.onboarded) redirect("/welcome");
   const workouts = result.error === null ? result.data[1] : [];
-  // Every finished workout counts for the streak, imported ones included.
-  const finishedAll = workouts.filter((w) => w.endedAt);
+  // Every finished workout counts for the streak, imported ones included;
+  // starting weights are not a workout.
+  const finishedAll = workouts.filter((w) => w.endedAt && w.source !== "baseline");
   const lastFinished = finishedAll.find((w) => w.source === "app");
   const review = lastFinished ? await fetchWorkoutReview(supabase, lastFinished.id) : null;
   const routineName = (id: string | null) => result.data?.[0]?.routines.find((r) => r.id === id)?.name ?? null;
@@ -113,6 +114,21 @@ export default async function TodayPage() {
           </div>
           <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="mt-2 w-full text-muted-foreground" />
         </div>
+      )}
+
+      {/* Nothing logged yet: offer starting weights so the first workout is not empty boxes. */}
+      {!open && finished.length === 0 && !workouts.some((w) => w.source === "baseline") && (
+        <Link
+          href="/starting-weights"
+          className="mt-5 flex min-h-14 items-center gap-3 rounded-2xl border border-dashed bg-card px-4 py-3 active:bg-muted"
+        >
+          <Dumbbell className="size-5 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">Know what you lift already?</span>
+            <span className="block text-xs text-muted-foreground">Add starting weights so your first workout starts there.</span>
+          </span>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+        </Link>
       )}
 
       {next && (

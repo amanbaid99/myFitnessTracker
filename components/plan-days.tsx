@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Routine } from "@/lib/data";
@@ -10,11 +11,15 @@ export function PlanDays({
   lastSets,
   prs,
   units,
+  startingWeightsHref,
 }: {
   routines: Routine[];
   lastSets: Map<string, SetLike>;
-  prs: Map<string, SetLike>;
+  /** With a workoutId, the PR links to that workout so a wrong one can be fixed. */
+  prs: Map<string, SetLike & { workoutId?: string | null }>;
   units: Units;
+  /** Where "Nothing logged yet" sends people to enter starting weights, if anywhere. */
+  startingWeightsHref?: string;
 }) {
   return (
     <div className="space-y-8">
@@ -44,14 +49,29 @@ export function PlanDays({
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground">{exercise.muscleGroups.join(", ")}</p>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
-                    {pr && (
-                      <span className="inline-flex items-center gap-1 text-primary">
-                        <Trophy className="size-3" aria-hidden /> PR {formatSet(pr, units)}
-                      </span>
+                    {pr &&
+                      (pr.workoutId ? (
+                        <Link
+                          href={`/history/${pr.workoutId}`}
+                          aria-label={`PR ${formatSet(pr, units)}: open the workout to check or fix it`}
+                          className="-my-2 inline-flex items-center gap-1 py-2 text-primary underline-offset-2 active:underline"
+                        >
+                          <Trophy className="size-3" aria-hidden /> PR {formatSet(pr, units)}
+                        </Link>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-primary">
+                          <Trophy className="size-3" aria-hidden /> PR {formatSet(pr, units)}
+                        </span>
+                      ))}
+                    {last ? (
+                      <span className="text-muted-foreground">Last: {formatSet(last, units)}</span>
+                    ) : startingWeightsHref ? (
+                      <Link href={startingWeightsHref} className="-my-2 py-2 text-muted-foreground underline underline-offset-2">
+                        Nothing logged yet: add a starting weight
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground">Nothing logged yet</span>
                     )}
-                    <span className="text-muted-foreground">
-                      {last ? `Last: ${formatSet(last, units)}` : "Nothing logged yet"}
-                    </span>
                   </div>
                 </li>
               );

@@ -20,7 +20,7 @@ export const PROMPT_AFTER_DAYS = 2;
  * do not count.
  */
 export function shouldPromptFeedback(
-  workouts: { endedAt: string | null; source: "app" | "sheet_import" }[],
+  workouts: { endedAt: string | null; source: "app" | "sheet_import" | "baseline" }[],
   alreadyPrompted: boolean,
 ): boolean {
   if (alreadyPrompted) return false;

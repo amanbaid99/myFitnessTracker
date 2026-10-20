@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Dumbbell, Pencil, Plus } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { PlanDays } from "@/components/plan-days";
 import { ScreenHeader } from "@/components/screen-header";
@@ -61,9 +61,15 @@ export default async function RoutinesPage() {
             <Link href="/plans">All plans</Link>
           </Button>
         </div>
+        <Button asChild variant="ghost" className="mt-2 w-full">
+          <Link href="/starting-weights">
+            <Dumbbell /> Starting weights
+          </Link>
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">Tap a PR to check or fix it.</p>
       </header>
 
-      <PlanDays routines={routines} lastSets={lastSets} prs={prs} units={profile.units} />
+      <PlanDays routines={routines} lastSets={lastSets} prs={prs} units={profile.units} startingWeightsHref="/starting-weights" />
     </>
   );
 }

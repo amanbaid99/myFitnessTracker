@@ -966,3 +966,25 @@ plans, which the spec did not have.
   (create_plan now stores "warmup"/"cooldown" when a day has them); the
   model is told to leave them out otherwise, so drafts stay short and fast.
 - The workout logger uses the day's own lines when set, else automatic.
+
+## 2026-10-20: Fix a logged set, and enter starting weights (Aman's request)
+
+- Fixing: on a finished workout (History), every set is tappable. "Save
+  fix" calls `correct_set`, which soft-deletes the set and inserts a
+  corrected copy (same workout, exercise, set number, type, effort and
+  time) in one transaction, so sets stay append-only (spec rule 1) and PRs,
+  being computed (rule 4), follow at once. "Delete this set" soft-deletes.
+  Both need a connection; logging itself stays offline-first.
+- Finding a wrong PR: the PR on Routines links to the workout it was set
+  in (looked up from exercise_prs.set_id), where it can be fixed.
+- Starting weights (/starting-weights, from Routines, and a nudge on Today
+  before anything is logged): one weight x reps per exercise in the active
+  plan, saved as a finished workout with source 'baseline' and one working
+  set per exercise. Aims, warm-up ramps and PRs use it like any logged set.
+  It is not a workout: it is left out of the streak, workout counts, sets
+  per muscle, the rotation and AI reviews (the review webhook only runs for
+  'app'). History lists it as "Starting weights · entered by you", where
+  each set can be fixed or deleted.
+- Migration: workouts.source allows 'baseline'; new `correct_set` function
+  (security invoker, so row-level security limits it to the caller's sets;
+  not callable by anon).

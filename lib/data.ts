@@ -70,7 +70,7 @@ export interface WorkoutSummary {
   routineId: string | null;
   startedAt: string;
   endedAt: string | null;
-  source: "app" | "sheet_import";
+  source: WorkoutSource;
 }
 
 export interface SetRow {
@@ -99,9 +99,19 @@ export interface PersonalRecord {
   reps: number;
   e1rmKg: number;
   loggedAt: string;
+  /** The workout the record was set in, to open (and fix) it. */
+  workoutId: string | null;
 }
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Where a workout came from: logged in the app, imported from the Sheet, or
+ * starting weights entered by hand ("baseline": counts for aims and records,
+ * not for streaks, workout counts or the rotation).
+ */
+export type WorkoutSource = "app" | "sheet_import" | "baseline";
+const toSource = (v: unknown): WorkoutSource => (v === "sheet_import" || v === "baseline" ? v : "app");
 
 const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
 
@@ -278,7 +288,7 @@ export interface HistoryWorkout {
   routineName: string | null;
   startedAt: string;
   endedAt: string;
-  source: "app" | "sheet_import";
+  source: WorkoutSource;
   energy: number | null;
   notes: string | null;
 }
@@ -292,7 +302,7 @@ function toHistoryWorkout(w: Record<string, unknown>): HistoryWorkout {
     routineName: routine?.name ?? null,
     startedAt: w.started_at as string,
     endedAt: w.ended_at as string,
-    source: w.source === "sheet_import" ? "sheet_import" : "app",
+    source: toSource(w.source),
     energy: (w.energy as number | null) ?? null,
     notes: (w.notes as string | null) ?? null,
   };
@@ -369,6 +379,7 @@ export async function getSessionBests(supabase: Supabase, exerciseId?: string): 
 }
 
 export interface MuscleSets {
+  workoutId?: string;
   startedAt: string;
   muscle: string;
   sets: number;
@@ -378,11 +389,11 @@ export interface MuscleSets {
 export async function getMuscleSets(supabase: Supabase, sinceIso: string): Promise<MuscleSets[]> {
   const { data, error } = await supabase
     .from("workout_muscle_sets")
-    .select("started_at, muscle, sets")
+    .select("workout_id, started_at, muscle, sets")
     .gte("started_at", sinceIso)
     .limit(5000);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => ({ startedAt: r.started_at, muscle: r.muscle, sets: Number(r.sets) }));
+  return (data ?? []).map((r) => ({ workoutId: r.workout_id, startedAt: r.started_at, muscle: r.muscle, sets: Number(r.sets) }));
 }
 
 // Exercise notes -----------------------------------------------------------------
@@ -461,7 +472,7 @@ export async function getRecentWorkouts(supabase: Supabase, limit = 200): Promis
       routineId: w.routine_id,
       startedAt: w.started_at,
       endedAt: w.ended_at,
-      source: w.source === "sheet_import" ? "sheet_import" : "app",
+      source: toSource(w.source),
     }));
 }
 
@@ -555,8 +566,15 @@ export async function getLastWorkingSets(supabase: Supabase): Promise<Map<string
 export async function getPersonalRecords(supabase: Supabase): Promise<Map<string, PersonalRecord>> {
   const { data, error } = await supabase
     .from("exercise_prs")
-    .select("exercise_id, weight_kg, added_kg, reps, e1rm_kg, logged_at");
+    .select("exercise_id, set_id, weight_kg, added_kg, reps, e1rm_kg, logged_at");
   if (error) throw new Error(error.message);
+  // Which workout each record came from, so it can be opened and fixed.
+  const setIds = (data ?? []).map((p) => p.set_id).filter(Boolean);
+  const workoutOf = new Map<string, string>();
+  if (setIds.length) {
+    const { data: rows } = await supabase.from("sets").select("id, workout_id").in("id", setIds);
+    for (const r of rows ?? []) workoutOf.set(r.id, r.workout_id);
+  }
   const map = new Map<string, PersonalRecord>();
   for (const p of data ?? []) {
     map.set(p.exercise_id, {
@@ -565,6 +583,7 @@ export async function getPersonalRecords(supabase: Supabase): Promise<Map<string
       reps: p.reps,
       e1rmKg: Number(p.e1rm_kg),
       loggedAt: p.logged_at,
+      workoutId: workoutOf.get(p.set_id) ?? null,
     });
   }
   return map;

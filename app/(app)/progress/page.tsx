@@ -39,7 +39,12 @@ export default async function ProgressPage() {
       </>
     );
   }
-  const { bests, muscleRows, workouts, names } = result.data;
+  const { bests, muscleRows: allMuscleRows, workouts: finished, names } = result.data;
+  // Starting weights are numbers to build on, not training: they count for
+  // the 1RM charts but not for the streak or sets per muscle.
+  const baselineIds = new Set(finished.filter((w) => w.source === "baseline").map((w) => w.id));
+  const workouts = finished.filter((w) => w.source !== "baseline");
+  const muscleRows = allMuscleRows.filter((r) => !r.workoutId || !baselineIds.has(r.workoutId));
 
   const byExercise = new Map<string, ExerciseProgress>();
   for (const b of bests) {

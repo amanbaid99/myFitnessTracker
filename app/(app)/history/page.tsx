@@ -28,10 +28,10 @@ export default async function HistoryPage() {
             <li key={w.id}>
               <Link href={`/history/${w.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{w.routineName ?? "Workout"}</p>
+                  <p className="truncate font-medium">{w.source === "baseline" ? "Starting weights" : (w.routineName ?? "Workout")}</p>
                   <p className="text-sm text-muted-foreground">
                     <LocalDate iso={w.startedAt} />
-                    {w.source === "sheet_import" ? " · imported" : ` · ${minutes(w)} min`}
+                    {w.source === "sheet_import" ? " · imported" : w.source === "baseline" ? " · entered by you" : ` · ${minutes(w)} min`}
                   </p>
                 </div>
                 <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
