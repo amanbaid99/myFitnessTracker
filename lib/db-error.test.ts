@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeDbError } from "./db-error";
+import { describeDbError, isClockSkew } from "./db-error";
 
 describe("describeDbError", () => {
   it.each([
@@ -12,5 +12,14 @@ describe("describeDbError", () => {
 
   it("passes other errors through", () => {
     expect(describeDbError("fetch failed")).toBe("Could not load your data: fetch failed");
+  });
+});
+
+describe("isClockSkew", () => {
+  it("spots a token refused for being issued a moment ahead of the database clock", () => {
+    expect(isClockSkew("JWT issued at future")).toBe(true);
+    expect(isClockSkew("PGRST303: JWT issued at future")).toBe(true);
+    expect(isClockSkew("JWT expired")).toBe(false);
+    expect(describeDbError("JWT issued at future")).toMatch(/Reload the page/);
   });
 });

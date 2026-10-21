@@ -1,5 +1,15 @@
 /** Turns a Supabase/PostgREST error message into something Aman can act on. */
+/**
+ * "JWT issued at future": a sign-in token refreshed a moment ago carries
+ * the auth server's time, which can be a second or two ahead of the
+ * database's clock. It passes once the clock catches up, so retry it.
+ */
+export function isClockSkew(message: string): boolean {
+  return /issued at future|PGRST303/i.test(message);
+}
+
 export function describeDbError(message: string): string {
+  if (isClockSkew(message)) return "Your sign-in was just refreshed and the server needs a moment. Reload the page to continue.";
   // PostgREST's wording when the schema has not been migrated yet.
   if (/schema cache|does not exist|Could not find the (table|relation)/i.test(message)) {
     return 'The database tables are not set up yet. In GitHub: Actions > Database migrations > Run workflow, with "apply" ticked.';

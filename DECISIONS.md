@@ -1018,3 +1018,16 @@ plans, which the spec did not have.
   background while the card polls for up to 2.5 minutes. Webhook calls
   (secret header) work as before. Retries don't use the 10 daily AI
   requests, like the automatic reviews.
+
+## 2026-10-21: Retry "JWT issued at future" (Aman's report)
+
+- Opening the app after a while sometimes showed "Could not load your
+  data: JWT issued at future". The proxy refreshes the sign-in token, and
+  the new token's issue time comes from the auth server, which can be a
+  second or two ahead of the database's clock; PostgREST refuses it until
+  the clock catches up.
+- load() now retries that one error after 1 s and again after 2 s before
+  giving up, and getProfile does the same (it used to fall back to
+  defaults silently, which is why the greeting showed "Today" instead of
+  the name). If it still fails, the message says to reload instead of
+  showing the raw error. Other errors are not retried.
