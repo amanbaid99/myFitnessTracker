@@ -1031,3 +1031,20 @@ plans, which the spec did not have.
   defaults silently, which is why the greeting showed "Today" instead of
   the name). If it still fails, the message says to reload instead of
   showing the raw error. Other errors are not retried.
+
+## 2026-10-21: App shell for the tabbed screens (tab bar gap on iPhone)
+
+- Aman saw a gap under the tab bar on some tab switches, gone once the
+  screen loaded. The bar was position: fixed while the whole page
+  scrolled; in the installed iPhone app, a fixed bar can sit too high for
+  a moment when a long, scrolled page is swapped for a short loading
+  screen (WebKit re-places fixed elements late when the scroll position is
+  clamped).
+- The tabbed screens are now an app shell: a full-height column (h-dvh)
+  where only the content area scrolls (components/app-scroll.tsx) and the
+  tab bar is an ordinary block under it, so it has nothing to drift from.
+  Each tab starts scrolled to the top. Sticky elements inside the content
+  (Coach input, Save on Starting weights) now stick to the bottom of the
+  scroll area instead of allowing for the bar's height.
+- Trade-off: tapping the iPhone status bar no longer scrolls to the top,
+  since the page itself no longer scrolls.

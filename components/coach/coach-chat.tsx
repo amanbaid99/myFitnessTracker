@@ -149,7 +149,7 @@ export function CoachChat({
         className={cn(
           "border-t bg-background",
           page
-            ? "sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] -mx-4 px-4 py-3"
+            ? "sticky bottom-0 -mx-4 px-4 py-3"
             : "px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3",
         )}
         onSubmit={(ev) => {

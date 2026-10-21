@@ -156,7 +156,7 @@ export function StartingWeightsForm({ exercises, units }: { exercises: StartingE
           {error}
         </p>
       )}
-      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.5rem)] mt-5">
+      <div className="sticky bottom-2 mt-5">
         <Button size="lg" className="w-full shadow-lg" onClick={save} disabled={busy || filled.length === 0}>
           <Check /> {busy ? "Saving…" : filled.length ? `Save ${filled.length} starting weight${filled.length === 1 ? "" : "s"}` : "Save"}
         </Button>
