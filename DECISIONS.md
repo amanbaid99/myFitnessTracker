@@ -1001,3 +1001,20 @@ plans, which the spec did not have.
   question has an answer, none repeat, and none use em dashes. Answers were
   checked against the code (aim logic, feel buttons, e1RM formula, streak,
   AI limit), so keep them in step when behaviour changes.
+
+## 2026-10-21: "Try again" for a missing workout review (Aman's request)
+
+- Live logs for the failed review: one free model's provider returned
+  404 and the other two hit their 25 s timeout, one after another.
+- The review now races the models like ask-coach and draft-plan: the
+  first starts at once, a backup after 20 s or as soon as one fails, the
+  first usable review wins, all within 110 s of background time. Each model
+  gets far longer than 25 s, and a refusal moves on at once.
+- The review card shows "Try again" when a review never came, and older
+  workouts without one get "Get AI review". It calls analyze-workout with
+  the user's own token and { workoutId }; the function checks the token
+  with Supabase Auth and runs only for the caller's finished, not
+  cancelled app workout that has no review yet, then analyses in the
+  background while the card polls for up to 2.5 minutes. Webhook calls
+  (secret header) work as before. Retries don't use the 10 daily AI
+  requests, like the automatic reviews.

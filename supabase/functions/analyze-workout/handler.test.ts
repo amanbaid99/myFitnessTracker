@@ -88,3 +88,60 @@ describe("handle", () => {
     expect((await handle(request(finished), { ...ENV, OPENROUTER_API_KEY: "" }, okFetch(), () => {})).status).toBe(500);
   });
 });
+
+describe("retry from the app", () => {
+  const W = "4e433f36-cc95-4fbc-b7b1-96ce9bd7d750";
+  const ask = (body: unknown, token = "Bearer user-jwt") =>
+    new Request("https://fn.example/analyze-workout", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: token },
+      body: JSON.stringify(body),
+    });
+  function db({ user = "u1", owner = "u1", ended = true, cancelled = false, source = "app", reviewed = false, authOk = true } = {}) {
+    return vi.fn<typeof fetch>(async (input) => {
+      const url = String(input);
+      const ok = (b: unknown) => new Response(JSON.stringify(b), { status: 200 });
+      if (url.endsWith("/auth/v1/user")) return authOk ? ok({ id: user }) : new Response("bad jwt", { status: 401 });
+      if (url.includes("/workouts?id=eq.")) {
+        return ok([{ user_id: owner, ended_at: ended ? "2026-10-21T04:30:00Z" : null, cancelled_at: cancelled ? "x" : null, source }]);
+      }
+      if (url.includes("/insights?")) return ok(reviewed ? [{ id: "i1" }] : []);
+      return new Response("[]", { status: 200 });
+    });
+  }
+
+  it("re-runs the analysis in the background for the owner's finished workout", async () => {
+    const defer = vi.fn();
+    const fetchFn = db();
+    const res = await handle(ask({ workoutId: W }), ENV, fetchFn, () => {}, defer);
+    expect(res.status).toBe(202);
+    expect(defer).toHaveBeenCalledTimes(1);
+    const auth = fetchFn.mock.calls.find(([u]) => String(u).endsWith("/auth/v1/user"))!;
+    expect((auth[1]?.headers as Record<string, string>).Authorization).toBe("Bearer user-jwt");
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+  });
+
+  it("does nothing when a review already exists", async () => {
+    const defer = vi.fn();
+    const res = await handle(ask({ workoutId: W }), ENV, db({ reviewed: true }), () => {}, defer);
+    expect(await res.json()).toEqual({ status: "exists" });
+    expect(defer).not.toHaveBeenCalled();
+  });
+
+  it("refuses someone else's workout, a bad token, an unfinished or cancelled one, and bad ids", async () => {
+    const defer = vi.fn();
+    expect((await handle(ask({ workoutId: W }), ENV, db({ owner: "u2" }), () => {}, defer)).status).toBe(404);
+    expect((await handle(ask({ workoutId: W }), ENV, db({ authOk: false }), () => {}, defer)).status).toBe(401);
+    expect((await handle(ask({ workoutId: W }), ENV, db({ ended: false }), () => {}, defer)).status).toBe(409);
+    expect((await handle(ask({ workoutId: W }), ENV, db({ cancelled: true }), () => {}, defer)).status).toBe(409);
+    expect((await handle(ask({ workoutId: W }), ENV, db({ source: "baseline" }), () => {}, defer)).status).toBe(409);
+    expect((await handle(ask({ workoutId: "w1&user_id=eq.x" }), ENV, db(), () => {}, defer)).status).toBe(400);
+    expect(defer).not.toHaveBeenCalled();
+  });
+
+  it("answers the browser's preflight", async () => {
+    const res = await handle(new Request("https://fn.example", { method: "OPTIONS" }), ENV, okFetch(), () => {});
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Access-Control-Allow-Headers")).toContain("authorization");
+  });
+});

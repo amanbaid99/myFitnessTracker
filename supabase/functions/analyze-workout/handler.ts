@@ -7,9 +7,13 @@
  * The webhook gets its answer at once; the analysis runs after, so a slow
  * model never holds up the database. Plain Request/Response/fetch only, so
  * it runs on Deno (index.ts) and is unit tested under Node.
+ *
+ * The app can also ask for a retry when a review is missing (the free AI
+ * was busy): signed in as the workout's owner, with { workoutId }. It only
+ * runs for their own finished, not cancelled app workout without a review.
  */
 
-import { analyzeWorkout } from "./analyze.ts";
+import { analyzeWorkout, readRows } from "./analyze.ts";
 
 export interface Env {
   WEBHOOK_SECRET?: string;
@@ -37,8 +41,14 @@ interface WebhookPayload {
 
 type Log = (message: string, fields?: Record<string, unknown>) => void;
 
+// The app calls the retry from the browser.
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 const json = (status: number, body: Record<string, unknown>) =>
-  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json" } });
 
 /** Why this payload should not trigger an analysis, or null if it should. */
 export function skipReason(p: WebhookPayload): string | null {
@@ -74,6 +84,7 @@ export async function handle(
   /** Keeps background work alive after the response (EdgeRuntime.waitUntil). */
   defer: (work: Promise<unknown>) => void = (work) => void work,
 ): Promise<Response> {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
   const { WEBHOOK_SECRET, OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = env;
@@ -88,6 +99,10 @@ export async function handle(
   }
 
   const given = req.headers.get(SECRET_HEADER);
+  const bearer = req.headers.get("authorization");
+  if (!given && bearer?.startsWith("Bearer ")) {
+    return retry(req, bearer, { OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY }, fetchFn, log, defer);
+  }
   if (!given || !(await secretsMatch(given, WEBHOOK_SECRET))) {
     log("analyze-workout: rejected request with a missing or wrong secret");
     return json(401, { error: "unauthorized" });
@@ -105,5 +120,60 @@ export async function handle(
 
   const workoutId = payload.record!.id!;
   defer(analyzeWorkout({ OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY }, fetchFn, workoutId, log));
+  return json(202, { analyzing: workoutId });
+}
+
+/**
+ * "Try again" from the app: checks who is asking (their own token, via
+ * Supabase Auth) and that the workout is theirs, finished, not cancelled,
+ * from the app and still without a review, then analyses it in the
+ * background like the webhook does. The app polls for the result.
+ */
+async function retry(
+  req: Request,
+  bearer: string,
+  env: { OPENROUTER_API_KEY: string; SUPABASE_URL: string; SUPABASE_SERVICE_ROLE_KEY: string },
+  fetchFn: typeof fetch,
+  log: Log,
+  defer: (work: Promise<unknown>) => void,
+): Promise<Response> {
+  let workoutId: unknown;
+  try {
+    ({ workoutId } = (await req.json()) as { workoutId?: unknown });
+  } catch {
+    return json(400, { error: "invalid json" });
+  }
+  if (typeof workoutId !== "string" || !/^[0-9a-f-]{36}$/i.test(workoutId)) return json(400, { error: "invalid workout" });
+
+  try {
+    const who = await fetchFn(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: bearer },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!who.ok) {
+      await who.body?.cancel();
+      return json(401, { error: "sign in first" });
+    }
+    const userId = ((await who.json()) as { id?: string }).id;
+    const [workout] = await readRows<{ user_id: string; ended_at: string | null; cancelled_at: string | null; source: string }[]>(
+      env,
+      fetchFn,
+      `workouts?id=eq.${workoutId}&select=user_id,ended_at,cancelled_at,source`,
+    );
+    if (!workout || workout.user_id !== userId) return json(404, { error: "not found" });
+    if (!workout.ended_at || workout.cancelled_at || workout.source !== "app") return json(409, { error: "not reviewable" });
+    const existing = await readRows<{ id: string }[]>(
+      env,
+      fetchFn,
+      `insights?workout_id=eq.${workoutId}&kind=eq.workout_review&select=id&limit=1`,
+    );
+    if (existing.length) return json(200, { status: "exists" });
+  } catch (e) {
+    log("analyze-workout: retry check failed", { error: e instanceof Error ? e.message : "unknown" });
+    return json(500, { error: "failed" });
+  }
+
+  log("analyze-workout: retry requested", { workoutId });
+  defer(analyzeWorkout(env, fetchFn, workoutId, log));
   return json(202, { analyzing: workoutId });
 }

@@ -27,8 +27,11 @@ export const MODELS = [
   "openrouter/free",
 ];
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-// Three tries must fit in the time a background task is allowed to run.
-const MODEL_TIMEOUT_MS = 25_000;
+// The models run side by side: the first at once, a backup after
+// STAGGER_MS or as soon as one fails; the first usable review wins. The
+// whole thing fits in the time a background task is allowed to run.
+const STAGGER_MS = 20_000;
+const DEADLINE_MS = 110_000;
 const DB_TIMEOUT_MS = 10_000;
 
 export interface SetData {
@@ -196,6 +199,11 @@ function rest(env: AnalyzeEnv, fetchFn: typeof fetch, path: string, init: Reques
   });
 }
 
+/** Reads rows with the service role (server only). */
+export function readRows<T>(env: AnalyzeEnv, fetchFn: typeof fetch, path: string): Promise<T> {
+  return getJson<T>(env, fetchFn, path);
+}
+
 async function getJson<T>(env: AnalyzeEnv, fetchFn: typeof fetch, path: string): Promise<T> {
   const res = await rest(env, fetchFn, path);
   if (!res.ok) {
@@ -340,64 +348,126 @@ export async function saveReview(
 
 // --------------------------------------------------------------- model ----
 
-/** Asks each model in turn until one gives a usable review. */
-export async function askModels(
+/**
+ * Runs attempts side by side: the first starts at once, each next one
+ * after `staggerMs` or as soon as an earlier one fails. The first non-null
+ * result wins and the rest are aborted; null if all fail or the deadline
+ * passes. (Same as in ask-coach and draft-plan.)
+ */
+export function race<T>(
+  attempts: ((signal: AbortSignal) => Promise<T | null>)[],
+  staggerMs: number,
+  deadlineMs: number,
+): Promise<T | null> {
+  return new Promise((resolve) => {
+    const controllers: AbortController[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let next = 0;
+    let running = 0;
+    let done = false;
+    const finish = (value: T | null) => {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      controllers.forEach((c) => c.abort());
+      resolve(value);
+    };
+    const start = () => {
+      if (done || next >= attempts.length) return;
+      const controller = new AbortController();
+      controllers.push(controller);
+      const attempt = attempts[next++];
+      running++;
+      if (next < attempts.length) timers.push(setTimeout(start, staggerMs));
+      attempt(controller.signal)
+        .catch(() => null)
+        .then((value) => {
+          running--;
+          if (value !== null) finish(value);
+          else if (next < attempts.length) start();
+          else if (running === 0) finish(null);
+        });
+    };
+    timers.push(setTimeout(() => finish(null), deadlineMs));
+    start();
+  });
+}
+
+/** One model's review, or null if it refused, failed or rambled. */
+async function askModel(
+  env: AnalyzeEnv,
+  fetchFn: typeof fetch,
+  model: string,
+  summary: string,
+  log: Log,
+  signal: AbortSignal,
+): Promise<{ review: Review; model: string } | null> {
+  try {
+    const res = await fetchFn(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "X-Title": "Repd",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: summary },
+        ],
+        // Room for models that think before answering; the answer itself is short.
+        max_tokens: 4000,
+        temperature: 0.4,
+        reasoning: { effort: "low" },
+      }),
+      signal,
+    });
+    if (!res.ok) {
+      // OpenRouter's error text says why (rate limit, privacy setting, no
+      // provider); it never contains the key.
+      const reason = (await res.text().catch(() => "")).slice(0, 300);
+      log("analyze-workout: model refused", { model, status: res.status, reason });
+      return null;
+    }
+    const body = (await res.json()) as {
+      choices?: { message?: { content?: string | null; reasoning?: string | null }; finish_reason?: string }[];
+      model?: string;
+    };
+    const choice = body.choices?.[0];
+    // Some thinking models leave the answer at the end of their reasoning.
+    const review = parseReview(choice?.message?.content) ?? parseReview(choice?.message?.reasoning);
+    if (review) {
+      log("analyze-workout: reviewed", { asked: model, answered: body.model ?? null });
+      return { review, model: body.model ?? model };
+    }
+    log("analyze-workout: unusable reply", {
+      model,
+      finish: choice?.finish_reason ?? null,
+      contentLength: choice?.message?.content?.length ?? 0,
+      reasoningLength: choice?.message?.reasoning?.length ?? 0,
+    });
+    return null;
+  } catch (e) {
+    if (!signal.aborted) log("analyze-workout: model error", { model, error: e instanceof Error ? e.name : "unknown" });
+    return null;
+  }
+}
+
+/** The models raced (see race): the first usable review, or null. */
+export function askModels(
   env: AnalyzeEnv,
   fetchFn: typeof fetch,
   summary: string,
   log: Log,
+  staggerMs = STAGGER_MS,
+  deadlineMs = DEADLINE_MS,
 ): Promise<{ review: Review; model: string } | null> {
-  for (const model of MODELS) {
-    try {
-      const res = await fetchFn(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "X-Title": "Repd",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: summary },
-          ],
-          // Room for models that think before answering; the answer itself is short.
-          max_tokens: 4000,
-          temperature: 0.4,
-          reasoning: { effort: "low" },
-        }),
-        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        // OpenRouter's error text says why (rate limit, privacy setting, no
-        // provider); it never contains the key.
-        const reason = (await res.text().catch(() => "")).slice(0, 300);
-        log("analyze-workout: model refused", { model, status: res.status, reason });
-        continue;
-      }
-      const body = (await res.json()) as {
-        choices?: { message?: { content?: string | null; reasoning?: string | null }; finish_reason?: string }[];
-        model?: string;
-      };
-      const choice = body.choices?.[0];
-      // Some thinking models leave the answer at the end of their reasoning.
-      const review = parseReview(choice?.message?.content) ?? parseReview(choice?.message?.reasoning);
-      if (review) {
-        log("analyze-workout: reviewed", { asked: model, answered: body.model ?? null });
-        return { review, model: body.model ?? model };
-      }
-      log("analyze-workout: unusable reply", {
-        model,
-        finish: choice?.finish_reason ?? null,
-        contentLength: choice?.message?.content?.length ?? 0,
-        reasoningLength: choice?.message?.reasoning?.length ?? 0,
-      });
-    } catch (e) {
-      log("analyze-workout: model error", { model, error: e instanceof Error ? e.name : "unknown" });
-    }
-  }
-  return null;
+  return race(
+    MODELS.map((model) => (signal: AbortSignal) => askModel(env, fetchFn, model, summary, log, signal)),
+    staggerMs,
+    deadlineMs,
+  );
 }
 
 /** The whole job for one finished workout. Never throws. */
