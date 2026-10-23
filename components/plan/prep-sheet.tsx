@@ -13,12 +13,12 @@ async function whyNot(error: unknown): Promise<string> {
   if (error instanceof FunctionsHttpError) {
     const body = (await error.context.json().catch(() => ({}))) as { error?: string };
     if (body.error === "limit") return "You have used today's AI requests (shared with Coach). Try again tomorrow, or write your own.";
-    if (body.error === "busy") return "The free AI is busy right now. Try again in a minute.";
+    if (body.error === "busy") return "The AI is busy right now. Try again in a minute.";
     if (body.error === "too short") return "Add an exercise to this day first.";
   }
   if (typeof navigator !== "undefined" && !navigator.onLine) return "You're offline. Writing with AI needs a connection.";
   if (error instanceof FunctionsFetchError || error instanceof FunctionsRelayError) {
-    return "The free AI took too long this time. Try again in a minute.";
+    return "The AI took too long this time. Try again in a minute.";
   }
   return "Something went wrong. Try again in a minute.";
 }
@@ -139,7 +139,7 @@ export function PrepSheet({
               )}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Sends this day&apos;s exercise names to a free AI model and uses one of your 10 daily AI requests. General fitness
+              Sends this day&apos;s exercise names to an AI model and uses one of your 20 daily AI requests. General fitness
               information, not medical advice.
             </p>
             {!isAutomatic && (

@@ -37,7 +37,7 @@ export function AskCoach({ workoutId, label = "Ask coach", className }: { workou
                 <h2 id="coach-title" className="text-lg font-semibold">
                   Ask about this workout
                 </h2>
-                <p className="text-xs text-muted-foreground">Free AI that reads your logged training. Not medical advice.</p>
+                <p className="text-xs text-muted-foreground">AI that reads your logged training. Not medical advice.</p>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close">
                 <X />

@@ -30,7 +30,7 @@ async function errorText(error: unknown): Promise<{ text: string; remaining?: nu
   if (error instanceof FunctionsHttpError) {
     const body = (await error.context.json().catch(() => ({}))) as { error?: string; remaining?: number };
     if (body.error === "limit") return { text: "Coach is resting. You have used today's questions, so try again tomorrow.", remaining: 0 };
-    if (body.error === "busy") return { text: "The free AI is busy right now. Try again in a minute.", remaining: body.remaining };
+    if (body.error === "busy") return { text: "The AI is busy right now. Try again in a minute.", remaining: body.remaining };
   }
   if (typeof navigator !== "undefined" && !navigator.onLine) return { text: "You're offline. Asking the coach needs a connection." };
   return { text: "Something went wrong. Try again in a minute." };

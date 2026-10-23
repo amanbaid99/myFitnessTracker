@@ -168,15 +168,15 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
-        q: "Why is there a limit of 10 AI requests a day?",
+        q: "Why is there a limit of 20 AI requests a day?",
         a: [
-          "The app uses free AI models with a shared daily allowance. Coach questions, building a plan with AI and writing warm-ups share 10 requests per person per day. Workout reviews don't count towards it.",
+          "The app mostly uses free AI models, which have a shared daily allowance, with a low-cost paid model as a backup. To keep that fair, Coach questions, building a plan with AI and writing warm-ups share 20 requests per person per day. Workout reviews don't count towards it.",
         ],
       },
       {
         q: "The AI was slow or said it was busy. What now?",
         a: [
-          "Free models are sometimes busy. The app tries a backup model if the first is slow, but if all are busy you'll see a message. Try again in a minute; a failed attempt doesn't use one of your 10 requests.",
+          "Free models are sometimes busy. The app runs several at once and brings in a paid backup if they are slow, so this should be rare. If you do see a message, try again in a minute; a failed attempt doesn't use one of your daily requests.",
         ],
       },
       {

@@ -1072,3 +1072,21 @@ plans, which the spec did not have.
 - The Privacy Policy (updated 23 October 2026) and FAQ now say what is
   recorded, how it is hidden, that PostHog handles it, and that recordings
   are kept 30 days.
+
+## 2026-10-23: Paid AI backup and 20 requests a day (Aman added $10 credit)
+
+- OpenRouter raises the free-model limit from 50 to 1,000 requests a day
+  for accounts that have bought at least $10 of credit, and free models
+  don't spend the credit.
+- Each AI function now races four models: the two free Nemotron models,
+  then a paid backup, deepseek/deepseek-v4-flash (about $0.09 in and $0.18
+  out per million tokens, roughly $0.0003 a request), then openrouter/free.
+  The paid one starts only when the free ones fail or are still slow (after
+  20 s for Coach, 24 s for plans, 40 s for reviews), so most answers stay
+  free and the AI should no longer give up when free models are busy.
+- The paid backup runs with thinking turned off and shorter reply limits
+  (800 tokens Coach, 2,500 plans, 600 reviews) to keep each answer cheap.
+- The per-person daily limit (Coach, AI plans, AI warm-ups) goes from 10 to
+  20. Copy now says "AI" rather than "free AI", and the Privacy Policy and
+  Terms say a low-cost paid model may answer when free ones are busy.
+- Spend guard: a monthly credit limit on the OpenRouter key, set by Aman.

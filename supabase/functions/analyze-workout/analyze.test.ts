@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyzeWorkout, buildSummary, compareWithPrevious, MODELS, parseReview, sessionStats, type WorkoutData } from "./analyze";
+import { analyzeWorkout, buildSummary, compareWithPrevious, MODELS, PAID_MODEL, parseReview, sessionStats, type WorkoutData } from "./analyze";
 
 const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service-123", OPENROUTER_API_KEY: "or-key-123" };
 
@@ -164,14 +164,19 @@ describe("analyzeWorkout", () => {
     const fetchFn = fakeFetch([
       new Response("rate limited", { status: 429 }),
       modelOk("I think the session was good."),
-      modelOk('{"title":"Good session","summary":"Steady work."}', "some/free-model"),
+      modelOk('{"title":"Good session","summary":"Steady work."}', "deepseek/deepseek-v4-flash"),
     ]);
     const log = vi.fn();
     expect(await analyzeWorkout(ENV, fetchFn, "w1", log)).toBe("saved");
     const models = fetchFn.mock.calls
       .filter(([u]) => String(u).startsWith("https://openrouter.ai"))
       .map(([, init]) => JSON.parse(String(init?.body)).model);
-    expect(models).toEqual(MODELS);
+    // The third in line is the paid backup: no long thinking, short replies.
+    expect(models).toEqual(MODELS.slice(0, 3));
+    expect(models[2]).toBe(PAID_MODEL);
+    const paid = fetchFn.mock.calls.map(([, init]) => JSON.parse(String(init?.body ?? "{}"))).find((b) => b.model === PAID_MODEL);
+    expect(paid.reasoning).toEqual({ enabled: false });
+    expect(paid.max_tokens).toBeLessThanOrEqual(600);
     expect(log).toHaveBeenCalledWith("analyze-workout: model refused", { model: MODELS[0], status: 429, reason: "rate limited" });
   });
 

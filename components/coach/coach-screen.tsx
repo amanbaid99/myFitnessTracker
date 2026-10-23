@@ -49,7 +49,7 @@ export function CoachScreen() {
       <header className="mb-4 flex items-start justify-between gap-3 pr-14">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Coach</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Free AI that reads your logged training. Not medical advice.</p>
+          <p className="mt-1 text-sm text-muted-foreground">AI that reads your logged training. Not medical advice.</p>
         </div>
         {messages.length > 0 && (
           <Button variant="ghost" size="icon" onClick={() => setMessages([])} aria-label="New chat" className="-mr-2 shrink-0">

@@ -23,13 +23,13 @@ async function whyNot(error: unknown): Promise<string> {
   if (error instanceof FunctionsHttpError) {
     const body = (await error.context.json().catch(() => ({}))) as { error?: string };
     if (body.error === "limit") return "You have used today's AI requests (shared with Coach). Try again tomorrow, or pick a template.";
-    if (body.error === "busy") return "The free AI is busy or could not read that. Try again in a minute, or add more detail.";
+    if (body.error === "busy") return "The AI is busy or could not read that. Try again in a minute, or add more detail.";
     if (body.error === "too short") return "Add a bit more detail: the days and the exercises you want.";
   }
   // The request itself failed or timed out: the free AI was too slow.
   if (error instanceof FunctionsFetchError || error instanceof FunctionsRelayError) {
     if (typeof navigator !== "undefined" && !navigator.onLine) return "You're offline. Building a plan with AI needs a connection.";
-    return "The free AI took too long this time. Your text is kept, so try again in a minute.";
+    return "The AI took too long this time. Your text is kept, so try again in a minute.";
   }
   if (typeof navigator !== "undefined" && !navigator.onLine) return "You're offline. Building a plan with AI needs a connection.";
   return "Something went wrong. Try again in a minute.";
@@ -131,7 +131,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
           className="w-full rounded-2xl border bg-card px-4 py-3 text-base leading-relaxed placeholder:text-muted-foreground/70"
         />
         <p className="mt-2 text-xs text-muted-foreground">
-          Sent to a free AI model to build the draft. Leave out names and contact details. Uses one of your 10 daily AI requests.
+          Sent to an AI model to build the draft. Leave out names and contact details. Uses one of your 20 daily AI requests.
           The result is general fitness information, not medical advice.
         </p>
         <Button size="lg" className="mt-5 w-full" onClick={draft} disabled={busy || text.trim().length < 10}>
@@ -167,7 +167,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
         <div className="space-y-2">
           <p className="font-medium">Check this plan before you use it</p>
           <p>
-            A free AI made this from your description and can get things wrong. Check every exercise, the order, and the sets and reps,
+            An AI made this from your description and can get things wrong. Check every exercise, the order, and the sets and reps,
             and change anything before you create it.
           </p>
           <p>

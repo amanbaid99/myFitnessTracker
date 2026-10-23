@@ -9,7 +9,7 @@ const STEPS: { at: number; text: string }[] = [
   { at: 3, text: "Matching exercises to your list" },
   { at: 8, text: "Setting sets and reps" },
   { at: 15, text: "Putting your days in order" },
-  { at: 25, text: "Almost there. The free AI can take up to a minute" },
+  { at: 25, text: "Almost there. The AI can take up to a minute" },
 ];
 
 /**

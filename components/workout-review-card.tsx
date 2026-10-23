@@ -132,8 +132,8 @@ export function WorkoutReviewCard({
         <>
           <p className="text-sm text-muted-foreground">
             {retryUntil
-              ? "Still no review. The free AI is busy right now; try again a bit later."
-              : "No analysis for this one. The free AI was busy, so it was skipped."}
+              ? "Still no review. The AI is busy right now; try again a bit later."
+              : "No analysis for this one. The AI was busy, so it was skipped."}
           </p>
           {retryButton}
           {retryError && (

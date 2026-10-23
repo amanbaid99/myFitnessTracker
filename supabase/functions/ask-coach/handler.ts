@@ -22,10 +22,18 @@ export interface Env {
   OPENROUTER_API_KEY?: string;
 }
 
-export const DAILY_LIMIT = 10;
+export const DAILY_LIMIT = 20;
+/**
+ * A cheap paid model (about $0.0003 a request) that joins the race third,
+ * after two free ones, so the AI keeps answering when free models are slow
+ * or full. It never thinks at length, and its replies are kept short.
+ */
+export const PAID_MODEL = "deepseek/deepseek-v4-flash";
+export const isPaid = (model: string) => model === PAID_MODEL;
 export const MODELS = [
   "nvidia/nemotron-3-super-120b-a12b:free",
   "nvidia/nemotron-3.5-lightning:free",
+  PAID_MODEL,
   "openrouter/free",
 ];
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -356,9 +364,9 @@ async function askModel(
       body: JSON.stringify({
         model,
         messages: [{ role: "system", content: `${SYSTEM_PROMPT}\n\nAthlete data:\n${context}` }, ...messages],
-        max_tokens: 2000,
+        max_tokens: isPaid(model) ? 800 : 2000,
         temperature: 0.5,
-        reasoning: { effort: "low", exclude: true },
+        reasoning: isPaid(model) ? { enabled: false } : { effort: "low", exclude: true },
       }),
       signal,
     });
