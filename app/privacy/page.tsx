@@ -43,13 +43,14 @@ export default function PrivacyPage() {
       <section>
         <h2>The AI features</h2>
         <p>
-          Workout reviews, Coach and building a plan from a description send some of your data to AI models through OpenRouter, mostly free ones:
+          Workout reviews, Coach and building a plan from a description send some of your data to AI models through OpenRouter:
           your workout sets and exercise names, your experience and where you train, and the text you type. Emails, phone numbers and
           links in your text are removed before sending, and your name and email are never sent.
         </p>
         <p>
-          The companies that run these free models may keep what is sent and use it to improve their models. When the free models are
-          busy, a low-cost paid model may answer instead. Do not type anything private into Coach or a plan description. If you do not
+          Workout reviews and plans built from a description are written first by a low-cost paid model, with free models as a backup.
+          Coach and warm-ups use free models first, with the paid model as a backup. The companies that run the free models may keep
+          what is sent and use it to improve their models. Do not type anything private into Coach or a plan description. If you do not
           want your data sent, do not use these features.
         </p>
       </section>

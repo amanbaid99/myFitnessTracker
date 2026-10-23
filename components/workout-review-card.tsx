@@ -23,7 +23,7 @@ const RETRY_WAIT_MS = 150_000;
 /**
  * The post-workout analysis. Shows it if it exists; otherwise, within 10
  * minutes of finishing, checks every 10 s until it arrives. When it never
- * came (the free AI was busy), "Try again" asks for it once more.
+ * came (the AI was busy), "Try again" asks for it once more.
  */
 export function WorkoutReviewCard({
   workoutId,

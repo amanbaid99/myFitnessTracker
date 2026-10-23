@@ -1090,3 +1090,14 @@ plans, which the spec did not have.
   20. Copy now says "AI" rather than "free AI", and the Privacy Policy and
   Terms say a low-cost paid model may answer when free ones are busy.
 - Spend guard: a monthly credit limit on the OpenRouter key, set by Aman.
+
+## 2026-10-23: Paid model first for reviews and plans
+
+Workout reviews and plans drafted from a description now go to the paid
+model (deepseek-v4-flash) first, with the free models as backup. Coach
+and warm-ups keep free models first. Reviews are the AI's main job and
+come once per workout, and plans are built rarely and shape everything
+after, so both should arrive quickly and reliably. At about $0.0003 a
+review and $0.0005 a plan, a handful of users costs cents a month, and
+the OpenRouter key has a monthly credit cap as a safety net. Privacy,
+Terms and FAQ say which features use the paid model.

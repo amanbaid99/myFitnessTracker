@@ -1,7 +1,7 @@
 /**
  * The workout analysis itself: load one finished workout, turn it into a
- * short plain-text summary, ask a free model on OpenRouter for a brief
- * review, and save it as a workout_review insight. The summary compares
+ * short plain-text summary, ask a model on OpenRouter for a brief review
+ * (a low-cost paid one first, free ones as backup), and save it as a workout_review insight. The summary compares
  * each exercise with the last time it was done, and the whole session with
  * the last session of the same day (this Legs against last Legs).
  *
@@ -21,17 +21,18 @@ export interface AnalyzeEnv {
 }
 
 /**
- * A cheap paid model (about $0.0003 a request) that joins the race third,
- * after two free ones, so the AI keeps answering when free models are slow
- * or full. It never thinks at length, and its replies are kept short.
+ * A cheap paid model (about $0.0003 a review). Reviews are the AI's main
+ * job and come once per workout, so the paid model goes first for a fast,
+ * dependable answer; free models are the backup. It never thinks at
+ * length, and its replies are kept short.
  */
 export const PAID_MODEL = "deepseek/deepseek-v4-flash";
 export const isPaid = (model: string) => model === PAID_MODEL;
 /** Raced in this order (see race); the last one lets OpenRouter pick any free model. */
 export const MODELS = [
+  PAID_MODEL,
   "nvidia/nemotron-3-super-120b-a12b:free",
   "nvidia/nemotron-3.5-lightning:free",
-  PAID_MODEL,
   "openrouter/free",
 ];
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";

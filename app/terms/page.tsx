@@ -37,7 +37,7 @@ export default function TermsPage() {
       <section>
         <h2>The AI can be wrong</h2>
         <p>
-          Workout reviews, Coach and AI-built plans come from AI models, mostly free ones. They can be wrong, out of date or unsuitable for you. Check
+          Workout reviews, Coach and AI-built plans come from AI models, some free and some low-cost paid ones. They can be wrong, out of date or unsuitable for you. Check
           anything they suggest before you act on it.
         </p>
       </section>

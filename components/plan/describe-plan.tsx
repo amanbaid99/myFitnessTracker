@@ -26,7 +26,7 @@ async function whyNot(error: unknown): Promise<string> {
     if (body.error === "busy") return "The AI is busy or could not read that. Try again in a minute, or add more detail.";
     if (body.error === "too short") return "Add a bit more detail: the days and the exercises you want.";
   }
-  // The request itself failed or timed out: the free AI was too slow.
+  // The request itself failed or timed out: the AI was too slow.
   if (error instanceof FunctionsFetchError || error instanceof FunctionsRelayError) {
     if (typeof navigator !== "undefined" && !navigator.onLine) return "You're offline. Building a plan with AI needs a connection.";
     return "The AI took too long this time. Your text is kept, so try again in a minute.";
@@ -36,7 +36,7 @@ async function whyNot(error: unknown): Promise<string> {
 }
 
 /**
- * "Describe it in your own words": the user writes their plan, free AI
+ * "Describe it in your own words": the user writes their plan, the AI
  * turns it into days and exercises (draft-plan Edge Function), and they
  * check and edit it in the plan editor before creating it. Nothing is
  * saved until they tap Create.

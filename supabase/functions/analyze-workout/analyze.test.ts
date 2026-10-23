@@ -164,16 +164,16 @@ describe("analyzeWorkout", () => {
     const fetchFn = fakeFetch([
       new Response("rate limited", { status: 429 }),
       modelOk("I think the session was good."),
-      modelOk('{"title":"Good session","summary":"Steady work."}', "deepseek/deepseek-v4-flash"),
+      modelOk('{"title":"Good session","summary":"Steady work."}', MODELS[2]),
     ]);
     const log = vi.fn();
     expect(await analyzeWorkout(ENV, fetchFn, "w1", log)).toBe("saved");
     const models = fetchFn.mock.calls
       .filter(([u]) => String(u).startsWith("https://openrouter.ai"))
       .map(([, init]) => JSON.parse(String(init?.body)).model);
-    // The third in line is the paid backup: no long thinking, short replies.
+    // The paid model goes first (no long thinking, short replies); free ones back it up.
     expect(models).toEqual(MODELS.slice(0, 3));
-    expect(models[2]).toBe(PAID_MODEL);
+    expect(models[0]).toBe(PAID_MODEL);
     const paid = fetchFn.mock.calls.map(([, init]) => JSON.parse(String(init?.body ?? "{}"))).find((b) => b.model === PAID_MODEL);
     expect(paid.reasoning).toEqual({ enabled: false });
     expect(paid.max_tokens).toBeLessThanOrEqual(600);

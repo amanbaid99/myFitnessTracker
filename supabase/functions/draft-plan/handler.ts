@@ -1,6 +1,6 @@
 /**
  * draft-plan: turns a plan the user describes in their own words into a
- * draft (days, exercises, sets, reps) using a free model on OpenRouter.
+ * draft (days, exercises, sets, reps) using a model on OpenRouter.
  * Nothing is saved here: the app shows the draft to edit and approve, then
  * creates it with create_plan like any other plan.
  *
@@ -25,18 +25,26 @@ export interface Env {
 
 export const DAILY_LIMIT = 20; // shared with ask-coach
 /**
- * A cheap paid model (about $0.0003 a request) that joins the race third,
- * after two free ones, so the AI keeps answering when free models are slow
- * or full. It never thinks at length, and its replies are kept short.
+ * A cheap paid model (about $0.0005 a plan). It never thinks at length,
+ * and its replies are kept short.
  */
 export const PAID_MODEL = "deepseek/deepseek-v4-flash";
 export const isPaid = (model: string) => model === PAID_MODEL;
+/**
+ * Warm-ups are simple, so free models go first and the paid one joins
+ * third if they are slow or full.
+ */
 export const MODELS = [
   "nvidia/nemotron-3-super-120b-a12b:free",
   "nvidia/nemotron-3.5-lightning:free",
   PAID_MODEL,
   "openrouter/free",
 ];
+/**
+ * A whole plan is built rarely and matters more, so the paid model goes
+ * first for a fast, dependable draft; free models are the backup.
+ */
+export const DRAFT_MODELS = [PAID_MODEL, ...MODELS.filter((m) => m !== PAID_MODEL)];
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // A backup model starts if the current one is slow; the whole thing gives
 // up in time to answer before a phone browser does (about 60 seconds).
@@ -366,6 +374,7 @@ async function askModel<T>(
 }
 
 function askModels<T>(
+  models: string[],
   env: Required<Env>,
   fetchFn: typeof fetch,
   system: string,
@@ -374,7 +383,7 @@ function askModels<T>(
   log: Log,
 ): Promise<T | null> {
   return race(
-    MODELS.map((model) => (signal: AbortSignal) => askModel(env, fetchFn, model, system, message, parse, log, signal)),
+    models.map((model) => (signal: AbortSignal) => askModel(env, fetchFn, model, system, message, parse, log, signal)),
     STAGGER_MS,
     DEADLINE_MS,
   );
@@ -423,10 +432,10 @@ export async function handle(
 
     const names = library.map((l) => l.name);
     const result: { draft: Draft } | { prep: Prep } | null = prepDay
-      ? await askModels(cfg, fetchFn, prepPrompt(setup), redact(prepMessage(prepDay)), (t) => toPrep(lastJson(t, hasPrep)), log).then(
+      ? await askModels(MODELS, cfg, fetchFn, prepPrompt(setup), redact(prepMessage(prepDay)), (t) => toPrep(lastJson(t, hasPrep)), log).then(
           (prep) => prep && { prep },
         )
-      : await askModels(cfg, fetchFn, systemPrompt(setup, names), description, (t) => toDraft(lastJson(t), names), log).then(
+      : await askModels(DRAFT_MODELS, cfg, fetchFn, systemPrompt(setup, names), description, (t) => toDraft(lastJson(t), names), log).then(
           (draft) => draft && { draft },
         );
     if (!result) return json(503, { error: "busy", remaining: DAILY_LIMIT - asked });

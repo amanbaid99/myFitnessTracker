@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DAILY_LIMIT, handle, lastJson, MODELS, prepMessage, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
+import { DAILY_LIMIT, DRAFT_MODELS, handle, lastJson, MODELS, PAID_MODEL, prepMessage, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
 import { MUSCLE_GROUPS, EQUIPMENT } from "../../../lib/muscles";
 import { MUSCLES, EQUIPMENT as FN_EQUIPMENT } from "./handler";
 
@@ -105,7 +105,9 @@ describe("handle", () => {
     expect(body.remaining).toBe(DAILY_LIMIT - 2);
     expect(body.draft.days[0].exercises[0].name).toBe("Lat Pulldown");
     const sent = JSON.parse(String(fetchFn.mock.calls.find(([u]) => String(u).startsWith("https://openrouter.ai"))![1]?.body));
-    expect(sent.model).toBe(MODELS[0]);
+    // A plan is drafted by the paid model first.
+    expect(sent.model).toBe(PAID_MODEL);
+    expect(DRAFT_MODELS[0]).toBe(PAID_MODEL);
     expect(sent.messages[1].content).toBe("Day 1: lat pulldowns. Email me at [email]");
     expect(sent.messages[0].content).toContain("use exactly these names when one matches: Lat Pulldown");
     expect(sent.messages[0].content).toContain("Their equipment: gym.");
@@ -209,6 +211,9 @@ describe("warm-up and cool-down", () => {
     expect(body.remaining).toBe(DAILY_LIMIT - 3);
     const sent = JSON.parse(String(fetchFn.mock.calls.find(([u]) => String(u).startsWith("https://openrouter.ai"))![1]?.body));
     expect(sent.messages[0].content).toContain("warm-up and cool-down");
+    // Warm-ups start with a free model.
+    expect(sent.model).toBe(MODELS[0]);
+    expect(MODELS[0]).not.toBe(PAID_MODEL);
     expect(sent.messages[1].content).toBe("Day: Push\n1. Bench Press (chest)");
   });
   it("refuses a day with no exercises", async () => {

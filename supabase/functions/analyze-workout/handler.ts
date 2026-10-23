@@ -1,14 +1,14 @@
 /**
  * analyze-workout: called by a Database Webhook on UPDATE of
  * public.workouts. When a workout has just been finished (not cancelled,
- * logged in the app), it asks a free model on OpenRouter for a short review
+ * logged in the app), it asks a model on OpenRouter for a short review
  * and saves it as a workout_review insight (analyze.ts).
  *
  * The webhook gets its answer at once; the analysis runs after, so a slow
  * model never holds up the database. Plain Request/Response/fetch only, so
  * it runs on Deno (index.ts) and is unit tested under Node.
  *
- * The app can also ask for a retry when a review is missing (the free AI
+ * The app can also ask for a retry when a review is missing (the AI
  * was busy): signed in as the workout's owner, with { workoutId }. It only
  * runs for their own finished, not cancelled app workout without a review.
  */
