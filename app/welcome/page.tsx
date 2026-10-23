@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { getActivePlan, getExerciseLibrary, getProfile, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
+import { AnalyticsIdentity } from "@/components/analytics-identity";
 import { WelcomeFlow, type WelcomeDetails } from "./welcome-flow";
 
 export const metadata: Metadata = { title: "Welcome" };
@@ -39,6 +40,7 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-lg px-5 pb-safe pt-safe">
+      <AnalyticsIdentity userId={profile.id} />
       <WelcomeFlow
         userId={profile.id}
         initial={initial}

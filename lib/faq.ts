@@ -211,6 +211,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Does the app record how I use it?",
+        a: [
+          "Yes, to find what's confusing or broken: which screens you open, what you tap, and recordings of sessions that can be replayed. It's linked to an anonymous ID, not your name or email, and anything you type, plus Coach chats and notes, is hidden in recordings.",
+          "The Privacy Policy has the details.",
+        ],
+      },
+      {
         q: "How do I delete my data or my account?",
         a: [
           "Use Give feedback in Settings to ask, and it will be done within 30 days. The Privacy Policy explains what is stored and who handles it.",

@@ -4,12 +4,14 @@ import Link from "next/link";
 import { CircleHelp } from "lucide-react";
 import { InstallButton } from "@/components/install-button";
 import { UpdateCheck } from "@/components/update/update-check";
+import { SignOutButton } from "@/components/sign-out-button";
 import { ThemePicker } from "@/components/theme-picker";
 import { cookies } from "next/headers";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { MASK } from "@/lib/mask";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -29,7 +31,7 @@ export default async function SettingsPage() {
       <ScreenHeader title="Settings" />
 
       <dl className="divide-y rounded-xl border bg-card">
-        <Row label="Signed in as" value={claims?.email ?? "Unknown"} />
+        <Row label="Signed in as" value={claims?.email ?? "Unknown"} masked />
         <Row label="Units" value={profile?.units ?? "kg"} />
         <Row label="Default rest" value={`${profile?.default_rest_sec ?? 90} s`} />
       </dl>
@@ -78,20 +80,16 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <form action="/auth/signout" method="post" className="mt-8">
-        <Button type="submit" variant="outline" size="lg" className="w-full">
-          Sign out
-        </Button>
-      </form>
+      <SignOutButton />
     </>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, masked }: { label: string; value: string; masked?: boolean }) {
   return (
     <div className="flex min-h-12 items-center justify-between gap-4 px-4 py-3 text-sm">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="truncate">{value}</dd>
+      <dd className={masked ? `truncate ${MASK}` : "truncate"}>{value}</dd>
     </div>
   );
 }

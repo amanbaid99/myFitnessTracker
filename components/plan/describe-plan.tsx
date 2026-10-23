@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
@@ -88,6 +89,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
       setError(error.message);
       return;
     }
+    track("plan_created", { method: "ai", days: days.length });
     router.push("/");
     router.refresh();
   }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MASK } from "@/lib/mask";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, StickyNote } from "lucide-react";
@@ -81,7 +82,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
       )}
 
       {workout.notes && (
-        <p className="mb-6 rounded-xl border bg-card p-4 text-sm whitespace-pre-wrap">{workout.notes}</p>
+        <p className={`mb-6 rounded-xl border bg-card p-4 text-sm whitespace-pre-wrap ${MASK}`}>{workout.notes}</p>
       )}
 
       <div className="space-y-3">
@@ -92,7 +93,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
             {notes.get(exerciseId) && (
               <p className="mt-2 flex gap-2 rounded-xl bg-secondary/60 px-3 py-2 text-sm">
                 <StickyNote className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <span className="min-w-0 whitespace-pre-wrap break-words">{notes.get(exerciseId)!.note}</span>
+                <span className={`min-w-0 whitespace-pre-wrap break-words ${MASK}`}>{notes.get(exerciseId)!.note}</span>
               </p>
             )}
           </section>

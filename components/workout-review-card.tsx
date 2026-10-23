@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Loader2, RotateCcw, Sparkles } from "lucide-react";
@@ -62,6 +63,7 @@ export function WorkoutReviewCard({
         return;
       }
     }
+    track("ai_review_retried", { older: state === "none" });
     setRetryUntil(Date.now() + RETRY_WAIT_MS);
     setState("polling");
   }

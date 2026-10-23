@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ChevronRight, Sparkles } from "lucide-react";
@@ -84,6 +85,7 @@ export function NewPlanWizard({
     }
     // Changed before creating: it is the user's own version of the template.
     if (isEdited(draft, routines) && planId) await supabase.from("plans").update({ is_custom: true }).eq("id", planId);
+    track("plan_created", { method: "template", template, days: draft.length, edited: isEdited(draft, routines) });
     router.push("/");
     router.refresh();
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { ACCENTS, applyTheme, BASES, isLightBase, type Theme } from "@/lib/theme";
@@ -12,6 +13,7 @@ export function ThemePicker({ initial }: { initial: Theme }) {
   function choose(next: Theme) {
     setTheme(next);
     applyTheme(next);
+    track("theme_changed", { base: next.base, accent: next.accent });
   }
 
   return (

@@ -1,5 +1,7 @@
 "use client";
 
+import { track } from "@/lib/analytics";
+import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -108,6 +110,18 @@ export function Logger(props: {
   // Opened with changes still on the phone from last time: this page was
   // rendered without them, so reload once they have reached the server.
   const reloadAfterSync = useRef(false);
+  // Counted once per workout, when it is first opened with nothing logged.
+  useEffect(() => {
+    if (demo || props.hasLoggedSets) return;
+    try {
+      const key = `wt-started-${workoutId}`;
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      return;
+    }
+    track("workout_started", { exercises: items.length });
+  }, [demo, props.hasLoggedSets, workoutId, items.length]);
   useEffect(() => {
     if (demo) return;
     pendingCount(workoutId)
@@ -343,6 +357,7 @@ export function Logger(props: {
     beep(REST_START);
     if (row.setType === "working") setFeelKey(row.key);
     if (demo) return;
+    track("set_logged", { set_type: row.setType });
 
     // Saved on the phone first, sent when there is a connection.
     await enqueue(workoutId, {
@@ -695,7 +710,7 @@ export function Logger(props: {
                   {props.lastNotes?.[ex.exerciseId] && (
                     <p className="flex gap-1.5 text-muted-foreground">
                       <StickyNote className="mt-0.5 size-3 shrink-0" aria-hidden />
-                      <span>Last note: {props.lastNotes[ex.exerciseId]}</span>
+                      <span className={MASK}>Last note: {props.lastNotes[ex.exerciseId]}</span>
                     </p>
                   )}
                 </div>
@@ -765,7 +780,7 @@ export function Logger(props: {
                         aria-label={`Edit note: ${notes[ex.exerciseId].note}`}
                       >
                         <StickyNote className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                        <span className="min-w-0 whitespace-pre-wrap break-words">{notes[ex.exerciseId].note}</span>
+                        <span className={`min-w-0 whitespace-pre-wrap break-words ${MASK}`}>{notes[ex.exerciseId].note}</span>
                       </button>
                     )}
                     <div className="grid grid-cols-2">
@@ -930,6 +945,13 @@ export function Logger(props: {
           demo={demo}
           onClose={() => setFinishing(false)}
           onDone={(result) => {
+            if (!demo && result !== "discarded") {
+              track("workout_finished", {
+                synced: result === "saved",
+                working_sets: exercises.reduce((n, ex) => n + ex.working.filter((r) => r.logged).length, 0),
+                minutes: Math.round(elapsed / 60),
+              });
+            }
             if (result === "queued") {
               setFinishing(false);
               setFinishedOffline(true);

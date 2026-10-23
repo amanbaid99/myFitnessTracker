@@ -1048,3 +1048,27 @@ plans, which the spec did not have.
   scroll area instead of allowing for the bar's height.
 - Trade-off: tapping the iPhone status bar no longer scrolls to the top,
   since the page itself no longer scrolls.
+
+## 2026-10-23: PostHog product analytics and session replay (Aman's request)
+
+- posthog-js starts in instrumentation-client.ts (Next 15.3+ way), PostHog
+  US cloud, settings defaults "2026-08-30". The project token is public
+  (it can only send events), so it lives in lib/analytics.ts, not env.
+- Requests go to /rpi on our own domain and are rewritten to PostHog in
+  next.config.ts, so ad blockers don't drop them; proxy.ts skips /rpi so
+  the Supabase session check doesn't run for them. Replays add some
+  Vercel data transfer, fine at this size.
+- Privacy: people are identified by their account id only
+  (AnalyticsIdentity in the tabbed layout and welcome), never name or
+  email, and reset on sign-out. person_profiles is identified_only.
+  Replays mask every input, and any text with the "ph-mask" class
+  (lib/mask.ts): the greeting with the name, the email in Settings, Coach
+  messages and exercise and workout notes. Event properties are counts and
+  choices, never typed text. Nothing is sent from localhost.
+- Events: workout_started (once per workout), set_logged, workout_finished
+  (sets, minutes, synced), plan_created (template, onboarding or ai),
+  coach_question_asked (scope), ai_review_retried, warmup_written_with_ai,
+  starting_weights_saved, set_fixed (fix or delete), theme_changed.
+- The Privacy Policy (updated 23 October 2026) and FAQ now say what is
+  recorded, how it is hidden, that PostHog handles it, and that recordings
+  are kept 30 days.

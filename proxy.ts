@@ -9,6 +9,7 @@ export const config = {
   matcher: [
     // Everything except Next internals, the service worker, the manifest and
     // static files. The PWA must be able to fetch these while signed out.
-    "/((?!_next/static|_next/image|sw\\.js|manifest\\.webmanifest|offline\\.html|favicon\\.ico|.*\\.(?:png|svg|ico|webp|jpg)$).*)",
+    // rpi/ is analytics (next.config.ts rewrites), which needs no session.
+    "/((?!_next/static|_next/image|rpi/|sw\\.js|manifest\\.webmanifest|offline\\.html|favicon\\.ico|.*\\.(?:png|svg|ico|webp|jpg)$).*)",
   ],
 };

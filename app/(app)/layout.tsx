@@ -1,3 +1,4 @@
+import { AnalyticsIdentity } from "@/components/analytics-identity";
 import { AppScroll } from "@/components/app-scroll";
 import { BottomNav } from "@/components/bottom-nav";
 import { ProfileButton } from "@/components/profile-button";
@@ -16,6 +17,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // inside it and the tab bar sits below as a normal block (AppScroll).
   return (
     <div className="flex h-dvh flex-col">
+      <AnalyticsIdentity userId={profile.id} />
       <AppScroll>
         <div className="relative mx-auto w-full max-w-lg px-4 pb-6 pt-safe">
           {/* Settings lives behind the initials, top right; page headers leave room for it (pr-14). */}

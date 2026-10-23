@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -106,6 +107,7 @@ export function StartingWeightsForm({ exercises, units }: { exercises: StartingE
       setError(sets.error.message);
       return;
     }
+    track("starting_weights_saved", { exercises: rows.length });
     router.push("/routines");
     router.refresh();
   }

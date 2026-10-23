@@ -1,5 +1,7 @@
 "use client";
 
+import { track } from "@/lib/analytics";
+import { MASK } from "@/lib/mask";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { FunctionsHttpError } from "@supabase/supabase-js";
@@ -71,6 +73,7 @@ export function CoachChat({
     const question = text.trim();
     if (!question || busy || remaining === 0) return;
     const next = [...messages, { role: "user" as const, content: question }];
+    track("coach_question_asked", { scope: useScope, first: messages.length === 0 });
     onMessages(next);
     setDraft("");
     setNotice(null);
@@ -120,6 +123,7 @@ export function CoachChat({
             key={i}
             className={cn(
               "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
+              MASK,
               m.role === "user" ? "ml-auto bg-primary text-primary-foreground" : "border bg-card text-muted-foreground",
             )}
           >

@@ -1,5 +1,6 @@
 "use client";
 
+import { MASK } from "@/lib/mask";
 import Link from "next/link";
 import { ChevronRight, Flame, Sparkles } from "lucide-react";
 import { useMounted } from "@/components/progress/use-mounted";
@@ -71,7 +72,7 @@ export function HomeHero({
   return (
     <div>
       <p className="pr-14 text-sm text-muted-foreground">{dateLine}</p>
-      <h1 className="pr-14 text-2xl font-semibold tracking-tight">
+      <h1 className={`pr-14 text-2xl font-semibold tracking-tight ${MASK}`}>
         {greetingFor(now.getHours())}
         {name ? `, ${name}` : ""}
       </h1>

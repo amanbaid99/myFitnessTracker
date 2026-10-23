@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import type { SetRow } from "@/lib/data";
 import { formatSet } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
+import { track } from "@/lib/analytics";
 import { fromKg, toKg, type Units } from "@/lib/units";
 
 /**
@@ -95,6 +96,7 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
       setError(error.message.includes("not found") ? "This set was already changed. Refresh and try again." : error.message);
       return;
     }
+    track("set_fixed", { action: "fix", set_type: set.setType });
     onClose();
     router.refresh();
   }
@@ -118,6 +120,7 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
       setError(error.message);
       return;
     }
+    track("set_fixed", { action: "delete", set_type: set.setType });
     onClose();
     router.refresh();
   }

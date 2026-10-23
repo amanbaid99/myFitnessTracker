@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
 import { Loader2, RotateCcw, Sparkles, X } from "lucide-react";
@@ -69,6 +70,7 @@ export function PrepSheet({
       setWarmText(data.prep.warmup.join("\n"));
       setCoolText(data.prep.cooldown.join("\n"));
       setByAi(true);
+      track("warmup_written_with_ai", { exercises: exercises.length });
       return;
     }
     setError(await whyNot(error));

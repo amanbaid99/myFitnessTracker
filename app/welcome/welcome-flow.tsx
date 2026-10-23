@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Dumbbell, Home, PersonStanding, Sparkles } from "lucide-react";
@@ -167,6 +168,7 @@ export function WelcomeFlow({
     }
     // Changed before creating: it is the user's own version of the template.
     if (isEdited(draft, routines) && planId) await supabase.from("plans").update({ is_custom: true }).eq("id", planId);
+    track("plan_created", { method: "onboarding", template: rec.template, days: draft.length, edited: isEdited(draft, routines) });
     await finish("/");
   }
 
