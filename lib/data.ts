@@ -4,6 +4,7 @@ import type { WarmupStep } from "./warmup";
 import { DEFAULT_WEIGHT_STEP_KG } from "./progression";
 import type { Units } from "./units";
 import type { BodyWeight } from "./body-weight";
+import type { Tracking } from "./tracking";
 import { createClient } from "./supabase/server";
 
 /**
@@ -34,7 +35,12 @@ export interface Exercise {
   warmupTemplate: WarmupStep[] | null;
   /** How much the weight goes up by (the plate or stack step), in kg. */
   weightStepKg: number;
+  /** Counted in reps, or timed (planks): then a plan's target reps are seconds. */
+  tracking: Tracking;
 }
+
+export type { Tracking };
+export const toTracking = (v: unknown): Tracking => (v === "time" ? "time" : "reps");
 
 export interface RoutineExercise {
   id: string;
@@ -83,6 +89,8 @@ export interface SetRow {
   weightKg: number | null;
   addedKg: number;
   reps: number | null;
+  /** Seconds held, for a timed exercise. */
+  durationSec: number | null;
   rpe: number | null;
   loggedAt: string;
 }
@@ -163,7 +171,7 @@ export async function getPlan(supabase: Supabase, planId: string): Promise<Plan 
 // Routines ---------------------------------------------------------------------
 
 const EXERCISE_COLS =
-  "id, name, equipment, muscle_groups, machine_setting, per_hand, warmup_enabled, warmup_template, weight_step_kg";
+  "id, name, equipment, muscle_groups, machine_setting, per_hand, warmup_enabled, warmup_template, weight_step_kg, tracking";
 
 interface ExerciseRow {
   id: string;
@@ -175,6 +183,7 @@ interface ExerciseRow {
   warmup_enabled: boolean;
   warmup_template: WarmupStep[] | null;
   weight_step_kg: number | string | null;
+  tracking?: string | null;
 }
 
 interface RoutineRow {
@@ -205,6 +214,7 @@ export function toExercise(e: ExerciseRow): Exercise {
     warmupEnabled: e.warmup_enabled,
     warmupTemplate: e.warmup_template,
     weightStepKg: Number(e.weight_step_kg) || DEFAULT_WEIGHT_STEP_KG,
+    tracking: toTracking(e.tracking),
   };
 }
 
@@ -487,12 +497,13 @@ function toSet(s: Record<string, unknown>): SetRow {
     weightKg: num(s.weight_kg),
     addedKg: num(s.added_kg) ?? 0,
     reps: s.reps as number | null,
+    durationSec: num(s.duration_sec),
     rpe: num(s.rpe),
     loggedAt: s.logged_at as string,
   };
 }
 
-const SET_COLS = "id, workout_id, exercise_id, set_no, set_type, weight_kg, added_kg, reps, rpe, logged_at";
+const SET_COLS = "id, workout_id, exercise_id, set_no, set_type, weight_kg, added_kg, reps, duration_sec, rpe, logged_at";
 
 /** Live sets logged in one workout, oldest first. */
 export async function getWorkoutSets(supabase: Supabase, workoutId: string): Promise<SetRow[]> {

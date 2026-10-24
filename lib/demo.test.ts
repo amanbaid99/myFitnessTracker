@@ -15,11 +15,17 @@ describe("demo data", () => {
     }
   });
 
-  it("has last session sets and a PR for every exercise", () => {
+  it("has last session sets for every exercise, and a PR for every one counted in reps", () => {
     for (const e of exercises) {
       expect(DEMO_PREVIOUS.get(e.id)?.length).toBeGreaterThan(0);
-      expect(DEMO_PRS.has(e.id)).toBe(true);
+      expect(DEMO_PRS.has(e.id)).toBe(e.tracking === "reps");
     }
+  });
+
+  it("includes a timed plank with times from last session", () => {
+    const plank = exercises.find((e) => e.name === "Plank")!;
+    expect(plank.tracking).toBe("time");
+    expect(DEMO_PREVIOUS.get(plank.id)!.map((s) => s.durationSec)).toEqual([45, 45, 40]);
   });
 
   it("builds a session with a ramp-up on the first exercise and an aim everywhere", () => {
@@ -27,7 +33,8 @@ describe("demo data", () => {
       const session = buildSession(routine.exercises, DEMO_PREVIOUS, []);
       expect(session[0].warmups.length).toBeGreaterThan(0);
       expect(session.slice(1).every((s) => s.warmups.length === 0)).toBe(true);
-      expect(session.every((s) => s.aim !== null)).toBe(true);
+      // Timed exercises (the plank) have no aim; they start at last time's holds.
+      session.forEach((s, i) => expect(s.aim !== null).toBe(routine.exercises[i].exercise.tracking === "reps"));
     }
   });
 

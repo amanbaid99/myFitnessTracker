@@ -8,6 +8,7 @@ import type { Exercise, RoutineExercise } from "@/lib/data";
 import { AddExercise, type ExercisePick } from "./add-exercise";
 import { EQUIPMENT, MUSCLE_GROUPS, REST_OPTIONS } from "@/lib/muscles";
 import { MAX_WEIGHT_STEP_KG, parseWeightStep, stepKg } from "@/lib/progression";
+import { formatDuration, type Tracking } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
 
 /** Plate and stack steps to choose from, in kg. */
@@ -21,6 +22,7 @@ export interface ExerciseEdits {
     muscleGroups: string[];
     perHand: boolean;
     weightStepKg: number;
+    tracking: Tracking;
   };
   slot: { targetSets: number; targetReps: number; restSec: number | null };
 }
@@ -60,6 +62,13 @@ export function ExerciseSheet({
   const [name, setName] = useState(e.name);
   const [sets, setSets] = useState(item.targetSets);
   const [reps, setReps] = useState(item.targetReps);
+  const [tracking, setTracking] = useState<Tracking>(e.tracking);
+  /** Switching between reps and time starts the target somewhere sensible. */
+  function switchTracking(next: Tracking) {
+    if (next === tracking) return;
+    setTracking(next);
+    setReps(next === "time" ? 30 : 10);
+  }
   const [rest, setRest] = useState<number | null>(item.restSec);
   const [seat, setSeat] = useState(e.machineSetting ?? "");
   const [equipment, setEquipment] = useState(e.equipment);
@@ -99,6 +108,7 @@ export function ExerciseSheet({
         muscleGroups: muscles,
         perHand,
         weightStepKg: step,
+        tracking,
       },
       slot: { targetSets: sets, targetReps: reps, restSec: rest },
     });
@@ -153,9 +163,36 @@ export function ExerciseSheet({
                 <Input id="ex-name" value={name} maxLength={60} onChange={(ev) => setName(ev.target.value)} />
               </Field>
 
+              <div role="radiogroup" aria-labelledby="ex-tracking-label">
+                <p id="ex-tracking-label" className="text-sm font-medium">
+                  Track by
+                </p>
+                <div className="mt-1.5 grid grid-cols-2 gap-2">
+                  {(["reps", "time"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      role="radio"
+                      aria-checked={tracking === t}
+                      onClick={() => switchTracking(t)}
+                      className={cn(
+                        "h-11 rounded-xl border text-sm",
+                        tracking === t ? "border-primary bg-accent text-accent-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {t === "reps" ? "Reps" : "Time (planks, holds)"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <Stepper label="Sets" value={sets} min={1} max={10} onChange={setSets} />
-                <Stepper label="Reps" value={reps} min={1} max={50} onChange={setReps} />
+                {tracking === "time" ? (
+                  <Stepper label="Seconds" value={reps} min={5} max={600} step={5} format={formatDuration} onChange={setReps} />
+                ) : (
+                  <Stepper label="Reps" value={reps} min={1} max={50} onChange={setReps} />
+                )}
               </div>
 
               <Field label="Rest between sets" htmlFor="ex-rest">
@@ -352,25 +389,29 @@ function Stepper({
   value,
   min,
   max,
+  step = 1,
+  format = String,
   onChange,
 }: {
   label: string;
   value: number;
   min: number;
   max: number;
+  step?: number;
+  format?: (v: number) => string;
   onChange: (v: number) => void;
 }) {
   return (
     <div>
       <p className="mb-1.5 text-sm font-medium">{label}</p>
       <div className="flex h-12 items-center justify-between rounded-xl border bg-card">
-        <Button variant="ghost" size="icon" aria-label={`Fewer ${label.toLowerCase()}`} disabled={value <= min} onClick={() => onChange(value - 1)}>
+        <Button variant="ghost" size="icon" aria-label={`Fewer ${label.toLowerCase()}`} disabled={value <= min} onClick={() => onChange(Math.max(min, value - step))}>
           <Minus />
         </Button>
         <span className="text-lg font-semibold tabular-nums" aria-live="polite">
-          {value}
+          {format(value)}
         </span>
-        <Button variant="ghost" size="icon" aria-label={`More ${label.toLowerCase()}`} disabled={value >= max} onClick={() => onChange(value + 1)}>
+        <Button variant="ghost" size="icon" aria-label={`More ${label.toLowerCase()}`} disabled={value >= max} onClick={() => onChange(Math.min(max, value + step))}>
           <Plus />
         </Button>
       </div>

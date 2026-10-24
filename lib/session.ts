@@ -17,6 +17,8 @@ export interface SessionSet {
   weightKg: number | null;
   addedKg: number;
   reps: number | null;
+  /** Seconds held, for a timed exercise. */
+  durationSec?: number | null;
   rpe: number | null;
 }
 
@@ -28,6 +30,8 @@ export interface SessionExerciseInput {
     warmupEnabled: boolean;
     warmupTemplate: WarmupStep[] | null;
     weightStepKg?: number;
+    /** "time": logged as seconds held, and targetReps is the target in seconds. */
+    tracking?: "reps" | "time";
   };
   targetSets: number;
   targetReps: number;
@@ -42,6 +46,8 @@ export interface Row {
   weightKg: number | null;
   addedKg: number;
   reps: number | null;
+  /** Seconds to hold, for a timed exercise (reps stay empty). */
+  durationSec?: number | null;
   logged: SessionSet | null;
   /** The weight was typed by hand, so it is not overwritten automatically. */
   weightEdited?: boolean;
@@ -59,10 +65,13 @@ export interface Row {
  */
 export function carryWeightForward(
   working: Row[],
-  done: { setNo: number; weightKg: number | null; addedKg: number; reps?: number | null },
+  done: { setNo: number; weightKg: number | null; addedKg: number; reps?: number | null; durationSec?: number | null },
 ): Row[] {
   return working.map((r) => {
-    if (r.setNo <= done.setNo || r.logged || r.weightEdited) return r;
+    if (r.setNo <= done.setNo || r.logged) return r;
+    // A timed set: later sets take the time just held, unless changed by hand.
+    if (done.durationSec != null && !r.repsEdited) r = { ...r, durationSec: done.durationSec };
+    if (r.weightEdited) return r;
     const loadChanged = r.weightKg !== done.weightKg || r.addedKg !== done.addedKg;
     const reps = loadChanged && !r.repsEdited && done.reps != null ? done.reps : r.reps;
     return { ...r, weightKg: done.weightKg, addedKg: done.addedKg, reps };
@@ -75,7 +84,7 @@ export interface SessionExercise {
   working: Row[];
   aim: Aim | null;
   /** Last session's working sets, in order, shown for reference. */
-  last: { weightKg: number | null; addedKg: number; reps: number | null }[];
+  last: { weightKg: number | null; addedKg: number; reps: number | null; durationSec?: number | null }[];
 }
 
 export function buildSession(
@@ -89,6 +98,7 @@ export function buildSession(
     const mine = logged.filter((s) => s.exerciseId === id);
     const find = (type: "warmup" | "working", no: number) =>
       mine.find((s) => s.setType === type && s.setNo === no) ?? null;
+    if (item.exercise.tracking === "time") return timedExercise(item, prev, mine);
 
     const aim = aimForSession({
       lastSets: prev.map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps, rpe: s.rpe })),
@@ -174,6 +184,52 @@ export function nextWarmupRow(
   const step = DEFAULT_RAMP[Math.min(no, DEFAULT_RAMP.length) - 1];
   const inc = opts.weightStepKg && opts.weightStepKg > 0 ? opts.weightStepKg : WARMUP_INCREMENT_KG;
   return { ...base, weightKg: Math.min(top, Math.max(inc, roundToIncrement((top * step.pct) / 100, inc))), reps: step.reps };
+}
+
+/**
+ * A timed exercise (plank): no ramp-up and no aim; each set starts at the
+ * time held in the same set last session, else the plan's target seconds,
+ * and keeps any weight used last time (a weighted plank). Hand-added
+ * warm-ups that were logged come back.
+ */
+function timedExercise(item: SessionExerciseInput, prev: SessionSet[], mine: SessionSet[]): SessionExercise {
+  const id = item.exercise.id;
+  const find = (type: "warmup" | "working", no: number) => mine.find((s) => s.setType === type && s.setNo === no) ?? null;
+  const warmupNos = mine.filter((s) => s.setType === "warmup").map((s) => s.setNo);
+  const warmups: Row[] = Array.from({ length: Math.max(0, ...warmupNos) }, (_, i) => {
+    const done = find("warmup", i + 1);
+    return {
+      key: `${id}-w${i + 1}`,
+      setType: "warmup",
+      setNo: i + 1,
+      label: `W${i + 1}`,
+      weightKg: done?.weightKg ?? null,
+      addedKg: done?.addedKg ?? 0,
+      reps: null,
+      durationSec: done?.durationSec ?? Math.max(5, Math.round(item.targetReps / 2)),
+      logged: done,
+    };
+  });
+  const loggedWorking = mine.filter((s) => s.setType === "working");
+  const count = Math.max(item.targetSets, ...loggedWorking.map((s) => s.setNo), 0);
+  const working: Row[] = Array.from({ length: count }, (_, i) => {
+    const no = i + 1;
+    const done = find("working", no);
+    const source = prev[i] ?? prev[prev.length - 1];
+    return {
+      key: `${id}-s${no}`,
+      setType: "working",
+      setNo: no,
+      label: String(no),
+      weightKg: done ? done.weightKg : (source?.weightKg ?? null),
+      addedKg: done ? done.addedKg : (source?.addedKg ?? 0),
+      reps: null,
+      durationSec: done ? (done.durationSec ?? null) : (source?.durationSec ?? item.targetReps),
+      logged: done,
+    };
+  });
+  const last = prev.map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps, durationSec: s.durationSec ?? null }));
+  return { exerciseId: id, warmups, working, aim: null, last };
 }
 
 /** An exercise is done when it has working sets and all are logged. */

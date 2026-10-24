@@ -62,7 +62,9 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
   const router = useRouter();
   const [weight, setWeight] = useState(toText(set.weightKg, units));
   const [added, setAdded] = useState(set.addedKg ? toText(set.addedKg, units) : "");
-  const [reps, setReps] = useState(set.reps === null ? "" : String(set.reps));
+  // A timed set (plank) is fixed in seconds instead of reps.
+  const timed = set.durationSec !== null;
+  const [reps, setReps] = useState(timed ? String(set.durationSec) : set.reps === null ? "" : String(set.reps));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const label = set.setType === "warmup" ? `Warm-up ${set.setNo}` : `Set ${set.setNo}`;
@@ -72,11 +74,11 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
     const a = parseNumber(added);
     const r = parseNumber(reps);
     if (w === "bad" || a === "bad" || r === "bad" || (r !== null && !Number.isInteger(r))) {
-      setError("Check the numbers: weight and reps can't be negative, and reps are whole numbers.");
+      setError(`Check the numbers: weight and ${timed ? "seconds" : "reps"} can't be negative, and ${timed ? "seconds" : "reps"} are whole numbers.`);
       return;
     }
-    if (r === null) {
-      setError("Enter the reps.");
+    if (r === null || (timed && (r < 1 || r > 3600))) {
+      setError(timed ? "Enter the seconds held, from 1 to 3600." : "Enter the reps.");
       return;
     }
     if (!navigator.onLine) {
@@ -89,7 +91,8 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
       p_set: set.id,
       p_weight_kg: w === null ? null : toKg(w, units),
       p_added_kg: a === null ? 0 : toKg(a, units),
-      p_reps: r,
+      p_reps: timed ? null : r,
+      ...(timed ? { p_duration_sec: r } : {}),
     });
     setBusy(false);
     if (error) {
@@ -151,7 +154,7 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
             <Input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Bodyweight" />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium">Reps</span>
+            <span className="mb-1.5 block text-sm font-medium">{timed ? "Seconds held" : "Reps"}</span>
             <Input inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} />
           </label>
           {set.addedKg > 0 && (

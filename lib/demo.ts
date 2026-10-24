@@ -7,6 +7,7 @@
 
 import type { Exercise, LastSet, Plan, Profile, Routine } from "./data";
 import type { SessionSet } from "./session";
+import { defaultTracking } from "./tracking";
 
 export const DEMO_PROFILE: Profile = {
   id: "demo",
@@ -77,6 +78,8 @@ const DAYS: { slug: string; name: string; exercises: DemoExercise[] }[] = [
       { slug: "leg-press", name: "Leg Press", equipment: "machine", muscles: ["quads", "glutes"], seat: "6", sets: 3, reps: 12, last: [[180, 12, 7.5], [180, 12, 8], [180, 12, 8]] },
       { slug: "leg-curl", name: "Seated Leg Curl", equipment: "machine", muscles: ["hamstrings"], seat: "2", sets: 3, reps: 12, restSec: 60, last: [[50, 12, 8], [50, 11, 9], [50, 10, 9]] },
       { slug: "calf", name: "Standing Calf Raise", equipment: "machine", muscles: ["calves"], sets: 4, reps: 15, restSec: 60, last: [[70, 15, 7], [70, 15, 7.5], [70, 15, 8], [70, 15, 8]] },
+      // Timed: reps are seconds held, and "last" is [0, seconds, rpe].
+      { slug: "plank", name: "Plank", equipment: "bodyweight", muscles: ["core"], sets: 3, reps: 45, restSec: 60, last: [[0, 45, 7], [0, 45, 8], [0, 40, 9]] },
     ],
   },
 ];
@@ -114,6 +117,7 @@ export const DEMO_ROUTINES: Routine[] = DAYS.map((day, dayIndex) => ({
       warmupEnabled: true,
       warmupTemplate: null,
       weightStepKg: e.step ?? 2.5,
+      tracking: defaultTracking(e.name),
     },
   })),
 }));
@@ -123,16 +127,20 @@ export const DEMO_PREVIOUS: Map<string, SessionSet[]> = new Map(
   DAYS.flatMap((day) =>
     day.exercises.map((e) => [
       e.slug,
-      e.last.map(([kg, reps, rpe], i) => ({
-        id: `${e.slug}-prev-${i + 1}`,
-        exerciseId: e.slug,
-        setNo: i + 1,
-        setType: "working" as const,
-        weightKg: kg,
-        addedKg: 0,
-        reps,
-        rpe,
-      })),
+      e.last.map(([kg, reps, rpe], i) => {
+        const timed = defaultTracking(e.name) === "time";
+        return {
+          id: `${e.slug}-prev-${i + 1}`,
+          exerciseId: e.slug,
+          setNo: i + 1,
+          setType: "working" as const,
+          weightKg: timed ? null : kg,
+          addedKg: 0,
+          reps: timed ? null : reps,
+          durationSec: timed ? reps : null,
+          rpe,
+        };
+      }),
     ]),
   ),
 );
@@ -140,7 +148,7 @@ export const DEMO_PREVIOUS: Map<string, SessionSet[]> = new Map(
 /** Last working set per exercise, for the plan view. */
 export const DEMO_LAST_SETS: Map<string, LastSet> = new Map(
   DAYS.flatMap((day) =>
-    day.exercises.map((e) => {
+    day.exercises.filter((e) => defaultTracking(e.name) === "reps").map((e) => {
       const [kg, reps] = e.last[e.last.length - 1];
       return [e.slug, { weightKg: kg, addedKg: 0, reps, loggedAt: daysAgo(DAYS_AGO[day.slug]) }];
     }),
@@ -150,7 +158,7 @@ export const DEMO_LAST_SETS: Map<string, LastSet> = new Map(
 /** A PR a little above last session, so the demo has something to chase. */
 export const DEMO_PRS: Map<string, { weightKg: number; addedKg: number; reps: number }> = new Map(
   DAYS.flatMap((day) =>
-    day.exercises.map((e) => {
+    day.exercises.filter((e) => defaultTracking(e.name) === "reps").map((e) => {
       const [kg, reps] = e.last[0];
       return [e.slug, { weightKg: kg, addedKg: 0, reps: reps + 1 }];
     }),

@@ -112,6 +112,7 @@ export function systemPrompt(setup: string | null, libraryNames: string[]): stri
       : "",
     setup ? `Their equipment: ${setup}.` : "",
     "Sets and reps: use theirs if given; otherwise 3 sets, 10 reps for big compound lifts and 12 for small isolation moves.",
+    "For holds such as planks or wall sits, reps is the hold time in seconds (for example 30).",
     `equipment is one of: ${EQUIPMENT.join(", ")}. muscles are 1 to 3 of: ${MUSCLES.join(", ")}, main muscle first.`,
     `At most ${MAX_DAYS} days and ${MAX_EXERCISES} exercises per day. Day names are short, like 'Day 1' or 'Upper'.`,
     "Only if they describe a warm-up or cool-down, add it to the days it is for as \"warmup\" and \"cooldown\": lists of short lines of plain text, like \"10 min incline walk\". Otherwise leave both out.",

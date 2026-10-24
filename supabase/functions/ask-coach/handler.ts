@@ -224,9 +224,9 @@ export async function loadCoachData(
     read<{ units: string; experience: string | null; training_setup: string | null }[]>(
       env, token, fetchFn, "profiles?select=units,experience,training_setup&limit=1",
     ),
-    read<{ name: string; routine_exercises: { sort_order: number; target_sets: number; target_reps: number; exercises: { name: string } | null }[] }[]>(
+    read<{ name: string; routine_exercises: { sort_order: number; target_sets: number; target_reps: number; exercises: { name: string; tracking?: string } | null }[] }[]>(
       env, token, fetchFn,
-      "routines?select=name,sort_order,plans!inner(is_active),routine_exercises(sort_order,target_sets,target_reps,exercises(name))" +
+      "routines?select=name,sort_order,plans!inner(is_active),routine_exercises(sort_order,target_sets,target_reps,exercises(name,tracking))" +
         "&plans.is_active=eq.true&order=sort_order",
     ),
     read<{ id: string; started_at: string; routines: { name: string } | null }[]>(
@@ -286,7 +286,7 @@ export async function loadCoachData(
       day: r.name,
       exercises: [...r.routine_exercises]
         .sort((a, b) => a.sort_order - b.sort_order)
-        .map((e) => `${e.exercises?.name ?? "Exercise"} ${e.target_sets}x${e.target_reps}`),
+        .map((e) => `${e.exercises?.name ?? "Exercise"} ${e.target_sets}x${e.target_reps}${e.exercises?.tracking === "time" ? "s hold" : ""}`),
     })),
     // Sessions with sets only, the most recent MAX_SESSIONS, to keep the prompt small.
     sessions: workouts
@@ -304,10 +304,11 @@ type SetRow = {
   weight_kg: number | string | null;
   added_kg: number | string;
   reps: number | null;
+  duration_sec?: number | null;
   rpe: number | string | null;
   exercises: { name: string } | null;
 };
-const SET_SELECT = "workout_id,weight_kg,added_kg,reps,rpe,exercises(name)";
+const SET_SELECT = "workout_id,weight_kg,added_kg,reps,duration_sec,rpe,exercises(name)";
 
 /** One line per exercise: "Leg Press: 110kgx7 (hard), ...", in the order done. */
 function describeSets(sets: SetRow[]): { names: string[]; lines: string[] } {
@@ -316,7 +317,8 @@ function describeSets(sets: SetRow[]): { names: string[]; lines: string[] } {
     const name = s.exercises?.name ?? "Exercise";
     const load = s.weight_kg === null ? "bodyweight" : `${num(Number(s.weight_kg))}${Number(s.added_kg) ? `+${num(Number(s.added_kg))}` : ""}kg`;
     const feel = s.rpe === null ? "" : ` (${FEEL(Number(s.rpe))})`;
-    byExercise.set(name, [...(byExercise.get(name) ?? []), `${load}x${s.reps ?? "?"}${feel}`]);
+    const done = s.duration_sec != null ? (s.weight_kg === null ? `${s.duration_sec}s hold` : `${load} for ${s.duration_sec}s`) : `${load}x${s.reps ?? "?"}`;
+    byExercise.set(name, [...(byExercise.get(name) ?? []), `${done}${feel}`]);
   }
   return { names: [...byExercise.keys()], lines: [...byExercise].map(([name, list]) => `${name}: ${list.join(", ")}`) };
 }

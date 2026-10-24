@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Routine } from "@/lib/data";
 import { formatSet, settingLabel, type SetLike } from "@/lib/format";
 import type { Units } from "@/lib/units";
+import { formatTarget } from "@/lib/tracking";
 
 /** Every day of a plan with each exercise's targets, PR and last set. */
 export function PlanDays({
@@ -44,7 +45,7 @@ export function PlanDays({
                       </div>
                     </div>
                     <span className="shrink-0 pt-0.5 text-sm tabular-nums">
-                      {targetSets} × {targetReps}
+                      {formatTarget(targetSets, targetReps, exercise.tracking)}
                     </span>
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground">{exercise.muscleGroups.join(", ")}</p>

@@ -6,7 +6,7 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Plus, RotateCcw, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, ty
 import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 import { formatWeight, fromKg, toKg, type Units } from "@/lib/units";
+import { formatDuration, formatTarget } from "@/lib/tracking";
 import { AddExercise } from "@/components/plan/add-exercise";
 import { ExerciseSheet } from "@/components/plan/exercise-sheet";
 import type { Exercise, ExerciseNote, Plan, RoutineExercise } from "@/lib/data";
@@ -91,10 +92,16 @@ export function Logger(props: {
   const router = useRouter();
 
   const [exercises, setExercises] = useState(props.session);
+  const exercisesRef = useRef(exercises);
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  }, [exercises]);
   const [checked, setChecked] = useState<number[]>([]);
   const [skipped, setSkipped] = useState<string[]>([]);
   const [feelKey, setFeelKey] = useState<string | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
+  /** A timed set being held (plank): counts down, then logs the set. */
+  const [hold, setHold] = useState<{ exIndex: number; key: string; startedAt: number; endsAt: number; total: number } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [finishing, setFinishing] = useState(false);
@@ -239,10 +246,20 @@ export function Logger(props: {
   useEffect(() => {
     restRef.current = rest;
   }, [rest]);
+  const holdRef = useRef(hold);
+  useEffect(() => {
+    holdRef.current = hold;
+  }, [hold]);
+  const finishHoldRef = useRef<(h: NonNullable<typeof hold>) => void>(() => {});
   useEffect(() => {
     const t = setInterval(() => {
       const current = Date.now();
       setNow(current);
+      const h = holdRef.current;
+      if (h && current >= h.endsAt) {
+        holdRef.current = null;
+        finishHoldRef.current(h);
+      }
       const r = restRef.current;
       if (r && current >= r.endsAt) {
         restRef.current = null;
@@ -344,6 +361,7 @@ export function Logger(props: {
       weightKg: row.weightKg,
       addedKg: row.addedKg,
       reps: row.reps,
+      durationSec: row.durationSec ?? null,
       rpe: null,
     };
     updateRow(exIndex, row.key, { logged });
@@ -373,8 +391,39 @@ export function Logger(props: {
         weight_kg: row.weightKg,
         added_kg: row.addedKg,
         reps: row.reps,
+        ...(row.durationSec != null ? { duration_sec: row.durationSec } : {}),
       },
     });
+  }
+
+  // A finished hold logs its set with the full time; the latest row is read
+  // from state so a time changed during the hold is not lost.
+  useEffect(() => {
+    finishHoldRef.current = (h) => {
+      setHold(null);
+      beep(REST_END);
+      navigator.vibrate?.([200, 100, 200]);
+      const ex = exercisesRef.current[h.exIndex];
+      const row = [...(ex?.warmups ?? []), ...(ex?.working ?? [])].find((r) => r.key === h.key);
+      if (row && !row.logged) void tick(h.exIndex, { ...row, durationSec: h.total });
+    };
+  });
+
+  function startHold(exIndex: number, row: Row) {
+    const total = row.durationSec ?? items[exIndex].targetReps;
+    const endsAt = secondsFromNow(total);
+    setRest(null);
+    beep(REST_START);
+    setHold({ exIndex, key: row.key, startedAt: endsAt - total * 1000, endsAt, total });
+  }
+
+  /** Stopped early: the time actually held goes in the set, ready to log. */
+  function stopHold() {
+    const h = holdRef.current;
+    if (!h) return;
+    setHold(null);
+    const held = Math.max(1, Math.round(h.total - (h.endsAt - secondsFromNow(0)) / 1000));
+    updateRow(h.exIndex, h.key, { durationSec: held, repsEdited: true });
   }
 
   async function untick(exIndex: number, row: Row) {
@@ -490,6 +539,7 @@ export function Logger(props: {
   /** "Add warm-up": a lighter set before the working sets, on any exercise. */
   function addWarmup(exIndex: number) {
     const { exercise, targetReps } = items[exIndex];
+    const timed = exercise.tracking === "time";
     setSkipped((s) => s.filter((id) => id !== exercise.id));
     setExercises((prev) =>
       prev.map((ex, i) =>
@@ -499,11 +549,18 @@ export function Logger(props: {
               ...ex,
               warmups: [
                 ...ex.warmups,
-                nextWarmupRow(ex.exerciseId, ex.warmups, ex.working, {
-                  targetReps,
-                  equipment: exercise.equipment,
-                  weightStepKg: exercise.weightStepKg,
-                }),
+                timed
+                  ? {
+                      ...nextWarmupRow(ex.exerciseId, ex.warmups, [], { targetReps, equipment: "bodyweight" }),
+                      reps: null,
+                      // A shorter hold to warm up: half the first set's time.
+                      durationSec: Math.max(5, Math.round((ex.working[0]?.durationSec ?? targetReps) / 2)),
+                    }
+                  : nextWarmupRow(ex.exerciseId, ex.warmups, ex.working, {
+                      targetReps,
+                      equipment: exercise.equipment,
+                      weightStepKg: exercise.weightStepKg,
+                    }),
               ],
             },
       ),
@@ -619,7 +676,7 @@ export function Logger(props: {
                         {item.exercise.name}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {ex.aim ? `Aim ${formatSet(ex.aim, units)}` : `${item.targetSets} × ${item.targetReps}`}
+                        {ex.aim ? `Aim ${formatSet(ex.aim, units)}` : formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
                       </span>
                     </span>
                     {notes[ex.exerciseId] && (
@@ -650,7 +707,7 @@ export function Logger(props: {
                     <h2 className="font-semibold leading-snug">{item.exercise.name}</h2>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       <Badge variant="muted">
-                        {item.targetSets} × {item.targetReps}
+                        {formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
                       </Badge>
                       <SettingBadge
                         value={ex.exerciseId in settings ? settings[ex.exerciseId] : item.exercise.machineSetting}
@@ -729,7 +786,7 @@ export function Logger(props: {
                       <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
                     </p>
                   )}
-                  {item.exercise.equipment === "bodyweight" && (
+                  {item.exercise.equipment === "bodyweight" && item.exercise.tracking !== "time" && (
                     <p className="text-muted-foreground">
                       {props.bodyWeightKg ? (
                         <>
@@ -763,6 +820,10 @@ export function Logger(props: {
                       units={units}
                       perHand={item.exercise.perHand}
                       warmup
+                      timed={item.exercise.tracking === "time"}
+                      holdLeft={hold?.key === row.key ? Math.max(0, Math.ceil((hold.endsAt - now) / 1000)) : null}
+                      onHoldStart={hold ? undefined : () => startHold(exIndex, row)}
+                      onHoldStop={stopHold}
                       onChange={(patch) => updateRow(exIndex, row.key, patch)}
                       onTick={() => tick(exIndex, row)}
                       onUntick={() => untick(exIndex, row)}
@@ -787,6 +848,10 @@ export function Logger(props: {
                       row={row}
                       units={units}
                       perHand={item.exercise.perHand}
+                      timed={item.exercise.tracking === "time"}
+                      holdLeft={hold?.key === row.key ? Math.max(0, Math.ceil((hold.endsAt - now) / 1000)) : null}
+                      onHoldStart={hold ? undefined : () => startHold(exIndex, row)}
+                      onHoldStop={stopHold}
                       onChange={(patch) => updateRow(exIndex, row.key, patch)}
                       onTick={() => tick(exIndex, row)}
                       onUntick={() => untick(exIndex, row)}
@@ -1019,6 +1084,10 @@ function SetRow({
   units,
   perHand,
   warmup = false,
+  timed = false,
+  holdLeft = null,
+  onHoldStart,
+  onHoldStop,
   onChange,
   onTick,
   onUntick,
@@ -1027,6 +1096,13 @@ function SetRow({
   units: Units;
   perHand: boolean;
   warmup?: boolean;
+  /** Logged as seconds held (plank) instead of reps. */
+  timed?: boolean;
+  /** Seconds left while this set's hold is running, else null. */
+  holdLeft?: number | null;
+  /** Starts the countdown; missing while another set is being held. */
+  onHoldStart?: () => void;
+  onHoldStop?: () => void;
   onChange: (patch: Partial<Row>) => void;
   onTick: () => void;
   onUntick: () => void;
@@ -1036,6 +1112,7 @@ function SetRow({
   // Working sets not yet logged get − and + around the reps, so adjusting
   // them is a tap instead of typing.
   const stepper = !warmup && !done;
+  const holding = holdLeft !== null;
 
   return (
     <div className={cn("flex min-h-14 items-center px-2", stepper ? "gap-1" : "gap-2", warmup && "text-muted-foreground")}>
@@ -1067,7 +1144,8 @@ function SetRow({
         />
       ) : (
         !done &&
-        !warmup && (
+        !warmup &&
+        !timed && (
           <button
             type="button"
             onClick={() => setShowAddOn(true)}
@@ -1078,7 +1156,33 @@ function SetRow({
           </button>
         )
       )}
-      {stepper ? (
+      {timed ? (
+        <>
+          <span className="text-muted-foreground">×</span>
+          {holding ? (
+            <span className="min-w-16 text-center text-lg font-semibold tabular-nums text-primary" aria-live="polite">
+              {clock(holdLeft)}
+            </span>
+          ) : (
+            <DurationStepper
+              label={row.label}
+              value={row.durationSec ?? null}
+              disabled={done}
+              onChange={(durationSec) => onChange({ durationSec, repsEdited: true })}
+            />
+          )}
+          {!done && (holding || onHoldStart) && (
+            <button
+              type="button"
+              onClick={holding ? onHoldStop : onHoldStart}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground active:bg-muted"
+              aria-label={holding ? `Stop the timer on set ${row.label}` : `Start a ${row.durationSec ?? 0} second timer for set ${row.label}`}
+            >
+              {holding ? <Square className="size-4" /> : <Play className="size-4" />}
+            </button>
+          )}
+        </>
+      ) : stepper ? (
         <RepsStepper
           label={row.label}
           value={row.reps}
@@ -1303,6 +1407,42 @@ function NoteEditor({
 }
 
 const MAX_REPS = 100;
+const MAX_HOLD_SEC = 3600;
+
+/** Seconds held, with − and + in 5 s steps; done sets just show the time. */
+function DurationStepper({
+  label,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  disabled: boolean;
+  onChange: (sec: number | null) => void;
+}) {
+  if (disabled) return <span className="min-w-12 text-sm tabular-nums">{value === null ? "?" : formatDuration(value)}</span>;
+  const step = (delta: number) => onChange(Math.min(MAX_HOLD_SEC, Math.max(5, (value ?? 0) + delta)));
+  const button = "flex h-11 w-9 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40";
+  return (
+    <div className="flex h-11 shrink-0 items-center overflow-hidden rounded-lg border bg-background" role="group" aria-label={`Set ${label} time`}>
+      <button type="button" className={button} onClick={() => step(-5)} disabled={value === null || value <= 5} aria-label={`5 seconds less on set ${label}`}>
+        <Minus className="size-4" />
+      </button>
+      <NumberField
+        label={`Set ${label} seconds`}
+        value={value}
+        onChange={(v) => onChange(v === null ? null : Math.min(MAX_HOLD_SEC, Math.max(1, Math.round(v))))}
+        integer
+        suffix="s"
+        className="w-14 border-0"
+      />
+      <button type="button" className={button} onClick={() => step(5)} disabled={(value ?? 0) >= MAX_HOLD_SEC} aria-label={`5 seconds more on set ${label}`}>
+        <Plus className="size-4" />
+      </button>
+    </div>
+  );
+}
 
 /** Reps with − and + buttons; the number itself can still be typed. */
 function RepsStepper({

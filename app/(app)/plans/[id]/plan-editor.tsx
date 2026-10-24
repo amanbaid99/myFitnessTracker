@@ -13,6 +13,7 @@ import { MakeActiveButton } from "../plan-actions";
 import { AddExercise } from "@/components/plan/add-exercise";
 import { ExerciseSheet, type ExerciseEdits } from "@/components/plan/exercise-sheet";
 import { PrepSheet } from "@/components/plan/prep-sheet";
+import { formatTarget } from "@/lib/tracking";
 import {
   addExercise,
   friendlyError,
@@ -262,7 +263,7 @@ function RoutineEditor({
                   )}
                 </span>
                 <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-sm tabular-nums">
-                  {item.targetSets} × {item.targetReps}
+                  {formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
               </button>

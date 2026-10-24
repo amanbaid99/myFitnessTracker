@@ -63,7 +63,8 @@ export default async function StartingWeightsPage() {
   const exercises: StartingExercise[] = [];
   for (const routine of active.routines) {
     for (const { exercise } of routine.exercises) {
-      if (seen.has(exercise.id)) continue;
+      // Timed holds (planks) have no weight to start from.
+      if (seen.has(exercise.id) || exercise.tracking === "time") continue;
       seen.add(exercise.id);
       exercises.push({
         id: exercise.id,

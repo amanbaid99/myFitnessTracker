@@ -55,7 +55,7 @@ describe("exercises", () => {
 describe("exerciseCatalog", () => {
   it("offers the library first, then template exercises for the setup, without repeats", () => {
     const bench = buildTemplate("ppl", 3)[0].exercises[0];
-    const library = [{ id: "x1", name: bench.name, equipment: "barbell", muscleGroups: [], machineSetting: null, perHand: false, warmupEnabled: true, warmupTemplate: null, weightStepKg: 2.5 }];
+    const library = [{ id: "x1", name: bench.name, equipment: "barbell", muscleGroups: [], machineSetting: null, perHand: false, warmupEnabled: true, warmupTemplate: null, weightStepKg: 2.5, tracking: "reps" as const }];
     const catalog = exerciseCatalog(library, "gym");
     expect(catalog[0].id).toBe("x1");
     expect(catalog.filter((e) => e.name.toLowerCase() === bench.name.toLowerCase())).toHaveLength(1);

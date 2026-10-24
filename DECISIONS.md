@@ -1148,3 +1148,20 @@ extra; last time's off-plan lifts are never called skipped, and a mostly
 different previous session is flagged as not like for like. Coach, when
 opened from a workout, gets that workout set by set with the same plan
 check, and is told to trust it.
+
+## 2026-10-25: Timed exercises (planks)
+
+Exercises have tracking 'reps' or 'time'. A timed set stores seconds in
+sets.duration_sec and leaves reps empty. For a timed exercise the plan's
+target_reps is the target in seconds, so routine_exercises and
+create_plan need no change. A trigger makes holds (plank, wall sit, dead
+hang, hollow hold, L-sit, "hold") timed when created, by hand or AI, and
+the migration switched existing ones that were never logged with reps,
+turning a "3 x 10" plank into 3 x 30 s. correct_set gains an optional
+p_duration_sec and copies the time when fixing a set.
+
+The logger shows seconds with -/+ 5 s and a play button: the countdown
+logs the set with a beep at zero; stopping early fills the time held.
+Timed sets have no aim or ramp-up, carry their time to later sets, and
+are left out of PRs, the Progress views and starting weights for now.
+The AI review and Coach describe them as "45s hold".

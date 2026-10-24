@@ -232,3 +232,11 @@ describe("body weight", () => {
     expect(buildSummary({ ...DATA, bodyWeightKg: 74.8 })).not.toContain("Body weight:");
   });
 });
+
+describe("timed sets", () => {
+  it("describes a plank as seconds held and counts it as a set", () => {
+    const plank = { ...DATA.today[0], exercise: "Plank", equipment: "bodyweight", weightKg: null, addedKg: 0, reps: null, durationSec: 45 };
+    expect(buildSummary({ ...DATA, today: [plank] })).toContain("Plank (bodyweight): today 45s hold");
+    expect(sessionStats([plank]).sets).toBe(1);
+  });
+});

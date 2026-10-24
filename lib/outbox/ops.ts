@@ -18,6 +18,8 @@ export type Op =
         weight_kg: number | null;
         added_kg: number;
         reps: number | null;
+        /** Seconds held, for a timed exercise; left out otherwise. */
+        duration_sec?: number;
       };
     }
   | { kind: "deleteSet"; id: string; deletedAt: string }

@@ -456,6 +456,46 @@ select pg_temp.expect_error(
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 select pg_temp.expect((select count(*) from public.coach_usage) = 0, 'coach counts are private');
 
+-- Timed exercises ------------------------------------------------------------
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into public.exercises (id, name) values ('aaaaaaaa-0000-0000-0000-0000000000c1', 'Side Plank');
+insert into public.exercises (id, name) values ('aaaaaaaa-0000-0000-0000-0000000000c2', 'Threshold Row');
+select pg_temp.expect(
+  (select tracking from public.exercises where id = 'aaaaaaaa-0000-0000-0000-0000000000c1') = 'time',
+  'a plank starts out timed');
+select pg_temp.expect(
+  (select tracking from public.exercises where id = 'aaaaaaaa-0000-0000-0000-0000000000c2') = 'reps',
+  'other exercises still count reps');
+update public.exercises set tracking = 'reps' where id = 'aaaaaaaa-0000-0000-0000-0000000000c1';
+select pg_temp.expect(
+  (select tracking from public.exercises where id = 'aaaaaaaa-0000-0000-0000-0000000000c1') = 'reps',
+  'a user switches an exercise back to reps');
+update public.exercises set tracking = 'time' where id = 'aaaaaaaa-0000-0000-0000-0000000000c1';
+select pg_temp.expect_error(
+  $$update public.exercises set tracking = 'distance' where id = 'aaaaaaaa-0000-0000-0000-0000000000c1'$$,
+  'only reps or time');
+insert into public.sets (id, workout_id, exercise_id, set_no, duration_sec)
+  values ('dddddddd-0000-0000-0000-0000000000c1', 'cccccccc-0000-0000-0000-0000000000b1',
+          'aaaaaaaa-0000-0000-0000-0000000000c1', 1, 45);
+select pg_temp.expect_error(
+  $$insert into public.sets (id, workout_id, exercise_id, set_no, duration_sec)
+    values (gen_random_uuid(), 'cccccccc-0000-0000-0000-0000000000b1', 'aaaaaaaa-0000-0000-0000-0000000000c1', 2, 0)$$,
+  'a timed set lasts at least a second');
+select public.correct_set('dddddddd-0000-0000-0000-0000000000c1', null, 0, null);
+select pg_temp.expect(
+  (select duration_sec from public.sets where exercise_id = 'aaaaaaaa-0000-0000-0000-0000000000c1' and deleted_at is null) = 45,
+  'fixing a timed set without a new time keeps its time');
+select public.correct_set(
+  (select id from public.sets where exercise_id = 'aaaaaaaa-0000-0000-0000-0000000000c1' and deleted_at is null), 5, 0, null, 60);
+select pg_temp.expect(
+  (select duration_sec = 60 and weight_kg = 5 from public.sets where exercise_id = 'aaaaaaaa-0000-0000-0000-0000000000c1' and deleted_at is null),
+  'fixing a timed set can change its time');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+with u as (update public.exercises set tracking = 'reps' where id = 'aaaaaaaa-0000-0000-0000-0000000000c1' returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'users cannot change someone else''s exercise tracking');
+reset role;
+
 -- Body weight ---------------------------------------------------------------
 set role authenticated;
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';

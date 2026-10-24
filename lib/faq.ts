@@ -80,6 +80,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "How do I log a plank or other hold?",
+        a: [
+          "Planks, wall sits and dead hangs are timed: each set has seconds instead of reps. They're set up that way automatically; for any other exercise, open Edit plan, tap the exercise and choose Track by: Time.",
+          "In a workout, tap the play button next to the time to start a countdown. When it reaches zero the set is logged with a beep. Stop it early and the time you held goes in the set, ready to tick.",
+        ],
+      },
+      {
         q: "How does the rest timer work?",
         a: [
           "It starts when you log a set and beeps when rest is over. Use +15s for more time, the circular arrow to restart it, or Skip. The speaker button mutes the beeps.",

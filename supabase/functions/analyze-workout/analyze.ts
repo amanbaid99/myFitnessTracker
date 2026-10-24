@@ -51,6 +51,8 @@ export interface SetData {
   weightKg: number | null;
   addedKg: number;
   reps: number | null;
+  /** Seconds held, for a timed exercise (plank); reps are empty then. */
+  durationSec?: number | null;
   rpe: number | null;
 }
 
@@ -87,6 +89,7 @@ const num = (n: number) => String(Math.round(n * 100) / 100);
 
 function setText(s: SetData): string {
   const load = s.weightKg === null ? `bodyweight${s.addedKg ? `+${num(s.addedKg)}kg` : ""}` : `${num(s.weightKg)}${s.addedKg ? `+${num(s.addedKg)}` : ""}kg`;
+  if (s.durationSec != null) return s.weightKg === null && !s.addedKg ? `${s.durationSec}s hold` : `${load} for ${s.durationSec}s`;
   return `${load}x${s.reps ?? "?"}`;
 }
 
@@ -102,7 +105,7 @@ export function sessionStats(sets: SetData[], bodyWeightKg: number | null = null
     const load = base + s.addedKg;
     volumeKg += load * (s.perHand ? 2 : 1) * (s.reps ?? 0);
   }
-  return { sets: sets.filter((s) => s.reps !== null).length, volumeKg: Math.round(volumeKg) };
+  return { sets: sets.filter((s) => s.reps !== null || s.durationSec != null).length, volumeKg: Math.round(volumeKg) };
 }
 
 const minutesBetween = (start: string, end: string) => Math.max(1, Math.round((Date.parse(end) - Date.parse(start)) / 60_000));
@@ -190,7 +193,7 @@ export function buildSummary(d: WorkoutData): string {
 
 export const SYSTEM_PROMPT = [
   "You are a concise strength coach reviewing one gym session from the data given.",
-  "Use only that data. Weights are kg. Easy/good/hard/max is how the set felt. 'kg moved' is load times reps, summed; for bodyweight exercises the load is the body weight given plus any add-on.",
+  "Use only that data. Weights are kg. A set like '45s hold' is a timed exercise such as a plank: compare the seconds held. Easy/good/hard/max is how the set felt. 'kg moved' is load times reps, summed; for bodyweight exercises the load is the body weight given plus any add-on.",
   "When the last session of the same day is given, compare today with it: more or less work overall and which lifts went up or dropped.",
   "Only call an exercise skipped if the data lists it as in the plan but not done today; every exercise with sets today was done.",
   'Reply with JSON only, no other text: {"title": "...", "summary": "..."}.',
@@ -270,11 +273,12 @@ interface SetRow {
   weight_kg: number | string | null;
   added_kg: number | string;
   reps: number | null;
+  duration_sec?: number | null;
   rpe: number | string | null;
   exercises: { name: string; equipment: string; per_hand: boolean } | null;
 }
 
-const SET_SELECT = "workout_id,exercise_id,set_no,weight_kg,added_kg,reps,rpe,exercises(name,equipment,per_hand)";
+const SET_SELECT = "workout_id,exercise_id,set_no,weight_kg,added_kg,reps,duration_sec,rpe,exercises(name,equipment,per_hand)";
 
 function toSet(r: SetRow): SetData {
   return {
@@ -285,6 +289,7 @@ function toSet(r: SetRow): SetData {
     weightKg: r.weight_kg === null ? null : Number(r.weight_kg),
     addedKg: Number(r.added_kg) || 0,
     reps: r.reps,
+    durationSec: r.duration_sec ?? null,
     rpe: r.rpe === null ? null : Number(r.rpe),
   };
 }

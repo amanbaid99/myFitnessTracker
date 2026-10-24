@@ -7,6 +7,7 @@
 
 import type { Exercise } from "./data";
 import { buildTemplate, TEMPLATES, type TemplateExercise, type TemplateRoutine, type TrainingSetup } from "./templates";
+import { defaultTracking } from "./tracking";
 
 export const MAX_SETS = 10;
 export const MAX_REPS = 50;
@@ -87,6 +88,7 @@ export function exerciseCatalog(library: Exercise[], setup: TrainingSetup): Exer
             warmupEnabled: true,
             warmupTemplate: null,
             weightStepKg: 2.5,
+            tracking: defaultTracking(e.name),
           });
         }
       }

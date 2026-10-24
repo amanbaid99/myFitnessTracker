@@ -1,9 +1,12 @@
+import { formatDuration } from "./tracking";
 import { fromKg, type Units } from "./units";
 
 export interface SetLike {
   weightKg: number | null;
   addedKg: number;
   reps: number | null;
+  /** Seconds held, for a timed exercise: shown instead of reps. */
+  durationSec?: number | null;
 }
 
 /** "15 kg", "22.5 + 3.75 kg" (stack plus pin add-on), or "" with no weight. */
@@ -13,9 +16,13 @@ export function formatLoad(weightKg: number | null, addedKg: number, units: Unit
   return addedKg > 0 ? `${base} + ${fromKg(addedKg, units)} ${units}` : `${base} ${units}`;
 }
 
-/** "15 kg × 8", "22.5 + 3.75 kg × 14", "10 reps", "15 kg × ?" (reps not recorded). */
+/**
+ * "15 kg × 8", "22.5 + 3.75 kg × 14", "10 reps", "15 kg × ?" (reps not
+ * recorded); a timed set: "45 s", "10 kg × 45 s".
+ */
 export function formatSet(set: SetLike, units: Units): string {
   const load = formatLoad(set.weightKg, set.addedKg, units);
+  if (set.durationSec != null) return load ? `${load} × ${formatDuration(set.durationSec)}` : formatDuration(set.durationSec);
   if (!load) return set.reps === null ? "" : `${set.reps} reps`;
   return `${load} × ${set.reps ?? "?"}`;
 }
@@ -27,6 +34,10 @@ export function formatSet(set: SetLike, units: Units): string {
 export function formatSets(sets: SetLike[], units: Units): string {
   if (sets.length === 0) return "";
   const first = sets[0];
+  if (sets.some((s) => s.durationSec != null)) {
+    const loadless = sets.every((s) => s.weightKg === null);
+    return loadless ? sets.map((s) => (s.durationSec != null ? formatDuration(s.durationSec) : "?")).join(", ") : sets.map((s) => formatSet(s, units)).join(" · ");
+  }
   const sameLoad = sets.every((s) => s.weightKg === first.weightKg && s.addedKg === first.addedKg);
   const load = formatLoad(first.weightKg, first.addedKg, units);
   if (sameLoad && load) return `${load} × ${sets.map((s) => s.reps ?? "?").join(", ")}`;
