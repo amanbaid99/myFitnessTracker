@@ -2,7 +2,8 @@
 /**
  * "JWT issued at future": a sign-in token refreshed a moment ago carries
  * the auth server's time, which can be a second or two ahead of the
- * database's clock. It passes once the clock catches up, so retry it.
+ * database's clock. It passes once the clock catches up, so the Supabase
+ * clients retry it (lib/supabase/skew-retry.ts).
  */
 export function isClockSkew(message: string): boolean {
   return /issued at future|PGRST303/i.test(message);

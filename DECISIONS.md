@@ -1101,3 +1101,13 @@ after, so both should arrive quickly and reliably. At about $0.0003 a
 review and $0.0005 a plan, a handful of users costs cents a month, and
 the OpenRouter key has a monthly credit cap as a safety net. Privacy,
 Terms and FAQ say which features use the paid model.
+
+## 2026-10-24: Retry "JWT issued at future" in the Supabase fetch
+
+The page-level retries for a just-refreshed sign-in never reached the
+server: Next.js reuses the answer to an identical GET within one render,
+so each retry got the same refusal back (the logs showed one request and
+no retries). The Supabase clients now use a fetch (lib/supabase/
+skew-retry.ts) that retries a PGRST303 refusal after 1, 2 and 3 seconds,
+each time with its own AbortSignal, which opts that request out of
+Next.js's reuse. It covers every read and write, not just page loads.

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { requireSupabaseEnv } from "@/lib/env";
+import { withSkewRetry } from "./skew-retry";
 
 /**
  * Supabase client for Server Components, Route Handlers and Server Actions.
@@ -11,6 +12,7 @@ export async function createClient() {
   const { url, anonKey } = requireSupabaseEnv();
 
   return createServerClient(url, anonKey, {
+    global: { fetch: withSkewRetry() },
     cookies: {
       getAll() {
         return cookieStore.getAll();

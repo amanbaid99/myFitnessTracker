@@ -1,5 +1,5 @@
 import "server-only";
-import { describeDbError, isClockSkew } from "./db-error";
+import { describeDbError } from "./db-error";
 import type { WarmupStep } from "./warmup";
 import { DEFAULT_WEIGHT_STEP_KG } from "./progression";
 import type { Units } from "./units";
@@ -118,15 +118,11 @@ const num = (v: unknown): number | null => (v === null || v === undefined ? null
 export async function getProfile(supabase: Supabase): Promise<Profile> {
   const { data: claims } = await supabase.auth.getClaims();
   const id = claims?.claims.sub ?? "";
-  const read = () =>
-    supabase.from("profiles").select("name, units, default_rest_sec, feedback_prompted_at, onboarded_at").eq("id", id).maybeSingle();
-  let { data, error } = await read();
-  // A just-refreshed sign-in can be refused for a second (see isClockSkew).
-  for (const wait of [1000, 2000]) {
-    if (!error || !isClockSkew(error.message)) break;
-    await new Promise((r) => setTimeout(r, wait));
-    ({ data, error } = await read());
-  }
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("name, units, default_rest_sec, feedback_prompted_at, onboarded_at")
+    .eq("id", id)
+    .maybeSingle();
   return {
     id,
     name: data?.name ?? null,
@@ -597,22 +593,10 @@ export async function getPersonalRecords(supabase: Supabase): Promise<Map<string
  * Runs the page's reads; on failure returns a readable message instead of
  * throwing, so a missing table or an outage shows a notice, not a 500.
  */
-export async function load<T>(
-  fn: () => Promise<T>,
-  /** Waits before each retry of a "JWT issued at future" failure (see isClockSkew). */
-  skewRetriesMs: number[] = [1000, 2000],
-): Promise<{ data: T; error: null } | { data: null; error: string }> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return { data: await fn(), error: null };
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      const wait = skewRetriesMs[attempt];
-      if (isClockSkew(message) && wait !== undefined) {
-        await new Promise((r) => setTimeout(r, wait));
-        continue;
-      }
-      return { data: null, error: describeDbError(message) };
-    }
+export async function load<T>(fn: () => Promise<T>): Promise<{ data: T; error: null } | { data: null; error: string }> {
+  try {
+    return { data: await fn(), error: null };
+  } catch (e) {
+    return { data: null, error: describeDbError(e instanceof Error ? e.message : String(e)) };
   }
 }
