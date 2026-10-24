@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSession, carryWeightForward, nextOpenExercise, type Row, type SessionExerciseInput, type SessionSet } from "./session";
+import { buildSession, carryWeightForward, nextOpenExercise, nextWarmupRow, type Row, type SessionExerciseInput, type SessionSet } from "./session";
 
 const incline: SessionExerciseInput = {
   exercise: { id: "incline", name: "Incline Bench Press", equipment: "machine", warmupEnabled: true, warmupTemplate: null },
@@ -172,5 +172,31 @@ describe("nextOpenExercise", () => {
   it("null when everything is done", () => {
     expect(nextOpenExercise([ex("a", [true]), ex("b", [true])], 1)).toBeNull();
     expect(nextOpenExercise([ex("a", [true])])).toBeNull();
+  });
+});
+
+describe("nextWarmupRow (Add warm-up)", () => {
+  const working = [{ key: "dips-s1", setType: "working", setNo: 1, label: "1", weightKg: 20, addedKg: 0, reps: 10, logged: null }] as Row[];
+  const opts = { targetReps: 10, equipment: "machine" };
+
+  it("adds 50% x 10, then 75% x 5, then repeats the last one", () => {
+    const w1 = nextWarmupRow("dips", [], working, opts);
+    expect([w1.label, w1.setType, w1.weightKg, w1.reps]).toEqual(["W1", "warmup", 10, 10]);
+    const w2 = nextWarmupRow("dips", [w1], working, opts);
+    expect([w2.label, w2.weightKg, w2.reps]).toEqual(["W2", 15, 5]);
+    const w3 = nextWarmupRow("dips", [w1, w2], working, opts);
+    expect([w3.label, w3.weightKg, w3.reps]).toEqual(["W3", 15, 5]);
+  });
+
+  it("leaves the weight blank for bodyweight or with no weight yet", () => {
+    expect(nextWarmupRow("dips", [], working, { ...opts, equipment: "bodyweight" }).weightKg).toBeNull();
+    const blank = [{ ...working[0], weightKg: null }];
+    expect(nextWarmupRow("dips", [], blank, opts)).toMatchObject({ weightKg: null, reps: 10 });
+  });
+
+  it("brings back warm-ups added by hand when a workout is resumed", () => {
+    // Lateral Raise is not first, so it plans no warm-up; one was added and logged.
+    const [, lat] = buildSession([incline, lateral], new Map(), [set("lateral", "warmup", 1, 2.5, 15)]);
+    expect(lat.warmups.map((w) => [w.label, w.weightKg, w.reps, Boolean(w.logged)])).toEqual([["W1", 2.5, 15, true]]);
   });
 });

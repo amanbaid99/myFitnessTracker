@@ -7,7 +7,7 @@
  */
 
 import { aimForSession, type Aim } from "./progression";
-import { warmupSets, type WarmupStep } from "./warmup";
+import { DEFAULT_RAMP, roundToIncrement, warmupSets, WARMUP_INCREMENT_KG, type WarmupStep } from "./warmup";
 
 export interface SessionSet {
   id: string;
@@ -108,16 +108,19 @@ export function buildSession(
       template: item.exercise.warmupTemplate,
       weightStepKg: item.exercise.weightStepKg,
     });
-    const warmups: Row[] = warmupPlan.map((w, i) => {
+    // Warm-ups added by hand (Add warm-up) come back when a workout is resumed.
+    const warmupCount = Math.max(warmupPlan.length, ...mine.filter((s) => s.setType === "warmup").map((s) => s.setNo), 0);
+    const warmups: Row[] = Array.from({ length: warmupCount }, (_, i) => {
+      const w = warmupPlan[i];
       const done = find("warmup", i + 1);
       return {
         key: `${id}-w${i + 1}`,
         setType: "warmup",
         setNo: i + 1,
-        label: w.label,
-        weightKg: done ? done.weightKg : w.weightKg,
+        label: `W${i + 1}`,
+        weightKg: done ? done.weightKg : (w?.weightKg ?? null),
         addedKg: done ? done.addedKg : 0,
-        reps: done ? done.reps : w.reps,
+        reps: done ? done.reps : (w?.reps ?? item.targetReps),
         logged: done,
       };
     });
@@ -145,6 +148,32 @@ export function buildSession(
     const last = prev.map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps }));
     return { exerciseId: id, warmups, working, aim, last };
   });
+}
+
+/**
+ * A warm-up set added by hand to any exercise ("Add warm-up"): the first at
+ * 50% of the first working set for 10 reps, the second at 75% for 5, after
+ * that the same as the last one. Rounded to the exercise's weight step,
+ * never below one step. Bodyweight or no weight yet: weight left blank.
+ * Pure.
+ */
+export function nextWarmupRow(
+  exerciseId: string,
+  warmups: Row[],
+  working: Row[],
+  opts: { targetReps: number; equipment: string; weightStepKg?: number },
+): Row {
+  const no = (warmups[warmups.length - 1]?.setNo ?? 0) + 1;
+  const base = { key: `${exerciseId}-w${no}`, setType: "warmup" as const, setNo: no, label: `W${no}`, addedKg: 0, logged: null };
+  const top = working[0]?.weightKg ?? null;
+  if (top === null || top <= 0 || opts.equipment === "bodyweight") {
+    return { ...base, weightKg: null, reps: warmups[warmups.length - 1]?.reps ?? opts.targetReps };
+  }
+  const last = warmups[warmups.length - 1];
+  if (no > DEFAULT_RAMP.length && last) return { ...base, weightKg: last.weightKg, reps: last.reps };
+  const step = DEFAULT_RAMP[Math.min(no, DEFAULT_RAMP.length) - 1];
+  const inc = opts.weightStepKg && opts.weightStepKg > 0 ? opts.weightStepKg : WARMUP_INCREMENT_KG;
+  return { ...base, weightKg: Math.min(top, Math.max(inc, roundToIncrement((top * step.pct) / 100, inc))), reps: step.reps };
 }
 
 /** An exercise is done when it has working sets and all are logged. */

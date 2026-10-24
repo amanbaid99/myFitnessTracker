@@ -76,7 +76,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What are the W1 and W2 sets?",
         a: [
-          "Ramp-up sets before your working sets: about 50% of your working weight for 10 reps, then 75% for 5. They warm up the first exercise of the day and don't count towards your records or volume. You can skip them.",
+          "Ramp-up sets before your working sets: about 50% of your working weight for 10 reps, then 75% for 5. They warm up the first exercise of the day and don't count towards your records or volume. You can skip them, and you can add warm-up sets to any exercise with its Warm-up button.",
         ],
       },
       {

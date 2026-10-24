@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { formatSet, formatSets, settingLabel } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
-import { carryWeightForward, isExerciseDone, nextOpenExercise, type Row, type SessionExercise } from "@/lib/session";
+import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, type Units } from "@/lib/units";
@@ -485,6 +485,30 @@ export function Logger(props: {
     );
   }
 
+  /** "Add warm-up": a lighter set before the working sets, on any exercise. */
+  function addWarmup(exIndex: number) {
+    const { exercise, targetReps } = items[exIndex];
+    setSkipped((s) => s.filter((id) => id !== exercise.id));
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i !== exIndex
+          ? ex
+          : {
+              ...ex,
+              warmups: [
+                ...ex.warmups,
+                nextWarmupRow(ex.exerciseId, ex.warmups, ex.working, {
+                  targetReps,
+                  equipment: exercise.equipment,
+                  weightStepKg: exercise.weightStepKg,
+                }),
+              ],
+            },
+      ),
+    );
+    track("warmup_set_added");
+  }
+
   const allRows = exercises.flatMap((ex) => [...(skipped.includes(ex.exerciseId) ? [] : ex.warmups), ...ex.working]);
   const doneCount = allRows.filter((r) => r.logged).length;
   const anyLogged = props.hasLoggedSets || doneCount > 0;
@@ -783,13 +807,20 @@ export function Logger(props: {
                         <span className={`min-w-0 whitespace-pre-wrap break-words ${MASK}`}>{notes[ex.exerciseId].note}</span>
                       </button>
                     )}
-                    <div className="grid grid-cols-2">
+                    <div className="grid grid-cols-3">
                       <button
                         type="button"
                         onClick={() => addSet(exIndex)}
                         className="flex min-h-11 items-center justify-center gap-1 text-sm text-muted-foreground"
                       >
                         <Plus className="size-4" /> Add set
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addWarmup(exIndex)}
+                        className="flex min-h-11 items-center justify-center gap-1 text-sm text-muted-foreground"
+                      >
+                        <Flame className="size-4" /> Warm-up
                       </button>
                       <button
                         type="button"

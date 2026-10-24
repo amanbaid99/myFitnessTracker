@@ -1111,3 +1111,13 @@ no retries). The Supabase clients now use a fetch (lib/supabase/
 skew-retry.ts) that retries a PGRST303 refusal after 1, 2 and 3 seconds,
 each time with its own AbortSignal, which opts that request out of
 Next.js's reuse. It covers every read and write, not just page loads.
+
+## 2026-10-24: Warm-up sets on any exercise
+
+Every exercise in the workout logger gets a Warm-up button next to Add
+set (Aman's request: e.g. dips on leg day). It adds a warm-up set before
+the working sets: 50% of the first working set for 10 reps, then 75% for
+5, then repeats the last one; blank weight for bodyweight. They are
+logged as warm-up sets, so they never count towards records, volume or
+the AI review. The automatic ramp on the first exercise is unchanged.
+Logged warm-ups added by hand come back when a workout is resumed.

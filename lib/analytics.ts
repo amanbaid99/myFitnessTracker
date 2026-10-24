@@ -30,6 +30,7 @@ export type AnalyticsEvent =
   | "warmup_written_with_ai"
   | "starting_weights_saved"
   | "set_fixed"
+  | "warmup_set_added"
   | "theme_changed";
 
 type Props = Record<string, string | number | boolean | null>;
