@@ -6,11 +6,12 @@ import { startWorkout } from "@/app/actions";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { DataError } from "@/components/data-error";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
+import { BodyWeightCard } from "@/components/home/body-weight-card";
 import { HomeHero, type LastWorkout } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getActivePlan, getProfile, getRecentWorkouts, load } from "@/lib/data";
+import { getActivePlan, getBodyWeights, getProfile, getRecentWorkouts, load } from "@/lib/data";
 import { shouldPromptFeedback } from "@/lib/feedback";
 import { fetchWorkoutReview } from "@/lib/insights";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
@@ -19,10 +20,12 @@ import { createClient } from "@/lib/supabase/server";
 export default async function TodayPage() {
   const supabase = await createClient();
   // Everything in parallel: one round trip's wait instead of several.
-  const [profile, result] = await Promise.all([
+  const [profile, result, bodyWeights] = await Promise.all([
     getProfile(supabase),
     load(() => Promise.all([getActivePlan(supabase), getRecentWorkouts(supabase)])),
+    getBodyWeights(supabase),
   ]);
+  const bodyWeight = <BodyWeightCard entries={bodyWeights.entries} profileKg={bodyWeights.profileKg} units={profile.units} />;
   const greeting = profile.name ? `Hi, ${profile.name}` : "Today";
 
   if (result.error === null && !result.data[0] && !profile.onboarded) redirect("/welcome");
@@ -156,6 +159,8 @@ export default async function TodayPage() {
           </form>
         </section>
       )}
+
+      {bodyWeight}
 
       {others.length > 0 && (
         <section className="mt-6">

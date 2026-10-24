@@ -1121,3 +1121,30 @@ the working sets: 50% of the first working set for 10 reps, then 75% for
 logged as warm-up sets, so they never count towards records, volume or
 the AI review. The automatic ramp on the first exercise is unchanged.
 Logged warm-ups added by hand come back when a workout is resumed.
+
+## 2026-10-24: Body weight log, and the load of bodyweight exercises
+
+A body_weights table (one weight per person per day, kg) feeds a Body
+weight card on Today: latest weight, change over about 30 days and a
+graph of the last 90 days. Logging the same day again replaces it (insert,
+then update on a duplicate, since only weight_kg may be updated). Before
+anything is logged, the welcome flow's weight is the starting point.
+
+Bodyweight exercises use it as their load: the AI review counts body
+weight plus add-on in kg moved and is told the weight, Coach is told the
+latest weight and its trend, and the logger shows it on bodyweight
+exercises. PRs and the Progress views are unchanged for now: a PR that
+includes body weight would drop whenever Aman loses weight, and the views
+skip bodyweight sets entirely (a later migration can add them).
+Privacy Policy and FAQ now say the latest body weight goes to the AI as a
+number.
+
+## 2026-10-24: Reviews and Coach check sessions against the day's plan
+
+A review called 8 exercises "skipped" because the previous Lower 1 had
+been mostly upper-body lifts, and Coach then named lifts that were done.
+Reviews now say what was in the day's plan but not done, and what was
+extra; last time's off-plan lifts are never called skipped, and a mostly
+different previous session is flagged as not like for like. Coach, when
+opened from a workout, gets that workout set by set with the same plan
+check, and is told to trust it.

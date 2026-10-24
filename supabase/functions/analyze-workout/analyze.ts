@@ -68,6 +68,10 @@ export interface WorkoutData {
   notes: Record<string, string>;
   /** The last finished session of the same day (routine), if any. */
   previous?: { startedAt: string; endedAt: string; sets: SetData[] } | null;
+  /** The exercises in this day's plan now, in order; null when unknown. */
+  plan?: string[] | null;
+  /** Body weight on the day (latest logged, else the welcome answer): the load of bodyweight exercises. */
+  bodyWeightKg?: number | null;
 }
 
 export interface Review {
@@ -82,15 +86,20 @@ type Log = (message: string, fields?: Record<string, unknown>) => void;
 const num = (n: number) => String(Math.round(n * 100) / 100);
 
 function setText(s: SetData): string {
-  const load = s.weightKg === null ? "bodyweight" : `${num(s.weightKg)}${s.addedKg ? `+${num(s.addedKg)}` : ""}kg`;
+  const load = s.weightKg === null ? `bodyweight${s.addedKg ? `+${num(s.addedKg)}kg` : ""}` : `${num(s.weightKg)}${s.addedKg ? `+${num(s.addedKg)}` : ""}kg`;
   return `${load}x${s.reps ?? "?"}`;
 }
 
-/** Working sets and total weight moved (load x reps; per-hand loads count twice). Pure. */
-export function sessionStats(sets: SetData[]): { sets: number; volumeKg: number } {
+/**
+ * Working sets and total weight moved (load x reps; per-hand loads count
+ * twice). A bodyweight exercise's load is the body weight, when known,
+ * plus any add-on. Pure.
+ */
+export function sessionStats(sets: SetData[], bodyWeightKg: number | null = null): { sets: number; volumeKg: number } {
   let volumeKg = 0;
   for (const s of sets) {
-    const load = (s.weightKg ?? 0) + s.addedKg;
+    const base = s.weightKg ?? (s.equipment === "bodyweight" ? (bodyWeightKg ?? 0) : 0);
+    const load = base + s.addedKg;
     volumeKg += load * (s.perHand ? 2 : 1) * (s.reps ?? 0);
   }
   return { sets: sets.filter((s) => s.reps !== null).length, volumeKg: Math.round(volumeKg) };
@@ -106,8 +115,8 @@ export function compareWithPrevious(d: WorkoutData): string[] {
   if (!prev || prev.sets.length === 0) return [];
   const day = d.dayName ?? "this day";
   const daysAgo = Math.max(0, Math.round((Date.parse(d.startedAt) - Date.parse(prev.startedAt)) / 86_400_000));
-  const then = sessionStats(prev.sets);
-  const now = sessionStats(d.today);
+  const then = sessionStats(prev.sets, d.bodyWeightKg ?? null);
+  const now = sessionStats(d.today, d.bodyWeightKg ?? null);
   const change = then.volumeKg > 0 ? Math.round(((now.volumeKg - then.volumeKg) / then.volumeKg) * 100) : null;
   const lines = [
     `Last ${day} session, ${daysAgo === 1 ? "1 day" : `${daysAgo} days`} earlier: ${minutesBetween(prev.startedAt, prev.endedAt)} min, ${setsText(then.sets)}, ${thousands(then.volumeKg)} kg moved.`,
@@ -115,10 +124,34 @@ export function compareWithPrevious(d: WorkoutData): string[] {
   ];
   const before = [...new Set(prev.sets.map((s) => s.exercise))];
   const today = new Set(d.today.map((s) => s.exercise));
-  const skipped = before.filter((e) => !today.has(e));
-  const added = [...today].filter((e) => !before.includes(e));
-  if (skipped.length) lines.push(`Done last ${day} but not today: ${skipped.join(", ")}.`);
-  if (added.length) lines.push(`New compared with last ${day}: ${added.join(", ")}.`);
+  const shared = before.filter((e) => today.has(e)).length;
+  if (shared * 2 < before.length) {
+    lines.push(`Last ${day} had mostly different exercises (${shared} of ${before.length} in common), so the totals are not like for like.`);
+  }
+  // With the plan known, the plan says what was skipped (buildSummary);
+  // lifts done last time that are not in the plan were extras, not skips.
+  if (!d.plan) {
+    const skipped = before.filter((e) => !today.has(e));
+    const added = [...today].filter((e) => !before.includes(e));
+    if (skipped.length) lines.push(`Done last ${day} but not today: ${skipped.join(", ")}.`);
+    if (added.length) lines.push(`New compared with last ${day}: ${added.join(", ")}.`);
+  }
+  return lines;
+}
+
+/** Today against the day's plan: what was left out, and what was extra. Pure. */
+export function compareWithPlan(d: WorkoutData): string[] {
+  if (!d.plan?.length) return [];
+  const day = d.dayName ?? "this day";
+  const today = new Set(d.today.map((s) => s.exercise));
+  const notDone = d.plan.filter((e) => !today.has(e));
+  const extra = [...today].filter((e) => !d.plan!.includes(e));
+  const lines = [
+    notDone.length
+      ? `In the ${day} plan but not done today: ${notDone.join(", ")}.`
+      : `Every exercise in the ${day} plan was done.`,
+  ];
+  if (extra.length) lines.push(`Done today but not in the plan: ${extra.join(", ")}.`);
   return lines;
 }
 
@@ -126,7 +159,14 @@ const FEEL = (rpe: number) => (rpe <= 6.5 ? "easy" : rpe <= 8 ? "good" : rpe < 1
 
 /** The workout as a few short lines the model can read. Pure. */
 export function buildSummary(d: WorkoutData): string {
-  const lines = [`Session: ${d.dayName ?? "Workout"}, ${minutesBetween(d.startedAt, d.endedAt)} min.`, ...compareWithPrevious(d)];
+  const lines = [
+    `Session: ${d.dayName ?? "Workout"}, ${minutesBetween(d.startedAt, d.endedAt)} min.`,
+    ...(d.bodyWeightKg && d.today.some((s) => s.equipment === "bodyweight")
+      ? [`Body weight: ${num(d.bodyWeightKg)}kg (the load of bodyweight exercises, plus any add-on).`]
+      : []),
+    ...compareWithPlan(d),
+    ...compareWithPrevious(d),
+  ];
   const byExercise = new Map<string, SetData[]>();
   for (const s of d.today) byExercise.set(s.exercise, [...(byExercise.get(s.exercise) ?? []), s]);
   if (byExercise.size === 0) lines.push("No working sets were logged.");
@@ -150,8 +190,9 @@ export function buildSummary(d: WorkoutData): string {
 
 export const SYSTEM_PROMPT = [
   "You are a concise strength coach reviewing one gym session from the data given.",
-  "Use only that data. Weights are kg. Easy/good/hard/max is how the set felt. 'kg moved' is load times reps, summed.",
-  "When the last session of the same day is given, compare today with it: more or less work overall, which lifts went up or dropped, and anything skipped.",
+  "Use only that data. Weights are kg. Easy/good/hard/max is how the set felt. 'kg moved' is load times reps, summed; for bodyweight exercises the load is the body weight given plus any add-on.",
+  "When the last session of the same day is given, compare today with it: more or less work overall and which lifts went up or dropped.",
+  "Only call an exercise skipped if the data lists it as in the plan but not done today; every exercise with sets today was done.",
   'Reply with JSON only, no other text: {"title": "...", "summary": "..."}.',
   "title: at most 6 words.",
   "summary: 3 short sentences, at most 75 words in total: how today compared with last time, one thing to watch, and what to aim for next time.",
@@ -254,6 +295,7 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     { user_id: string; routine_id: string | null; started_at: string; ended_at: string | null; routines: { name: string } | null }[]
   >(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,routines(name)`);
   if (!workout?.ended_at) return null;
+  const bodyWeightKg = await loadBodyWeight(env, fetchFn, workout.user_id, workout.started_at.slice(0, 10));
 
   const todayRows = await getJson<SetRow[]>(
     env,
@@ -296,7 +338,16 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
 
   // The last finished, not cancelled, session of the same day before this one.
   let previous: WorkoutData["previous"] = null;
+  let plan: string[] | null = null;
   if (workout.routine_id) {
+    // The day's plan as it is now; a review still works without it.
+    plan = await getJson<{ sort_order: number; exercises: { name: string } | null }[]>(
+      env,
+      fetchFn,
+      `routine_exercises?routine_id=eq.${encodeURIComponent(workout.routine_id)}&select=sort_order,exercises(name)&order=sort_order`,
+    )
+      .then((rows) => rows.map((r) => r.exercises?.name).filter((n): n is string => Boolean(n)))
+      .catch(() => null);
     const [prev] = await getJson<{ id: string; started_at: string; ended_at: string }[]>(
       env,
       fetchFn,
@@ -324,7 +375,31 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     bestBefore,
     notes,
     previous,
+    plan,
+    bodyWeightKg,
   };
+}
+
+/**
+ * Body weight on a day: the latest logged on or before it (a day of slack
+ * for time zones), else the welcome answer; null if neither. A review still
+ * works without it.
+ */
+async function loadBodyWeight(env: AnalyzeEnv, fetchFn: typeof fetch, userId: string, day: string): Promise<number | null> {
+  try {
+    const user = encodeURIComponent(userId);
+    const next = new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+    const [logged] = await getJson<{ weight_kg: number | string }[]>(
+      env,
+      fetchFn,
+      `body_weights?user_id=eq.${user}&measured_on=lte.${next}&select=weight_kg&order=measured_on.desc&limit=1`,
+    );
+    if (logged) return Number(logged.weight_kg);
+    const [profile] = await getJson<{ body_weight_kg: number | string | null }[]>(env, fetchFn, `profiles?id=eq.${user}&select=body_weight_kg`);
+    return profile?.body_weight_kg == null ? null : Number(profile.body_weight_kg);
+  } catch {
+    return null;
+  }
 }
 
 export async function saveReview(

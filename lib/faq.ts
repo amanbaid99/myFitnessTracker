@@ -119,6 +119,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Why should I log my body weight?",
+        a: [
+          "Tap Log weight on Today, any time. One weight per day; logging again the same day replaces it. Today shows your latest weight, how it changed over about a month and a graph of the last 90 days.",
+          "Your weight is also the load of bodyweight exercises like pull-ups and dips: the AI review counts body weight plus any add-on in kg moved. Your records don't change with your body weight.",
+        ],
+      },
+      {
         q: "How does the streak work?",
         a: [
           "It counts weeks in a row (Monday to Sunday) with at least one finished workout. This week still counts while it's going, so train any day this week to keep it alive. Starting weights don't count.",
@@ -182,7 +189,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What does the AI see, and can I trust it?",
         a: [
-          "It sees exercise names, your sets and how they felt, your experience level and, for workout reviews, your exercise notes. Never your name, email, gender, weight or height, and contact details are removed from anything you type.",
+          "It sees exercise names, your sets and how they felt, your experience level and, for workout reviews, your exercise notes. Also your latest body weight as a number, so pull-ups and dips count properly. Never your name, email, gender or height, and contact details are removed from anything you type.",
           "It can be wrong, and it's general fitness information, not medical advice. Check its suggestions before you act on them.",
         ],
       },

@@ -16,7 +16,7 @@ import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/l
 import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
-import { fromKg, toKg, type Units } from "@/lib/units";
+import { formatWeight, fromKg, toKg, type Units } from "@/lib/units";
 import { AddExercise } from "@/components/plan/add-exercise";
 import { ExerciseSheet } from "@/components/plan/exercise-sheet";
 import type { Exercise, ExerciseNote, Plan, RoutineExercise } from "@/lib/data";
@@ -72,6 +72,8 @@ export function Logger(props: {
   cooldown: WarmupItem[];
   prs: Record<string, PR>;
   units: Units;
+  /** The latest logged body weight (or the welcome answer), the load of bodyweight exercises. */
+  bodyWeightKg?: number | null;
   defaultRestSec: number;
   hasLoggedSets: boolean;
   /** Public demo: sample data, nothing is saved. */
@@ -725,6 +727,18 @@ export function Logger(props: {
                   {pr && (
                     <p className="flex items-center gap-1 text-muted-foreground">
                       <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
+                    </p>
+                  )}
+                  {item.exercise.equipment === "bodyweight" && (
+                    <p className="text-muted-foreground">
+                      {props.bodyWeightKg ? (
+                        <>
+                          Lifting your body weight, <span className={MASK}>{formatWeight(props.bodyWeightKg, units)}</span>, plus any
+                          add-on
+                        </>
+                      ) : (
+                        "Log your body weight on Today to count it as this exercise's load"
+                      )}
                     </p>
                   )}
                   {/* No "Aim" line: the set rows are already filled in with it. */}

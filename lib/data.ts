@@ -3,6 +3,7 @@ import { describeDbError } from "./db-error";
 import type { WarmupStep } from "./warmup";
 import { DEFAULT_WEIGHT_STEP_KG } from "./progression";
 import type { Units } from "./units";
+import type { BodyWeight } from "./body-weight";
 import { createClient } from "./supabase/server";
 
 /**
@@ -599,4 +600,22 @@ export async function load<T>(fn: () => Promise<T>): Promise<{ data: T; error: n
   } catch (e) {
     return { data: null, error: describeDbError(e instanceof Error ? e.message : String(e)) };
   }
+}
+
+// Body weight --------------------------------------------------------------------
+
+/**
+ * The body weight log, oldest first, and the weight given in the welcome
+ * flow (the starting point before anything is logged). Empty on error, so
+ * screens keep working if the table is not there yet.
+ */
+export async function getBodyWeights(supabase: Supabase): Promise<{ entries: BodyWeight[]; profileKg: number | null }> {
+  const [log, profile] = await Promise.all([
+    supabase.from("body_weights").select("measured_on, weight_kg").order("measured_on").limit(1000),
+    supabase.from("profiles").select("body_weight_kg").limit(1).maybeSingle(),
+  ]);
+  return {
+    entries: log.error ? [] : (log.data ?? []).map((r) => ({ day: r.measured_on as string, weightKg: Number(r.weight_kg) })),
+    profileKg: profile.error || profile.data?.body_weight_kg == null ? null : Number(profile.data.body_weight_kg),
+  };
 }

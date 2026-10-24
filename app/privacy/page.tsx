@@ -24,6 +24,7 @@ export default function PrivacyPage() {
             them in Settings.
           </li>
           <li>Your plans, workouts, sets, notes and the AI reviews of your workouts.</li>
+          <li>The body weights you log, one per day, to show your trend and count as the load of bodyweight exercises.</li>
           <li>Feedback and bug reports you send, with the page and browser they came from.</li>
           <li>A daily count of your AI requests, to keep within the free limit.</li>
           <li>How the app is used: which screens are opened and what is tapped, plus recordings of app sessions. See below.</li>
@@ -35,7 +36,8 @@ export default function PrivacyPage() {
         <h2>Why</h2>
         <p>
           Only to run the app for you: to save your training, show your progress, suggest weights and power the AI features. Your
-          gender, body weight and height stay in your profile and are not sent to the AI. We never sell your data or use it for
+          gender and height stay in your profile and are not sent to the AI. Your latest body weight is sent as a number, so the AI can
+          count bodyweight exercises like pull-ups properly. We never sell your data or use it for
           advertising.
         </p>
       </section>
@@ -44,7 +46,7 @@ export default function PrivacyPage() {
         <h2>The AI features</h2>
         <p>
           Workout reviews, Coach and building a plan from a description send some of your data to AI models through OpenRouter:
-          your workout sets and exercise names, your experience and where you train, and the text you type. Emails, phone numbers and
+          your workout sets and exercise names, your experience and where you train, your latest body weight, and the text you type. Emails, phone numbers and
           links in your text are removed before sending, and your name and email are never sent.
         </p>
         <p>

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyzeWorkout, buildSummary, compareWithPrevious, MODELS, PAID_MODEL, parseReview, sessionStats, type WorkoutData } from "./analyze";
+import { analyzeWorkout, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, sessionStats, type WorkoutData } from "./analyze";
 
 const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service-123", OPENROUTER_API_KEY: "or-key-123" };
 
@@ -122,6 +122,7 @@ function fakeFetch(modelReplies: (Response | Error)[]) {
         { workout_id: "w0", exercise_id: "e1", set_no: 1, weight_kg: "80.00", added_kg: "0", reps: 6, rpe: null, exercises: { name: "Bench Press", equipment: "barbell", per_hand: false } },
       ]);
     }
+    if (url.includes("/routine_exercises?")) return json([{ sort_order: 0, exercises: { name: "Bench Press" } }, { sort_order: 1, exercises: { name: "Dips" } }]);
     if (url.includes("/exercise_notes?")) return json([]);
     if (url.includes("/insights?")) return new Response(null, { status: 201 });
     return new Response("not found", { status: 404 });
@@ -186,5 +187,48 @@ describe("analyzeWorkout", () => {
     expect(await analyzeWorkout(ENV, fetchFn, "w1", log)).toBe("no review");
     expect(fetchFn.mock.calls.some(([u]) => String(u).includes("/insights?"))).toBe(false);
     expect(JSON.stringify(log.mock.calls)).not.toContain("or-key-123");
+  });
+});
+
+describe("compareWithPlan", () => {
+  const today = (names: string[]) => names.map((exercise, i) => ({ ...DATA.today[0], exercise, setNo: i + 1 }));
+
+  it("lists what the plan had but today did not, and extras", () => {
+    const d = { ...DATA, dayName: "Lower 1", plan: ["Leg Press", "Leg Extension", "Pallof Press"], today: today(["Leg Press", "Leg Extension", "Parallel bar Dips"]) };
+    expect(compareWithPlan(d)).toEqual([
+      "In the Lower 1 plan but not done today: Pallof Press.",
+      "Done today but not in the plan: Parallel bar Dips.",
+    ]);
+  });
+
+  it("never calls last time's off-plan lifts skipped, and flags a different session", () => {
+    const prevSets = ["Leg Press", "Bayesian Curl", "Machine Row", "Rear Delt Fly"].map((exercise, i) => ({ ...DATA.today[0], exercise, setNo: i + 1 }));
+    const d = {
+      ...DATA,
+      dayName: "Lower 1",
+      plan: ["Leg Press", "Leg Extension"],
+      today: today(["Leg Press", "Leg Extension"]),
+      previous: { startedAt: "2026-10-07T09:00:00Z", endedAt: "2026-10-07T09:50:00Z", sets: prevSets },
+    };
+    const text = buildSummary(d);
+    expect(text).toContain("Every exercise in the Lower 1 plan was done.");
+    expect(text).toContain("Last Lower 1 had mostly different exercises (1 of 4 in common), so the totals are not like for like.");
+    expect(text).not.toContain("but not today");
+  });
+});
+
+describe("body weight", () => {
+  const dips = { ...DATA.today[0], exercise: "Dips", equipment: "bodyweight", weightKg: null, addedKg: 0, reps: 10 };
+
+  it("counts body weight plus add-on as the load of bodyweight sets", () => {
+    expect(sessionStats([dips, { ...dips, addedKg: 5 }], 75).volumeKg).toBe(750 + 800);
+    expect(sessionStats([dips]).volumeKg).toBe(0);
+  });
+
+  it("tells the model the body weight when bodyweight exercises were done", () => {
+    const text = buildSummary({ ...DATA, today: [dips], bodyWeightKg: 74.8 });
+    expect(text).toContain("Body weight: 74.8kg (the load of bodyweight exercises, plus any add-on).");
+    expect(text).toContain("Dips (bodyweight): today bodyweightx10");
+    expect(buildSummary({ ...DATA, bodyWeightKg: 74.8 })).not.toContain("Body weight:");
   });
 });

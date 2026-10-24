@@ -456,12 +456,46 @@ select pg_temp.expect_error(
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 select pg_temp.expect((select count(*) from public.coach_usage) = 0, 'coach counts are private');
 
+-- Body weight ---------------------------------------------------------------
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into public.body_weights (measured_on, weight_kg) values ('2026-10-20', 74.5);
+select pg_temp.expect(
+  (select user_id from public.body_weights) = '11111111-1111-1111-1111-111111111111',
+  'a body weight belongs to whoever logs it');
+update public.body_weights set weight_kg = 74.2;
+select pg_temp.expect((select weight_kg from public.body_weights) = 74.2, 'a user corrects their weight');
+select pg_temp.expect_error(
+  $$update public.body_weights set measured_on = '2026-10-21'$$,
+  'only the weight can change after logging');
+select pg_temp.expect_error(
+  $$insert into public.body_weights (measured_on, weight_kg) values ('2026-10-20', 75)$$,
+  'one weight per day');
+select pg_temp.expect_error(
+  $$insert into public.body_weights (measured_on, weight_kg) values ('2026-10-22', 5)$$,
+  'an impossible weight is refused');
+select pg_temp.expect_error(
+  $$insert into public.body_weights (user_id, measured_on, weight_kg)
+    values ('22222222-2222-2222-2222-222222222222', '2026-10-22', 80)$$,
+  'users cannot log a weight for someone else');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pg_temp.expect((select count(*) from public.body_weights) = 0, 'body weights are private');
+with u as (update public.body_weights set weight_kg = 99 returning 1)
+select pg_temp.expect((select count(*) from u) = 0, 'users cannot change someone else''s weight');
+with d as (delete from public.body_weights returning 1)
+select pg_temp.expect((select count(*) from d) = 0, 'users cannot delete someone else''s weight');
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+with d as (delete from public.body_weights returning 1)
+select pg_temp.expect((select count(*) from d) = 1, 'a user deletes their own weight');
+reset role;
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;
 select public.ping();
 select pg_temp.expect((select count(*) from public.sets) = 0, 'anon sees no sets');
 select pg_temp.expect((select count(*) from public.feedback) = 0, 'anon sees no feedback');
+select pg_temp.expect((select count(*) from public.body_weights) = 0, 'anon sees no body weights');
 select pg_temp.expect_error(
   $$insert into public.feedback (kind, rating) values ('feedback', 'good')$$,
   'anon cannot send feedback');

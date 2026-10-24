@@ -31,6 +31,7 @@ export type AnalyticsEvent =
   | "starting_weights_saved"
   | "set_fixed"
   | "warmup_set_added"
+  | "body_weight_logged"
   | "theme_changed";
 
 type Props = Record<string, string | number | boolean | null>;

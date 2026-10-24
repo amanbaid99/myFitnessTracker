@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { DataError } from "@/components/data-error";
 import {
+  getBodyWeights,
   getExerciseLibrary,
   getLastNotes,
   getPersonalRecords,
@@ -52,15 +53,17 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       .map((e, i) => extraItem(e, i, defaultTargets(e.id, daySlots, planSlots)));
     const items = [...(routine?.exercises ?? []), ...extras];
     const exerciseIds = items.map((e) => e.exercise.id);
-    const [profile, previous, prs, notes, lastNotes, plan] = await Promise.all([
+    const [profile, previous, prs, notes, lastNotes, plan, bodyWeights] = await Promise.all([
       getProfile(supabase),
       getPreviousSessions(supabase, exerciseIds, id),
       getPersonalRecords(supabase),
       getWorkoutNotes(supabase, id),
       getLastNotes(supabase, exerciseIds, id),
       routine ? getPlan(supabase, routine.planId) : Promise.resolve(null),
+      getBodyWeights(supabase),
     ]);
-    return { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots };
+    const bodyWeightKg = bodyWeights.entries[bodyWeights.entries.length - 1]?.weightKg ?? bodyWeights.profileKg;
+    return { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
   });
 
   if (result.error !== null) {
@@ -71,7 +74,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots } = result.data;
+  const { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
@@ -98,6 +101,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       cooldown={prep.cooldown}
       prs={Object.fromEntries(prs)}
       units={profile.units}
+      bodyWeightKg={bodyWeightKg}
       defaultRestSec={profile.defaultRestSec}
       hasLoggedSets={logged.length > 0}
       notes={Object.fromEntries(notes)}

@@ -77,6 +77,43 @@ describe("buildContext with recent workouts", () => {
   });
 });
 
+describe("buildContext with the session asked about", () => {
+  it("lists its sets and checks them against the day's plan", () => {
+    const text = buildContext({
+      ...DATA,
+      analyses: [],
+      focus: {
+        date: "2026-10-24",
+        day: "Lower 1",
+        exercises: ["Leg Press: 110kgx7 (hard)", "Parallel bar Dips: bodyweightx11"],
+        plannedNotDone: ["Pallof Press"],
+        extra: ["Parallel bar Dips"],
+        hasPlan: true,
+      },
+    });
+    expect(text).toContain(
+      [
+        "The session they are asking about, 2026-10-24 Lower 1, every working set (feel is how the set felt):",
+        "- Leg Press: 110kgx7 (hard)",
+        "- Parallel bar Dips: bodyweightx11",
+        "In the Lower 1 plan but not done that day: Pallof Press.",
+        "Done that day but not in the plan: Parallel bar Dips.",
+      ].join("\n"),
+    );
+  });
+});
+
+describe("buildContext with body weight", () => {
+  it("gives the latest weight and how it moved", () => {
+    expect(buildContext({ ...DATA, bodyWeight: { kg: 74.8, day: "2026-10-24", changeKg: -1.2, sinceDays: 34 } })).toContain(
+      "Body weight: 74.8kg (logged 2026-10-24, -1.2kg over 34 days). Bodyweight exercises lift this plus any add-on.",
+    );
+    expect(buildContext({ ...DATA, bodyWeight: { kg: 72.5, day: null, changeKg: null, sinceDays: 0 } })).toContain(
+      "Body weight: 72.5kg (from their welcome answers).",
+    );
+  });
+});
+
 describe("cleanReply", () => {
   it("drops thinking and em dashes, and empty replies", () => {
     expect(cleanReply("<think>hmm</think> Add a set — easy.")).toBe("Add a set, easy.");
