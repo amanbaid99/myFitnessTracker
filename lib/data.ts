@@ -149,6 +149,21 @@ export async function getProfile(supabase: Supabase): Promise<Profile> {
   };
 }
 
+/**
+ * What the guide needs (lib/guide.ts): the keys this person has seen and
+ * when they joined. seen is null when it cannot be read (the column is not
+ * there yet, or an error), and then the guide shows nothing, since nothing
+ * could be marked as seen either.
+ */
+export async function getGuideState(supabase: Supabase): Promise<{ seen: string[] | null; joinedAt: string | null }> {
+  const { data: claims } = await supabase.auth.getClaims();
+  const id = claims?.claims.sub;
+  if (!id) return { seen: null, joinedAt: null };
+  const { data, error } = await supabase.from("profiles").select("seen_tips, created_at").eq("id", id).maybeSingle();
+  if (error || !data) return { seen: null, joinedAt: null };
+  return { seen: (data.seen_tips as string[] | null) ?? [], joinedAt: (data.created_at as string | null) ?? null };
+}
+
 // Plans ------------------------------------------------------------------------
 
 export async function getPlans(supabase: Supabase): Promise<Plan[]> {

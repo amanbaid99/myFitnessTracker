@@ -15,6 +15,7 @@ export function ProfileButton({ initials, label }: { initials: string; label: st
       href="/settings"
       aria-label={`Profile and settings for ${label}`}
       aria-current={active ? "page" : undefined}
+      data-guide="profile"
       className={cn(
         "flex size-11 items-center justify-center rounded-full border text-sm font-semibold tracking-wide",
         active ? "border-primary bg-primary text-primary-foreground" : "bg-card text-foreground active:bg-muted",

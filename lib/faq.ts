@@ -226,6 +226,12 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Can I see the tour again, or what's new?",
+        a: [
+          "Yes. Open your profile (the initials at the top right) and tap Replay the tour, or What's new for recent changes. Tips for a feature show once, the first time you reach it.",
+        ],
+      },
+      {
         q: "How do I get the latest version?",
         a: [
           "When a new version is out, a banner above the tabs says so. Tap Update. You can also go to Settings, then App, then Check for updates. Nothing you've saved is lost.",

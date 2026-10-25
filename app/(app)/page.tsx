@@ -152,7 +152,7 @@ export default async function TodayPage() {
             {next.exercises.slice(0, 3).map((e) => e.exercise.name).join(", ")}
             {next.exercises.length > 3 ? ` and ${next.exercises.length - 3} more` : ""}
           </p>
-          <form action={startWorkout.bind(null, next.id)} className="mt-5">
+          <form action={startWorkout.bind(null, next.id)} className="mt-5" data-guide="start-workout">
             <SubmitButton size="lg" className="w-full" pendingLabel="Starting…">
               <Play /> Start workout
             </SubmitButton>

@@ -1194,3 +1194,26 @@ schema or create_plan changes.
   alternates with a fallback, so they work before the migration lands
   (Edge Functions are deployed by hand).
 - The demo's Pull day has Pull-up as an alternate for Lat Pulldown.
+
+## 2026-10-25: Intro tour, first-time tips and What's new
+
+- One guide (lib/guide.ts, components/guide/guide-provider.tsx) shows one
+  thing at a time: the intro tour, then unseen What's new entries, then
+  first-time tips. What each person has seen is a list of keys on their
+  profile (profiles.seen_tips), added through mark_seen(), so nothing
+  repeats on another device. If the list cannot be read (before the
+  migration, or an error), the guide shows nothing, since it could not
+  record anything as seen either.
+- Intro tour: 6 steps on Today that dim the screen and highlight Start
+  workout, the tabs and the profile button. Everyone sees it once,
+  existing users included (Aman's choice); Settings can replay it.
+- First-time tips point at a feature the first time it is on screen: in
+  the workout, the alternate pills, then the next set to log, then the
+  feel chips; in Edit plan, the first exercise. Pages ask for a tip with
+  useTip and mark the element with data-guide. Not in the demo.
+- What's new entries live in code and are added only when Aman approves
+  the wording (rule in CLAUDE.md). An entry shows once, in a bottom
+  sheet, to people who joined on or before its date; Show me links to
+  the feature. The first is alternates, linking to /plans/active, which
+  opens the active plan's editor. Settings lists every entry.
+- The feedback prompt waits while the guide is showing something.

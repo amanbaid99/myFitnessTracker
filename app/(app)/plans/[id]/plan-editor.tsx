@@ -13,6 +13,7 @@ import { MakeActiveButton } from "../plan-actions";
 import { AddExercise } from "@/components/plan/add-exercise";
 import { ExerciseSheet, type ExerciseEdits } from "@/components/plan/exercise-sheet";
 import { PrepSheet } from "@/components/plan/prep-sheet";
+import { useTip } from "@/components/guide/guide-provider";
 import { formatTarget } from "@/lib/tracking";
 import {
   addExercise,
@@ -47,6 +48,9 @@ export function PlanEditor({
   const supabase = createClient();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // First visit: point at the first exercise and say what tapping it does.
+  const guideItemId = routines.find((r) => r.exercises.length)?.exercises[0].id ?? null;
+  useTip("tip:edit-exercise", guideItemId !== null);
 
   /** Runs a change; returns an error message or null. */
   const run: Run = async (fn, markCustom = true) => {
@@ -135,6 +139,7 @@ export function PlanEditor({
             }}
             first={i === 0}
             last={i === routines.length - 1}
+            guideItemId={guideItemId}
           />
         ))}
       </div>
@@ -163,6 +168,7 @@ function RoutineEditor({
   onMove,
   first,
   last,
+  guideItemId,
 }: {
   routine: Routine;
   library: Exercise[];
@@ -171,6 +177,7 @@ function RoutineEditor({
   onMove: (dir: -1 | 1) => void;
   first: boolean;
   last: boolean;
+  guideItemId: string | null;
 }) {
   const supabase = createClient();
   const [adding, setAdding] = useState(false);
@@ -255,6 +262,7 @@ function RoutineEditor({
               <button
                 type="button"
                 onClick={() => setEditing(item.id)}
+                data-guide={item.id === guideItemId ? "tip:edit-exercise" : undefined}
                 className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left active:bg-muted"
               >
                 <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</span>

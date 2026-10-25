@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { FeedbackSheet } from "./feedback-sheet";
+import { useGuide } from "./guide/guide-provider";
 
 const SHOW_DELAY_MS = 1500;
 
@@ -13,13 +14,15 @@ const SHOW_DELAY_MS = 1500;
  */
 export function FeedbackPrompt({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
+  // Waits while the tour, a tip or What's new is showing.
+  const guideBusy = useGuide()?.busy ?? false;
 
   useEffect(() => {
     const t = setTimeout(() => setOpen(true), SHOW_DELAY_MS);
     return () => clearTimeout(t);
   }, []);
 
-  if (!open) return null;
+  if (!open || guideBusy) return null;
 
   async function close() {
     setOpen(false);

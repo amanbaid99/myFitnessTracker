@@ -571,6 +571,22 @@ with d as (delete from public.body_weights returning 1)
 select pg_temp.expect((select count(*) from d) = 1, 'a user deletes their own weight');
 reset role;
 
+-- Guide: what a user has seen -----------------------------------------------
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select public.mark_seen(array['tour:intro', 'new:alternates']);
+select public.mark_seen(array['tour:intro', 'tip:log-set', '']);
+select pg_temp.expect(
+  (select seen_tips from public.profiles where id = '11111111-1111-1111-1111-111111111111')
+    = array['new:alternates', 'tip:log-set', 'tour:intro'],
+  'mark_seen adds each key once and skips blanks');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select public.mark_seen(array['tour:intro']);
+select pg_temp.expect(
+  (select seen_tips from public.profiles where id = '22222222-2222-2222-2222-222222222222') = array['tour:intro'],
+  'mark_seen only changes the caller''s own list');
+reset role;
+
 -- Anonymous -----------------------------------------------------------------
 reset role;
 set role anon;
@@ -584,6 +600,7 @@ select pg_temp.expect_error(
   'anon cannot send feedback');
 select pg_temp.expect_error($$select public.count_coach_question()$$, 'anon cannot count coach questions');
 select pg_temp.expect_error($$select public.correct_set(gen_random_uuid(), 1, 0, 1)$$, 'anon cannot fix sets');
+select pg_temp.expect_error($$select public.mark_seen(array['x'])$$, 'anon cannot mark tips seen');
 reset role;
 
 \o

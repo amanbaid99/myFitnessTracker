@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { DataError } from "@/components/data-error";
-import { getExerciseLibrary, getPlan, getProfile, getRoutines, load } from "@/lib/data";
+import { getActivePlan, getExerciseLibrary, getPlan, getProfile, getRoutines, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { PlanEditor } from "./plan-editor";
 
@@ -12,6 +12,11 @@ export const metadata: Metadata = { title: "Edit plan" };
 export default async function PlanPage({ params }: PageProps<"/plans/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
+  // /plans/active: the active plan's editor (What's new links here).
+  if (id === "active") {
+    const active = await getActivePlan(supabase).catch(() => null);
+    redirect(active ? `/plans/${active.plan.id}` : "/plans");
+  }
   const result = await load(() =>
     Promise.all([getPlan(supabase, id), getRoutines(supabase, id), getExerciseLibrary(supabase), getProfile(supabase)]),
   );

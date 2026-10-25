@@ -3,19 +3,21 @@ import { AppScroll } from "@/components/app-scroll";
 import { BottomNav } from "@/components/bottom-nav";
 import { ProfileButton } from "@/components/profile-button";
 import { UpdateBanner } from "@/components/update/update-banner";
-import { getProfile } from "@/lib/data";
+import { GuideProvider } from "@/components/guide/guide-provider";
+import { getGuideState, getProfile } from "@/lib/data";
 import { initials } from "@/lib/initials";
 import { createClient } from "@/lib/supabase/server";
 
 /** Tabbed screens. The workout logger lives outside this group, full screen. */
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const supabase = await createClient();
-  const [profile, { data }] = await Promise.all([getProfile(supabase), supabase.auth.getClaims()]);
+  const [profile, { data }, guide] = await Promise.all([getProfile(supabase), supabase.auth.getClaims(), getGuideState(supabase)]);
   const email = typeof data?.claims.email === "string" ? data.claims.email : null;
 
   // An app shell: the screen is exactly the viewport, the content scrolls
   // inside it and the tab bar sits below as a normal block (AppScroll).
   return (
+    <GuideProvider seen={guide.seen} joinedAt={guide.joinedAt}>
     <div className="flex h-dvh flex-col">
       <AnalyticsIdentity userId={profile.id} />
       <AppScroll>
@@ -30,5 +32,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <UpdateBanner />
       <BottomNav />
     </div>
+    </GuideProvider>
   );
 }

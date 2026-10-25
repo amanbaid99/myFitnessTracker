@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { DataError } from "@/components/data-error";
 import {
   getBodyWeights,
+  getGuideState,
   getExerciseLibrary,
   getLastNotes,
   getPersonalRecords,
@@ -25,6 +26,7 @@ import { createClient } from "@/lib/supabase/server";
 import { extraExerciseIds, extraItem, extrasCookieName, parseExtras } from "@/lib/workout-extras";
 import { defaultTargets, slots } from "@/lib/default-targets";
 import { Logger } from "./logger";
+import { GuideProvider } from "@/components/guide/guide-provider";
 
 export const metadata: Metadata = { title: "Workout" };
 
@@ -41,10 +43,11 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   const result = await load(async () => {
     const workout = await getWorkout(supabase, id);
     if (!workout) return null;
-    const [routine, logged, library] = await Promise.all([
+    const [routine, logged, library, guide] = await Promise.all([
       workout.routineId ? getRoutine(supabase, workout.routineId) : Promise.resolve(null),
       getWorkoutSets(supabase, id),
       getExerciseLibrary(supabase),
+      getGuideState(supabase),
     ]);
     // Every day of the plan, so an added exercise takes its usual sets and reps.
     const planRoutines = routine ? await getRoutines(supabase, routine.planId) : [];
@@ -76,7 +79,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       getBodyWeights(supabase),
     ]);
     const bodyWeightKg = bodyWeights.entries[bodyWeights.entries.length - 1]?.weightKg ?? bodyWeights.profileKg;
-    return { workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
+    return { guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
   });
 
   if (result.error !== null) {
@@ -87,7 +90,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
+  const { guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
@@ -105,6 +108,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     .join("|");
 
   return (
+    <GuideProvider seen={guide.seen} joinedAt={guide.joinedAt} full={false}>
     <Logger
       key={structure}
       workoutId={workout.id}
@@ -124,5 +128,6 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       options={options}
       editing={plan ? { routineId: routine.id, plan, library, planSlots, slots: slotsOfDay } : undefined}
     />
+    </GuideProvider>
   );
 }

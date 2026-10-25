@@ -26,6 +26,11 @@ Setup: `docs/SETUP.md`.
 - Weights are kg in the database; convert with `lib/units.ts` only for display.
 - 390px wide first; tap targets 44px or more; dark theme tokens in `app/globals.css`.
 - No em dashes in UI copy or docs.
+- What's new (`WHATS_NEW` in `lib/guide.ts`): after a user-facing feature,
+  draft an entry (title, 1 to 2 lines, optional Show me link) in chat and
+  add it only if Aman approves. Many changes ship without one. A new
+  feature can also get a first-time tip: add it to `TIPS`, mark the
+  element with `data-guide`, and call `useTip`.
 
 ## Build Log (Notion)
 

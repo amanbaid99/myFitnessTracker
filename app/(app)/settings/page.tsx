@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { FeedbackButtons } from "@/components/feedback-buttons";
 import Link from "next/link";
-import { CircleHelp } from "lucide-react";
+import { CircleHelp, Sparkles } from "lucide-react";
+import { ReplayTourButton } from "@/components/guide/replay-tour-button";
 import { InstallButton } from "@/components/install-button";
 import { UpdateCheck } from "@/components/update/update-check";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -70,6 +71,14 @@ export default async function SettingsPage() {
             <CircleHelp /> Help & FAQ
           </Link>
         </Button>
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <Button asChild variant="outline">
+            <Link href="/whats-new">
+              <Sparkles /> What&apos;s new
+            </Link>
+          </Button>
+          <ReplayTourButton />
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <Button asChild variant="outline">
             <Link href="/privacy">Privacy Policy</Link>

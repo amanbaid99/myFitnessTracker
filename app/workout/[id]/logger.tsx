@@ -36,6 +36,7 @@ import {
 } from "@/lib/routine-edits";
 import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
 import { saveChoice } from "@/lib/alternates";
+import { useTip } from "@/components/guide/guide-provider";
 import { defaultTargets, slots } from "@/lib/default-targets";
 import type { WarmupItem } from "@/lib/general-warmup";
 import { cn } from "@/lib/utils";
@@ -221,6 +222,13 @@ export function Logger(props: {
   const [settings, setSettings] = useState<Record<string, string | null>>({});
   // One exercise open at a time; finishing one opens the next unfinished.
   const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(props.session));
+  // First-time tips (components/guide): on the open exercise's next set to
+  // log, the feel chips once they appear, and the alternate pills (first).
+  const openIndex = exercises.findIndex((e) => e.exerciseId === openId);
+  const guideRowKey = openIndex >= 0 ? (exercises[openIndex].working.find((r) => !r.logged)?.key ?? null) : null;
+  useTip("tip:alternates", openIndex >= 0 && Boolean(props.options?.[items[openIndex]?.id]));
+  useTip("tip:log-set", guideRowKey !== null && hold === null);
+  useTip("tip:feel", feelKey !== null);
   const [warmupOpen, setWarmupOpen] = useState(() => !props.hasLoggedSets);
   // The cool-down opens once every exercise is done.
   const [cooldownOpen, setCooldownOpen] = useState(() => nextOpenExercise(props.session) === null);
@@ -899,6 +907,7 @@ export function Logger(props: {
                   <div key={row.key}>
                     <SetRow
                       row={row}
+                      guide={row.key === guideRowKey ? "tip:log-set" : undefined}
                       units={units}
                       perHand={item.exercise.perHand}
                       timed={item.exercise.tracking === "time"}
@@ -911,6 +920,7 @@ export function Logger(props: {
                     />
                     {row.logged && (feelKey === row.key || row.logged.rpe !== null) && (
                       <FeelChips
+                        guide={feelKey === row.key ? "tip:feel" : undefined}
                         value={feelFromRpe(row.logged.rpe)}
                         onPick={(feel) => setFeel(exIndex, row, feel)}
                       />
@@ -1152,7 +1162,7 @@ function OptionChips({
 }) {
   return (
     <>
-      <div role="radiogroup" aria-label="Do this as" className="-my-1 flex items-center gap-1 overflow-x-auto">
+      <div role="radiogroup" aria-label="Do this as" data-guide="tip:alternates" className="-my-1 flex items-center gap-1 overflow-x-auto">
         <ArrowLeftRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
         {options.map((o) => {
           const on = o.exercise.id === activeId;
@@ -1188,6 +1198,7 @@ function OptionChips({
 
 function SetRow({
   row,
+  guide,
   units,
   perHand,
   warmup = false,
@@ -1200,6 +1211,8 @@ function SetRow({
   onUntick,
 }: {
   row: Row;
+  /** Marks the row for a first-time tip (data-guide). */
+  guide?: string;
   units: Units;
   perHand: boolean;
   warmup?: boolean;
@@ -1222,7 +1235,7 @@ function SetRow({
   const holding = holdLeft !== null;
 
   return (
-    <div className={cn("flex min-h-14 items-center px-2", stepper ? "gap-1" : "gap-2", warmup && "text-muted-foreground")}>
+    <div data-guide={guide} className={cn("flex min-h-14 items-center px-2", stepper ? "gap-1" : "gap-2", warmup && "text-muted-foreground")}>
       <span
         className={cn(
           "shrink-0 text-center text-sm tabular-nums",
@@ -1665,9 +1678,9 @@ function TickCircle({ on, small = false }: { on: boolean; small?: boolean }) {
   );
 }
 
-function FeelChips({ value, onPick }: { value: Feel | null; onPick: (f: Feel) => void }) {
+function FeelChips({ value, onPick, guide }: { value: Feel | null; onPick: (f: Feel) => void; guide?: string }) {
   return (
-    <div className="flex items-center gap-1.5 px-2 pb-2 pl-11">
+    <div data-guide={guide} className="flex items-center gap-1.5 px-2 pb-2 pl-11">
       <span className="mr-1 text-xs text-muted-foreground">How did it feel?</span>
       {FEELS.map((f) => (
         <button
