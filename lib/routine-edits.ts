@@ -49,7 +49,26 @@ export async function addExercise(
 export async function swapExercise(supabase: SupabaseClient, item: RoutineExercise, pick: ExercisePick): Promise<DbResult> {
   const { id, error } = await exerciseIdFor(supabase, pick);
   if (error || !id) return { error: error ?? { message: "Could not create the exercise." } };
-  return supabase.from("routine_exercises").update({ exercise_id: id }).eq("id", item.id);
+  const res = await supabase.from("routine_exercises").update({ exercise_id: id }).eq("id", item.id);
+  // Swapped for one of its alternates: it is the slot's exercise now, not an alternate.
+  if (!res.error && item.alternates?.some((a) => a.id === id)) return removeAlternate(supabase, item, id);
+  return res;
+}
+
+/** Adds another exercise this slot can be done as (Pull-up for Lat Pulldown). */
+export async function addAlternate(supabase: SupabaseClient, item: RoutineExercise, pick: ExercisePick): Promise<DbResult> {
+  const { id, error } = await exerciseIdFor(supabase, pick);
+  if (error || !id) return { error: error ?? { message: "Could not create the exercise." } };
+  if (id === item.exercise.id || item.alternates?.some((a) => a.id === id)) return { error: null };
+  return supabase.from("routine_exercise_alternates").insert({
+    routine_exercise_id: item.id,
+    exercise_id: id,
+    sort_order: item.alternates?.length ?? 0,
+  });
+}
+
+export function removeAlternate(supabase: SupabaseClient, item: Pick<RoutineExercise, "id">, exerciseId: string): PromiseLike<DbResult> {
+  return supabase.from("routine_exercise_alternates").delete().eq("routine_exercise_id", item.id).eq("exercise_id", exerciseId);
 }
 
 export function removeExercise(supabase: SupabaseClient, item: RoutineExercise): PromiseLike<DbResult> {

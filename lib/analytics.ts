@@ -32,7 +32,8 @@ export type AnalyticsEvent =
   | "set_fixed"
   | "warmup_set_added"
   | "body_weight_logged"
-  | "theme_changed";
+  | "theme_changed"
+  | "alternate_switched";
 
 type Props = Record<string, string | number | boolean | null>;
 

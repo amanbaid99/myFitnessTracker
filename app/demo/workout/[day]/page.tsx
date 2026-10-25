@@ -5,6 +5,7 @@ import { DEMO_PREVIOUS, DEMO_PROFILE, DEMO_PRS, demoRoutine } from "@/lib/demo";
 import { routineCooldown } from "@/lib/general-cooldown";
 import { routineWarmup } from "@/lib/general-warmup";
 import { buildSession } from "@/lib/session";
+import { chooseForDay, optionSessions } from "@/lib/alternates";
 
 export const metadata: Metadata = { title: "Demo workout" };
 
@@ -14,8 +15,11 @@ export default async function DemoWorkoutPage({ params }: PageProps<"/demo/worko
   const routine = demoRoutine(day);
   if (!routine) notFound();
 
-  const session = buildSession(routine.exercises, DEMO_PREVIOUS, []);
-  const warmupInput = routine.exercises.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups }));
+  // Each slot's last time is the exercise with a past session in the demo.
+  const recent = [...DEMO_PREVIOUS.keys()].map((exerciseId) => ({ exerciseId, routineId: routine.id }));
+  const items = chooseForDay(routine.exercises, { routineId: routine.id, loggedIds: new Set(), picked: {}, recent });
+  const session = buildSession(items, DEMO_PREVIOUS, []);
+  const warmupInput = items.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups }));
   const checklist = routineWarmup(warmupInput);
 
   return (
@@ -24,8 +28,9 @@ export default async function DemoWorkoutPage({ params }: PageProps<"/demo/worko
       workoutId={`demo-${routine.id}`}
       startedAt={new Date().toISOString()}
       routineName={routine.name}
-      items={routine.exercises}
+      items={items}
       session={session}
+      options={optionSessions(items, routine.exercises, session, DEMO_PREVIOUS, [])}
       checklist={checklist}
       cooldown={routineCooldown(warmupInput)}
       prs={Object.fromEntries(DEMO_PRS)}

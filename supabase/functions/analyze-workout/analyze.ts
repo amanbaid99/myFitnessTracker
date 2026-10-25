@@ -70,8 +70,11 @@ export interface WorkoutData {
   notes: Record<string, string>;
   /** The last finished session of the same day (routine), if any. */
   previous?: { startedAt: string; endedAt: string; sets: SetData[] } | null;
-  /** The exercises in this day's plan now, in order; null when unknown. */
-  plan?: string[] | null;
+  /**
+   * The exercises in this day's plan now, in order; null when unknown. A
+   * slot with alternates is a list: doing any one of them does that slot.
+   */
+  plan?: (string | string[])[] | null;
   /** Body weight on the day (latest logged, else the welcome answer): the load of bodyweight exercises. */
   bodyWeightKg?: number | null;
 }
@@ -142,13 +145,29 @@ export function compareWithPrevious(d: WorkoutData): string[] {
   return lines;
 }
 
+interface PlanRow {
+  exercises: { name: string } | null;
+  routine_exercise_alternates?: { exercises: { name: string } | null }[];
+}
+
+/** A day's slots as names: a slot with alternates as a list of them. Pure. */
+export function planSlots(rows: PlanRow[]): (string | string[])[] {
+  return rows
+    .filter((r) => r.exercises?.name)
+    .map((r) => {
+      const alts = (r.routine_exercise_alternates ?? []).map((a) => a.exercises?.name).filter((n): n is string => Boolean(n));
+      return alts.length ? [r.exercises!.name, ...alts] : r.exercises!.name;
+    });
+}
+
 /** Today against the day's plan: what was left out, and what was extra. Pure. */
 export function compareWithPlan(d: WorkoutData): string[] {
   if (!d.plan?.length) return [];
   const day = d.dayName ?? "this day";
   const today = new Set(d.today.map((s) => s.exercise));
-  const notDone = d.plan.filter((e) => !today.has(e));
-  const extra = [...today].filter((e) => !d.plan!.includes(e));
+  const slots = d.plan.map((p) => (Array.isArray(p) ? p : [p]));
+  const notDone = slots.filter((opts) => !opts.some((e) => today.has(e))).map((opts) => opts.join(" or "));
+  const extra = [...today].filter((e) => !slots.some((opts) => opts.includes(e)));
   const lines = [
     notDone.length
       ? `In the ${day} plan but not done today: ${notDone.join(", ")}.`
@@ -343,15 +362,21 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
 
   // The last finished, not cancelled, session of the same day before this one.
   let previous: WorkoutData["previous"] = null;
-  let plan: string[] | null = null;
+  let plan: (string | string[])[] | null = null;
   if (workout.routine_id) {
-    // The day's plan as it is now; a review still works without it.
-    plan = await getJson<{ sort_order: number; exercises: { name: string } | null }[]>(
-      env,
-      fetchFn,
-      `routine_exercises?routine_id=eq.${encodeURIComponent(workout.routine_id)}&select=sort_order,exercises(name)&order=sort_order`,
-    )
-      .then((rows) => rows.map((r) => r.exercises?.name).filter((n): n is string => Boolean(n)))
+    const routineId = workout.routine_id;
+    // The day's plan as it is now; a review still works without it. Each
+    // slot with its alternates; without them if that table is not there yet.
+    const slotsOf = (alternates: boolean) =>
+      getJson<PlanRow[]>(
+        env,
+        fetchFn,
+        `routine_exercises?routine_id=eq.${encodeURIComponent(routineId)}` +
+          `&select=sort_order,exercises(name)${alternates ? ",routine_exercise_alternates(exercises(name))" : ""}&order=sort_order`,
+      );
+    plan = await slotsOf(true)
+      .catch(() => slotsOf(false))
+      .then(planSlots)
       .catch(() => null);
     const [prev] = await getJson<{ id: string; started_at: string; ended_at: string }[]>(
       env,

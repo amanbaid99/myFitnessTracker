@@ -10,6 +10,7 @@ import {
   getPlan,
   getPreviousSessions,
   getProfile,
+  getRecentOptionSets,
   getRoutine,
   getRoutines,
   getWorkout,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/data";
 import { dayPrep } from "@/lib/routine-prep";
 import { buildSession } from "@/lib/session";
+import { chooseForDay, choicesCookieName, dayOptionIds, optionSessions, parseChoices } from "@/lib/alternates";
 import { createClient } from "@/lib/supabase/server";
 import { extraExerciseIds, extraItem, extrasCookieName, parseExtras } from "@/lib/workout-extras";
 import { defaultTargets, slots } from "@/lib/default-targets";
@@ -31,7 +33,10 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   const { id } = await params;
   const supabase = await createClient();
 
-  const cookieIds = parseExtras((await cookies()).get(extrasCookieName(id))?.value);
+  const jar = await cookies();
+  const cookieIds = parseExtras(jar.get(extrasCookieName(id))?.value);
+  // Alternates switched to during this workout, by slot.
+  const picked = parseChoices(jar.get(choicesCookieName(id))?.value);
 
   const result = await load(async () => {
     const workout = await getWorkout(supabase, id);
@@ -45,14 +50,22 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     const planRoutines = routine ? await getRoutines(supabase, routine.planId) : [];
     const planSlots = slots(planRoutines.flatMap((r) => r.exercises));
     const daySlots = slots(routine?.exercises ?? []);
+    // A slot with alternates is done as one of them: the one with sets
+    // today, the one switched to, else the one after last time's.
+    const slotsOfDay = routine?.exercises ?? [];
+    const optionIds = dayOptionIds(slotsOfDay);
+    const recent = routine && optionIds.length ? await getRecentOptionSets(supabase, optionIds, id) : [];
+    const dayItems = routine
+      ? chooseForDay(slotsOfDay, { routineId: routine.id, loggedIds: new Set(logged.map((s) => s.exerciseId)), picked, recent })
+      : [];
     // Exercises added to this workout only, after the day's own.
-    const dayIds = routine?.exercises.map((e) => e.exercise.id) ?? [];
+    const dayIds = dayItems.map((e) => e.exercise.id);
     const extras = extraExerciseIds(cookieIds, logged.map((s) => s.exerciseId), dayIds)
       .map((exId) => library.find((e) => e.id === exId))
       .filter((e) => e !== undefined)
       .map((e, i) => extraItem(e, i, defaultTargets(e.id, daySlots, planSlots)));
-    const items = [...(routine?.exercises ?? []), ...extras];
-    const exerciseIds = items.map((e) => e.exercise.id);
+    const items = [...dayItems, ...extras];
+    const exerciseIds = [...new Set([...items.map((e) => e.exercise.id), ...optionIds])];
     const [profile, previous, prs, notes, lastNotes, plan, bodyWeights] = await Promise.all([
       getProfile(supabase),
       getPreviousSessions(supabase, exerciseIds, id),
@@ -63,7 +76,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       getBodyWeights(supabase),
     ]);
     const bodyWeightKg = bodyWeights.entries[bodyWeights.entries.length - 1]?.weightKg ?? bodyWeights.profileKg;
-    return { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
+    return { workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
   });
 
   if (result.error !== null) {
@@ -74,11 +87,13 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { workout, routine, items, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
+  const { workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
   const session = buildSession(items, previous, logged);
+  // Each option of a slot with alternates, ready to switch to (offline too).
+  const options = optionSessions(items, slotsOfDay, session, previous, logged);
   const warmupInput = items.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups }));
   // The day's own warm-up and cool-down, or automatic ones from its exercises.
   const prep = dayPrep(warmupInput, routine.warmup, routine.cooldown);
@@ -106,7 +121,8 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       hasLoggedSets={logged.length > 0}
       notes={Object.fromEntries(notes)}
       lastNotes={Object.fromEntries(lastNotes)}
-      editing={plan ? { routineId: routine.id, plan, library, planSlots } : undefined}
+      options={options}
+      editing={plan ? { routineId: routine.id, plan, library, planSlots, slots: slotsOfDay } : undefined}
     />
   );
 }

@@ -152,6 +152,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Can I rotate between two exercises, like Lat Pulldown and Pull-up?",
+        a: [
+          "Yes. In Edit plan, tap the exercise and use Alternates to add up to three others. They take turns: if you did Lat Pulldown last time, Pull-up comes up next time on that day. Sets, reps and rest stay the same, and each exercise keeps its own history and PRs.",
+          "During a workout, tap the other name under the exercise to switch. Once you log a set the choice is locked; untick the set to switch back.",
+        ],
+      },
+      {
         q: "What is a weight step?",
         a: [
           "The smallest jump in weight for that exercise, like the lightest plates or the gap between pins on a stack. Suggested weights and warm-ups go up by this. Pick a common one or tap Custom to enter your own.",

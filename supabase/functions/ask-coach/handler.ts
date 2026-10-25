@@ -206,6 +206,20 @@ async function read<T>(env: Required<Env>, token: string, fetchFn: typeof fetch,
 
 const utcDay = (d: Date) => d.toISOString().slice(0, 10);
 
+/** A slot's alternates (Pull-up for Lat Pulldown), embedded in a routine_exercises read. */
+const ALTS = ",routine_exercise_alternates(sort_order,exercises(name))";
+type AltRow = { sort_order: number; exercises: { name: string } | null };
+const altNames = (rows: AltRow[] | undefined): string[] =>
+  [...(rows ?? [])]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((a) => a.exercises?.name)
+    .filter((n): n is string => Boolean(n));
+
+/** Reads with alternates, or without them before their migration has run. */
+function withFallback<T>(load: (alternates: boolean) => Promise<T>): Promise<T> {
+  return load(true).catch(() => load(false));
+}
+
 async function questionsToday(env: Required<Env>, token: string, fetchFn: typeof fetch, now: Date): Promise<number> {
   const rows = await read<{ questions: number }[]>(env, token, fetchFn, `coach_usage?day=eq.${utcDay(now)}&select=questions`);
   return rows[0]?.questions ?? 0;
@@ -224,10 +238,13 @@ export async function loadCoachData(
     read<{ units: string; experience: string | null; training_setup: string | null }[]>(
       env, token, fetchFn, "profiles?select=units,experience,training_setup&limit=1",
     ),
-    read<{ name: string; routine_exercises: { sort_order: number; target_sets: number; target_reps: number; exercises: { name: string; tracking?: string } | null }[] }[]>(
-      env, token, fetchFn,
-      "routines?select=name,sort_order,plans!inner(is_active),routine_exercises(sort_order,target_sets,target_reps,exercises(name,tracking))" +
-        "&plans.is_active=eq.true&order=sort_order",
+    // With each slot's alternates; without them if that table is not there yet.
+    withFallback((alts) =>
+      read<{ name: string; routine_exercises: { sort_order: number; target_sets: number; target_reps: number; exercises: { name: string; tracking?: string } | null; routine_exercise_alternates?: AltRow[] }[] }[]>(
+        env, token, fetchFn,
+        `routines?select=name,sort_order,plans!inner(is_active),routine_exercises(sort_order,target_sets,target_reps,exercises(name,tracking)${alts ? ALTS : ""})` +
+          "&plans.is_active=eq.true&order=sort_order",
+      ),
     ),
     read<{ id: string; started_at: string; routines: { name: string } | null }[]>(
       env, token, fetchFn,
@@ -286,7 +303,11 @@ export async function loadCoachData(
       day: r.name,
       exercises: [...r.routine_exercises]
         .sort((a, b) => a.sort_order - b.sort_order)
-        .map((e) => `${e.exercises?.name ?? "Exercise"} ${e.target_sets}x${e.target_reps}${e.exercises?.tracking === "time" ? "s hold" : ""}`),
+        .map((e) => {
+          const alts = altNames(e.routine_exercise_alternates);
+          return `${e.exercises?.name ?? "Exercise"} ${e.target_sets}x${e.target_reps}${e.exercises?.tracking === "time" ? "s hold" : ""}` +
+            (alts.length ? ` (takes turns with ${alts.join(", ")})` : "");
+        }),
     })),
     // Sessions with sets only, the most recent MAX_SESSIONS, to keep the prompt small.
     sessions: workouts
@@ -361,23 +382,26 @@ async function loadFocus(env: Required<Env>, token: string, fetchFn: typeof fetc
   ]);
   const workout = workouts[0];
   if (!workout) return undefined;
+  // Each slot as its options: doing any one of them does the slot.
   const plan = workout.routine_id
     ? (
-        await read<{ exercises: { name: string } | null }[]>(
-          env, token, fetchFn,
-          `routine_exercises?routine_id=eq.${encodeURIComponent(workout.routine_id)}&select=sort_order,exercises(name)&order=sort_order`,
+        await withFallback((alts) =>
+          read<{ exercises: { name: string } | null; routine_exercise_alternates?: AltRow[] }[]>(
+            env, token, fetchFn,
+            `routine_exercises?routine_id=eq.${encodeURIComponent(workout.routine_id!)}&select=sort_order,exercises(name)${alts ? ALTS : ""}&order=sort_order`,
+          ),
         )
       )
-        .map((r) => r.exercises?.name)
-        .filter((n): n is string => Boolean(n))
+        .filter((r) => r.exercises?.name)
+        .map((r) => [r.exercises!.name, ...altNames(r.routine_exercise_alternates)])
     : [];
   const { names, lines } = describeSets(sets);
   return {
     date: workout.started_at.slice(0, 10),
     day: workout.routines?.name ?? null,
     exercises: lines,
-    plannedNotDone: plan.filter((n) => !names.includes(n)),
-    extra: names.filter((n) => !plan.includes(n)),
+    plannedNotDone: plan.filter((opts) => !opts.some((n) => names.includes(n))).map((opts) => opts.join(" or ")),
+    extra: names.filter((n) => !plan.some((opts) => opts.includes(n))),
     hasPlan: plan.length > 0,
   };
 }

@@ -49,6 +49,11 @@ export interface RoutineExercise {
   targetReps: number;
   restSec: number | null;
   exercise: Exercise;
+  /**
+   * Other exercises this slot can be done as (Lat Pulldown or Pull-up), in
+   * order; same sets, reps and rest. The workout picks one (lib/alternates.ts).
+   */
+  alternates?: Exercise[];
 }
 
 export interface Routine {
@@ -200,6 +205,7 @@ interface RoutineRow {
     target_reps: number;
     rest_sec: number | null;
     exercises: ExerciseRow | null;
+    routine_exercise_alternates?: { sort_order: number; exercises: (ExerciseRow & { archived_at?: string | null }) | null }[];
   }[];
 }
 
@@ -229,17 +235,25 @@ async function queryRoutines(
 ): Promise<Routine[]> {
   const { planId, routineId } = filter;
   const activePlan = filter.activePlan ? ", plans!inner(is_active)" : "";
-  let query = supabase
-    .from("routines")
-    .select(
-      `id, plan_id, name, sort_order, warmup, cooldown, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS}))${activePlan}`,
-    )
-    .order("sort_order")
-    .order("sort_order", { referencedTable: "routine_exercises" });
-  if (activePlan) query = query.eq("plans.is_active", true);
-  else if (planId) query = query.eq("plan_id", planId);
-  if (routineId) query = query.eq("id", routineId);
-  const { data, error } = await query;
+  const run = (withAlternates: boolean) => {
+    const alternates = withAlternates
+      ? `, routine_exercise_alternates(sort_order, exercises(${EXERCISE_COLS}, archived_at))`
+      : "";
+    let query = supabase
+      .from("routines")
+      .select(
+        `id, plan_id, name, sort_order, warmup, cooldown, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS})${alternates})${activePlan}`,
+      )
+      .order("sort_order")
+      .order("sort_order", { referencedTable: "routine_exercises" });
+    if (activePlan) query = query.eq("plans.is_active", true);
+    else if (planId) query = query.eq("plan_id", planId);
+    if (routineId) query = query.eq("id", routineId);
+    return query;
+  };
+  let { data, error } = await run(true);
+  // Before the alternates migration has run: read the days without them.
+  if (error && /routine_exercise_alternates/.test(error.message)) ({ data, error } = await run(false));
   if (error) throw new Error(error.message);
 
   return ((data ?? []) as unknown as RoutineRow[]).map((r) => ({
@@ -258,6 +272,11 @@ async function queryRoutines(
         targetReps: re.target_reps,
         restSec: re.rest_sec,
         exercise: toExercise(re.exercises!),
+        alternates: [...(re.routine_exercise_alternates ?? [])]
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((a) => a.exercises)
+          .filter((e) => e !== null && !e.archived_at && e.id !== re.exercises!.id)
+          .map((e) => toExercise(e!)),
       })),
   }));
 }
@@ -550,6 +569,32 @@ export async function getPreviousSessions(
     map.set(row.exerciseId, list);
   }
   return map;
+}
+
+/**
+ * Recent working sets of these exercises with the day they were done on,
+ * newest first: which alternate was done last time (lib/alternates.ts).
+ */
+export async function getRecentOptionSets(
+  supabase: Supabase,
+  exerciseIds: string[],
+  excludeWorkoutId: string,
+): Promise<{ exerciseId: string; routineId: string | null }[]> {
+  if (exerciseIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("sets")
+    .select("exercise_id, workouts!inner(routine_id)")
+    .in("exercise_id", exerciseIds)
+    .eq("set_type", "working")
+    .is("deleted_at", null)
+    .neq("workout_id", excludeWorkoutId)
+    .order("logged_at", { ascending: false })
+    .limit(300);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as unknown as { exercise_id: string; workouts: { routine_id: string | null } | null }[]).map((r) => ({
+    exerciseId: r.exercise_id,
+    routineId: r.workouts?.routine_id ?? null,
+  }));
 }
 
 /** Latest working set per exercise (warm-ups excluded by the view). */

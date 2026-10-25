@@ -42,6 +42,8 @@ interface DemoExercise {
   restSec?: number;
   /** Last session's working sets as [kg, reps, rpe]. */
   last: [number, number, number][];
+  /** Exercises this slot takes turns with (no history of their own). */
+  alternates?: { slug: string; name: string; equipment: Exercise["equipment"]; muscles: string[] }[];
 }
 
 // Last sessions are chosen so the demo shows each kind of aim: ready to
@@ -62,7 +64,9 @@ const DAYS: { slug: string; name: string; exercises: DemoExercise[] }[] = [
     slug: "pull",
     name: "Pull",
     exercises: [
-      { slug: "pulldown", name: "Lat Pulldown", equipment: "machine", muscles: ["lats", "biceps"], seat: "3", sets: 4, reps: 10, last: [[65, 10, 7], [65, 10, 7.5], [65, 10, 8], [65, 9, 9]] },
+      { slug: "pulldown", name: "Lat Pulldown", equipment: "machine", muscles: ["lats", "biceps"], seat: "3", sets: 4, reps: 10, last: [[65, 10, 7], [65, 10, 7.5], [65, 10, 8], [65, 9, 9]],
+        // Last time was Lat Pulldown, so Pull-up is up next.
+        alternates: [{ slug: "pull-up", name: "Pull-up", equipment: "bodyweight", muscles: ["lats", "biceps"] }] },
       { slug: "cable-row", name: "Seated Cable Row", equipment: "cable", muscles: ["upper back", "lats", "biceps"], sets: 3, reps: 10, last: [[60, 10, 7], [60, 10, 7.5], [60, 10, 8]] },
       { slug: "db-row", name: "Chest-Supported Dumbbell Row", equipment: "dumbbell", muscles: ["upper back", "rear delts"], perHand: true, sets: 3, reps: 10, last: [[26, 10, 8], [26, 10, 8.5], [26, 9, 9]] },
       { slug: "face-pull", name: "Face Pull", equipment: "cable", muscles: ["rear delts", "traps"], sets: 3, reps: 15, restSec: 60, last: [[25, 15, 7], [25, 15, 7], [25, 15, 7.5]] },
@@ -94,6 +98,21 @@ function daysAgo(n: number): string {
   return d.toISOString();
 }
 
+function demoExercise(e: Pick<DemoExercise, "slug" | "name" | "equipment" | "muscles" | "seat" | "perHand" | "step">): Exercise {
+  return {
+    id: e.slug,
+    name: e.name,
+    equipment: e.equipment,
+    muscleGroups: e.muscles,
+    machineSetting: e.seat ?? null,
+    perHand: e.perHand ?? false,
+    warmupEnabled: true,
+    warmupTemplate: null,
+    weightStepKg: e.step ?? 2.5,
+    tracking: defaultTracking(e.name),
+  };
+}
+
 export const DEMO_ROUTINES: Routine[] = DAYS.map((day, dayIndex) => ({
   id: day.slug,
   planId: DEMO_PLAN.id,
@@ -107,18 +126,8 @@ export const DEMO_ROUTINES: Routine[] = DAYS.map((day, dayIndex) => ({
     targetSets: e.sets,
     targetReps: e.reps,
     restSec: e.restSec ?? null,
-    exercise: {
-      id: e.slug,
-      name: e.name,
-      equipment: e.equipment,
-      muscleGroups: e.muscles,
-      machineSetting: e.seat ?? null,
-      perHand: e.perHand ?? false,
-      warmupEnabled: true,
-      warmupTemplate: null,
-      weightStepKg: e.step ?? 2.5,
-      tracking: defaultTracking(e.name),
-    },
+    exercise: demoExercise(e),
+    alternates: (e.alternates ?? []).map((a) => demoExercise({ ...a })),
   })),
 }));
 

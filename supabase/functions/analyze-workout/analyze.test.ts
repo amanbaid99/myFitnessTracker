@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyzeWorkout, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, sessionStats, type WorkoutData } from "./analyze";
+import { analyzeWorkout, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
 
 const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service-123", OPENROUTER_API_KEY: "or-key-123" };
 
@@ -199,6 +199,23 @@ describe("compareWithPlan", () => {
       "In the Lower 1 plan but not done today: Pallof Press.",
       "Done today but not in the plan: Parallel bar Dips.",
     ]);
+  });
+
+  it("counts any alternate of a slot as done", () => {
+    const d = { ...DATA, dayName: "Upper 2", plan: [["Lat Pulldown", "Pull-up"], "Machine Row"], today: today(["Pull-up", "Machine Row"]) };
+    expect(compareWithPlan(d)).toEqual(["Every exercise in the Upper 2 plan was done."]);
+    expect(compareWithPlan({ ...d, today: today(["Machine Row"]) })).toEqual(["In the Upper 2 plan but not done today: Lat Pulldown or Pull-up."]);
+  });
+
+  it("reads a day's slots with their alternates", () => {
+    expect(
+      planSlots([
+        { exercises: { name: "Lat Pulldown" }, routine_exercise_alternates: [{ exercises: { name: "Pull-up" } }] },
+        { exercises: { name: "Machine Row" }, routine_exercise_alternates: [] },
+        { exercises: { name: "Shrug" } },
+        { exercises: null },
+      ]),
+    ).toEqual([["Lat Pulldown", "Pull-up"], "Machine Row", "Shrug"]);
   });
 
   it("never calls last time's off-plan lifts skipped, and flags a different session", () => {

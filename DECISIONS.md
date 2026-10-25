@@ -1165,3 +1165,32 @@ logs the set with a beep at zero; stopping early fills the time held.
 Timed sets have no aim or ramp-up, carry their time to later sets, and
 are left out of PRs, the Progress views and starting weights for now.
 The AI review and Coach describe them as "45s hold".
+
+## 2026-10-25: Alternate exercises that take turns (Aman's request)
+
+A slot in a day can have up to three alternates (Lat Pulldown or
+Pull-up), in a new routine_exercise_alternates table (owner-only RLS,
+added and removed, never edited; removing the slot removes them). The
+slot keeps its own exercise, sets, reps and rest, so nothing else in the
+schema or create_plan changes.
+
+- Which one comes up is worked out from history, never stored: the
+  option after the one with the most recent working set in this day's
+  workouts (else in any workout, for a new copy of a plan). With no
+  history it is the slot's own exercise.
+- In the workout the open card shows the options as one row of pills
+  under the name (Aman picked this over tapping the name). The server
+  builds every option's rows, so a switch is instant and works offline;
+  a cookie per workout keeps it across a reload. The choice locks once a
+  set is logged on it, so sets never land on the wrong exercise; a slot
+  shows whichever option has sets today.
+- An alternate that another slot of the day already uses, or that is
+  today's extra, is not offered, so each exercise has one card.
+- Set up in the exercise sheet (plan editor, or the pencil mid-workout).
+  The plan editor shows "or Pull-up" under the exercise. Swapping a slot
+  for one of its alternates drops it from the alternates.
+- The AI review and Coach treat a slot as done when any option was done,
+  and list it as "Lat Pulldown or Pull-up" when none was. They read the
+  alternates with a fallback, so they work before the migration lands
+  (Edge Functions are deployed by hand).
+- The demo's Pull day has Pull-up as an alternate for Lat Pulldown.

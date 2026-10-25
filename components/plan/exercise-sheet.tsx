@@ -10,6 +10,7 @@ import { EQUIPMENT, MUSCLE_GROUPS, REST_OPTIONS } from "@/lib/muscles";
 import { MAX_WEIGHT_STEP_KG, parseWeightStep, stepKg } from "@/lib/progression";
 import { formatDuration, type Tracking } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
+import { MAX_ALTERNATES } from "@/lib/alternates";
 
 /** Plate and stack steps to choose from, in kg. */
 const WEIGHT_STEPS = [0.5, 1, 1.25, 2, 2.5, 5];
@@ -30,7 +31,8 @@ export interface ExerciseEdits {
 /**
  * Bottom sheet for one exercise in a day: rename it (applies everywhere the
  * exercise is used, history included), targets for this day, seat, equipment,
- * weight step, muscles, per hand; move, swap for another exercise, or remove it.
+ * weight step, muscles, per hand; alternates it takes turns with; move, swap
+ * for another exercise, or remove it.
  */
 export function ExerciseSheet({
   item,
@@ -43,6 +45,8 @@ export function ExerciseSheet({
   library,
   existingIds = [],
   onSwap,
+  onAddAlternate,
+  onRemoveAlternate,
   onClose,
 }: {
   item: RoutineExercise;
@@ -56,6 +60,9 @@ export function ExerciseSheet({
   library?: Exercise[];
   existingIds?: string[];
   onSwap?: (pick: ExercisePick) => Promise<string | null>;
+  /** With these (and library), the sheet offers Alternates: exercises this slot takes turns with. */
+  onAddAlternate?: (pick: ExercisePick) => Promise<string | null>;
+  onRemoveAlternate?: (exerciseId: string) => Promise<string | null>;
   onClose: () => void;
 }) {
   const e = item.exercise;
@@ -82,6 +89,17 @@ export function ExerciseSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
+  const [addingAlt, setAddingAlt] = useState(false);
+  const alternates = item.alternates ?? [];
+
+  async function runAlt(op: () => Promise<string | null>) {
+    setBusy(true);
+    setError(null);
+    const err = await op();
+    setBusy(false);
+    if (err) setError(err);
+    else setAddingAlt(false);
+  }
 
   function toggleMuscle(m: string) {
     // Order matters: the first muscle is the primary one.
@@ -134,7 +152,24 @@ export function ExerciseSheet({
           </Button>
         </div>
 
-        {swapping && library && onSwap ? (
+        {addingAlt && library && onAddAlternate ? (
+          <div className="overflow-y-auto px-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <p className="px-2 pb-1 text-sm text-muted-foreground">
+              Pick an exercise to take turns with {e.name}. Same sets and reps.
+            </p>
+            <AddExercise
+              library={library}
+              existingIds={[...existingIds, e.id, ...alternates.map((a) => a.id)]}
+              onCancel={() => setAddingAlt(false)}
+              onAdd={(pick) => runAlt(() => onAddAlternate(pick))}
+            />
+            {error && (
+              <p role="alert" className="px-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
+          </div>
+        ) : swapping && library && onSwap ? (
           <div className="overflow-y-auto px-3 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <p className="px-2 pb-1 text-sm text-muted-foreground">
               Swap {e.name} for another exercise. Its place, sets and reps stay the same.
@@ -209,6 +244,43 @@ export function ExerciseSheet({
                   ))}
                 </select>
               </Field>
+
+              {library && onAddAlternate && onRemoveAlternate && (
+                <div>
+                  <p className="text-sm font-medium">Alternates</p>
+                  <p className="text-xs text-muted-foreground">
+                    {alternates.length
+                      ? "They take turns: each time, the next one comes up. You can switch during the workout."
+                      : "Rotate with another exercise, e.g. Pull-up one week, Lat Pulldown the next."}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {alternates.map((a) => (
+                      <span key={a.id} className="flex h-10 items-center rounded-full border bg-card pl-3 text-sm">
+                        <span className="max-w-48 truncate">{a.name}</span>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => runAlt(() => onRemoveAlternate(a.id))}
+                          className="flex size-10 items-center justify-center text-muted-foreground"
+                          aria-label={`Remove alternate ${a.name}`}
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </span>
+                    ))}
+                    {alternates.length < MAX_ALTERNATES && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setAddingAlt(true)}
+                        className="flex h-10 items-center gap-1 rounded-full border border-dashed px-3 text-sm text-muted-foreground"
+                      >
+                        <Plus className="size-4" /> {alternates.length ? "Add" : "Add alternate"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Seat setting" htmlFor="ex-seat">

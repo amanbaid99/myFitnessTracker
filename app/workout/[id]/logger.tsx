@@ -6,7 +6,7 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,15 @@ import {
   friendlyError,
   markCustom,
   moveExercise,
+  addAlternate,
+  removeAlternate,
   removeExercise,
   saveExerciseEdits,
   swapExercise,
   type DbResult,
 } from "@/lib/routine-edits";
 import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
+import { saveChoice } from "@/lib/alternates";
 import { defaultTargets, slots } from "@/lib/default-targets";
 import type { WarmupItem } from "@/lib/general-warmup";
 import { cn } from "@/lib/utils";
@@ -47,6 +50,14 @@ export interface WorkoutEditing {
   library: Exercise[];
   /** Every exercise in the plan with its targets, for adding one with matching sets and reps. */
   planSlots: ReturnType<typeof slots>;
+  /** The day's slots as in the plan (each with its own exercise, not today's alternate). */
+  slots: Item[];
+}
+
+/** One way to do a slot with alternates, with its rows ready to log. */
+export interface SlotOption {
+  exercise: Exercise;
+  session: SessionExercise;
 }
 
 /** UI state kept across the remount that follows an edit. */
@@ -82,10 +93,19 @@ export function Logger(props: {
   /** This workout's notes and the last note from another workout, by exercise id. */
   notes?: Record<string, ExerciseNote>;
   lastNotes?: Record<string, string>;
+  /** Slots with alternates, by slot id: each option it can be done as today. */
+  options?: Record<string, SlotOption[]>;
   /** Edit the day's exercises mid-workout: in the plan, or for this workout only. */
   editing?: WorkoutEditing;
 }) {
-  const { workoutId, items, units, demo = false, editing } = props;
+  const { workoutId, units, demo = false, editing } = props;
+  // Alternates switched to on this screen, by slot id.
+  const [choice, setChoice] = useState<Record<string, string>>({});
+  const [lockHint, setLockHint] = useState<string | null>(null);
+  const items = props.items.map((i) => {
+    const o = choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined;
+    return o ? { ...i, exercise: o.exercise } : i;
+  });
   // The day's exercises as they are in the plan; extras for today come after.
   const dayItems = items.filter((i) => !isExtraItem(i));
   const home = demo ? "/demo" : "/";
@@ -430,8 +450,30 @@ export function Logger(props: {
     if (!row.logged) return;
     const logged = row.logged;
     updateRow(exIndex, row.key, { logged: null });
+    setLockHint(null);
     if (demo) return;
     await enqueue(workoutId, { kind: "deleteSet", id: logged.id, deletedAt: new Date().toISOString() });
+  }
+
+  /**
+   * Does this slot as another of its options today. Not once a set is
+   * logged on it (untick first), so sets never land on the wrong exercise.
+   */
+  function switchOption(exIndex: number, slotId: string, exerciseId: string) {
+    const current = exercises[exIndex];
+    const option = props.options?.[slotId]?.find((o) => o.exercise.id === exerciseId);
+    if (!option || !current || current.exerciseId === exerciseId) return;
+    if ([...current.warmups, ...current.working].some((r) => r.logged)) {
+      setLockHint(slotId);
+      return;
+    }
+    if (hold?.exIndex === exIndex) setHold(null);
+    setLockHint(null);
+    setChoice((c) => ({ ...c, [slotId]: exerciseId }));
+    setExercises((prev) => prev.map((e, i) => (i === exIndex ? option.session : e)));
+    setOpenId((id) => (id === current.exerciseId ? exerciseId : id));
+    if (!demo) saveChoice(workoutId, slotId, exerciseId);
+    track("alternate_switched", { options: props.options?.[slotId]?.length ?? 0 });
   }
 
   async function setFeel(exIndex: number, row: Row, feel: Feel) {
@@ -672,8 +714,11 @@ export function Logger(props: {
                     className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left"
                   >
                     <span className="min-w-0 flex-1">
-                      <span className={cn("block truncate font-semibold", workingDone && "text-muted-foreground")}>
-                        {item.exercise.name}
+                      <span className={cn("flex items-center gap-1.5 font-semibold", workingDone && "text-muted-foreground")}>
+                        <span className="truncate">{item.exercise.name}</span>
+                        {props.options?.[item.id] && (
+                          <ArrowLeftRight className="size-3.5 shrink-0 text-muted-foreground" aria-label="Has alternates" />
+                        )}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {ex.aim ? `Aim ${formatSet(ex.aim, units)}` : formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
@@ -705,6 +750,14 @@ export function Logger(props: {
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <h2 className="font-semibold leading-snug">{item.exercise.name}</h2>
+                    {props.options?.[item.id] && (
+                      <OptionChips
+                        options={props.options[item.id]}
+                        activeId={item.exercise.id}
+                        onPick={(exerciseId) => switchOption(exIndex, item.id, exerciseId)}
+                        lockedHint={lockHint === item.id ? `Sets are logged on ${item.exercise.name}. Untick them to switch.` : null}
+                      />
+                    )}
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       <Badge variant="muted">
                         {formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
@@ -947,7 +1000,7 @@ export function Logger(props: {
               </p>
               <AddExercise
                 library={editing.library}
-                existingIds={items.map((i) => i.exercise.id)}
+                existingIds={[...items.map((i) => i.exercise.id), ...Object.values(props.options ?? {}).flatMap((o) => o.map((x) => x.exercise.id))]}
                 onCancel={() => setAddingExercise(false)}
                 onAdd={async (pick) => {
                   const err = await applyEdit(
@@ -1014,8 +1067,9 @@ export function Logger(props: {
 
       {editing && editItemId && (() => {
         const index = dayItems.findIndex((i) => i.id === editItemId);
-        const item = dayItems[index];
-        if (!item) return null;
+        // The slot as in the plan: its own exercise and its alternates.
+        const item = editing.slots.find((i) => i.id === editItemId);
+        if (index < 0 || !item) return null;
         return (
           <ExerciseSheet
             key={item.id}
@@ -1024,13 +1078,15 @@ export function Logger(props: {
             canMoveUp={index > 0}
             canMoveDown={index < dayItems.length - 1}
             library={editing.library}
-            existingIds={items.map((i) => i.exercise.id)}
+            existingIds={[...items.map((i) => i.exercise.id), ...Object.values(props.options ?? {}).flatMap((o) => o.map((x) => x.exercise.id))]}
             onSave={(edits) => applyEdit((s) => saveExerciseEdits(s, item, edits), false)}
             onMove={async (dir) => {
               const err = await applyEdit((s) => moveExercise(s, dayItems, item, dir));
               if (err) setError(err);
             }}
             onSwap={(pick) => applyEdit((s) => swapExercise(s, item, pick))}
+            onAddAlternate={(pick) => applyEdit((s) => addAlternate(s, item, pick))}
+            onRemoveAlternate={(exerciseId) => applyEdit((s) => removeAlternate(s, item, exerciseId))}
             onRemove={async () => {
               const logged = exercises[index]?.working.some((r) => r.logged) || exercises[index]?.warmups.some((r) => r.logged);
               const ok = await confirmDialog({
@@ -1078,6 +1134,57 @@ export function Logger(props: {
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * One line of pills under the exercise name: the slot's options, today's
+ * highlighted. One tap switches.
+ */
+function OptionChips({
+  options,
+  activeId,
+  onPick,
+  lockedHint,
+}: {
+  options: SlotOption[];
+  activeId: string;
+  onPick: (exerciseId: string) => void;
+  lockedHint: string | null;
+}) {
+  return (
+    <>
+      <div role="radiogroup" aria-label="Do this as" className="-my-1 flex items-center gap-1 overflow-x-auto">
+        <ArrowLeftRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        {options.map((o) => {
+          const on = o.exercise.id === activeId;
+          return (
+            <button
+              key={o.exercise.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => onPick(o.exercise.id)}
+              className="flex min-h-11 shrink-0 items-center"
+            >
+              <span
+                className={cn(
+                  "max-w-44 truncate rounded-full border px-3 py-1 text-xs",
+                  on ? "border-primary bg-primary/15 font-medium text-foreground" : "text-muted-foreground active:bg-secondary",
+                )}
+              >
+                {o.exercise.name}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {lockedHint && (
+        <p role="status" className="text-xs text-muted-foreground">
+          {lockedHint}
+        </p>
+      )}
+    </>
+  );
+}
 
 function SetRow({
   row,

@@ -3,7 +3,7 @@
 import { confirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ChevronRight, Flame, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeftRight, ArrowUp, ChevronRight, Flame, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,8 @@ import {
   removeExercise,
   saveExerciseEdits,
   swapExercise,
+  addAlternate,
+  removeAlternate,
 } from "@/lib/routine-edits";
 
 type Result = { error: { message: string; code?: string } | null } | void;
@@ -258,6 +260,12 @@ function RoutineEditor({
                 <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{item.exercise.name}</span>
+                  {item.alternates && item.alternates.length > 0 && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <ArrowLeftRight className="size-3 shrink-0" aria-hidden />
+                      <span className="truncate">or {item.alternates.map((a) => a.name).join(", or ")}</span>
+                    </span>
+                  )}
                   {details.length > 0 && (
                     <span className="block truncate text-xs text-muted-foreground">{details.join(" · ")}</span>
                   )}
@@ -328,12 +336,14 @@ function RoutineEditor({
           onMove={(dir) => move(editingItem, dir)}
           onRemove={() => remove(editingItem)}
           library={library}
-          existingIds={items.map((i) => i.exercise.id)}
+          existingIds={items.flatMap((i) => [i.exercise.id, ...(i.alternates ?? []).map((a) => a.id)])}
           onSwap={async (pick) => {
             const err = await run(() => swapExercise(supabase, editingItem, pick));
             if (!err) setEditing(null);
             return err;
           }}
+          onAddAlternate={(pick) => run(() => addAlternate(supabase, editingItem, pick))}
+          onRemoveAlternate={(exerciseId) => run(() => removeAlternate(supabase, editingItem, exerciseId))}
           onClose={() => setEditing(null)}
         />
       )}

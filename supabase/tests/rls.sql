@@ -496,6 +496,48 @@ with u as (update public.exercises set tracking = 'reps' where id = 'aaaaaaaa-00
 select pg_temp.expect((select count(*) from u) = 0, 'users cannot change someone else''s exercise tracking');
 reset role;
 
+-- Alternate exercises ------------------------------------------------------
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+insert into public.exercises (id, name) values
+  ('aaaaaaaa-0000-0000-0000-0000000000a1', 'Lat Pulldown'),
+  ('aaaaaaaa-0000-0000-0000-0000000000a2', 'Pull-up');
+insert into public.routine_exercises (id, routine_id, exercise_id, sort_order, target_sets, target_reps)
+  values ('ffffffff-0000-0000-0000-0000000000a1', 'bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-0000000000a1', 9, 3, 10);
+insert into public.routine_exercise_alternates (routine_exercise_id, exercise_id)
+  values ('ffffffff-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000a2');
+select pg_temp.expect(
+  (select user_id from public.routine_exercise_alternates) = '11111111-1111-1111-1111-111111111111',
+  'a user adds an alternate to their own slot');
+select pg_temp.expect_error(
+  $$insert into public.routine_exercise_alternates (routine_exercise_id, exercise_id)
+    values ('ffffffff-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000a2')$$,
+  'the same alternate cannot be added twice');
+select pg_temp.expect_error(
+  $$update public.routine_exercise_alternates set sort_order = 3$$,
+  'alternates are not edited in place');
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select pg_temp.expect((select count(*) from public.routine_exercise_alternates) = 0, 'alternates are private');
+insert into public.exercises (id, name) values ('aaaaaaaa-0000-0000-0000-0000000000a3', 'Chin-up');
+select pg_temp.expect_error(
+  $$insert into public.routine_exercise_alternates (routine_exercise_id, exercise_id)
+    values ('ffffffff-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000a3')$$,
+  'users cannot add an alternate to someone else''s day');
+select pg_temp.expect_error(
+  $$insert into public.routine_exercise_alternates (user_id, routine_exercise_id, exercise_id)
+    values ('11111111-1111-1111-1111-111111111111', 'ffffffff-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000a3')$$,
+  'users cannot add an alternate as someone else');
+with d as (delete from public.routine_exercise_alternates returning 1)
+select pg_temp.expect((select count(*) from d) = 0, 'users cannot remove someone else''s alternate');
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select pg_temp.expect_error(
+  $$insert into public.routine_exercise_alternates (routine_exercise_id, exercise_id)
+    values ('ffffffff-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-0000000000a3')$$,
+  'an alternate must be the user''s own exercise');
+delete from public.routine_exercises where id = 'ffffffff-0000-0000-0000-0000000000a1';
+select pg_temp.expect((select count(*) from public.routine_exercise_alternates) = 0, 'removing a slot removes its alternates');
+reset role;
+
 -- Body weight ---------------------------------------------------------------
 set role authenticated;
 set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
@@ -536,6 +578,7 @@ select public.ping();
 select pg_temp.expect((select count(*) from public.sets) = 0, 'anon sees no sets');
 select pg_temp.expect((select count(*) from public.feedback) = 0, 'anon sees no feedback');
 select pg_temp.expect((select count(*) from public.body_weights) = 0, 'anon sees no body weights');
+select pg_temp.expect((select count(*) from public.routine_exercise_alternates) = 0, 'anon sees no alternates');
 select pg_temp.expect_error(
   $$insert into public.feedback (kind, rating) values ('feedback', 'good')$$,
   'anon cannot send feedback');
