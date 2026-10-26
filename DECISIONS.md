@@ -1241,3 +1241,13 @@ volume, load x reps, capped at the target: 12.5 kg x 10 Easy gives
 6 to 82.5) keeps 6. Double progression then builds the reps back up to
 the target before the next increase. After Easy, later untouched sets
 follow the next set, so set 3 no longer lags behind set 2.
+
+## 2026-10-26: Tabs answer a tap at once (Aman's request)
+
+Switching tabs sometimes paused before anything changed: Next shows a
+tab's loading skeleton only once that tab's shell is prefetched, which a
+weak signal delays. Each tab in the bottom bar now uses useLinkStatus:
+while its screen is on the way, the tab lights up and a short bar slides
+along the top of the tab bar (fades in after 100 ms, so fast switches
+show nothing; a static bar with reduced motion). Coach got its own
+loading skeleton instead of falling back to Today's.
