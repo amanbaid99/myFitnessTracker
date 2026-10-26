@@ -94,10 +94,12 @@ export function aimForSession(input: {
   }
 
   if (allHit && (hardest === null || hardest <= 8)) {
+    const up = round2(first.weightKg + step);
     return {
-      weightKg: round2(first.weightKg + step),
+      weightKg: up,
       addedKg: first.addedKg,
-      reps: input.targetReps,
+      // Fewer reps at the heavier weight, then build back up to the target.
+      reps: repsForHeavier(loadOf(first), input.targetReps, up + first.addedKg, input.targetReps),
       reason: hardest === null ? "You hit every target last time" : "Hit every target and it felt manageable",
       readyToIncrease: true,
     };
@@ -125,11 +127,12 @@ export function aimForSession(input: {
 /**
  * After a set is ticked with a feel, what the next working set should be.
  * Easy: below target reps, one more rep at the same weight; at or above
- * target, add a step. Max: keep the weight, match the reps just done.
- * Good or hard: unchanged.
+ * target, add a step, with the reps that keep about the same volume
+ * (12.5 kg x 10 easy: 15 kg x 8). Max: keep the weight, match the reps
+ * just done. Good or hard: unchanged.
  */
 export function adjustNextSet(input: {
-  done: { weightKg: number | null; reps: number | null };
+  done: { weightKg: number | null; reps: number | null; addedKg?: number };
   planned: { weightKg: number | null; reps: number };
   targetReps: number;
   feel: Feel;
@@ -143,7 +146,9 @@ export function adjustNextSet(input: {
       return { weightKg: input.done.weightKg, reps: Math.min(input.targetReps, doneReps + 1) };
     }
     if (step !== null && input.done.weightKg !== null) {
-      return { weightKg: round2(input.done.weightKg + step), reps: input.targetReps };
+      const up = round2(input.done.weightKg + step);
+      const added = input.done.addedKg ?? 0;
+      return { weightKg: up, reps: repsForHeavier(input.done.weightKg + added, doneReps, up + added, input.targetReps) };
     }
     return { weightKg: input.done.weightKg, reps: doneReps + 1 };
   }
@@ -151,6 +156,16 @@ export function adjustNextSet(input: {
     return { weightKg: input.done.weightKg, reps: Math.min(input.planned.reps, doneReps) };
   }
   return input.planned;
+}
+
+/**
+ * Reps at a heavier load that keep about the same volume (load x reps):
+ * 12.5 kg x 10 to 15 kg is 8; 80 kg x 6 to 82.5 kg stays 6. At least 1, at
+ * most maxReps. Pure.
+ */
+export function repsForHeavier(loadKg: number, reps: number, newLoadKg: number, maxReps: number): number {
+  if (loadKg <= 0 || newLoadKg <= loadKg) return Math.min(reps, maxReps);
+  return Math.max(1, Math.min(maxReps, Math.round((loadKg * reps) / newLoadKg)));
 }
 
 function round2(n: number): number {

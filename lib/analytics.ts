@@ -35,7 +35,8 @@ export type AnalyticsEvent =
   | "theme_changed"
   | "alternate_switched"
   | "guide_tour_ended"
-  | "whats_new_closed";
+  | "whats_new_closed"
+  | "workout_screen_error";
 
 type Props = Record<string, string | number | boolean | null>;
 

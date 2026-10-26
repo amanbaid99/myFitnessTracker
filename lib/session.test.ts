@@ -62,8 +62,8 @@ describe("buildSession", () => {
   it("when ready to add weight, the sets and the warm-up ramp use the new weight", () => {
     const previous = new Map([["incline", [1, 2, 3].map((n) => set("incline", "working", n, 20, 10, { rpe: 7.5 }))]]);
     const [inc] = buildSession([incline], previous, []);
-    expect(inc.aim).toMatchObject({ weightKg: 22.5, reps: 10, readyToIncrease: true });
-    expect(inc.working.every((w) => w.weightKg === 22.5 && w.reps === 10)).toBe(true);
+    expect(inc.aim).toMatchObject({ weightKg: 22.5, reps: 9, readyToIncrease: true });
+    expect(inc.working.every((w) => w.weightKg === 22.5 && w.reps === 9)).toBe(true);
     // 50% and 75% of 22.5 kg, rounded to 2.5 kg.
     expect(inc.warmups.map((w) => w.weightKg)).toEqual([12.5, 17.5]);
   });
