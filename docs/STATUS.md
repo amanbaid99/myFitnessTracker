@@ -32,8 +32,10 @@ tab bar shows a pending state while a tab loads.
   Lint, type checks, 303 unit tests and mobile browser checks passed.
   Record-save browser checks intercepted requests; live Supabase writes were
   not exercised.
-  Production build remains blocked by Google Fonts network access in the
-  cloud environment.
+  Production build, seed consistency, and local database checks passed
+  after Google Fonts access was enabled. GitHub API access is blocked in
+  the cloud environment, so PR creation and remote CI status need that
+  access enabled or owner action.
 
 ## Needs doing by hand
 
