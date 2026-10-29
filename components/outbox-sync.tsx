@@ -22,7 +22,9 @@ export function OutboxSync() {
 
     const run = async () => {
       if ((await pendingCount().catch(() => 0)) === 0) return;
-      if ((await flush()) > 0) router.refresh();
+      // The workout screen already shows what was logged, and re-fetching it
+      // on a weak gym signal can fail halfway and break the screen.
+      if ((await flush()) > 0 && !window.location.pathname.startsWith("/workout/")) router.refresh();
     };
     const onVisible = () => document.visibilityState === "visible" && run();
     run();

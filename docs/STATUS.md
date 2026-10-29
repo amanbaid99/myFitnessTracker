@@ -15,15 +15,14 @@ take turns), progression aims, History with AI workout reviews, Progress
 log, starting weights, welcome flow, public demo, Help and FAQ, themes,
 intro tour, first-time tips and What's new, PostHog analytics.
 
+Recent (2026-10-29, PR #1): the workout screen survives a weak signal
+(no re-fetch after an outbox sync, its own self-retrying error page);
+when the weight goes up, reps drop to keep about the same volume; the
+tab bar shows a pending state while a tab loads.
+
 ## In flight
 
-- 2026-10-26: PR #1 (`claude/workout-crash-fix`), green, waiting on Aman
-  to merge:
-  - workout screen no longer re-fetches after an outbox sync (it crashed
-    on a weak signal) and gets its own self-retrying error page;
-  - when the weight goes up, reps drop to keep about the same volume
-    (12.5 kg x 10 Easy gives 15 kg x 8);
-  - tab bar shows a pending state while a tab loads; Coach skeleton.
+Nothing open.
 
 ## Needs doing by hand
 
@@ -31,8 +30,8 @@ intro tour, first-time tips and What's new, PostHog analytics.
   treat any alternate of a slot as done; the deployed copies predate
   that, so a review can call a slot "skipped" when its alternate was
   done. Deploy both (ask Aman first).
-- 2026-10-26: Notion project page "Current status" not yet updated for
-  alternates and the guide.
+- 2026-10-29: Notion project page "Current status" not yet updated for
+  alternates, the guide and PR #1.
 
 ## Known gaps and ideas
 

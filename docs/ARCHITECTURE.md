@@ -50,8 +50,10 @@ moving part.
 | `faq`, `privacy`, `terms` | Public pages (`lib/faq.ts`, `lib/legal.ts`) |
 | `api/version` | Build id, used by the "Update ready" banner (`lib/version.ts`) |
 
-Most tabs have a `loading.tsx` skeleton; `(app)/error.tsx` is the
-fallback for the tabbed screens.
+Every tab has a `loading.tsx` skeleton, and the tab bar shows a pending
+state (`useLinkStatus`) until the screen arrives. `(app)/error.tsx` is the
+fallback for the tabbed screens; `workout/[id]/error.tsx` handles a
+dropped signal in the logger and retries by itself.
 
 ## The workout logger
 
@@ -62,7 +64,8 @@ and PRs, then builds everything the logger shows with pure functions:
   rows, pre-filled from this session's aim and merged with sets already
   logged (so a workout can be resumed).
 - `lib/progression.ts`: the aim (double progression: hit every target on
-  every set and it adds a weight step, otherwise one more rep at the same
+  every set and it adds a weight step, with reps lowered to keep about
+  the same volume (`repsForHeavier`); otherwise one more rep at the same
   weight) and `adjustNextSet` (Easy, Good, Hard, Max after a set).
 - `lib/warmup.ts`: ramp-up sets; `lib/general-warmup.ts`,
   `lib/general-cooldown.ts`, `lib/routine-prep.ts`: the day's warm-up and
@@ -78,7 +81,9 @@ Every change the logger makes (log, undo, feel, note, seat) goes into the
 **outbox** (`lib/outbox/`): ops are stored in IndexedDB and sent in order,
 idempotently, so logging works through a dead spot.
 `components/outbox-sync.tsx` (root layout) flushes on load, when back
-online, when the app returns to the foreground and every 15 s. Structural
+online, when the app returns to the foreground and every 15 s, and then
+refreshes the screen, except the workout screen, which already shows what
+was logged (re-fetching it on a weak signal used to crash it). Structural
 edits (changing the day mid-workout) need a connection and go through
 `applyEdit` in the logger.
 

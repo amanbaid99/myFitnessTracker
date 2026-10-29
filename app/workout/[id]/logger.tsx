@@ -499,7 +499,7 @@ export function Logger(props: {
     if (next) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
       const adjusted = adjustNextSet({
-        done: { weightKg: row.logged.weightKg, reps: row.logged.reps },
+        done: { weightKg: row.logged.weightKg, reps: row.logged.reps, addedKg: row.logged.addedKg },
         planned,
         targetReps: items[exIndex].targetReps,
         feel,
@@ -508,6 +508,14 @@ export function Logger(props: {
       });
       if (adjusted.weightKg !== planned.weightKg || adjusted.reps !== planned.reps) {
         updateRow(exIndex, next.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });
+        // Later sets not changed by hand follow, so set 3 does not lag behind set 2.
+        if (adjusted.weightKg !== planned.weightKg) {
+          for (const r of ex.working) {
+            if (r.setNo > next.setNo && !r.logged && !r.weightEdited && !r.repsEdited) {
+              updateRow(exIndex, r.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });
+            }
+          }
+        }
       }
     }
 
