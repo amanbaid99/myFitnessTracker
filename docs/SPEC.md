@@ -1,5 +1,12 @@
 # Workout Tracker: Build Spec
 
+> **Status note (2026-10-29):** this is the original Phase 1 spec. Its
+> "Rules for the agent" are still binding. The milestones are done and
+> the app has grown well past them (plans, AI reviews and Coach,
+> alternates, the guide, other users). For how it works today, read
+> `docs/ARCHITECTURE.md` and `docs/STATUS.md`; where this spec and
+> `DECISIONS.md` disagree, the later decision wins.
+
 Sep 25, 2026 · @Aman Rajendra Baid
 
 This is the implementation spec for an AI coding agent (Claude Code). It is self-contained: build Phase 1 from this document alone.

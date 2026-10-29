@@ -1217,3 +1217,14 @@ schema or create_plan changes.
   the feature. The first is alternates, linking to /plans/active, which
   opens the active plan's editor. Settings lists every entry.
 - The feedback prompt waits while the guide is showing something.
+
+## 2026-10-29: Agent instructions live in AGENTS.md (Aman's request)
+
+So any coding agent can pick up work, not just Claude Code: the project
+rules moved from CLAUDE.md into AGENTS.md (after Next's managed block,
+which `next dev` keeps), and CLAUDE.md only imports it. New
+docs/ARCHITECTURE.md maps the code as it is now, and docs/STATUS.md
+lists what is live, in flight, waiting on a manual step, and known gaps.
+SPEC.md is marked as the original Phase 1 spec. AGENTS.md also states
+the shipping rule learnt the hard way: the default branch is production,
+so work goes on a branch and a PR that Aman merges.
