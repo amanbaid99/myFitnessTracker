@@ -172,3 +172,6 @@ pnpm dev
 
 Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm test:db`
 (migrations plus RLS checks against a local Postgres).
+
+Without Supabase values, `/demo` still runs the real logger on sample
+data. More on local work, testing and shipping in `AGENTS.md`.
