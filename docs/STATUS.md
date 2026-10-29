@@ -15,6 +15,10 @@ take turns), progression aims, History with AI workout reviews, Progress
 log, starting weights, welcome flow, public demo, Help and FAQ, themes,
 intro tour, first-time tips and What's new, PostHog analytics.
 
+Edge Functions: `analyze-workout` (v17) and `ask-coach` (v7) were
+deployed on 2026-10-29 from the default branch, so reviews and Coach
+count any alternate of a slot as done. `draft-plan` is unchanged.
+
 Recent (2026-10-29, PR #1): the workout screen survives a weak signal
 (no re-fetch after an outbox sync, its own self-retrying error page);
 when the weight goes up, reps drop to keep about the same volume; the
@@ -33,10 +37,6 @@ tab bar shows a pending state while a tab loads.
 
 ## Needs doing by hand
 
-- 2026-10-25: Edge Functions `analyze-workout` and `ask-coach` in git
-  treat any alternate of a slot as done; the deployed copies predate
-  that, so a review can call a slot "skipped" when its alternate was
-  done. Deploy both (ask Aman first).
 - 2026-10-29: Notion project page "Current status" not yet updated for
   alternates, the guide and PR #1.
 
