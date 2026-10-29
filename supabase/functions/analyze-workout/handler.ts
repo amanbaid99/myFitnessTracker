@@ -13,7 +13,7 @@
  * runs for their own finished, not cancelled app workout without a review.
  */
 
-import { analyzeWorkout, readRows } from "./analyze.ts";
+import { analyzeWorkout, analyzeWeek, loadWorkout, readRows } from "./analyze.ts";
 
 export interface Env {
   WEBHOOK_SECRET?: string;
@@ -138,8 +138,9 @@ async function retry(
   defer: (work: Promise<unknown>) => void,
 ): Promise<Response> {
   let workoutId: unknown;
+  let weekly: unknown;
   try {
-    ({ workoutId } = (await req.json()) as { workoutId?: unknown });
+    ({ workoutId, weekly } = (await req.json()) as { workoutId?: unknown; weekly?: unknown });
   } catch {
     return json(400, { error: "invalid json" });
   }
@@ -167,7 +168,18 @@ async function retry(
       fetchFn,
       `insights?workout_id=eq.${workoutId}&kind=eq.workout_review&select=id&limit=1`,
     );
-    if (existing.length) return json(200, { status: "exists" });
+    if (existing.length) {
+      if (weekly === true) {
+        defer((async () => {
+          try {
+            const data = await loadWorkout(env, fetchFn, workoutId as string);
+            if (data) await analyzeWeek(env, fetchFn, workoutId as string, data, log);
+          } catch { log("analyze-workout: weekly retry failed"); }
+        })());
+        return json(202, { analyzing: workoutId });
+      }
+      return json(200, { status: "exists" });
+    }
   } catch (e) {
     log("analyze-workout: retry check failed", { error: e instanceof Error ? e.message : "unknown" });
     return json(500, { error: "failed" });

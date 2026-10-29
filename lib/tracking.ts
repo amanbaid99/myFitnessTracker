@@ -25,3 +25,16 @@ export function formatDuration(sec: number): string {
 export function formatTarget(sets: number, reps: number, tracking: Tracking): string {
   return `${sets} × ${tracking === "time" ? formatDuration(reps) : reps}`;
 }
+
+
+/** Switching an existing lift's units creates or reuses a separate library entry. */
+export function pickForTracking<T extends { exerciseId: string | null; name: string; equipment: string; tracking?: Tracking }>(
+  pick: T, tracking: Tracking,
+  library: { id: string; name: string; tracking: Tracking }[],
+): T {
+  const original = library.find((e) => e.id === pick.exerciseId);
+  if (!original || original.tracking === tracking) return { ...pick, tracking };
+  const name = `${pick.name} (${tracking === "time" ? "timed" : "reps"})`;
+  const variant = library.find((e) => e.name.toLowerCase() === name.toLowerCase() && e.tracking === tracking);
+  return { ...pick, exerciseId: variant?.id ?? null, name, tracking };
+}

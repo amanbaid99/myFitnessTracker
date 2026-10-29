@@ -1,3 +1,4 @@
+import { pickForTracking } from "./tracking";
 import { describe, expect, it } from "vitest";
 import { defaultTracking, formatDuration, formatTarget } from "./tracking";
 
@@ -18,5 +19,16 @@ describe("formatDuration and formatTarget", () => {
     expect(formatDuration(90)).toBe("1:30");
     expect(formatTarget(3, 30, "time")).toBe("3 × 30 s");
     expect(formatTarget(3, 10, "reps")).toBe("3 × 10");
+  });
+});
+
+
+describe("tracking variants", () => {
+  it("keeps existing history separate when changing tracking", () => {
+    const pick = { exerciseId: "e1", name: "Carry", equipment: "dumbbell" };
+    const library = [{ id: "e1", name: "Carry", tracking: "reps" as const }];
+    expect(pickForTracking(pick, "time", library)).toMatchObject({ exerciseId: null, name: "Carry (timed)", tracking: "time" });
+    expect(pickForTracking(pick, "reps", library)).toMatchObject({ exerciseId: "e1", name: "Carry", tracking: "reps" });
+    expect(pickForTracking(pick, "time", [...library, { id: "e2", name: "Carry (timed)", tracking: "time" }]).exerciseId).toBe("e2");
   });
 });

@@ -113,6 +113,22 @@ export function Logger(props: {
   const router = useRouter();
 
   const [exercises, setExercises] = useState(props.session);
+  const skipKey = `wt-skipped-sets-${workoutId}`;
+  useEffect(() => {
+    try {
+      const keys: unknown = JSON.parse(localStorage.getItem(skipKey) ?? "[]");
+      if (Array.isArray(keys)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- restore offline workout choices
+        setExercises((prev) => prev.map((ex) => ({ ...ex, working: ex.working.map((r) => ({ ...r, skipped: !r.logged && keys.includes(r.key) })) })));
+      }
+    } catch {}
+  }, [skipKey]);
+  function skipSet(exIndex: number, row: Row, skip: boolean) {
+    if (row.logged || hold?.key === row.key) return;
+    const next = exercises.map((ex, i) => i !== exIndex ? ex : { ...ex, working: ex.working.map((r) => r.key === row.key ? { ...r, skipped: skip } : r) });
+    setExercises(next);
+    try { localStorage.setItem(skipKey, JSON.stringify(next.flatMap((ex) => ex.working.filter((r) => r.skipped).map((r) => r.key)))); } catch {}
+  }
   const exercisesRef = useRef(exercises);
   useEffect(() => {
     exercisesRef.current = exercises;
@@ -239,7 +255,7 @@ export function Logger(props: {
   // First-time tips (components/guide): on the open exercise's next set to
   // log, the feel chips once they appear, and the alternate pills (first).
   const openIndex = exercises.findIndex((e) => e.exerciseId === openId);
-  const guideRowKey = openIndex >= 0 ? (exercises[openIndex].working.find((r) => !r.logged)?.key ?? null) : null;
+  const guideRowKey = openIndex >= 0 ? (exercises[openIndex].working.find((r) => !r.logged && !r.skipped)?.key ?? null) : null;
   useTip("tip:alternates", openIndex >= 0 && Boolean(props.options?.[items[openIndex]?.id]));
   useTip("tip:log-set", guideRowKey !== null && hold === null);
   useTip("tip:feel", feelKey !== null);
@@ -506,10 +522,9 @@ export function Logger(props: {
 
     // Tweak the next unticked working set from how this one felt.
     const ex = exercises[exIndex];
-    const next = ex.working.find((r) => r.setNo > row.setNo && !r.logged);
+    const next = ex.working.find((r) => r.setNo > row.setNo && !r.logged && !r.skipped);
     // That was the last set: close this exercise and open the next one.
-    const lastSetNo = Math.max(...ex.working.map((r) => r.setNo));
-    if (row.setNo === lastSetNo && isExerciseDone(ex)) openExercise(nextOpenExercise(exercises, exIndex));
+    if (isExerciseDone(ex)) openExercise(nextOpenExercise(exercises, exIndex));
     if (next) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
       const adjusted = adjustNextSet({
@@ -640,7 +655,7 @@ export function Logger(props: {
     track("warmup_set_added");
   }
 
-  const allRows = exercises.flatMap((ex) => [...(skipped.includes(ex.exerciseId) ? [] : ex.warmups), ...ex.working]);
+  const allRows = exercises.flatMap((ex) => [...(skipped.includes(ex.exerciseId) ? [] : ex.warmups), ...ex.working.filter((r) => !r.skipped || r.logged)]);
   const doneCount = allRows.filter((r) => r.logged).length;
   const anyLogged = props.hasLoggedSets || doneCount > 0;
   const elapsed = Math.max(0, Math.floor((now - new Date(props.startedAt).getTime()) / 1000));
@@ -729,7 +744,7 @@ export function Logger(props: {
         {exercises.map((ex, exIndex) => {
           const item = items[exIndex];
           const pr = props.prs[item.exercise.id];
-          const workingDone = ex.working.length > 0 && ex.working.every((r) => r.logged);
+          const workingDone = isExerciseDone(ex);
           const showWarmups = ex.warmups.length > 0 && !skipped.includes(ex.exerciseId);
           const open = openId === ex.exerciseId;
           if (!open) {
@@ -938,7 +953,12 @@ export function Logger(props: {
               <div className="mt-1 border-t px-2 pt-1">
                 {ex.working.map((row) => (
                   <div key={row.key}>
-                    <SetRow
+                    {row.skipped && !row.logged ? (
+                      <div className="flex min-h-11 items-center justify-between px-2 text-sm text-muted-foreground">
+                        <span>Set {row.label} skipped</span>
+                        <Button variant="ghost" onClick={() => skipSet(exIndex, row, false)}>Undo skip</Button>
+                      </div>
+                    ) : <SetRow
                       row={row}
                       guide={row.key === guideRowKey ? "tip:log-set" : undefined}
                       units={units}
@@ -950,7 +970,10 @@ export function Logger(props: {
                       onChange={(patch) => updateRow(exIndex, row.key, patch)}
                       onTick={() => tick(exIndex, row)}
                       onUntick={() => untick(exIndex, row)}
-                    />
+                    />}
+                    {!row.logged && !row.skipped && (
+                      <button type="button" className="min-h-11 px-3 text-sm text-muted-foreground" disabled={hold?.key === row.key} onClick={() => skipSet(exIndex, row, true)} aria-label={`Skip set ${row.label} of ${item.exercise.name}`}>Skip set</button>
+                    )}
                     {row.logged && (feelKey === row.key || row.logged.rpe !== null) && (
                       <FeelChips
                         guide={feelKey === row.key ? "tip:feel" : undefined}

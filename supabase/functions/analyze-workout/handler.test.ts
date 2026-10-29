@@ -139,6 +139,18 @@ describe("retry from the app", () => {
     expect(defer).not.toHaveBeenCalled();
   });
 
+  it("can retry the weekly stage after the session review exists, only for the owner", async () => {
+    const deferred: Promise<unknown>[] = [];
+    const response = await handle(ask({ workoutId: W, weekly: true }), ENV, db({ reviewed: true }), () => {}, (work) => deferred.push(work));
+    expect(response.status).toBe(202);
+    expect(deferred).toHaveLength(1);
+    await Promise.all(deferred);
+    const defer = vi.fn();
+    const denied = await handle(ask({ workoutId: W, weekly: true }), ENV, db({ reviewed: true, owner: "u2" }), () => {}, defer);
+    expect(denied.status).toBe(404);
+    expect(defer).not.toHaveBeenCalled();
+  });
+
   it("answers the browser's preflight", async () => {
     const res = await handle(new Request("https://fn.example", { method: "OPTIONS" }), ENV, okFetch(), () => {});
     expect(res.status).toBe(200);

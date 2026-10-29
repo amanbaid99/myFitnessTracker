@@ -36,7 +36,7 @@ moving part.
 | Route | What |
 | --- | --- |
 | `(app)/` | Tabbed screens: shared layout with the tab bar (`components/bottom-nav.tsx`), profile button, update banner and the guide (`GuideProvider`) |
-| `(app)/page.tsx` | Today: streak hero, next day in the rotation (`lib/rotation.ts`), start or resume, body weight card. Sends new accounts to `/welcome` |
+| `(app)/page.tsx` | Today: streak hero, next day in the rotation (`lib/rotation.ts`), start or resume, current-week AI review, body weight card. Sends new accounts to `/welcome` |
 | `(app)/history`, `history/[id]` | Finished workouts; one workout with its AI review and fixable sets |
 | `(app)/progress`, `progress/[exerciseId]` | Records, weekly sets per muscle, per-exercise e1RM chart |
 | `(app)/coach` | AI coach chat |
@@ -77,7 +77,10 @@ and PRs, then builds everything the logger shows with pure functions:
   per workout).
 - `lib/tracking.ts`: timed exercises (planks), logged as seconds.
 
-Every change the logger makes (log, undo, feel, note, seat) goes into the
+Set skips stay on the phone per workout and can be undone; they do not
+create logged sets or change the plan.
+
+Every saved change the logger makes (log, undo, feel, note, seat) goes into the
 **outbox** (`lib/outbox/`): ops are stored in IndexedDB and sent in order,
 idempotently, so logging works through a dead spot.
 `components/outbox-sync.tsx` (root layout) flushes on load, when back
@@ -101,7 +104,7 @@ they reach the default branch. Main objects:
 | `workouts`, `sets` | A workout and its sets (warm-up or working). Sets are append-only: soft delete, `correct_set` to fix one. `cancel_workout` |
 | `exercise_notes` | A note per exercise per workout |
 | `body_weights` | One weight per user per day |
-| `insights` | AI workout reviews (written by `analyze-workout`; clients may only set `read_at`) |
+| `insights` | AI workout and weekly reviews (written by `analyze-workout`; clients may only set `read_at`) |
 | `coach_usage` | Daily AI request count (`count_coach_question`) |
 | `feedback` | In-app feedback and bug reports |
 | Views | `working_sets` (load and Epley e1RM), `exercise_prs`, `exercise_session_best`, `workout_muscle_sets` |
@@ -120,7 +123,7 @@ details before sending (`redact.ts`). A user gets 20 AI requests a day.
 
 | Function | Called by | Auth |
 | --- | --- | --- |
-| `analyze-workout` | A Supabase Database Webhook when a workout is finished (`ended_at` set). Writes a `workout_review` to `insights` | No JWT; checks the `x-webhook-secret` header. Uses the service role key inside the function only |
+| `analyze-workout` | A Supabase Database Webhook when a workout is finished (`ended_at` set). Writes a `workout_review` to `insights`, then a Monday to Sunday India-time `weekly_review` snapshot | No JWT; checks the `x-webhook-secret` header. Uses the service role key inside the function only |
 | `ask-coach` | The Coach tab and "Ask coach" in History | JWT; reads with the caller's own token |
 | `draft-plan` | "Describe your plan" in the new-plan wizard | JWT |
 

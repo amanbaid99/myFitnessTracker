@@ -20,6 +20,18 @@ export const FAQ: FaqSection[] = [
     title: "Getting started",
     items: [
       {
+        q: "Can I do fewer sets than planned?",
+        a: ["Tap Skip set under any unlogged working set. Undo skip brings it back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
+      },
+      {
+        q: "What does the weekly analysis cover?",
+        a: ["Today shows a brief AI summary of completed app workouts in the current Monday to Sunday week, using India time. It refreshes after your workout review finishes and excludes warm-ups, cancelled sessions, imports and starting weights. Use Refresh weekly analysis if it is missing or behind."],
+      },
+      {
+        q: "Can I change Reps to Time while adding an exercise?",
+        a: ["Yes. Choose Time in Track by and enter seconds per set. For an existing exercise, a separate timed or reps version is added or reused, so previous records and other plan days keep their original units."],
+      },
+      {
         q: "How do I create a workout plan?",
         a: [
           "Go to Routines, then All plans, then Create a plan. Pick a template (Full Body, Upper Lower, Push Pull Legs or Bro Split), or describe your plan in your own words and let the AI build a draft.",

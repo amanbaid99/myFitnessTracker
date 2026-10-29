@@ -1288,3 +1288,30 @@ so work goes on a branch and a PR that Aman merges.
   remain outside personal records. Baselines guide aims but do not count
   towards streaks or workout totals. No migration or deployment is required
   beyond the app change itself.
+
+## 2026-10-29: Skip individual sets and review the current week (Aman's request)
+
+- Any unlogged working set can be skipped and restored. Skips are saved on
+  the current phone, keyed by workout and row, and work offline. They do
+  not create a set or change the routine. Progress and the next unfinished
+  exercise treat skipped rows as resolved while logged totals stay honest.
+- Today shows a brief current-week AI summary. The week runs Monday to
+  Sunday in Asia/Kolkata, Aman's choice. After a workout review is saved,
+  analyze-workout loads every finished, non-cancelled app workout in that
+  week and its active working sets, then asks for a separate short review.
+  Imports, baselines and warm-ups are excluded. The prompt does not invent
+  week-on-week progress or count future days as missed training.
+- Reuse insights with kind weekly_review and the existing unique key.
+  Each triggering workout gets a snapshot, avoiding a slow older job
+  overwriting a newer workout's snapshot. Today chooses the greatest
+  coveredThrough timestamp, polls after finishing, reloads on returning
+  to the app and can retry the weekly stage without repeating the saved
+  individual review. A weekly failure does not discard the session review.
+- The Track by dropdown was disabled for existing library exercises. It
+  now works: changing units creates or reuses a separately named version
+  such as Carry (timed), preserving old history and other plan targets.
+- Aman confirmed that What's new wording still needs his approval. The
+  last merge did not add a WHATS_NEW entry; this is why it had no popup.
+  No unapproved popup entries were added in this change.
+- No database migration. analyze-workout still needs separate Edge
+  Function deployment after review and merge; app CI does not deploy it.

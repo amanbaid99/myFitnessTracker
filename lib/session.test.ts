@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSession, carryWeightForward, nextOpenExercise, nextWarmupRow, type Row, type SessionExerciseInput, type SessionSet } from "./session";
+import { buildSession, isExerciseDone, carryWeightForward, nextOpenExercise, nextWarmupRow, type Row, type SessionExerciseInput, type SessionSet } from "./session";
 
 const incline: SessionExerciseInput = {
   exercise: { id: "incline", name: "Incline Bench Press", equipment: "machine", warmupEnabled: true, warmupTemplate: null },
@@ -198,5 +198,20 @@ describe("nextWarmupRow (Add warm-up)", () => {
     // Lateral Raise is not first, so it plans no warm-up; one was added and logged.
     const [, lat] = buildSession([incline, lateral], new Map(), [set("lateral", "warmup", 1, 2.5, 15)]);
     expect(lat.warmups.map((w) => [w.label, w.weightKg, w.reps, Boolean(w.logged)])).toEqual([["W1", 2.5, 15, true]]);
+  });
+});
+
+
+describe("skipping working sets", () => {
+  it("finishes an exercise after one logged set and two skipped sets, without logging the skips", () => {
+    const [ex] = buildSession([incline], new Map(), [set("incline", "working", 1, 15, 10)]);
+    ex.working[1].skipped = true;
+    ex.working[2].skipped = true;
+    expect(isExerciseDone(ex)).toBe(true);
+    expect(nextOpenExercise([ex])).toBeNull();
+    expect(ex.working.filter((r) => r.logged)).toHaveLength(1);
+    ex.working[2].skipped = false;
+    expect(isExerciseDone(ex)).toBe(false);
+    expect(nextOpenExercise([ex])).toBe("incline");
   });
 });
