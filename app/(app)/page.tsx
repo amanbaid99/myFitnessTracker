@@ -6,6 +6,7 @@ import { startWorkout } from "@/app/actions";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { DataError } from "@/components/data-error";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
+import { WeeklyReviewCard } from "@/components/home/weekly-review-card";
 import { BodyWeightCard } from "@/components/home/body-weight-card";
 import { HomeHero, type LastWorkout } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
@@ -69,6 +70,7 @@ export default async function TodayPage() {
     return (
       <>
         {hero}
+        <WeeklyReviewCard lastEndedAt={lastFinished?.endedAt ?? null} lastStartedAt={lastFinished?.startedAt ?? null} lastWorkoutId={lastFinished?.id ?? null} />
         <div className="mt-6 rounded-2xl border border-dashed p-6 text-center">
           <p className="text-lg font-medium">No active workout plan</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -159,6 +161,8 @@ export default async function TodayPage() {
           </form>
         </section>
       )}
+
+      <WeeklyReviewCard lastEndedAt={lastFinished?.endedAt ?? null} lastStartedAt={lastFinished?.startedAt ?? null} lastWorkoutId={lastFinished?.id ?? null} />
 
       {bodyWeight}
 

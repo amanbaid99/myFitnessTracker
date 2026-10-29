@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyzeWorkout, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
+import { analyzeWorkout, analyzeWeek, WEEK_PROMPT, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
 
 const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service-123", OPENROUTER_API_KEY: "or-key-123" };
 
@@ -255,5 +255,51 @@ describe("timed sets", () => {
     const plank = { ...DATA.today[0], exercise: "Plank", equipment: "bodyweight", weightKg: null, addedKg: 0, reps: null, durationSec: 45 };
     expect(buildSummary({ ...DATA, today: [plank] })).toContain("Plank (bodyweight): today 45s hold");
     expect(sessionStats([plank]).sets).toBe(1);
+  });
+});
+
+
+describe("weekly analysis", () => {
+  it("uses the full week, excludes warm-ups and deleted sets, and saves a separate snapshot", async () => {
+    const working = { workout_id: "w1", exercise_id: "e1", set_no: 1, weight_kg: 20, added_kg: 0, reps: 10, duration_sec: null, rpe: 8, exercises: { name: "Bench", equipment: "barbell", per_hand: false }, set_type: "working", deleted_at: null };
+    const fetchFn = vi.fn<typeof fetch>(async (url, init) => {
+      if (String(url).includes("/workouts?")) return Response.json([
+        { id: "w1", started_at: DATA.startedAt, ended_at: DATA.endedAt, routines: { name: "Push" }, sets: [working, { ...working, exercises: { ...working.exercises, name: "Warmup" }, set_type: "warmup" }] },
+        { id: "w2", started_at: "2026-10-15T09:00:00Z", ended_at: "2026-10-15T10:00:00Z", routines: { name: "Pull" }, sets: [{ ...working, exercises: { ...working.exercises, name: "Row" } }, { ...working, exercises: { ...working.exercises, name: "Deleted" }, deleted_at: DATA.endedAt }] },
+      ]);
+      if (String(url).startsWith("https://openrouter.ai")) {
+        const body = JSON.parse(String(init?.body));
+        expect(body.messages[0].content).toBe(WEEK_PROMPT);
+        expect(body.messages[1].content).toContain("Completed sessions so far: 2");
+        expect(body.messages[1].content).toContain("Bench");
+        expect(body.messages[1].content).toContain("Row");
+        expect(body.messages[1].content).not.toContain("Warmup");
+        expect(body.messages[1].content).not.toContain("Deleted");
+        return modelOk('{"title":"Steady week","summary":"Keep a rest day between hard sessions."}');
+      }
+      return new Response(null, { status: 201 });
+    });
+    await analyzeWeek(ENV, fetchFn, "w1", DATA, () => {});
+    const query = String(fetchFn.mock.calls[0][0]);
+    expect(query).toContain("user_id=eq.u1");
+    expect(query).toContain("source=eq.app&cancelled_at=is.null&ended_at=not.is.null");
+    expect(query).toContain("started_at=gte.2026-10-11T18%3A30%3A00.000Z");
+    expect(query).toContain("started_at=lt.2026-10-18T18%3A30%3A00.000Z");
+    const saved = JSON.parse(String(fetchFn.mock.calls.at(-1)![1]?.body));
+    expect(saved).toMatchObject({ kind: "weekly_review", workout_id: "w1", period_start: "2026-10-12", period_end: "2026-10-18", details: { workoutCount: 2, coveredThrough: "2026-10-15T10:00:00Z" } });
+  });
+
+  it("runs after saving the workout review and isolates a failed weekly request", async () => {
+    const base = fakeFetch([modelOk('{"title":"Good session","summary":"Steady work."}')]);
+    const fetchFn = vi.fn<typeof fetch>(async (url, init) => {
+      if (String(url).includes("&source=eq.app&")) {
+        expect(base.mock.calls.some(([, options]) => String(options?.body).includes('"kind":"workout_review"'))).toBe(true);
+        throw new Error("weekly read failed");
+      }
+      return base(url, init);
+    });
+    const log = vi.fn();
+    expect(await analyzeWorkout(ENV, fetchFn, "w1", log)).toBe("saved");
+    expect(log).toHaveBeenCalledWith("analyze-workout: weekly review failed");
   });
 });

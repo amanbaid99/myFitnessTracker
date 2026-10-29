@@ -24,18 +24,25 @@ Recent (2026-10-29, PR #1): the workout screen survives a weak signal
 when the weight goes up, reps drop to keep about the same volume; the
 tab bar shows a pending state while a tab loads.
 
+Exercise targets and previous-record entry shipped in PR #4 on 2026-10-29.
+
 ## In flight
 
-- 2026-10-29: Branch `fix/exercise-setup-and-records` adds exercise target
-  confirmation, workout edit progress, and contextual previous-record entry
-  after plan creation and from exercises. App changes only, not deployed.
-  Lint, type checks, 303 unit tests and mobile browser checks passed.
-  Record-save browser checks intercepted requests; live Supabase writes were
-  not exercised.
-  Production build, seed consistency, and local database checks passed
-  after Google Fonts access was enabled. GitHub API access is blocked in
-  the cloud environment, so PR creation and remote CI status need that
-  access enabled or owner action.
+- 2026-10-29: Branch `feat/skip-sets-and-weekly-analysis` adds reversible
+  working-set skips, a current-week summary on Today (Monday to Sunday in
+  India time), and enables tracking changes through separate exercise
+  variants. The weekly job follows the saved workout review and reuses
+  insights without a migration. Not deployed. Lint, type checks, all 311
+  unit tests, production build, and 390 px browser checks passed. Browser
+  checks used sample data and mocked insight reads, not live AI or writes.
+  The analyze-workout Edge Function needs a separate deployment after
+  merge and owner approval. What's new wording still requires approval;
+  no popup entry has been added.
+  Feature commit: ca2f98f. Notion Build Log and project status were updated.
+  CLI credentials failed; publishing uses the connected GitHub tools.
+  After automatic review requested explicit authorization for the public
+  source upload, Aman approved publishing the branch and opening a PR.
+  Production is unchanged; merge remains with Aman.
 
 ## Needs doing by hand
 

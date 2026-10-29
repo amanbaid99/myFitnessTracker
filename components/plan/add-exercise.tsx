@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Exercise } from "@/lib/data";
 import { EQUIPMENT } from "@/lib/muscles";
-import { defaultTracking, type Tracking } from "@/lib/tracking";
+import { defaultTracking, pickForTracking, type Tracking } from "@/lib/tracking";
 import type { Targets } from "@/lib/default-targets";
 
 export interface ExercisePick {
@@ -76,20 +76,20 @@ export function AddExercise({
       <fieldset disabled={busy} aria-busy={busy} className="min-w-0 space-y-3 p-2">
         <p className="font-medium">{selected.name}</p>
         <label className="block text-sm">Track by
-          <select aria-label="Track by" value={tracking} disabled={Boolean(existing)}
+          <select aria-label="Track by" value={tracking}
             className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-base"
             onChange={(e) => { const t = e.target.value as Tracking; setTracking(t); setReps(t === "time" ? "30" : "10"); }}>
             <option value="reps">Reps</option><option value="time">Time (seconds)</option>
           </select>
         </label>
-        {existing && <p className="text-xs text-muted-foreground">To change how an existing exercise is tracked everywhere, use its edit sheet.</p>}
+        {existing && <p className="text-xs text-muted-foreground">Changing tracking adds a separate version of this exercise, keeping your previous records and other plan days unchanged.</p>}
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">Sets<Input type="number" min={1} max={10} inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} /></label>
           <label className="text-sm">{tracking === "time" ? "Seconds per set" : "Reps per set"}<Input type="number" min={1} max={tracking === "time" ? 3600 : 50} inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} /></label>
         </div>
         {!valid && <p className="text-sm text-destructive">Enter 1 to 10 sets and {tracking === "time" ? "1 to 3600 seconds" : "1 to 50 reps"} per set.</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...selected, tracking, targets: { ...targetsFor!(selected.exerciseId), sets: Number(sets), reps: Number(reps) } })}>
+        <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...pickForTracking(selected, tracking, library), targets: { ...targetsFor!(selected.exerciseId), sets: Number(sets), reps: Number(reps) } })}>
           {busy ? <Loader2 className="animate-spin motion-reduce:animate-none" /> : <Plus />} {busy ? "Adding exercise…" : "Add exercise"}
         </Button>
         <Button variant="ghost" className="w-full" onClick={() => setSelected(null)}>Back to exercises</Button>

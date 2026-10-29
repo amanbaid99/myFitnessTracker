@@ -39,6 +39,8 @@ export interface SessionExerciseInput {
 }
 
 export interface Row {
+  /** Omitted for this workout only; never saved as a logged set. */
+  skipped?: boolean;
   key: string;
   setType: "warmup" | "working";
   setNo: number;
@@ -234,7 +236,7 @@ function timedExercise(item: SessionExerciseInput, prev: SessionSet[], mine: Ses
 
 /** An exercise is done when it has working sets and all are logged. */
 export function isExerciseDone(ex: Pick<SessionExercise, "working">): boolean {
-  return ex.working.length > 0 && ex.working.every((r) => r.logged);
+  return ex.working.length > 0 && ex.working.every((r) => r.logged || r.skipped);
 }
 
 /**
