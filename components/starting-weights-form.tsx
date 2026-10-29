@@ -1,13 +1,14 @@
 "use client";
 
 import { track } from "@/lib/analytics";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatSet, type SetLike } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
+import { MASK } from "@/lib/mask";
 import { toKg, type Units } from "@/lib/units";
 
 export interface StartingExercise {
@@ -37,10 +38,11 @@ const parse = (t: string) => {
  * one finished "baseline" workout with a working set per filled row, so
  * aims, warm-ups and records pick the numbers up like any logged set.
  */
-export function StartingWeightsForm({ exercises, units }: { exercises: StartingExercise[]; units: Units }) {
+export function StartingWeightsForm({ exercises, units, returnTo = "/routines" }: { exercises: StartingExercise[]; units: Units; returnTo?: string }) {
   const router = useRouter();
   const [entries, setEntries] = useState<Record<string, Entry>>({});
   const [busy, setBusy] = useState(false);
+  const saving = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const set = (id: string, patch: Partial<Entry>) =>
@@ -49,6 +51,7 @@ export function StartingWeightsForm({ exercises, units }: { exercises: StartingE
   const filled = exercises.filter((e) => entries[e.id] && (entries[e.id].weight.trim() || entries[e.id].reps.trim()));
 
   async function save() {
+    if (saving.current) return;
     const rows = [];
     for (const e of filled) {
       const w = parse(entries[e.id].weight);
@@ -76,40 +79,48 @@ export function StartingWeightsForm({ exercises, units }: { exercises: StartingE
       return;
     }
 
+    saving.current = true;
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    const workoutId = crypto.randomUUID();
-    const now = new Date().toISOString();
-    const made = await supabase.from("workouts").insert({ id: workoutId, started_at: now, ended_at: now, source: "baseline" });
-    if (made.error) {
+    try {
+      const supabase = createClient();
+      const workoutId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const made = await supabase.from("workouts").insert({ id: workoutId, started_at: now, ended_at: now, source: "baseline" });
+      if (made.error) {
+        setBusy(false);
+        setError(made.error.message);
+        return;
+      }
+      const sets = await supabase.from("sets").insert(
+        rows.map((r) => ({
+          id: crypto.randomUUID(),
+          workout_id: workoutId,
+          exercise_id: r.exerciseId,
+          set_no: 1,
+          set_type: "working",
+          weight_kg: r.weightKg,
+          added_kg: 0,
+          reps: r.reps,
+          logged_at: now,
+        })),
+      );
+      if (sets.error) {
+        // Nothing half-saved: remove the empty entry again.
+        await supabase.from("workouts").delete().eq("id", workoutId);
+        setBusy(false);
+        setError(sets.error.message);
+        return;
+      }
+      track("starting_weights_saved", { exercises: rows.length });
+      router.push(returnTo);
+      router.refresh();
+    } catch {
+      setError("Could not save your previous sets. Check your connection and try again.");
+    } finally {
+      saving.current = false;
       setBusy(false);
-      setError(made.error.message);
-      return;
     }
-    const sets = await supabase.from("sets").insert(
-      rows.map((r) => ({
-        id: crypto.randomUUID(),
-        workout_id: workoutId,
-        exercise_id: r.exerciseId,
-        set_no: 1,
-        set_type: "working",
-        weight_kg: r.weightKg,
-        added_kg: 0,
-        reps: r.reps,
-        logged_at: now,
-      })),
-    );
-    if (sets.error) {
-      // Nothing half-saved: remove the empty entry again.
-      await supabase.from("workouts").delete().eq("id", workoutId);
-      setBusy(false);
-      setError(sets.error.message);
-      return;
-    }
-    track("starting_weights_saved", { exercises: rows.length });
-    router.push("/routines");
-    router.refresh();
   }
 
   return (
@@ -135,7 +146,7 @@ export function StartingWeightsForm({ exercises, units }: { exercises: StartingE
                       value={entry.weight}
                       onChange={(ev) => set(e.id, { weight: ev.target.value })}
                       placeholder={e.bodyweight ? "Bodyweight" : "Weight"}
-                      className="pr-10"
+                      className={`${MASK} pr-10`}
                     />
                     <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{units}</span>
                   </div>
@@ -143,7 +154,7 @@ export function StartingWeightsForm({ exercises, units }: { exercises: StartingE
                 <label className="block">
                   <span className="sr-only">{e.name} reps</span>
                   <div className="relative">
-                    <Input inputMode="numeric" value={entry.reps} onChange={(ev) => set(e.id, { reps: ev.target.value })} placeholder="Reps" className="pr-12" />
+                    <Input inputMode="numeric" value={entry.reps} onChange={(ev) => set(e.id, { reps: ev.target.value })} placeholder="Reps" className={`${MASK} pr-12`} />
                     <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">reps</span>
                   </div>
                 </label>

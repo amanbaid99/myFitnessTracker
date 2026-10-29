@@ -29,7 +29,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "I already lift. Can I start from my current weights?",
         a: [
-          "Yes. Open Routines and tap Starting weights. Enter one normal working set you can do now for each exercise (weight and reps) and skip any you don't know.",
+          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, tap Add previous record on the open exercise. Enter weight and reps for one set and skip any you don't know.",
           "Your next workout's suggested weights, warm-ups and records build on these. They don't count as a workout, so they don't change your streak or totals.",
         ],
       },
@@ -96,7 +96,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "Can I add an exercise just for today?",
         a: [
-          "Yes. During a workout, add an exercise and choose to add it to this workout only. It uses the same sets and reps you use for it elsewhere in your plan, and anything you log counts towards your records.",
+          "Yes. During a workout, add an exercise and choose This workout only. Confirm its sets and reps before saving. For a new exercise you can choose reps or time and enter seconds per set. Existing exercises keep their tracking type; use their edit sheet to change it everywhere. Anything you log counts towards that exercise's history and eligible records.",
         ],
       },
     ],

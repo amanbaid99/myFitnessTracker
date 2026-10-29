@@ -20,7 +20,34 @@ export function extrasCookieName(workoutId: string): string {
 
 export function parseExtras(value: string | undefined): string[] {
   if (!value) return [];
-  return [...new Set(decodeURIComponent(value).split(",").filter(Boolean))];
+  try { return [...new Set(decodeURIComponent(value).split(",").filter(Boolean))]; }
+  catch { return []; }
+}
+
+export const extraTargetsCookieName = (workoutId: string) => `${PREFIX}targets-${workoutId}`;
+
+/** Cookie input is untrusted; invalid targets must not break workout rendering. */
+export function parseExtraTargets(value: string | undefined): Record<string, Targets> {
+  if (!value) return {};
+  try {
+    const parsed: unknown = JSON.parse(decodeURIComponent(value));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(Object.entries(parsed).filter(([, t]) =>
+      t && Number.isInteger(t.sets) && t.sets >= 1 && t.sets <= 10 &&
+      Number.isInteger(t.reps) && t.reps >= 1 && t.reps <= 3600 &&
+      (t.restSec === null || (Number.isInteger(t.restSec) && t.restSec >= 0 && t.restSec <= 3600)),
+    ));
+  } catch { return {}; }
+}
+
+function writeTargets(workoutId: string, targets: Record<string, Targets>) {
+  document.cookie = `${extraTargetsCookieName(workoutId)}=${encodeURIComponent(JSON.stringify(targets))}; path=/; max-age=${MAX_AGE_SEC}; samesite=lax`;
+}
+
+function readTargets(workoutId: string) {
+  const name = extraTargetsCookieName(workoutId);
+  const hit = document.cookie.split("; ").find((c) => c.startsWith(`${name}=`));
+  return parseExtraTargets(hit?.slice(name.length + 1));
 }
 
 /**
@@ -61,10 +88,14 @@ function writeCookie(workoutId: string, ids: string[]): void {
     : `${name}=; path=/; max-age=0; samesite=lax`;
 }
 
-export function addExtra(workoutId: string, exerciseId: string): void {
+export function addExtra(workoutId: string, exerciseId: string, targets?: Targets): void {
+  if (targets) writeTargets(workoutId, { ...readTargets(workoutId), [exerciseId]: targets });
   writeCookie(workoutId, [...readCookie(workoutId).filter((id) => id !== exerciseId), exerciseId]);
 }
 
 export function removeExtra(workoutId: string, exerciseId: string): void {
+  const targets = readTargets(workoutId);
+  delete targets[exerciseId];
+  writeTargets(workoutId, targets);
   writeCookie(workoutId, readCookie(workoutId).filter((id) => id !== exerciseId));
 }

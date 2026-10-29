@@ -8,7 +8,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ExercisePick } from "@/components/plan/add-exercise";
 import type { ExerciseEdits } from "@/components/plan/exercise-sheet";
 import type { RoutineExercise } from "./data";
+import type { TemplateRoutine } from "./templates";
 import { defaultTargets, slots, type Targets } from "./default-targets";
+import { defaultTracking } from "./tracking";
 
 export type DbResult = { error: { message: string; code?: string } | null };
 
@@ -17,9 +19,14 @@ export async function exerciseIdFor(supabase: SupabaseClient, pick: ExercisePick
   if (pick.exerciseId) return { id: pick.exerciseId, error: null };
   const { data, error } = await supabase
     .from("exercises")
-    .insert({ name: pick.name, equipment: pick.equipment, per_hand: pick.equipment === "dumbbell" })
+    .insert({ name: pick.name, equipment: pick.equipment, per_hand: pick.equipment === "dumbbell", tracking: pick.tracking ?? defaultTracking(pick.name) })
     .select("id")
     .single();
+  // The insert trigger infers timed holds by name. An explicit choice wins.
+  if (!error && data && pick.tracking === "reps" && defaultTracking(pick.name) === "time") {
+    const updated = await supabase.from("exercises").update({ tracking: "reps" }).eq("id", data.id);
+    if (updated.error) return { id: null, error: updated.error };
+  }
   return { id: data?.id ?? null, error };
 }
 
@@ -34,7 +41,7 @@ export async function addExercise(
   const { id, error } = await exerciseIdFor(supabase, pick);
   if (error || !id) return { error: error ?? { message: "Could not create the exercise." } };
   const sort = items.length ? Math.max(...items.map((i) => i.sortOrder)) + 1 : 1;
-  const t = targets ?? defaultTargets(id, slots(items));
+  const t = pick.targets ?? targets ?? defaultTargets(id, slots(items));
   return supabase.from("routine_exercises").insert({
     routine_id: routineId,
     exercise_id: id,
@@ -151,4 +158,24 @@ export function friendlyError(error: { message: string; code?: string }): string
     return "You already have an exercise with that name. Pick a different name.";
   }
   return error.message;
+}
+
+/** Materialize explicitly configured new draft exercises before create_plan reuses them.
+ * Existing exercises keep their shared tracking type. Retrying is safe by name.
+ */
+export async function prepareDraftExercises(supabase: SupabaseClient, days: TemplateRoutine[]): Promise<DbResult> {
+  const configured = days.flatMap((d) => d.exercises).filter((e) => e.tracking !== undefined);
+  if (!configured.length) return { error: null };
+  const { data, error } = await supabase.from("exercises").select("id,name").is("archived_at", null);
+  if (error) return { error };
+  const known = new Set((data ?? []).map((e) => e.name.toLowerCase()));
+  for (const e of configured) {
+    if (known.has(e.name.toLowerCase())) continue;
+    const made = await exerciseIdFor(supabase, { exerciseId: null, name: e.name, equipment: e.equipment, tracking: e.tracking });
+    if (made.error || !made.id) return { error: made.error ?? { message: "Could not create the exercise." } };
+    const metadata = await supabase.from("exercises").update({ muscle_groups: e.muscle_groups, per_hand: e.per_hand }).eq("id", made.id);
+    if (metadata.error) return metadata;
+    known.add(e.name.toLowerCase());
+  }
+  return { error: null };
 }

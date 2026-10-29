@@ -1262,3 +1262,29 @@ lists what is live, in flight, waiting on a manual step, and known gaps.
 SPEC.md is marked as the original Phase 1 spec. AGENTS.md also states
 the shipping rule learnt the hard way: the default branch is production,
 so work goes on a branch and a PR that Aman merges.
+
+
+## 2026-10-29: Configure added exercises and enter previous records (Aman's request)
+
+- Adding an exercise now has a confirmation step for sets and reps or
+  seconds. New exercises offer a tracking choice; existing library entries
+  keep their shared type so adding them cannot silently reinterpret history.
+  The edit sheet still changes tracking everywhere when that is intended.
+- Workout edits show syncing, saving and refresh progress and reject
+  overlapping submissions. Plan slots and alternate history load together
+  during a workout refresh. Queued sets still sync before structural edits.
+- Workout-only targets live in a separate validated cookie alongside the
+  existing exercise-id cookie. Old cookies still work. Adding the extra to
+  the plan carries its chosen targets over.
+- Draft plans retain selected targets and tracking. Before create_plan,
+  explicitly configured new exercises are added to the library so the
+  existing RPC can reuse their tracking without a schema migration.
+- Creating a plan (welcome, template or AI) opens an optional previous-set
+  step. Plan editors can enter records for inactive plans too. Exercise
+  sheets and workout cards link directly to that exercise's record entry;
+  workout links preserve the rest timer and return to the open workout.
+- Records reuse baseline working sets (weight plus reps), not stored PR
+  values. Existing PR calculations and exclusions still apply. Timed holds
+  remain outside personal records. Baselines guide aims but do not count
+  towards streaks or workout totals. No migration or deployment is required
+  beyond the app change itself.

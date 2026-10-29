@@ -1,5 +1,6 @@
 "use client";
 
+import { prepareDraftExercises } from "@/lib/routine-edits";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -154,6 +155,8 @@ export function WelcomeFlow({
     if (!rec || !setup || emptyDay) return;
     setBusy(true);
     setError(null);
+    const prepared = await prepareDraftExercises(supabase, draft);
+    if (prepared.error) { setBusy(false); setError(prepared.error.message); return; }
     const { data: planId, error } = await supabase.rpc("create_plan", {
       p_name: rec.name,
       p_template: rec.template,
@@ -169,7 +172,7 @@ export function WelcomeFlow({
     // Changed before creating: it is the user's own version of the template.
     if (isEdited(draft, routines) && planId) await supabase.from("plans").update({ is_custom: true }).eq("id", planId);
     track("plan_created", { method: "onboarding", template: rec.template, days: draft.length, edited: isEdited(draft, routines) });
-    await finish("/");
+    await finish("/starting-weights?setup=1");
   }
 
   const back = (to: 1 | 2) => (

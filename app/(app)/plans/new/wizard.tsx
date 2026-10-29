@@ -1,5 +1,6 @@
 "use client";
 
+import { prepareDraftExercises } from "@/lib/routine-edits";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -71,6 +72,8 @@ export function NewPlanWizard({
     setBusy(true);
     setError(null);
     const supabase = createClient();
+    const prepared = await prepareDraftExercises(supabase, draft);
+    if (prepared.error) { setBusy(false); setError(prepared.error.message); return; }
     const { data: planId, error } = await supabase.rpc("create_plan", {
       p_name: name.trim() || defaultPlanName(template, days),
       p_template: template,
@@ -86,7 +89,7 @@ export function NewPlanWizard({
     // Changed before creating: it is the user's own version of the template.
     if (isEdited(draft, routines) && planId) await supabase.from("plans").update({ is_custom: true }).eq("id", planId);
     track("plan_created", { method: "template", template, days: draft.length, edited: isEdited(draft, routines) });
-    router.push("/");
+    router.push("/starting-weights?setup=1");
     router.refresh();
   }
 

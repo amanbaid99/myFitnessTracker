@@ -15,6 +15,8 @@ export interface TemplateExercise {
   per_hand: boolean;
   sets: number;
   reps: number;
+  /** Explicit tracking for exercises added to a draft. */
+  tracking?: import("./tracking").Tracking;
 }
 
 export interface TemplateRoutine {

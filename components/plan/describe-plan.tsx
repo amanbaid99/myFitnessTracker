@@ -1,5 +1,6 @@
 "use client";
 
+import { prepareDraftExercises } from "@/lib/routine-edits";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -77,7 +78,10 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
     if (!days || emptyDay) return;
     setBusy(true);
     setError(null);
-    const { error } = await createClient().rpc("create_plan", {
+    const supabase = createClient();
+    const prepared = await prepareDraftExercises(supabase, days);
+    if (prepared.error) { setBusy(false); setError(prepared.error.message); return; }
+    const { error } = await supabase.rpc("create_plan", {
       p_name: name.trim() || "My plan",
       p_template: null,
       p_days: days.length,
@@ -90,7 +94,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
       return;
     }
     track("plan_created", { method: "ai", days: days.length });
-    router.push("/");
+    router.push("/starting-weights?setup=1");
     router.refresh();
   }
 

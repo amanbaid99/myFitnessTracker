@@ -1,6 +1,7 @@
 "use client";
 
 import { confirmDialog } from "@/components/confirm-dialog";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowLeftRight, ArrowUp, ChevronRight, Flame, Pencil, Plus, Trash2 } from "lucide-react";
@@ -14,6 +15,7 @@ import { AddExercise } from "@/components/plan/add-exercise";
 import { ExerciseSheet, type ExerciseEdits } from "@/components/plan/exercise-sheet";
 import { PrepSheet } from "@/components/plan/prep-sheet";
 import { useTip } from "@/components/guide/guide-provider";
+import { defaultTargets, slots } from "@/lib/default-targets";
 import { formatTarget } from "@/lib/tracking";
 import {
   addExercise,
@@ -103,6 +105,9 @@ export function PlanEditor({
         <p className="text-xs text-muted-foreground">
           Tap a name to rename it. Tap an exercise to edit it. Days run in this order; use the arrows to change it.
         </p>
+        <Button asChild variant="outline" className="mt-3 w-full">
+          <Link href={`/starting-weights?plan=${plan.id}`}>Add previous records / starting weights</Link>
+        </Button>
         {!plan.isActive && (
           <div className="mt-3 grid grid-cols-2 gap-2">
             <MakeActiveButton planId={plan.id} />
@@ -292,6 +297,7 @@ function RoutineEditor({
         {adding ? (
           <AddExercise
             library={library}
+            targetsFor={(id) => defaultTargets(id, slots(items))}
             existingIds={items.map((i) => i.exercise.id)}
             onCancel={() => setAdding(false)}
             onAdd={async (pick) => {
@@ -337,6 +343,7 @@ function RoutineEditor({
         <ExerciseSheet
           key={editingItem.id}
           item={editingItem}
+          recordHref={`/starting-weights?exercise=${editingItem.exercise.id}&plan=${routine.planId}`}
           defaultRestSec={defaultRestSec}
           canMoveUp={editingIndex > 0}
           canMoveDown={editingIndex < items.length - 1}

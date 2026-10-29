@@ -26,7 +26,16 @@ tab bar shows a pending state while a tab loads.
 
 ## In flight
 
-Nothing open.
+- 2026-10-29: Branch `fix/exercise-setup-and-records` adds exercise target
+  confirmation, workout edit progress, and contextual previous-record entry
+  after plan creation and from exercises. App changes only, not deployed.
+  Lint, type checks, 303 unit tests and mobile browser checks passed.
+  Record-save browser checks intercepted requests; live Supabase writes were
+  not exercised.
+  Production build, seed consistency, and local database checks passed
+  after Google Fonts access was enabled. GitHub API access is blocked in
+  the cloud environment, so PR creation and remote CI status need that
+  access enabled or owner action.
 
 ## Needs doing by hand
 
