@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { ArrowDown, ArrowLeftRight, ArrowUp, Minus, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,8 @@ export function ExerciseSheet({
   onAddAlternate,
   onRemoveAlternate,
   onClose,
+  recordHref,
+  onRecords,
 }: {
   item: RoutineExercise;
   defaultRestSec: number;
@@ -64,6 +67,8 @@ export function ExerciseSheet({
   onAddAlternate?: (pick: ExercisePick) => Promise<string | null>;
   onRemoveAlternate?: (exerciseId: string) => Promise<string | null>;
   onClose: () => void;
+  recordHref?: string;
+  onRecords?: () => void;
 }) {
   const e = item.exercise;
   const [name, setName] = useState(e.name);
@@ -194,6 +199,11 @@ export function ExerciseSheet({
         ) : (
           <>
             <div className="space-y-5 overflow-y-auto px-5 pb-4 pt-2">
+              {e.tracking !== "time" && (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={recordHref ?? `/starting-weights?exercise=${e.id}`} onClick={onRecords}>Add previous record / starting weight</Link>
+                </Button>
+              )}
               <Field label="Name" htmlFor="ex-name" hint="Renames it everywhere, including your history.">
                 <Input id="ex-name" value={name} maxLength={60} onChange={(ev) => setName(ev.target.value)} />
               </Field>

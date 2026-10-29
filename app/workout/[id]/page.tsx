@@ -23,7 +23,7 @@ import { dayPrep } from "@/lib/routine-prep";
 import { buildSession } from "@/lib/session";
 import { chooseForDay, choicesCookieName, dayOptionIds, optionSessions, parseChoices } from "@/lib/alternates";
 import { createClient } from "@/lib/supabase/server";
-import { extraExerciseIds, extraItem, extrasCookieName, parseExtras } from "@/lib/workout-extras";
+import { extraExerciseIds, extraItem, extrasCookieName, parseExtras, extraTargetsCookieName, parseExtraTargets } from "@/lib/workout-extras";
 import { defaultTargets, slots } from "@/lib/default-targets";
 import { Logger } from "./logger";
 import { GuideProvider } from "@/components/guide/guide-provider";
@@ -37,6 +37,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
 
   const jar = await cookies();
   const cookieIds = parseExtras(jar.get(extrasCookieName(id))?.value);
+  const extraTargets = parseExtraTargets(jar.get(extraTargetsCookieName(id))?.value);
   // Alternates switched to during this workout, by slot.
   const picked = parseChoices(jar.get(choicesCookieName(id))?.value);
 
@@ -49,15 +50,17 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       getExerciseLibrary(supabase),
       getGuideState(supabase),
     ]);
-    // Every day of the plan, so an added exercise takes its usual sets and reps.
-    const planRoutines = routine ? await getRoutines(supabase, routine.planId) : [];
-    const planSlots = slots(planRoutines.flatMap((r) => r.exercises));
-    const daySlots = slots(routine?.exercises ?? []);
-    // A slot with alternates is done as one of them: the one with sets
-    // today, the one switched to, else the one after last time's.
     const slotsOfDay = routine?.exercises ?? [];
     const optionIds = dayOptionIds(slotsOfDay);
-    const recent = routine && optionIds.length ? await getRecentOptionSets(supabase, optionIds, id) : [];
+    // These reads are independent. Fetch together when rebuilding after an edit.
+    const [planRoutines, recent] = await Promise.all([
+      routine ? getRoutines(supabase, routine.planId) : Promise.resolve([]),
+      routine && optionIds.length ? getRecentOptionSets(supabase, optionIds, id) : Promise.resolve([]),
+    ]);
+    const planSlots = slots(planRoutines.flatMap((r) => r.exercises));
+    const daySlots = slots(slotsOfDay);
+    // A slot with alternates is done as one of them: the one with sets
+    // today, the one switched to, else the one after last time's.
     const dayItems = routine
       ? chooseForDay(slotsOfDay, { routineId: routine.id, loggedIds: new Set(logged.map((s) => s.exerciseId)), picked, recent })
       : [];
@@ -66,7 +69,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     const extras = extraExerciseIds(cookieIds, logged.map((s) => s.exerciseId), dayIds)
       .map((exId) => library.find((e) => e.id === exId))
       .filter((e) => e !== undefined)
-      .map((e, i) => extraItem(e, i, defaultTargets(e.id, daySlots, planSlots)));
+      .map((e, i) => extraItem(e, i, extraTargets[e.id] ?? defaultTargets(e.id, daySlots, planSlots)));
     const items = [...dayItems, ...extras];
     const exerciseIds = [...new Set([...items.map((e) => e.exercise.id), ...optionIds])];
     const [profile, previous, prs, notes, lastNotes, plan, bodyWeights] = await Promise.all([

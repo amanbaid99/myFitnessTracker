@@ -63,3 +63,10 @@ describe("exerciseCatalog", () => {
     expect(exerciseCatalog([], "bodyweight").every((e) => e.equipment !== "machine")).toBe(true);
   });
 });
+
+it("keeps chosen timed targets in a newly added exercise and during later draft edits", () => {
+  const days = addExercise(PLAN, 2, { name: "Custom hold", equipment: "bodyweight", muscle_groups: ["core"], per_hand: false, tracking: "time", sets: 4, reps: 90 });
+  expect(days[2].exercises[0]).toMatchObject({ tracking: "time", sets: 4, reps: 90 });
+  expect(setTargets(days, 2, 0, 5, 120)[2].exercises[0]).toMatchObject({ sets: 5, reps: 120 });
+  expect(PLAN[2].exercises).toEqual([]);
+});

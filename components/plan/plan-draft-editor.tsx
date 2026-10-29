@@ -18,6 +18,7 @@ import {
   setTargets,
 } from "@/lib/plan-draft";
 import type { TemplateExercise, TemplateRoutine } from "@/lib/templates";
+import { defaultTracking, formatTarget } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
 import { AddExercise } from "./add-exercise";
 
@@ -106,7 +107,7 @@ export function PlanDraftEditor({
                   >
                     <span className="min-w-0 flex-1 truncate">{e.name}</span>
                     <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                      {e.sets} × {e.reps}
+                      {formatTarget(e.sets, e.reps, e.tracking ?? defaultTracking(e.name))}
                     </span>
                     <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-180")} aria-hidden />
                   </button>
@@ -135,6 +136,7 @@ export function PlanDraftEditor({
             <div className="border-t">
               <AddExercise
                 library={catalog}
+                targetsFor={() => ({ sets: 3, reps: 10, restSec: null })}
                 existingIds={catalog.filter((c) => day.exercises.some((e) => e.name.toLowerCase() === c.name.toLowerCase())).map((c) => c.id)}
                 onCancel={() => setAdding(null)}
                 onAdd={(pick) => {
@@ -143,6 +145,9 @@ export function PlanDraftEditor({
                   onChange(
                     addExercise(days, d, {
                       name: pick.name,
+                      tracking: pick.tracking,
+                      sets: pick.targets?.sets,
+                      reps: pick.targets?.reps,
                       equipment,
                       muscle_groups: known?.muscleGroups ?? [],
                       per_hand: known?.perHand ?? equipment === "dumbbell",
@@ -193,7 +198,7 @@ function ExerciseControls({
     <div className="space-y-3 bg-muted/30 px-4 pb-3 pt-1">
       <div className="grid grid-cols-2 gap-3">
         <Stepper label="Sets" value={exercise.sets} max={MAX_SETS} onChange={(v) => onTargets(v, exercise.reps)} />
-        <Stepper label="Reps" value={exercise.reps} max={MAX_REPS} onChange={(v) => onTargets(exercise.sets, v)} />
+        <Stepper label={(exercise.tracking ?? defaultTracking(exercise.name)) === "time" ? "Seconds" : "Reps"} value={exercise.reps} max={(exercise.tracking ?? defaultTracking(exercise.name)) === "time" ? 3600 : MAX_REPS} onChange={(v) => onTargets(exercise.sets, v)} />
       </div>
       <div className="grid grid-cols-3 gap-2">
         <Button variant="secondary" disabled={first} onClick={() => onMove(-1)}>

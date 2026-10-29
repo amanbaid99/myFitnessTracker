@@ -45,16 +45,16 @@ export const moveExercise = (days: TemplateRoutine[], day: number, i: number, di
 export const removeExercise = (days: TemplateRoutine[], day: number, i: number) =>
   onDay(days, day, (list) => list.filter((_, k) => k !== i));
 
-/** Sets and reps, kept within 1 to MAX_SETS and 1 to MAX_REPS. */
+/** Clamp sets and targets, allowing up to an hour per timed set. */
 export function setTargets(days: TemplateRoutine[], day: number, i: number, sets: number, reps: number): TemplateRoutine[] {
   const clamp = (n: number, max: number) => Math.min(max, Math.max(1, Math.round(n)));
-  return onDay(days, day, (list) => list.map((e, k) => (k === i ? { ...e, sets: clamp(sets, MAX_SETS), reps: clamp(reps, MAX_REPS) } : e)));
+  return onDay(days, day, (list) => list.map((e, k) => (k === i ? { ...e, sets: clamp(sets, MAX_SETS), reps: clamp(reps, (e.tracking ?? defaultTracking(e.name)) === "time" ? 3600 : MAX_REPS) } : e)));
 }
 
-/** Adds an exercise at 3 x 10, unless the day already has one by that name. */
-export function addExercise(days: TemplateRoutine[], day: number, e: Omit<TemplateExercise, "sets" | "reps">): TemplateRoutine[] {
+/** Adds chosen targets (default 3 x 10), once per name on this day. */
+export function addExercise(days: TemplateRoutine[], day: number, e: Omit<TemplateExercise, "sets" | "reps"> & Partial<Pick<TemplateExercise, "sets" | "reps">>): TemplateRoutine[] {
   return onDay(days, day, (list) =>
-    list.some((x) => x.name.toLowerCase() === e.name.toLowerCase()) ? list : [...list, { ...e, sets: 3, reps: 10 }],
+    list.some((x) => x.name.toLowerCase() === e.name.toLowerCase()) ? list : [...list, { ...e, sets: e.sets ?? 3, reps: e.reps ?? 10 }],
   );
 }
 
@@ -88,7 +88,7 @@ export function exerciseCatalog(library: Exercise[], setup: TrainingSetup): Exer
             warmupEnabled: true,
             warmupTemplate: null,
             weightStepKg: 2.5,
-            tracking: defaultTracking(e.name),
+            tracking: e.tracking ?? defaultTracking(e.name),
           });
         }
       }

@@ -3,10 +3,10 @@
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Loader2, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -186,21 +186,32 @@ export function Logger(props: {
     structural = true,
   ): Promise<string | null> {
     if (!editing) return null;
+    if (editLock.current || refreshing) return "An exercise change is already in progress.";
     if (!navigator.onLine) return "You're offline. Changing exercises needs a connection.";
-    await flush();
-    const left = await pendingCount(workoutId);
-    if (left > 0) return `${left} ${left === 1 ? "change is" : "changes are"} still syncing. Try again in a moment.`;
-    const supabase = createClient();
-    const res = await op(supabase);
-    if (res.error) return friendlyError(res.error);
-    if (structural || res.slotChanged) await markCustom(supabase, editing.plan);
+    editLock.current = true;
+    setEditBusy("Syncing your sets…");
     try {
-      sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi));
-    } catch {}
-    setEditItemId(null);
-    setAddingExercise(false);
-    router.refresh();
-    return null;
+      await flush();
+      const left = await pendingCount(workoutId);
+      if (left > 0) return `${left} ${left === 1 ? "change is" : "changes are"} still syncing. Try again in a moment.`;
+      const supabase = createClient();
+      setEditBusy("Saving exercise changes…");
+      const res = await op(supabase);
+      if (res.error) return friendlyError(res.error);
+      if (structural || res.slotChanged) await markCustom(supabase, editing.plan);
+      try {
+        sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi));
+      } catch {}
+      setEditItemId(null);
+      setAddingExercise(false);
+      startRefresh(() => router.refresh());
+      return null;
+    } catch {
+      return "Could not change the exercise. Check your connection and try again.";
+    } finally {
+      editLock.current = false;
+      setEditBusy(null);
+    }
   }
 
   /** Cancelling runs on the server after every queued set, so it needs a connection. */
@@ -215,6 +226,9 @@ export function Logger(props: {
   // Editing the day: which exercise's sheet is open, or the add picker.
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [addingExercise, setAddingExercise] = useState(false);
+  const [editBusy, setEditBusy] = useState<string | null>(null);
+  const [refreshing, startRefresh] = useTransition();
+  const editLock = useRef(false);
   const [addToPlan, setAddToPlan] = useState(false);
   const uiKey = `wt-ui-${workoutId}`;
 
@@ -646,6 +660,10 @@ export function Logger(props: {
     );
   }
 
+  const editIndex = dayItems.findIndex((i) => i.id === editItemId);
+  // Always edit the plan slot, including its own exercise and alternates.
+  const editItem = editing?.slots.find((i) => i.id === editItemId);
+
   return (
     <div className="min-h-dvh pb-[calc(8rem+env(safe-area-inset-bottom))]">
       <header className="sticky top-0 z-30 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
@@ -786,6 +804,13 @@ export function Logger(props: {
                       {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
                       {isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}
                     </div>
+                    {!demo && item.exercise.tracking !== "time" && (
+                      <Link href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
+                        try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
+                      }} className="inline-flex min-h-11 items-center gap-1 text-sm text-primary">
+                        <Trophy className="size-4" aria-hidden /> Add previous record
+                      </Link>
+                    )}
                     {editing && isExtraItem(item) && (
                       <div className="-ml-2 mt-1 flex flex-wrap">
                         <Button
@@ -989,7 +1014,7 @@ export function Logger(props: {
 
         {editing &&
           (addingExercise ? (
-            <section className="rounded-2xl border bg-card p-2">
+            <fieldset disabled={Boolean(editBusy) || refreshing} aria-busy={Boolean(editBusy) || refreshing} className="min-w-0 rounded-2xl border bg-card p-2">
               <p className="px-2 pt-2 text-sm font-medium">Add an exercise</p>
               <div role="radiogroup" aria-label="Add it to" className="mx-2 mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
                 {[
@@ -1018,6 +1043,7 @@ export function Logger(props: {
               </p>
               <AddExercise
                 library={editing.library}
+                targetsFor={(id) => defaultTargets(id, slots(dayItems), editing.planSlots)}
                 existingIds={[...items.map((i) => i.exercise.id), ...Object.values(props.options ?? {}).flatMap((o) => o.map((x) => x.exercise.id))]}
                 onCancel={() => setAddingExercise(false)}
                 onAdd={async (pick) => {
@@ -1027,7 +1053,7 @@ export function Logger(props: {
                           addExercise(s, editing.routineId, dayItems, pick, defaultTargets(pick.exerciseId, slots(dayItems), editing.planSlots))
                       : async (s) => {
                           const { id, error } = await exerciseIdFor(s, pick);
-                          if (id) addExtra(workoutId, id);
+                          if (id) addExtra(workoutId, id, pick.targets);
                           return { error };
                         },
                     addToPlan,
@@ -1035,9 +1061,9 @@ export function Logger(props: {
                   if (err) setError(err);
                 }}
               />
-            </section>
+            </fieldset>
           ) : (
-            <Button variant="outline" className="w-full" onClick={() => setAddingExercise(true)}>
+            <Button variant="outline" disabled={Boolean(editBusy) || refreshing} className="w-full" onClick={() => setAddingExercise(true)}>
               <Plus /> Add exercise
             </Button>
           ))}
@@ -1073,6 +1099,13 @@ export function Logger(props: {
         )}
       </main>
 
+      {(editBusy || refreshing) && (
+        <div role="status" className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-md items-center gap-2 rounded-xl border bg-card p-3 text-sm shadow-lg">
+          <Loader2 className="size-4 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden />
+          {editBusy ?? "Updating your workout…"}
+        </div>
+      )}
+
       {rest && (
         <RestBar
           remaining={Math.max(0, Math.ceil((rest.endsAt - now) / 1000))}
@@ -1083,44 +1116,42 @@ export function Logger(props: {
         />
       )}
 
-      {editing && editItemId && (() => {
-        const index = dayItems.findIndex((i) => i.id === editItemId);
-        // The slot as in the plan: its own exercise and its alternates.
-        const item = editing.slots.find((i) => i.id === editItemId);
-        if (index < 0 || !item) return null;
-        return (
+      {editing && editItem && editIndex >= 0 && (
           <ExerciseSheet
-            key={item.id}
-            item={item}
+            key={editItem.id}
+            item={editItem}
+            recordHref={`/starting-weights?exercise=${editItem.exercise.id}&workout=${workoutId}`}
+            onRecords={() => {
+              try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
+            }}
             defaultRestSec={props.defaultRestSec}
-            canMoveUp={index > 0}
-            canMoveDown={index < dayItems.length - 1}
+            canMoveUp={editIndex > 0}
+            canMoveDown={editIndex < dayItems.length - 1}
             library={editing.library}
             existingIds={[...items.map((i) => i.exercise.id), ...Object.values(props.options ?? {}).flatMap((o) => o.map((x) => x.exercise.id))]}
-            onSave={(edits) => applyEdit((s) => saveExerciseEdits(s, item, edits), false)}
+            onSave={(edits) => applyEdit((s) => saveExerciseEdits(s, editItem, edits), false)}
             onMove={async (dir) => {
-              const err = await applyEdit((s) => moveExercise(s, dayItems, item, dir));
+              const err = await applyEdit((s) => moveExercise(s, dayItems, editItem, dir));
               if (err) setError(err);
             }}
-            onSwap={(pick) => applyEdit((s) => swapExercise(s, item, pick))}
-            onAddAlternate={(pick) => applyEdit((s) => addAlternate(s, item, pick))}
-            onRemoveAlternate={(exerciseId) => applyEdit((s) => removeAlternate(s, item, exerciseId))}
+            onSwap={(pick) => applyEdit((s) => swapExercise(s, editItem, pick))}
+            onAddAlternate={(pick) => applyEdit((s) => addAlternate(s, editItem, pick))}
+            onRemoveAlternate={(exerciseId) => applyEdit((s) => removeAlternate(s, editItem, exerciseId))}
             onRemove={async () => {
-              const logged = exercises[index]?.working.some((r) => r.logged) || exercises[index]?.warmups.some((r) => r.logged);
+              const logged = exercises[editIndex]?.working.some((r) => r.logged) || exercises[editIndex]?.warmups.some((r) => r.logged);
               const ok = await confirmDialog({
-                title: `Remove ${item.exercise.name}?`,
+                title: `Remove ${editItem.exercise.name}?`,
                 message: `It comes out of ${props.routineName} in your plan.${logged ? " Sets you logged for it today stay in your history." : ""}`,
                 confirmLabel: "Remove",
                 destructive: true,
               });
               if (!ok) return;
-              const err = await applyEdit((s) => removeExercise(s, item));
+              const err = await applyEdit((s) => removeExercise(s, editItem));
               if (err) setError(err);
             }}
             onClose={() => setEditItemId(null)}
           />
-        );
-      })()}
+      )}
 
       {finishing && (
         <FinishSheet
