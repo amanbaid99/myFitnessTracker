@@ -1217,3 +1217,37 @@ schema or create_plan changes.
   the feature. The first is alternates, linking to /plans/active, which
   opens the active plan's editor. Settings lists every entry.
 - The feedback prompt waits while the guide is showing something.
+
+## 2026-10-26: Workout screen survives a dropped signal
+
+Aman hit Next's built-in "This page couldn't load" twice mid-workout.
+The session recording showed Safari "TypeError: Load failed" each time
+the app came back to the foreground during rest, with no server errors.
+After a dead spot the outbox synced and called router.refresh(); on a
+weak signal that re-fetch can fail partway and the error reached React.
+- The outbox no longer refreshes the workout screen after a sync: the
+  logger already shows what was logged. Other screens still refresh.
+- app/workout/[id]/error.tsx replaces the generic page: "Connection
+  dropped", sets are safe on the phone, and it retries by itself when
+  back online or in the foreground, and every 15 s. It sends a
+  workout_screen_error event, since PostHog had no exception capture.
+
+## 2026-10-26: Heavier weight, fewer reps (Aman's request)
+
+When the weight goes up (Easy during a workout, or next session's aim
+after hitting every target), the reps are set to keep about the same
+volume, load x reps, capped at the target: 12.5 kg x 10 Easy gives
+15 kg x 8; 5 kg x 12 gives an aim of 7.5 kg x 8; a small jump (80 kg x
+6 to 82.5) keeps 6. Double progression then builds the reps back up to
+the target before the next increase. After Easy, later untouched sets
+follow the next set, so set 3 no longer lags behind set 2.
+
+## 2026-10-26: Tabs answer a tap at once (Aman's request)
+
+Switching tabs sometimes paused before anything changed: Next shows a
+tab's loading skeleton only once that tab's shell is prefetched, which a
+weak signal delays. Each tab in the bottom bar now uses useLinkStatus:
+while its screen is on the way, the tab lights up and a short bar slides
+along the top of the tab bar (fades in after 100 ms, so fast switches
+show nothing; a static bar with reduced motion). Coach got its own
+loading skeleton instead of falling back to Today's.
