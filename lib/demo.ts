@@ -184,3 +184,11 @@ export const DEMO_NEXT_ROUTINE_ID = "push";
 export function demoRoutine(slug: string): Routine | null {
   return DEMO_ROUTINES.find((r) => r.id === slug) ?? null;
 }
+
+
+/** Example coach copy for the public Today preview, never a saved insight. */
+export const DEMO_WEEKLY_REVIEW = {
+  title: "A steady start to the week",
+  summary: "Two workouts cover your main pushing and pulling movements. Keep an eye on recovery as the week builds. Aim for one lower-body session before Sunday.",
+  details: { workoutCount: 2 },
+};

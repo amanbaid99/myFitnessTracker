@@ -20,12 +20,16 @@ export const FAQ: FaqSection[] = [
     title: "Getting started",
     items: [
       {
+        q: "Where are the other workout days and weight graph?",
+        a: ["Today starts with your weekly analysis, streak and next workout. Open Choose another workout for other days, or Weight trend for your graph. If a workout is open, Resume workout takes priority. Plan editing and new plans are under View full plan, then All plans."],
+      },
+      {
         q: "Can I do fewer sets than planned?",
         a: ["Tap Skip set under any unlogged working set. Undo skip brings it back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
       },
       {
         q: "What does the weekly analysis cover?",
-        a: ["Today shows a brief AI summary of completed app workouts in the current Monday to Sunday week, using India time. It refreshes after your workout review finishes and excludes warm-ups, cancelled sessions, imports and starting weights. Use Refresh weekly analysis if it is missing or behind."],
+        a: ["Today shows a brief AI summary of completed app workouts in the current Monday to Sunday week, using India time. It refreshes after your workout review finishes and excludes warm-ups, cancelled sessions, imports and starting weights. Tap Read full analysis for the complete review, or the last-workout link for that session. Use Refresh weekly analysis if it is missing or behind."],
       },
       {
         q: "Can I change Reps to Time while adding an exercise?",

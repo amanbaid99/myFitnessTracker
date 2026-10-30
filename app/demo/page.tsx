@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
+import { Check, ChevronDown, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
+import { HomeHero } from "@/components/home/home-hero";
+import { WeeklyReviewCard } from "@/components/home/weekly-review-card";
 import { PlanDays } from "@/components/plan-days";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  DEMO_WEEKLY_REVIEW,
   DEMO_LAST_DONE,
   DEMO_LAST_SETS,
   DEMO_NEXT_ROUTINE_ID,
@@ -49,8 +52,11 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </div>
         )}
 
-        <p className="mt-4 text-sm text-muted-foreground">Hi, {DEMO_PROFILE.name}</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{DEMO_PLAN.name}</h1>
+        <div className="mt-4">
+          <HomeHero name={DEMO_PROFILE.name} workoutDates={[...DEMO_LAST_DONE.values()]} daysPerWeek={DEMO_PLAN.daysPerWeek}>
+            <WeeklyReviewCard lastEndedAt={null} lastStartedAt={null} lastWorkoutId={null} demoReview={DEMO_WEEKLY_REVIEW} />
+          </HomeHero>
+        </div>
 
         <section className="mt-5 rounded-2xl border bg-card p-5">
           <div className="flex items-center justify-between gap-2">
@@ -59,8 +65,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </div>
           <h2 className="mt-1 text-3xl font-semibold tracking-tight">{next.name}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Warm-up, then {next.exercises.length} exercises:{" "}
-            {next.exercises.slice(0, 3).map((e) => e.exercise.name).join(", ")} and {next.exercises.length - 3} more
+            {next.exercises.length} exercises · Warm-up included
           </p>
           <Button asChild size="lg" className="mt-5 w-full">
             <Link href={`/demo/workout/${next.id}`}>
@@ -69,8 +74,8 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </Button>
         </section>
 
-        <section className="mt-6">
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">Or try another day</h2>
+        <details className="group mt-4 rounded-2xl border bg-card">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
           <ul className="divide-y rounded-2xl border bg-card">
             {others.map((routine) => (
               <li key={routine.id} className="flex items-center gap-3 px-4 py-2">
@@ -88,7 +93,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
               </li>
             ))}
           </ul>
-        </section>
+        </details>
 
         <section className="mt-8 rounded-2xl border bg-card p-5">
           <h2 className="font-semibold">What you get</h2>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Scale } from "lucide-react";
+import { ChevronDown, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMounted } from "@/components/progress/use-mounted";
@@ -25,6 +25,7 @@ export function BodyWeightCard({ entries, profileKg, units }: { entries: BodyWei
   const router = useRouter();
   const mounted = useMounted();
   const [open, setOpen] = useState(false);
+  const [showTrend, setShowTrend] = useState(false);
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +72,7 @@ export function BodyWeightCard({ entries, profileKg, units }: { entries: BodyWei
   }
 
   return (
-    <section className="mt-5 rounded-2xl border bg-card p-5">
+    <section className="mt-5 rounded-2xl border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-primary">
@@ -81,7 +82,7 @@ export function BodyWeightCard({ entries, profileKg, units }: { entries: BodyWei
             <p className="mt-1 text-sm text-muted-foreground">Log your weight to see the trend. Pull-ups and dips use it as their load.</p>
           ) : (
             <>
-              <p className={`mt-1 text-3xl font-semibold tracking-tight tabular-nums ${MASK}`}>{show(currentKg)}</p>
+              <p className={`mt-1 text-xl font-semibold tracking-tight tabular-nums ${MASK}`}>{show(currentKg)}</p>
               <p className={`text-xs text-muted-foreground ${MASK}`}>
                 {!trend
                   ? "From your welcome answers"
@@ -132,8 +133,9 @@ export function BodyWeightCard({ entries, profileKg, units }: { entries: BodyWei
         </form>
       )}
 
-      {points.length >= 2 &&
-        (mounted ? (
+      {points.length >= 2 && <details className="group mt-1" onToggle={(e) => setShowTrend(e.currentTarget.open)}>
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm text-muted-foreground [&::-webkit-details-marker]:hidden">Weight trend<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
+        {mounted && showTrend ? (
           <div className={`mt-4 h-28 w-full ${MASK}`} role="img" aria-label={`Body weight over the last ${points.length} entries`}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={points} margin={{ top: 6, right: 6, bottom: 0, left: -18 }}>
@@ -188,7 +190,8 @@ export function BodyWeightCard({ entries, profileKg, units }: { entries: BodyWei
           </div>
         ) : (
           <div className="mt-4 h-28" />
-        ))}
+        )}
+      </details>}
     </section>
   );
 }
