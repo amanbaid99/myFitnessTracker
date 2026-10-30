@@ -1,168 +1,64 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { Flame } from "lucide-react";
 import { MASK } from "@/lib/mask";
-import Link from "next/link";
-import { ChevronRight, Flame, Sparkles } from "lucide-react";
 import { useMounted } from "@/components/progress/use-mounted";
 import { dayKey, weekStart, weekStreak, workoutsThisWeek } from "@/lib/progress";
-import { relativeDay } from "@/lib/rotation";
 import { cn } from "@/lib/utils";
 
-const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export interface LastWorkout {
   id: string;
   dayName: string | null;
   endedAt: string;
-  reviewTitle: string | null;
 }
 
-function greetingFor(hour: number): string {
-  if (hour < 5) return "Late one";
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-/**
- * The top of the home page: greeting, week streak, this week against the
- * plan, and the last workout with its analysis. Weeks and "today" are the
- * viewer's own, so it renders once mounted in the browser (like Progress).
- */
-export function HomeHero({
-  name,
-  workoutDates,
-  daysPerWeek,
-  last,
-}: {
+/** Analysis leads; the viewer's local training calendar stays a compact supporting row. */
+export function HomeHero({ name, workoutDates, daysPerWeek, children }: {
   name: string | null;
-  /** Start times of finished workouts. */
   workoutDates: string[];
   daysPerWeek: number | null;
-  last: LastWorkout | null;
+  children: ReactNode;
 }) {
   const mounted = useMounted();
-
-  if (!mounted) {
-    return (
-      <div aria-hidden className="space-y-3">
-        <div className="h-5 w-40 rounded bg-muted" />
-        <div className="h-44 rounded-2xl bg-muted/60" />
-      </div>
-    );
-  }
-
-  const now = new Date();
+  const now = mounted ? new Date() : null;
   const dates = workoutDates.map((d) => new Date(d));
-  const streak = weekStreak(dates, now);
-  const thisWeek = workoutsThisWeek(dates, now);
+  const streak = now ? weekStreak(dates, now) : 0;
+  const count = now ? workoutsThisWeek(dates, now) : 0;
   const goal = daysPerWeek && daysPerWeek > 0 ? daysPerWeek : null;
-  const trainedDays = new Set(dates.map(dayKey));
-  const monday = weekStart(now);
-  const todayKey = dayKey(now);
-  const week = DAY_LETTERS.map((letter, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const key = dayKey(d);
-    return { letter, key, trained: trainedDays.has(key), today: key === todayKey, future: key > todayKey };
-  });
-  const dateLine = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(now);
-  const left = goal ? Math.max(0, goal - thisWeek) : null;
+  const trained = new Set(dates.map(dayKey));
+  const monday = now ? weekStart(now) : null;
 
   return (
     <div>
-      <p className="pr-14 text-sm text-muted-foreground">{dateLine}</p>
-      <h1 className={`pr-14 text-2xl font-semibold tracking-tight ${MASK}`}>
-        {greetingFor(now.getHours())}
-        {name ? `, ${name}` : ""}
-      </h1>
-
-      <section
-        aria-label="Your training"
-        className="mt-4 rounded-2xl border border-primary/40 bg-gradient-to-br from-accent/60 via-card to-card p-5"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="flex items-baseline gap-2">
-              <span className="text-5xl font-semibold tabular-nums tracking-tight">{streak}</span>
-              <span className="text-sm font-medium">{streak === 1 ? "week" : "weeks"} in a row</span>
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {streak === 0
-                ? "Train this week to start a streak."
-                : thisWeek > 0
-                  ? "Streak safe for this week."
-                  : "Train this week to keep it going."}
-            </p>
+      <header className="pr-14">
+        <p className="text-xs text-muted-foreground">{now ? new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short" }).format(now) : "Your training"}</p>
+        <h1 className={`mt-1 text-xl font-semibold tracking-tight ${MASK}`}>{name ? `Hi, ${name}` : "Today"}</h1>
+      </header>
+      {children}
+      {mounted ? (
+        <section aria-label="Your training" className="mt-3 rounded-2xl border bg-card px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+            <p className="flex items-center gap-1.5 font-medium"><Flame className="size-4 text-primary" aria-hidden />{streak}-week streak</p>
+            <p className="tabular-nums text-muted-foreground">{goal ? `${count} of ${goal} workouts` : `${count} ${count === 1 ? "workout" : "workouts"}`} this week</p>
           </div>
-          <span
-            className={cn(
-              "flex size-12 shrink-0 items-center justify-center rounded-full",
-              streak > 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-            )}
-          >
-            <Flame className="size-6" aria-hidden />
-          </span>
-        </div>
-
-        <div className="mt-5">
-          <div className="flex items-baseline justify-between text-sm">
-            <span className="font-medium">This week</span>
-            <span className="tabular-nums text-muted-foreground">
-              {goal ? `${thisWeek} of ${goal} workouts` : `${thisWeek} ${thisWeek === 1 ? "workout" : "workouts"}`}
-            </span>
-          </div>
-          {goal && (
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, (thisWeek / goal) * 100)}%` }} />
-            </div>
-          )}
-          <ol className="mt-3 grid grid-cols-7 gap-1.5" aria-label="Days trained this week">
-            {week.map((d) => (
-              <li key={d.key} className="flex flex-col items-center gap-1">
-                <span
-                  className={cn(
-                    "flex size-8 items-center justify-center rounded-full text-xs font-medium",
-                    d.trained ? "bg-primary text-primary-foreground" : d.future ? "bg-muted/40 text-muted-foreground" : "bg-muted text-muted-foreground",
-                    d.today && !d.trained && "ring-2 ring-primary",
-                  )}
-                  aria-label={`${d.letter}${d.trained ? ", trained" : ""}${d.today ? ", today" : ""}`}
-                >
-                  {d.letter}
-                </span>
-              </li>
-            ))}
+          <ol className="mt-3 grid grid-cols-7 gap-2" aria-label="Days trained this week">
+            {DAYS.map((label, i) => {
+              const date = new Date(monday!);
+              date.setDate(date.getDate() + i);
+              const key = dayKey(date);
+              const done = trained.has(key);
+              const today = key === dayKey(now!);
+              return <li key={label} aria-label={`${label}${today ? ", today" : ""}, ${done ? "trained" : "not trained"}`} className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+                <span>{label[0]}</span>
+                <span aria-hidden className={cn("size-2 rounded-full bg-muted", done && "bg-primary", today && "ring-1 ring-primary ring-offset-2 ring-offset-card")} />
+              </li>;
+            })}
           </ol>
-          {left !== null && left > 0 && thisWeek > 0 && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              {left} more {left === 1 ? "workout" : "workouts"} to hit your week.
-            </p>
-          )}
-          {left === 0 && <p className="mt-3 text-xs font-medium text-primary">Week done. Nice work.</p>}
-        </div>
-
-        <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">
-          {/* The page loads the latest 200 workouts. */}
-          <span className="font-medium tabular-nums text-foreground">{workoutDates.length >= 200 ? "200+" : workoutDates.length}</span>{" "}
-          {workoutDates.length === 1 ? "workout" : "workouts"} logged in total
-        </p>
-      </section>
-
-      {last && (
-        <Link
-          href={`/history/${last.id}`}
-          className="mt-3 flex min-h-14 items-center gap-3 rounded-2xl border bg-card px-4 py-3 active:bg-muted"
-        >
-          <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">{last.reviewTitle ?? "Your last workout"}</span>
-            <span className="block truncate text-xs text-muted-foreground">
-              {last.dayName ?? "Workout"} · {relativeDay(last.endedAt)}
-            </span>
-          </span>
-          <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-        </Link>
-      )}
+        </section>
+      ) : <div aria-hidden className="mt-3 h-20 rounded-2xl bg-muted/60" />}
     </div>
   );
 }

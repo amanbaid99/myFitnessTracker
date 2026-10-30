@@ -36,7 +36,7 @@ moving part.
 | Route | What |
 | --- | --- |
 | `(app)/` | Tabbed screens: shared layout with the tab bar (`components/bottom-nav.tsx`), profile button, update banner and the guide (`GuideProvider`) |
-| `(app)/page.tsx` | Today: streak hero, next day in the rotation (`lib/rotation.ts`), start or resume, current-week AI review, body weight card. Sends new accounts to `/welcome` |
+| `(app)/page.tsx` | Today: weekly analysis first, compact streak and activity row, next day in the rotation (`lib/rotation.ts`), one start or resume action, compact body weight card. Full analysis, weight chart and other workout days expand on demand. Sends new accounts to `/welcome` |
 | `(app)/history`, `history/[id]` | Finished workouts; one workout with its AI review and fixable sets |
 | `(app)/progress`, `progress/[exerciseId]` | Records, weekly sets per muscle, per-exercise e1RM chart |
 | `(app)/coach` | AI coach chat |

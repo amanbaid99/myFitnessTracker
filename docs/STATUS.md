@@ -4,7 +4,7 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-10-29.
+Last updated: 2026-10-30.
 
 ## Live in production
 
@@ -15,7 +15,7 @@ take turns), progression aims, History with AI workout reviews, Progress
 log, starting weights, welcome flow, public demo, Help and FAQ, themes,
 intro tour, first-time tips and What's new, PostHog analytics.
 
-Edge Functions: `analyze-workout` (v17) and `ask-coach` (v7) were
+Edge Functions: `analyze-workout` (v18) and `ask-coach` (v7) were
 deployed on 2026-10-29 from the default branch, so reviews and Coach
 count any alternate of a slot as done. `draft-plan` is unchanged.
 
@@ -25,24 +25,21 @@ when the weight goes up, reps drop to keep about the same volume; the
 tab bar shows a pending state while a tab loads.
 
 Exercise targets and previous-record entry shipped in PR #4 on 2026-10-29.
+PR #5 shipped set skips, tracking variants and the weekly analysis card.
+Production app commit 3df8b9d and analyze-workout v18 were verified live;
+Aman confirmed analysis works. The function retains webhook authentication.
 
 ## In flight
 
-- 2026-10-29: Branch `feat/skip-sets-and-weekly-analysis` adds reversible
-  working-set skips, a current-week summary on Today (Monday to Sunday in
-  India time), and enables tracking changes through separate exercise
-  variants. The weekly job follows the saved workout review and reuses
-  insights without a migration. Not deployed. Lint, type checks, all 311
-  unit tests, production build, and 390 px browser checks passed. Browser
-  checks used sample data and mocked insight reads, not live AI or writes.
-  The analyze-workout Edge Function needs a separate deployment after
-  merge and owner approval. What's new wording still requires approval;
-  no popup entry has been added.
-  Feature commit: ca2f98f. Notion Build Log and project status were updated.
-  CLI credentials failed; publishing uses the connected GitHub tools.
-  After automatic review requested explicit authorization for the public
-  source upload, Aman approved publishing the branch and opening a PR.
-  Production is unchanged; merge remains with Aman.
+- 2026-10-30: Branch `feat/analysis-first-home` puts the weekly analysis
+  first on Today, with a compact streak/calendar row and one Start or
+  Resume action. Full analysis, weight trends and other workouts expand
+  on demand. The last-workout link lives inside the analysis card. The
+  public demo and loading skeleton follow the same layout. Browser checks
+  passed at 320, 390 and 768 px, including analysis expansion, weight
+  trend, the log-weight form, empty state and alternate-workout chooser.
+  Lint, TypeScript, all 314 unit tests and production build passed.
+  No database or Edge Function changes. Popup wording awaits approval.
 
 ## Needs doing by hand
 

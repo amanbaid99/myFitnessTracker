@@ -1315,3 +1315,24 @@ so work goes on a branch and a PR that Aman merges.
   No unapproved popup entries were added in this change.
 - No database migration. analyze-workout still needs separate Edge
   Function deployment after review and merge; app CI does not deploy it.
+
+## 2026-10-29: Analysis first on Today (Aman's request)
+
+- The weekly review leads the page below a short greeting. Its preview
+  shows the opening two sentences and, when the final sentence is advice,
+  a Next focus callout. Both are visually bounded; the complete original
+  text and review metadata are available through Read full analysis.
+- Streak and weekly workout count share one small row, with seven activity
+  dots below. Keep the existing local-calendar streak rules unchanged.
+  The large flame, duplicated totals and separate last-review card are
+  removed. The last-workout analysis link is inside the weekly card.
+- Today shows one primary workout action: Resume for an open workout,
+  otherwise Start for the next day. Other days are in a closed chooser;
+  starting-weight setup follows the primary action. Plan management is
+  reached through the existing View full plan and All plans screens.
+- Body weight keeps its current value and Log weight action; its chart
+  expands on demand and mounts only while open. The public demo and
+  loading state use the same visual hierarchy.
+- No schema, AI prompt or Edge Function changes. The final advice sentence
+  is reused as written, never regenerated or invented by the UI. Popup
+  wording was drafted in chat and still needs Aman's approval.
