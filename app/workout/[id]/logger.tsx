@@ -253,7 +253,7 @@ export function Logger(props: {
   // One exercise open at a time; finishing one opens the next unfinished.
   const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(props.session));
   // First-time tips (components/guide): on the open exercise's next set to
-  // log, the feel chips once they appear, and the alternate pills (first).
+  // log, the feel slider once it appears, and the alternate pills (first).
   const openIndex = exercises.findIndex((e) => e.exerciseId === openId);
   const guideRowKey = openIndex >= 0 ? (exercises[openIndex].working.find((r) => !r.logged && !r.skipped)?.key ?? null) : null;
   useTip("tip:alternates", openIndex >= 0 && Boolean(props.options?.[items[openIndex]?.id]));
@@ -975,7 +975,7 @@ export function Logger(props: {
                       <button type="button" className="min-h-11 px-3 text-sm text-muted-foreground" disabled={hold?.key === row.key} onClick={() => skipSet(exIndex, row, true)} aria-label={`Skip set ${row.label} of ${item.exercise.name}`}>Skip set</button>
                     )}
                     {row.logged && (feelKey === row.key || row.logged.rpe !== null) && (
-                      <FeelChips
+                      <FeelSlider
                         guide={feelKey === row.key ? "tip:feel" : undefined}
                         value={feelFromRpe(row.logged.rpe)}
                         onPick={(feel) => setFeel(exIndex, row, feel)}
@@ -1740,24 +1740,117 @@ function TickCircle({ on, small = false }: { on: boolean; small?: boolean }) {
   );
 }
 
-function FeelChips({ value, onPick, guide }: { value: Feel | null; onPick: (f: Feel) => void; guide?: string }) {
+/** Thumb colour per stop: green for Easy through to red for Max. */
+const FEEL_COLOR = ["var(--success)", "var(--primary)", "color-mix(in oklab, var(--primary), var(--destructive))", "var(--destructive)"];
+/** Half the thumb's width: the track's ends sit under the thumb's centre at the first and last stop. */
+const FEEL_INSET = 14;
+
+/**
+ * How the set felt, as a four-stop slider (Easy, Good, Hard, Max): tap a
+ * spot or drag, and it is saved when the finger lifts. Arrow keys work too.
+ * No thumb until a feel is picked, since it is optional.
+ */
+function FeelSlider({ value, onPick, guide }: { value: Feel | null; onPick: (f: Feel) => void; guide?: string }) {
+  const track = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<number | null>(null);
+  const picked = value ? FEELS.indexOf(value) : null;
+  const shown = drag ?? picked;
+  const last = FEELS.length - 1;
+  const left = (i: number) => `calc(${FEEL_INSET}px + (100% - ${FEEL_INSET * 2}px) * ${i / last})`;
+
+  function stopAt(clientX: number): number {
+    const r = track.current!.getBoundingClientRect();
+    const x = (clientX - r.left - FEEL_INSET) / Math.max(1, r.width - FEEL_INSET * 2);
+    return Math.min(last, Math.max(0, Math.round(x * last)));
+  }
+  function commit(i: number) {
+    if (i !== picked) onPick(FEELS[i]);
+  }
+
   return (
-    <div data-guide={guide} className="flex items-center gap-1.5 px-2 pb-2 pl-11">
-      <span className="mr-1 text-xs text-muted-foreground">How did it feel?</span>
-      {FEELS.map((f) => (
-        <button
-          key={f}
-          type="button"
-          onClick={() => onPick(f)}
-          aria-pressed={value === f}
-          className={cn(
-            "h-9 min-w-11 rounded-full border px-2.5 text-xs",
-            value === f ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground",
-          )}
-        >
-          {FEEL_LABEL[f]}
-        </button>
-      ))}
+    <div data-guide={guide} className="px-2 pb-2 pl-11 pr-3">
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="whitespace-nowrap text-muted-foreground">How did it feel?</span>
+        <span className="font-medium" style={shown === null ? undefined : { color: FEEL_COLOR[shown] }}>
+          {shown === null ? "Tap or slide" : FEEL_LABEL[FEELS[shown]]}
+        </span>
+      </div>
+      <div
+        ref={track}
+        role="slider"
+        tabIndex={0}
+        aria-label="How did it feel?"
+        aria-valuemin={0}
+        aria-valuemax={last}
+        aria-valuenow={shown ?? undefined}
+        aria-valuetext={shown === null ? "Not set" : FEEL_LABEL[FEELS[shown]]}
+        className="relative h-11 cursor-pointer touch-none select-none outline-none focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          setDrag(stopAt(e.clientX));
+        }}
+        onPointerMove={(e) => {
+          if (drag !== null) setDrag(stopAt(e.clientX));
+        }}
+        onPointerUp={(e) => {
+          if (drag === null) return;
+          const i = stopAt(e.clientX);
+          setDrag(null);
+          commit(i);
+        }}
+        onPointerCancel={() => setDrag(null)}
+        onKeyDown={(e) => {
+          const from = picked ?? 1;
+          const to = e.key === "ArrowRight" || e.key === "ArrowUp" ? from + 1
+            : e.key === "ArrowLeft" || e.key === "ArrowDown" ? from - 1
+            : e.key === "Home" ? 0
+            : e.key === "End" ? last
+            : null;
+          if (to === null) return;
+          e.preventDefault();
+          commit(Math.min(last, Math.max(0, to)));
+        }}
+      >
+        {/* The track, green to red, with a dot at each stop. */}
+        <div
+          aria-hidden
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full opacity-40"
+          style={{
+            left: FEEL_INSET,
+            right: FEEL_INSET,
+            background: `linear-gradient(to right, ${FEEL_COLOR.join(", ")})`,
+          }}
+        />
+        {FEELS.map((f, i) => (
+          <span
+            key={f}
+            aria-hidden
+            className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground/50"
+            style={{ left: left(i) }}
+          />
+        ))}
+        {shown !== null && (
+          <span
+            aria-hidden
+            className={cn(
+              "absolute top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-card shadow-md",
+              drag === null && "transition-[left] duration-150",
+            )}
+            style={{ left: left(shown), background: FEEL_COLOR[shown] }}
+          />
+        )}
+      </div>
+      <div aria-hidden className="relative h-4 text-[11px]">
+        {FEELS.map((f, i) => (
+          <span
+            key={f}
+            className={cn("absolute -translate-x-1/2", shown === i ? "font-medium text-foreground" : "text-muted-foreground")}
+            style={{ left: left(i) }}
+          >
+            {FEEL_LABEL[f]}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
