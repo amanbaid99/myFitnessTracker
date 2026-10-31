@@ -1347,3 +1347,11 @@ or drag; it saves when the finger lifts (one RPE write, not one per
 stop passed). Arrow keys, Home and End work, with slider roles for
 screen readers. No thumb until a feel is picked, since it stays optional.
 What each feel does to the next set is unchanged.
+
+## 2026-10-31: Good copies reps that beat the plan (Aman's request)
+
+Aimed for 7, did 8 on a target of 12: Easy already made the next set 9;
+Good now makes it 8 instead of dropping back to the planned 7. Only when
+the set was at the planned weight and beat the planned reps; otherwise
+Good leaves the next set as planned. Hard is unchanged (keeps the plan),
+Max still matches the reps just done.

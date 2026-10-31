@@ -83,9 +83,19 @@ describe("adjustNextSet", () => {
   it("max: keep weight, match the reps just done", () => {
     expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 8 }, feel: "max" })).toEqual({ weightKg: 15, reps: 8 });
   });
-  it("good or hard: unchanged", () => {
+  it("good or hard at the plan: unchanged", () => {
     expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "good" })).toEqual(planned);
     expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "hard" })).toEqual(planned);
+  });
+  it("beat the plan (aimed for 7, did 8, target 12): easy 9, good 8, hard stays 7", () => {
+    const beat = { planned: { weightKg: 20, reps: 7 }, targetReps: 12, equipment: "machine", done: { weightKg: 20, reps: 8 } };
+    expect(adjustNextSet({ ...beat, feel: "easy" })).toEqual({ weightKg: 20, reps: 9 });
+    expect(adjustNextSet({ ...beat, feel: "good" })).toEqual({ weightKg: 20, reps: 8 });
+    expect(adjustNextSet({ ...beat, feel: "hard" })).toEqual({ weightKg: 20, reps: 7 });
+  });
+  it("good below the plan, or at another weight, keeps the plan", () => {
+    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 8 }, feel: "good" })).toEqual(planned);
+    expect(adjustNextSet({ ...base, done: { weightKg: 12.5, reps: 12 }, feel: "good" })).toEqual(planned);
   });
   it("easy on bodyweight at target: one more rep", () => {
     expect(

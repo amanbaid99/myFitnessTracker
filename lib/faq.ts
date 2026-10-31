@@ -79,7 +79,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What do Easy, Good, Hard and Max do?",
         a: [
-          "After you log a set you can say how it felt. Easy makes the next set harder: one more rep, or more weight once you're at your target reps, with the reps lowered to match (12.5 kg x 10 becomes 15 kg x 8). Later sets follow. Max keeps the weight and matches the reps you just did. Good and Hard leave the next set as it is.",
+          "After you log a set you can say how it felt. Easy makes the next set harder: one more rep, or more weight once you're at your target reps, with the reps lowered to match (12.5 kg x 10 becomes 15 kg x 8). Later sets follow. Max keeps the weight and matches the reps you just did. Good copies your reps to the next set when you beat the plan (aimed for 7, did 8: the next set is 8). Hard leaves the next set as it is.",
           "It also helps next time's suggestion: a session that felt very hard repeats the weight instead of adding more.",
         ],
       },
