@@ -14,7 +14,7 @@ import { formatSet, formatSets, settingLabel } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
 import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition } from "@/lib/feel";
-import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, type Row, type SessionExercise } from "@/lib/session";
+import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, workoutOrder, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 import { formatWeight, fromKg, toKg, type Units } from "@/lib/units";
@@ -89,6 +89,8 @@ export function Logger(props: {
   bodyWeightKg?: number | null;
   defaultRestSec: number;
   hasLoggedSets: boolean;
+  /** Indexes of the exercises already started in this workout, in the order they were started. */
+  startedIndexes?: number[];
   /** Public demo: sample data, nothing is saved. */
   demo?: boolean;
   /** This workout's notes and the last note from another workout, by exercise id. */
@@ -250,8 +252,14 @@ export function Logger(props: {
 
   // Seat or pin settings changed during this workout, by exercise id.
   const [settings, setSettings] = useState<Record<string, string | null>>({});
+  // Exercises started this workout move up, in the order they were started
+  // (lib/session.ts workoutOrder): do Pec Deck while the cable is busy and
+  // Lateral Raise is next instead of missed. The order only changes when
+  // moving between exercises, never under the finger mid-set.
+  const startedRef = useRef<number[]>(props.startedIndexes ?? []);
+  const [order, setOrder] = useState(() => workoutOrder(props.session.length, props.startedIndexes ?? []));
   // One exercise open at a time; finishing one opens the next unfinished.
-  const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(props.session));
+  const [openId, setOpenId] = useState<string | null>(() => nextOpenExercise(order.map((i) => props.session[i])));
   // First-time tips (components/guide): on the open exercise's next set to
   // log, the feel slider once it appears, and the alternate pills (first).
   const openIndex = exercises.findIndex((e) => e.exerciseId === openId);
@@ -280,6 +288,7 @@ export function Logger(props: {
   const scrollTo = useRef<string | null>(null);
 
   function openExercise(id: string | null) {
+    setOrder(workoutOrder(exercises.length, startedRef.current));
     scrollTo.current = id;
     setOpenId(id);
     if (id === null) {
@@ -410,6 +419,7 @@ export function Logger(props: {
 
   async function tick(exIndex: number, row: Row) {
     const item = items[exIndex];
+    if (!startedRef.current.includes(exIndex)) startedRef.current = [...startedRef.current, exIndex];
     const id = crypto.randomUUID();
     const logged = {
       id,
@@ -525,7 +535,11 @@ export function Logger(props: {
     const ex = exercises[exIndex];
     const next = ex.working.find((r) => r.setNo > row.setNo && !r.logged && !r.skipped);
     // That was the last set: close this exercise and open the next one.
-    if (isExerciseDone(ex)) openExercise(nextOpenExercise(exercises, exIndex));
+    if (isExerciseDone(ex)) {
+      // The next unfinished one in the order shown, with this exercise moved up if it was done early.
+      const next = workoutOrder(exercises.length, startedRef.current);
+      openExercise(nextOpenExercise(next.map((i) => exercises[i]), next.indexOf(exIndex)));
+    }
     if (next) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
       const adjusted = adjustNextSet({
@@ -742,7 +756,9 @@ export function Logger(props: {
           }
         />
 
-        {exercises.map((ex, exIndex) => {
+        {order.map((exIndex) => {
+          const ex = exercises[exIndex];
+          if (!ex) return null;
           const item = items[exIndex];
           const pr = props.prs[item.exercise.id];
           const workingDone = isExerciseDone(ex);

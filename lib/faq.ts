@@ -103,6 +103,12 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Can I do the exercises in a different order?",
+        a: [
+          "Yes. Tap any exercise to open it and log it. Exercises you start move up in the order you did them, and the ones you skipped past come next, so if the cable is busy and you do Pec Deck before Lateral Raise, Lateral Raise is next and you won't miss it. This only changes today's workout, not your plan.",
+        ],
+      },
+      {
         q: "How does the rest timer work?",
         a: [
           "It starts when you log a set and beeps when rest is over. Use +15s for more time, the circular arrow to restart it, or Skip. The speaker button mutes the beeps.",
