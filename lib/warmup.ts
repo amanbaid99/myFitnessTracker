@@ -1,8 +1,10 @@
 /**
- * Ramp-up sets. Aman's rule (replaces the spec's per-exercise ramp): only the
+ * Ramp-up sets. Aman's rule (replaces the spec's per-exercise ramp): the
  * first exercise of the day ramps up, 50% x 10 then 75% x 5, then the
  * working sets at 100%. Later exercises are already warm and start straight
- * at working weight.
+ * at working weight, unless the exercise has its own warm-up template: then
+ * it gets those sets wherever it sits in the day (a feeder set for a new
+ * movement, like a row after presses or leg curls after hip thrusts).
  *
  * W = base weight of the first working set last session (add-on ignored).
  * - No previous weight, or bodyweight: one set, weight blank, reps = target
@@ -44,14 +46,16 @@ export function warmupSets(input: {
   template?: WarmupStep[] | null;
   weightStepKg?: number;
 }): WarmupSet[] {
-  if (input.warmupEnabled === false || !input.isFirstExercise) return [];
+  const hasTemplate = !!input.template && input.template.length > 0;
+  if (input.warmupEnabled === false) return [];
+  if (!input.isFirstExercise && !hasTemplate) return [];
 
   const w = input.lastWorkingWeightKg;
   if (w === null || w <= 0 || input.equipment === "bodyweight") {
     return [{ label: "W1", weightKg: null, reps: input.targetReps }];
   }
 
-  const steps = input.template && input.template.length > 0 ? input.template : DEFAULT_RAMP;
+  const steps = hasTemplate && input.template ? input.template : DEFAULT_RAMP;
   const inc = input.weightStepKg && input.weightStepKg > 0 ? input.weightStepKg : WARMUP_INCREMENT_KG;
 
   return steps.map((s, i) => ({

@@ -43,6 +43,24 @@ describe("warmupSets (first exercise only: 50%, 75%, then working sets)", () => 
     ).toEqual([55, 80]);
   });
 
+  it("a later exercise with its own template gets those sets", () => {
+    expect(
+      warmupSets({
+        lastWorkingWeightKg: 50, targetReps: 12, isFirstExercise: false, equipment: "machine",
+        template: [{ pct: 60, reps: 8 }],
+      }),
+    ).toEqual([{ label: "W1", weightKg: 30, reps: 8 }]);
+    expect(
+      warmupSets({
+        lastWorkingWeightKg: 50, targetReps: 12, isFirstExercise: false, equipment: "machine",
+        template: [{ pct: 60, reps: 8 }], warmupEnabled: false,
+      }),
+    ).toEqual([]);
+    expect(
+      warmupSets({ lastWorkingWeightKg: 50, targetReps: 12, isFirstExercise: false, equipment: "machine", template: [] }),
+    ).toEqual([]);
+  });
+
   it("no ramp-up sets after the first exercise", () => {
     expect(warmupSets({ lastWorkingWeightKg: 1.25, targetReps: 20, isFirstExercise: false, equipment: "cable" })).toEqual([]);
     expect(warmupSets({ lastWorkingWeightKg: 105, targetReps: 8, isFirstExercise: false, equipment: "machine" })).toEqual([]);

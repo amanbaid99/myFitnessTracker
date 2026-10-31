@@ -1336,3 +1336,17 @@ so work goes on a branch and a PR that Aman merges.
 - No schema, AI prompt or Edge Function changes. The final advice sentence
   is reused as written, never regenerated or invented by the UI. Popup
   wording was drafted in chat and still needs Aman's approval.
+
+## 2026-10-31: Warm-up templates also apply after the first exercise (Aman's request)
+
+- An exercise with its own warm-up template now gets those sets wherever it
+  sits in the day, not only when it is first. Exercises without a template
+  keep the old rule: only the first exercise ramps up.
+- Why: a later exercise that starts a new movement (a row after presses,
+  leg curls after hip thrusts, a single-leg RDL after leg press) is not
+  warm yet. One light feeder set lowers injury risk without slowing the
+  session down. Templates are opt-in per exercise, so nobody else's
+  workouts change.
+- Aman's templates: leg press 40% x 10, 65% x 6, 85% x 3; machine row,
+  incline dumbbell press, single-leg dumbbell RDL and leg curl 60% x 8.
+  Set in the database for now; there is no editor for templates yet.
