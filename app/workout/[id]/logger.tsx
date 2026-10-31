@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatSet, formatSets, settingLabel } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
-import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe, type Feel } from "@/lib/progression";
+import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
+import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition } from "@/lib/feel";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
@@ -73,7 +74,6 @@ interface PR {
   reps: number;
 }
 
-const FEELS: Feel[] = ["easy", "good", "hard", "max"];
 
 export function Logger(props: {
   workoutId: string;
@@ -514,9 +514,10 @@ export function Logger(props: {
     track("alternate_switched", { options: props.options?.[slotId]?.length ?? 0 });
   }
 
-  async function setFeel(exIndex: number, row: Row, feel: Feel) {
+  /** How the set felt, as an RPE from the slider; the next set follows the nearest feel. */
+  async function setFeel(exIndex: number, row: Row, rpe: number) {
     if (!row.logged) return;
-    const rpe = FEEL_RPE[feel];
+    const feel = feelFromRpe(rpe) ?? "good";
     updateRow(exIndex, row.key, { logged: { ...row.logged, rpe } });
     setFeelKey(null);
 
@@ -977,8 +978,8 @@ export function Logger(props: {
                     {row.logged && (feelKey === row.key || row.logged.rpe !== null) && (
                       <FeelSlider
                         guide={feelKey === row.key ? "tip:feel" : undefined}
-                        value={feelFromRpe(row.logged.rpe)}
-                        onPick={(feel) => setFeel(exIndex, row, feel)}
+                        rpe={row.logged.rpe}
+                        onPick={(rpe) => setFeel(exIndex, row, rpe)}
                       />
                     )}
                   </div>
@@ -1740,39 +1741,39 @@ function TickCircle({ on, small = false }: { on: boolean; small?: boolean }) {
   );
 }
 
-/** Thumb colour per stop: green for Easy through to red for Max. */
+/** Colour per stop: green for Easy through to red for Max; the thumb blends between them. */
 const FEEL_COLOR = ["var(--success)", "var(--primary)", "color-mix(in oklab, var(--primary), var(--destructive))", "var(--destructive)"];
-/** Half the thumb's width: the track's ends sit under the thumb's centre at the first and last stop. */
+/** Half the thumb's width: the track's ends sit under the thumb's centre at Easy and Max. */
 const FEEL_INSET = 14;
 
 /**
- * How the set felt, as a four-stop slider (Easy, Good, Hard, Max): tap a
- * spot or drag, and it is saved when the finger lifts. Arrow keys work too.
- * No thumb until a feel is picked, since it is optional.
+ * How the set felt, as a slider from Easy to Max (lib/feel.ts). Stop
+ * anywhere, between Good and Hard too: it is saved as an RPE in half steps
+ * when the finger lifts. Arrow keys move half a step. No thumb until it is
+ * set, since it is optional.
  */
-function FeelSlider({ value, onPick, guide }: { value: Feel | null; onPick: (f: Feel) => void; guide?: string }) {
+function FeelSlider({ rpe, onPick, guide }: { rpe: number | null; onPick: (rpe: number) => void; guide?: string }) {
   const track = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
-  const picked = value ? FEELS.indexOf(value) : null;
-  const shown = drag ?? picked;
-  const last = FEELS.length - 1;
-  const left = (i: number) => `calc(${FEEL_INSET}px + (100% - ${FEEL_INSET * 2}px) * ${i / last})`;
+  const shown = drag ?? rpe;
+  const pos = shown === null ? null : positionOf(shown);
+  const left = (p: number) => `calc(${FEEL_INSET}px + (100% - ${FEEL_INSET * 2}px) * ${p})`;
+  const feel = shown === null ? null : feelFromRpe(shown);
 
-  function stopAt(clientX: number): number {
+  function rpeFrom(clientX: number): number {
     const r = track.current!.getBoundingClientRect();
-    const x = (clientX - r.left - FEEL_INSET) / Math.max(1, r.width - FEEL_INSET * 2);
-    return Math.min(last, Math.max(0, Math.round(x * last)));
+    return rpeAt((clientX - r.left - FEEL_INSET) / Math.max(1, r.width - FEEL_INSET * 2));
   }
-  function commit(i: number) {
-    if (i !== picked) onPick(FEELS[i]);
+  function commit(next: number) {
+    if (next !== rpe) onPick(next);
   }
 
   return (
     <div data-guide={guide} className="px-2 pb-2 pl-11 pr-3">
       <div className="flex items-baseline justify-between gap-2 text-xs">
         <span className="whitespace-nowrap text-muted-foreground">How did it feel?</span>
-        <span className="font-medium" style={shown === null ? undefined : { color: FEEL_COLOR[shown] }}>
-          {shown === null ? "Tap or slide" : FEEL_LABEL[FEELS[shown]]}
+        <span className="font-medium" style={pos === null ? undefined : { color: colorAt(pos, FEEL_COLOR) }}>
+          {feel === null ? "Tap or slide" : FEEL_LABEL[feel]}
         </span>
       </div>
       <div
@@ -1780,72 +1781,68 @@ function FeelSlider({ value, onPick, guide }: { value: Feel | null; onPick: (f: 
         role="slider"
         tabIndex={0}
         aria-label="How did it feel?"
-        aria-valuemin={0}
-        aria-valuemax={last}
+        aria-valuemin={MIN_RPE}
+        aria-valuemax={MAX_RPE}
         aria-valuenow={shown ?? undefined}
-        aria-valuetext={shown === null ? "Not set" : FEEL_LABEL[FEELS[shown]]}
+        aria-valuetext={feel === null ? "Not set" : `${FEEL_LABEL[feel]}, effort ${shown} of 10`}
         className="relative h-11 cursor-pointer touch-none select-none outline-none focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
-          setDrag(stopAt(e.clientX));
+          setDrag(rpeFrom(e.clientX));
         }}
         onPointerMove={(e) => {
-          if (drag !== null) setDrag(stopAt(e.clientX));
+          if (drag !== null) setDrag(rpeFrom(e.clientX));
         }}
         onPointerUp={(e) => {
           if (drag === null) return;
-          const i = stopAt(e.clientX);
+          const next = rpeFrom(e.clientX);
           setDrag(null);
-          commit(i);
+          commit(next);
         }}
         onPointerCancel={() => setDrag(null)}
         onKeyDown={(e) => {
-          const from = picked ?? 1;
-          const to = e.key === "ArrowRight" || e.key === "ArrowUp" ? from + 1
-            : e.key === "ArrowLeft" || e.key === "ArrowDown" ? from - 1
-            : e.key === "Home" ? 0
-            : e.key === "End" ? last
+          const from = rpe ?? FEEL_RPE.good;
+          const next = e.key === "ArrowRight" || e.key === "ArrowUp" ? stepRpe(from, 1)
+            : e.key === "ArrowLeft" || e.key === "ArrowDown" ? stepRpe(from, -1)
+            : e.key === "Home" ? MIN_RPE
+            : e.key === "End" ? MAX_RPE
             : null;
-          if (to === null) return;
+          if (next === null) return;
           e.preventDefault();
-          commit(Math.min(last, Math.max(0, to)));
+          commit(next);
         }}
       >
-        {/* The track, green to red, with a dot at each stop. */}
+        {/* The track, green to red, with a dot at each named stop. */}
         <div
           aria-hidden
           className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full opacity-40"
-          style={{
-            left: FEEL_INSET,
-            right: FEEL_INSET,
-            background: `linear-gradient(to right, ${FEEL_COLOR.join(", ")})`,
-          }}
+          style={{ left: FEEL_INSET, right: FEEL_INSET, background: `linear-gradient(to right, ${FEEL_COLOR.join(", ")})` }}
         />
-        {FEELS.map((f, i) => (
+        {FEEL_STOPS.map((f, i) => (
           <span
             key={f}
             aria-hidden
             className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-muted-foreground/50"
-            style={{ left: left(i) }}
+            style={{ left: left(stopPosition(i)) }}
           />
         ))}
-        {shown !== null && (
+        {pos !== null && (
           <span
             aria-hidden
             className={cn(
               "absolute top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-card shadow-md",
               drag === null && "transition-[left] duration-150",
             )}
-            style={{ left: left(shown), background: FEEL_COLOR[shown] }}
+            style={{ left: left(pos), background: colorAt(pos, FEEL_COLOR) }}
           />
         )}
       </div>
       <div aria-hidden className="relative h-4 text-[11px]">
-        {FEELS.map((f, i) => (
+        {FEEL_STOPS.map((f, i) => (
           <span
             key={f}
-            className={cn("absolute -translate-x-1/2", shown === i ? "font-medium text-foreground" : "text-muted-foreground")}
-            style={{ left: left(i) }}
+            className={cn("absolute -translate-x-1/2", feel === f ? "font-medium text-foreground" : "text-muted-foreground")}
+            style={{ left: left(stopPosition(i)) }}
           >
             {FEEL_LABEL[f]}
           </span>
