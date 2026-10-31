@@ -1355,3 +1355,14 @@ Good now makes it 8 instead of dropping back to the planned 7. Only when
 the set was at the planned weight and beat the planned reps; otherwise
 Good leaves the next set as planned. Hard is unchanged (keeps the plan),
 Max still matches the reps just done.
+
+## 2026-10-31: The feel slider stops anywhere (Aman's request)
+
+The slider no longer snaps to the four named stops: anywhere in between
+is allowed, for example between Good and Hard. The four stops sit evenly
+on the track at their RPE (Easy 6, Good 7.5, Hard 9, Max 10) and a point
+between two stops is saved as the RPE in between, in half steps (8 or
+8.5 between Good and Hard), since `sets.rpe` already holds any value 1
+to 10. The label and what the next set does follow the nearest feel
+(`feelFromRpe`), so the rules are unchanged; the thumb's colour blends
+between the stops. Arrow keys move half a step. Maths in `lib/feel.ts`.
