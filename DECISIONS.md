@@ -1336,3 +1336,14 @@ so work goes on a branch and a PR that Aman merges.
 - No schema, AI prompt or Edge Function changes. The final advice sentence
   is reused as written, never regenerated or invented by the UI. Popup
   wording was drafted in chat and still needs Aman's approval.
+
+## 2026-10-31: How a set felt is a slider (Aman's request)
+
+The four Easy/Good/Hard/Max chips wrapped "How did it feel?" onto two
+lines and looked busy. Now the question sits on one line with the chosen
+feel on the right, and below it a four-stop slider: a green-to-red
+track, a thumb in the feel's colour, labels under each stop. Tap a spot
+or drag; it saves when the finger lifts (one RPE write, not one per
+stop passed). Arrow keys, Home and End work, with slider roles for
+screen readers. No thumb until a feel is picked, since it stays optional.
+What each feel does to the next set is unchanged.
