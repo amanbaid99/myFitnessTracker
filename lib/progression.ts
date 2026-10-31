@@ -128,8 +128,9 @@ export function aimForSession(input: {
  * After a set is ticked with a feel, what the next working set should be.
  * Easy: below target reps, one more rep at the same weight; at or above
  * target, add a step, with the reps that keep about the same volume
- * (12.5 kg x 10 easy: 15 kg x 8). Max: keep the weight, match the reps
- * just done. Good or hard: unchanged.
+ * (12.5 kg x 10 easy: 15 kg x 8). Good: at the same weight, copy the
+ * reps just done when they beat the plan (aimed for 7, did 8: next is 8).
+ * Max: keep the weight, match the reps just done. Hard: unchanged.
  */
 export function adjustNextSet(input: {
   done: { weightKg: number | null; reps: number | null; addedKg?: number };
@@ -154,6 +155,9 @@ export function adjustNextSet(input: {
   }
   if (input.feel === "max") {
     return { weightKg: input.done.weightKg, reps: Math.min(input.planned.reps, doneReps) };
+  }
+  if (input.feel === "good" && input.done.weightKg === input.planned.weightKg && doneReps > input.planned.reps) {
+    return { weightKg: input.planned.weightKg, reps: doneReps };
   }
   return input.planned;
 }
