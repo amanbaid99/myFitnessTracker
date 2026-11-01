@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronRight, PersonStanding, TrendingDown, TrendingUp } from "lucide-react";
+import { AtlasSheet, atlasTheme } from "@/components/anatomy/atlas-sheet";
+import { Button } from "@/components/ui/button";
+import { heatLink } from "@/lib/anatomy";
+import { track } from "@/lib/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatE1rm, formatSet } from "@/lib/format";
 import { muscleWeeks, trainingCalendar, weekStreak, workoutsThisWeek } from "@/lib/progress";
@@ -92,6 +96,7 @@ function Consistency({ workoutDates }: { workoutDates: string[] }) {
 
 function MuscleVolume({ rows }: { rows: { startedAt: string; muscle: string; sets: number }[] }) {
   const [showAll, setShowAll] = useState(false);
+  const [heatmap, setHeatmap] = useState<string | null>(null);
   const weeks = muscleWeeks(rows, new Date());
   const shown = showAll ? weeks : weeks.slice(0, MUSCLES_SHOWN);
   const max = Math.max(1, ...weeks.map((w) => Math.max(w.thisWeek, w.lastWeek)));
@@ -99,7 +104,23 @@ function MuscleVolume({ rows }: { rows: { startedAt: string; muscle: string; set
 
   return (
     <section className="rounded-2xl border bg-card p-4">
-      <h2 className="font-semibold">Sets per muscle this week</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">Sets per muscle this week</h2>
+        {weeks.some((w) => w.thisWeek > 0) && (
+          <Button
+            variant="secondary"
+            className="-my-1 shrink-0"
+            onClick={() => {
+              const url = heatLink(Object.fromEntries(weeks.map((w) => [w.muscle, w.thisWeek])), atlasTheme());
+              if (!url) return;
+              track("anatomy_opened", { from: "progress" });
+              setHeatmap(url);
+            }}
+          >
+            <PersonStanding /> On body
+          </Button>
+        )}
+      </div>
       <p className="mt-0.5 text-xs text-muted-foreground">
         Working sets; a set counts fully for its main muscle and half for the others.
       </p>
@@ -137,6 +158,7 @@ function MuscleVolume({ rows }: { rows: { startedAt: string; muscle: string; set
           {showAll ? "Show fewer" : `Show all ${weeks.length} muscles`}
         </button>
       )}
+      {heatmap && <AtlasSheet url={heatmap} title="This week on your body" onClose={() => setHeatmap(null)} />}
     </section>
   );
 }

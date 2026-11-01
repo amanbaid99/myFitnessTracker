@@ -181,6 +181,12 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "How do I see which muscles an exercise works?",
+        a: [
+          "In a workout, tap the small body chip on an exercise (for example \"Lats +1\"). It explains each muscle in a line, main one first, and See in 3D opens the anatomy explorer with those muscles lit up. On Progress, On body shows this week's sets as a heatmap: red for the most worked, amber for less, dark for none. The 3D model is large, so it only loads when you open it.",
+        ],
+      },
+      {
         q: "What is a weight step?",
         a: [
           "The smallest jump in weight for that exercise, like the lightest plates or the gap between pins on a stack. Suggested weights and warm-ups go up by this. Pick a common one or tap Custom to enter your own.",

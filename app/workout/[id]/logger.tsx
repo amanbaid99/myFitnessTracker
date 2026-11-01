@@ -6,7 +6,7 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Check, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Loader2, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowLeftRight, Check, PersonStanding, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Loader2, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import {
 } from "@/lib/routine-edits";
 import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
 import { saveChoice } from "@/lib/alternates";
+import { MusclesSheet } from "@/components/anatomy/muscles-sheet";
 import { useTip } from "@/components/guide/guide-provider";
 import { defaultTargets, slots } from "@/lib/default-targets";
 import type { WarmupItem } from "@/lib/general-warmup";
@@ -243,6 +244,8 @@ export function Logger(props: {
   const [editingNote, setEditingNote] = useState<string | null>(null);
   // Editing the day: which exercise's sheet is open, or the add picker.
   const [editItemId, setEditItemId] = useState<string | null>(null);
+  // "Muscles worked" sheet for one exercise (components/anatomy).
+  const [musclesFor, setMusclesFor] = useState<{ name: string; groups: string[] } | null>(null);
   const [addingExercise, setAddingExercise] = useState(false);
   const [editBusy, setEditBusy] = useState<string | null>(null);
   const [refreshing, startRefresh] = useTransition();
@@ -833,6 +836,20 @@ export function Logger(props: {
                         onSave={(v) => saveSetting(ex.exerciseId, v)}
                       />
                       {item.exercise.perHand && <Badge variant="outline">per hand</Badge>}
+                      {item.exercise.muscleGroups.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setMusclesFor({ name: item.exercise.name, groups: item.exercise.muscleGroups })}
+                          className="-my-2 flex min-h-11 items-center"
+                          aria-label={`Muscles worked by ${item.exercise.name}`}
+                        >
+                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs capitalize text-muted-foreground">
+                            <PersonStanding className="size-3.5" aria-hidden />
+                            {item.exercise.muscleGroups[0]}
+                            {item.exercise.muscleGroups.length > 1 && ` +${item.exercise.muscleGroups.length - 1}`}
+                          </span>
+                        </button>
+                      )}
                       {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
                       {isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}
                     </div>
@@ -1191,6 +1208,10 @@ export function Logger(props: {
             }}
             onClose={() => setEditItemId(null)}
           />
+      )}
+
+      {musclesFor && (
+        <MusclesSheet exerciseName={musclesFor.name} groups={musclesFor.groups} onClose={() => setMusclesFor(null)} />
       )}
 
       {finishing && (
