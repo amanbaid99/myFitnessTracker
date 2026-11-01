@@ -36,7 +36,8 @@ export type AnalyticsEvent =
   | "alternate_switched"
   | "guide_tour_ended"
   | "whats_new_closed"
-  | "workout_screen_error";
+  | "workout_screen_error"
+  | "anatomy_opened";
 
 type Props = Record<string, string | number | boolean | null>;
 
