@@ -1366,3 +1366,18 @@ between two stops is saved as the RPE in between, in half steps (8 or
 to 10. The label and what the next set does follow the nearest feel
 (`feelFromRpe`), so the rules are unchanged; the thumb's colour blends
 between the stops. Arrow keys move half a step. Maths in `lib/feel.ts`.
+
+## 2026-11-01: Muscles worked and a body heatmap, via the anatomy explorer (Aman's choice: link, not merge)
+
+Aman's Human Anatomy Explorer (a separate GitHub Pages site,
+amanbaid99/HumanAnatomy) now takes link parameters (?muscles=, ?heat=,
+?theme=, ?embed=1). Repd opens it in a tall sheet rather than bringing
+the 18 MB model and its CC BY-SA assets into this repo.
+- Exercise card: a chip with the main muscle ("Lats +1") opens "Muscles
+  worked": one line per group, main first (MUSCLE_INFO in lib/anatomy.ts),
+  and See in 3D opens the atlas with those muscles lit and the rest dimmed.
+- Progress: On body opens this week's sets per muscle as a heatmap, 10
+  working sets or more fully red, fewer paler, none dark.
+- Repd's 16 broad groups map to the atlas's own muscle ids
+  (ATLAS_MUSCLES; a test pins the ids). The model only loads when a sheet
+  opens. The theme follows the app (light or beige bases open it light).
