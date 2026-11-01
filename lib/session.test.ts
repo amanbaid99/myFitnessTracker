@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSession, isExerciseDone, carryWeightForward, nextOpenExercise, nextWarmupRow, type Row, type SessionExerciseInput, type SessionSet } from "./session";
+import { buildSession, startedIndexes, workoutOrder, isExerciseDone, carryWeightForward, nextOpenExercise, nextWarmupRow, type Row, type SessionExerciseInput, type SessionSet } from "./session";
 
 const incline: SessionExerciseInput = {
   exercise: { id: "incline", name: "Incline Bench Press", equipment: "machine", warmupEnabled: true, warmupTemplate: null },
@@ -213,5 +213,28 @@ describe("skipping working sets", () => {
     ex.working[2].skipped = false;
     expect(isExerciseDone(ex)).toBe(false);
     expect(nextOpenExercise([ex])).toBe("incline");
+  });
+});
+
+describe("workoutOrder", () => {
+  it("keeps the plan when nothing is started", () => {
+    expect(workoutOrder(3, [])).toEqual([0, 1, 2]);
+  });
+  it("moves an exercise done early above the ones skipped past", () => {
+    // Plan: Lateral Raise (0), Pec Deck (1), Rows (2). Cable busy: Pec Deck first.
+    expect(workoutOrder(3, [1])).toEqual([1, 0, 2]);
+    expect(workoutOrder(3, [1, 0])).toEqual([1, 0, 2]);
+    expect(workoutOrder(4, [0, 2])).toEqual([0, 2, 1, 3]);
+  });
+  it("ignores repeats and indexes out of range", () => {
+    expect(workoutOrder(2, [1, 1, 5, -1])).toEqual([1, 0]);
+  });
+});
+
+describe("startedIndexes", () => {
+  it("lists exercises by their first logged set", () => {
+    const ids = ["lateral", "pec", "row"];
+    const logged = [{ exerciseId: "pec" }, { exerciseId: "pec" }, { exerciseId: "lateral" }, { exerciseId: "other" }];
+    expect(startedIndexes(ids, logged)).toEqual([1, 0]);
   });
 });

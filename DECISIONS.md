@@ -1367,6 +1367,17 @@ to 10. The label and what the next set does follow the nearest feel
 (`feelFromRpe`), so the rules are unchanged; the thumb's colour blends
 between the stops. Arrow keys move half a step. Maths in `lib/feel.ts`.
 
+## 2026-10-31: Exercises done early move up (Aman's request)
+
+If the cable for Lateral Raise is busy and Pec Deck is done first, Pec
+Deck now moves above Lateral Raise, and Lateral Raise is next instead of
+being passed by. The logger shows exercises started this workout first,
+in the order they were started, then the rest as planned
+(`workoutOrder` in lib/session.ts). It is automatic, with no buttons, and
+only for this workout; the plan is unchanged. The order updates when
+moving between exercises, never mid-set, so a card never jumps under a
+finger. After a reload it is rebuilt from the order of the logged sets.
+
 ## 2026-11-01: Muscles worked and a body heatmap, via the anatomy explorer (Aman's choice: link, not merge)
 
 Aman's Human Anatomy Explorer (a separate GitHub Pages site,

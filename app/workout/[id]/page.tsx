@@ -20,7 +20,7 @@ import {
   load,
 } from "@/lib/data";
 import { dayPrep } from "@/lib/routine-prep";
-import { buildSession } from "@/lib/session";
+import { buildSession, startedIndexes } from "@/lib/session";
 import { chooseForDay, choicesCookieName, dayOptionIds, optionSessions, parseChoices } from "@/lib/alternates";
 import { createClient } from "@/lib/supabase/server";
 import { extraExerciseIds, extraItem, extrasCookieName, parseExtras, extraTargetsCookieName, parseExtraTargets } from "@/lib/workout-extras";
@@ -126,6 +126,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       bodyWeightKg={bodyWeightKg}
       defaultRestSec={profile.defaultRestSec}
       hasLoggedSets={logged.length > 0}
+      startedIndexes={startedIndexes(items.map((e) => e.exercise.id), logged)}
       notes={Object.fromEntries(notes)}
       lastNotes={Object.fromEntries(lastNotes)}
       options={options}

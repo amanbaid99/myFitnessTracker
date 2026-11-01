@@ -234,6 +234,28 @@ function timedExercise(item: SessionExerciseInput, prev: SessionSet[], mine: Ses
   return { exerciseId: id, warmups, working, aim: null, last };
 }
 
+/**
+ * The order the logger shows a workout's exercises in (indexes into the
+ * day's list): the ones started this workout first, in the order they were
+ * started, then the rest as planned. Do Pec Deck while the cable for
+ * Lateral Raise is busy and Pec Deck moves above it, so Lateral Raise is
+ * next and not missed. Pure.
+ */
+export function workoutOrder(count: number, started: number[]): number[] {
+  const first = [...new Set(started)].filter((i) => i >= 0 && i < count);
+  return [...first, ...Array.from({ length: count }, (_, i) => i).filter((i) => !first.includes(i))];
+}
+
+/** Indexes of the exercises with sets in this workout, in the order their first set was logged. */
+export function startedIndexes(exerciseIds: string[], loggedInOrder: { exerciseId: string }[]): number[] {
+  const seen: number[] = [];
+  for (const s of loggedInOrder) {
+    const i = exerciseIds.indexOf(s.exerciseId);
+    if (i >= 0 && !seen.includes(i)) seen.push(i);
+  }
+  return seen;
+}
+
 /** An exercise is done when it has working sets and all are logged. */
 export function isExerciseDone(ex: Pick<SessionExercise, "working">): boolean {
   return ex.working.length > 0 && ex.working.every((r) => r.logged || r.skipped);
