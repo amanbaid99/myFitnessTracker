@@ -29,7 +29,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "Can I see the muscles I trained after a workout?",
-        a: ["Yes. History shows your body map as soon as a workout is finished, even while the analysis is pending. Deeper red represents more logged workload from sets and reps; holds use time. It is an illustration, not a measurement of muscle activation or growth. Expand the map for a closer look."],
+        a: ["Yes. History shows your body map as soon as a workout is finished, even while the analysis is pending. Deeper red represents more logged workload from sets and reps; holds use time. It is an illustration, not a measurement of muscle activation or growth. The lightweight front and back diagrams load immediately. Tap View detailed anatomy to load the interactive 3D atlas for a closer look."],
       },
       {
         q: "Where are the other workout days and weight graph?",

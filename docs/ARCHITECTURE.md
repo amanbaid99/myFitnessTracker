@@ -161,13 +161,13 @@ tool. Ask Aman before deploying.
 ## Anatomy
 
 The Human Anatomy Explorer remains a separate linked site. Finished
-workouts show an automatic inline body map before the AI review is ready.
+workouts show an automatic static front/back body map before the AI review is ready.
 The existing SQL muscle view supplies set contributions; active working
 sets plus exercise metadata supply an illustrative shading index (ten
 reps or thirty seconds per unit, half for supporting muscles, ten units
 fully red). This is not stored volume or measured muscle activation.
 WorkoutMuscles also lists unmapped exercises and offers an owner-scoped
-mapping editor. Only known muscle ids, numeric shading, theme and camera
+mapping editor. The 3D iframe loads only after View detailed anatomy. Only known muscle ids, numeric shading, theme and camera
 view reach the atlas; iframe requests omit the referrer.
 
 MusclePicker is shared by AddExercise, ExerciseSheet, PlanDraftEditor and
