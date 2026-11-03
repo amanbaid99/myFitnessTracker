@@ -1538,3 +1538,15 @@ Search and date/source filters operate on the existing latest 100 entries;
 show that limit when reached. No schema changes, stored metrics or AI calls.
 Keep list rows compact and the full body map inside the workout recap.
 Add a public sample at /demo/history. No new popup until wording approval.
+
+## 2026-11-03: Correct Today layout from the owner's phone screenshot
+
+The compact Today layout still cramped a long recommendation beside its
+label and crowded day labels with dots. Stack the focus label and preview
+inside a quiet inset. Keep full analysis one tap away. Shorten visible
+weekly progress to count/goal while retaining a full accessible label.
+Use seven aligned day markers with trained fill and a today outline.
+Move the plan name into Choose another workout and tighten workout metadata
+spacing. Preserve active-session priority and all training calculations.
+Validate beige/orange at 320, 390 and 430 px with long sample analysis;
+reuse the existing approved UI fixes release entry for this correction.
