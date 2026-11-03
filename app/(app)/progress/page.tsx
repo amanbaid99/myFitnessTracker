@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { MessageCircle } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { ProgressOverview, type ExerciseProgress } from "@/components/progress/progress-overview";
 import { ScreenHeader } from "@/components/screen-header";
-import { Button } from "@/components/ui/button";
+import { getProgressWorkouts } from "@/lib/progress-data";
 import { unmappedExercises } from "@/lib/anatomy";
-import { getExerciseLibrary, getExerciseNames, getFinishedWorkouts, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
+import { getExerciseLibrary, getExerciseNames, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
 import { progressWindowStart } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,7 +23,7 @@ export default async function ProgressPage() {
       const [bests, muscleRows, workouts, library] = await Promise.all([
         getSessionBests(supabase),
         getMuscleSets(supabase, since),
-        getFinishedWorkouts(supabase, 200),
+        getProgressWorkouts(supabase),
         // Optional: a failed read only hides the "needs muscles" list.
         getExerciseLibrary(supabase).catch(() => []),
       ]);
@@ -59,14 +57,9 @@ export default async function ProgressPage() {
 
   return (
     <>
-      <ScreenHeader title="Progress" subtitle="Estimated 1RM, sets per muscle and your streak." />
-      <Button asChild variant="outline" className="mb-6 w-full">
-        <Link href="/coach">
-          <MessageCircle /> Ask coach about your progress
-        </Link>
-      </Button>
+      <ScreenHeader title="Progress" subtitle="Your strength, training and consistency." />
       <ProgressOverview
-        workoutDates={workouts.filter((w) => w.startedAt >= since).map((w) => w.startedAt)}
+        workoutDates={workouts.map((w) => w.startedAt)}
         muscleRows={muscleRows}
         exercises={[...byExercise.values()]}
         units={profile.units}

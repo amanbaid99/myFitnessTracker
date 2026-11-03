@@ -69,7 +69,8 @@ export function trainingCalendar(workoutDates: Date[], now: Date, weeks = 12): C
 /** Workouts in the current local week. */
 export function workoutsThisWeek(workoutDates: Date[], now: Date): number {
   const start = weekStart(now).getTime();
-  return workoutDates.filter((d) => d.getTime() >= start && d.getTime() < start + 7 * DAY_MS).length;
+  const end = addDays(weekStart(now), 7).getTime();
+  return workoutDates.filter((d) => d.getTime() >= start && d.getTime() < end).length;
 }
 
 export interface MuscleWeek {
@@ -81,11 +82,12 @@ export interface MuscleWeek {
 /** Sets per muscle this week and last week, busiest this week first. */
 export function muscleWeeks(rows: { startedAt: string; muscle: string; sets: number }[], now: Date): MuscleWeek[] {
   const thisStart = weekStart(now).getTime();
-  const lastStart = thisStart - 7 * DAY_MS;
+  const lastStart = addDays(weekStart(now), -7).getTime();
+  const nextStart = addDays(weekStart(now), 7).getTime();
   const byMuscle = new Map<string, MuscleWeek>();
   for (const r of rows) {
     const t = new Date(r.startedAt).getTime();
-    const slot = t >= thisStart && t < thisStart + 7 * DAY_MS ? "thisWeek" : t >= lastStart && t < thisStart ? "lastWeek" : null;
+    const slot = t >= thisStart && t < nextStart ? "thisWeek" : t >= lastStart && t < thisStart ? "lastWeek" : null;
     if (!slot) continue;
     const entry = byMuscle.get(r.muscle) ?? { muscle: r.muscle, thisWeek: 0, lastWeek: 0 };
     entry[slot] += r.sets;
