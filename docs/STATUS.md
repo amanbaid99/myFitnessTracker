@@ -8,6 +8,10 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: Branch `claude/weekly-card-compact`: Today's weekly card shows
+  this week's analysis when it exists, otherwise last week's; dates sit in
+  the title row and Next focus is one inline line.
+
 - 2026-11-03: Branch `claude/week-switch-light-default`: This week / Last
   week switch on `/week`, Today shows last week's analysis until the first
   workout of a week, and light is the default theme for devices with no

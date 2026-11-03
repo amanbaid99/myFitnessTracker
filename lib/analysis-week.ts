@@ -31,3 +31,9 @@ export function weekForPage(param: string | string[] | undefined, nowIso: string
   const current = analysisWeek(nowIso);
   return param === "last" ? { which: "last", week: previousWeek(current) } : { which: "this", week: current };
 }
+
+/** "2 to 8 Nov", or "26 Oct to 1 Nov" across months; for tight rows. Pure. */
+export function shortWeekRange(week: { start: string; end: string }): string {
+  const fmt = (d: string, month: boolean) => new Intl.DateTimeFormat("en-GB", { day: "numeric", ...(month ? { month: "short" } : {}), timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
+  return week.start.slice(0, 7) === week.end.slice(0, 7) ? `${fmt(week.start, false)} to ${fmt(week.end, true)}` : `${fmt(week.start, true)} to ${fmt(week.end, true)}`;
+}

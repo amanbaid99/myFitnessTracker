@@ -1608,3 +1608,14 @@ muscles, and for AI to suggest all of them for one approval.
 - Light is now the default theme (`DEFAULT_THEME` in lib/theme.ts) and
   the web app manifest colours. The choice still lives in the `wt-theme`
   cookie per device, so anyone who picked a theme, dark included, keeps it.
+
+## 2026-11-03: Simpler week rule and a more compact weekly card (Aman's request)
+
+- The Today card now shows this week's analysis whenever it exists, and
+  otherwise last week's (labelled Last week). Before, last week only
+  showed until the first workout, which left the card empty while a new
+  workout's analysis was still being written.
+- Layout: "This week" and the dates (short form, "2 to 8 Nov") sit on the
+  right of the title row; below 360 px only the dates show so the title
+  is not cut. Next focus is an inline line ("Next focus: ...") instead of
+  a callout, and the overview gets three lines instead of two.

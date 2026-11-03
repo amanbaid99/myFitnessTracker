@@ -45,7 +45,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "What does the weekly analysis cover?",
-        a: ["Today shows a brief AI summary of completed app workouts in the current Monday to Sunday week, using India time. It refreshes after your workout review finishes and excludes warm-ups, cancelled sessions, imports and starting weights. Until your first workout of a new week, it shows last week's analysis instead. Tap Read full analysis for the complete review with a body heatmap; switch between This week and Last week at the top. Use Refresh weekly analysis if it is missing or behind."],
+        a: ["Today shows a brief AI summary of completed app workouts in the current Monday to Sunday week, using India time. It refreshes after your workout review finishes and excludes warm-ups, cancelled sessions, imports and starting weights. When this week's analysis is not ready yet, it shows last week's instead. Tap Read full analysis for the complete review with a body heatmap; switch between This week and Last week at the top. Use Refresh weekly analysis if it is missing or behind."],
       },
       {
         q: "Can I change Reps to Time while adding an exercise?",
