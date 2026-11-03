@@ -8,6 +8,11 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: Branch `claude/week-switch-light-default`: This week / Last
+  week switch on `/week`, Today shows last week's analysis until the first
+  workout of a week, and light is the default theme for devices with no
+  saved choice.
+
 - 2026-11-03: Branch `claude/bulk-muscle-mapping`: Today card for exercises
   without muscles, AI suggests all in one request, approve all at once.
   Needs `draft-plan` deployed (JWT on) after merge for the batch mode;

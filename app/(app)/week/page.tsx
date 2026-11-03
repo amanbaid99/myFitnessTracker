@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { WeekAnalysis } from "@/components/home/week-analysis";
-import { analysisWeek, weekRangeLabel } from "@/lib/analysis-week";
+import { weekForPage, weekRangeLabel } from "@/lib/analysis-week";
 import { workoutMuscles } from "@/lib/anatomy";
 import { getMuscleSets, load } from "@/lib/data";
 import { fetchWeeklyReview } from "@/lib/insights";
@@ -11,10 +11,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your week" };
 
-/** The full weekly analysis with this week's body heatmap. Linked from Today. */
-export default async function WeekPage() {
+/** The full weekly analysis with that week's body heatmap; this week or last (`?week=last`). Linked from Today. */
+export default async function WeekPage({ searchParams }: PageProps<"/week">) {
   const supabase = await createClient();
-  const week = analysisWeek(new Date().toISOString());
+  const { which, week } = weekForPage((await searchParams).week, new Date().toISOString());
   const result = await load(async () => {
     const [review, muscleSets] = await Promise.all([
       fetchWeeklyReview(supabase, week.start),
@@ -29,5 +29,5 @@ export default async function WeekPage() {
   );
   if (result.error !== null) return <>{back}<DataError message={result.error} /></>;
   const workload = Object.fromEntries(workoutMuscles(result.data.rows).map((m) => [m.muscle, m.sets]));
-  return <>{back}<WeekAnalysis review={result.data.review} workload={workload} range={weekRangeLabel(week)} /></>;
+  return <>{back}<WeekAnalysis which={which} basePath="/week" review={result.data.review} workload={workload} range={weekRangeLabel(week)} /></>;
 }

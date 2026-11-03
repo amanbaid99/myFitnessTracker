@@ -38,7 +38,7 @@ moving part.
 | `(app)/` | Tabbed screens: shared layout with the tab bar (`components/bottom-nav.tsx`), profile button, update banner and the guide (`GuideProvider`) |
 | `(app)/page.tsx` | Today: weekly analysis first, compact streak and activity row, next day in the rotation (`lib/rotation.ts`), one start or resume action, compact body weight card. Full analysis, weight chart and other workout days expand on demand. Sends new accounts to `/welcome` |
 | `(app)/history`, `history/[id]` | Finished workouts; one workout with its recap (analysis and body map together) and fixable sets |
-| `(app)/week` | Full weekly analysis with this week's body heatmap and muscle list (`MuscleMap`), linked from Read full analysis on Today; sample at `/demo/week` |
+| `(app)/week` | Full weekly analysis with that week's body heatmap and muscle list (`MuscleMap`); This week or Last week (`?week=last`). Linked from Read full analysis on Today; sample at `/demo/week` |
 | `(app)/progress`, `progress/[exerciseId]` | Records, weekly sets per muscle, per-exercise e1RM chart |
 | `(app)/coach` | AI coach chat |
 | `(app)/routines` | The active plan's days |

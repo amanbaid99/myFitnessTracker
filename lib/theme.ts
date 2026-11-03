@@ -32,7 +32,8 @@ export interface Theme {
   accent: Accent;
 }
 
-export const DEFAULT_THEME: Theme = { base: "dark", accent: "yellow" };
+// Light unless the person chose otherwise on this device (Aman, 2026-11-03).
+export const DEFAULT_THEME: Theme = { base: "light", accent: "yellow" };
 export const THEME_COOKIE = "wt-theme";
 const ONE_YEAR_SEC = 60 * 60 * 24 * 365;
 
