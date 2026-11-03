@@ -33,7 +33,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "Where are the other workout days and weight graph?",
-        a: ["Today starts with your weekly analysis, streak and next workout. Open Choose another workout for other days, or Weight trend for your graph. If a workout is open, Resume workout takes priority. Plan editing and new plans are under View full plan, then All plans."],
+        a: ["Today combines your weekly insight, streak and training days in one card, followed by your next workout. Choose another workout is inside that workout card. Latest workout recap opens your analysis and body map; Weight trend opens your graph. If a workout is open, Resume workout appears first. Plan editing and new plans are under View full plan, then All plans."],
       },
       {
         q: "Can I do fewer sets than planned?",

@@ -68,7 +68,7 @@ function TabBody({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
       >
         <span className="nav-progress block h-full w-1/3 rounded-full bg-primary" />
       </span>
-      <Icon className={cn("size-5", pending && "animate-pulse text-primary")} aria-hidden />
+      <span className={cn("flex h-7 w-12 items-center justify-center rounded-full transition-colors group-aria-[current=page]:bg-primary/10", (pending) && "bg-primary/10")}><Icon className={cn("size-5", pending && "animate-pulse text-primary")} aria-hidden /></span>
       <span className={cn(pending && "text-primary")}>{label}</span>
       {pending && <span className="sr-only">Loading</span>}
     </>

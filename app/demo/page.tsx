@@ -66,25 +66,23 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </HomeHero>
         </div>
 
-        <section className="mt-5 rounded-2xl border bg-card p-5">
+        <section className="mt-4 overflow-hidden rounded-2xl border bg-card p-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-medium uppercase tracking-wider text-primary">Next up</p>
             <p className="text-xs text-muted-foreground">{relativeDay(DEMO_LAST_DONE.get(next.id))}</p>
           </div>
-          <h2 className="mt-1 text-3xl font-semibold tracking-tight">{next.name}</h2>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight">{next.name}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {next.exercises.length} exercises · Warm-up included
           </p>
-          <Button asChild size="lg" className="mt-5 w-full">
+          <Button asChild size="lg" className="mt-3 w-full">
             <Link href={`/demo/workout/${next.id}`}>
               <Play /> Try this workout
             </Link>
           </Button>
-        </section>
-
-        <details className="group mt-4 rounded-2xl border bg-card">
-          <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
-          <ul className="divide-y rounded-2xl border bg-card">
+        <details className="group mt-2 border-t border-border/60">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
+          <ul className="divide-y border-t">
             {others.map((routine) => (
               <li key={routine.id} className="flex items-center gap-3 px-4 py-2">
                 <div className="min-w-0 flex-1 py-1">
@@ -102,6 +100,9 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
             ))}
           </ul>
         </details>
+        </section>
+
+
 
         <section className="mt-8 rounded-2xl border bg-card p-5">
           <h2 className="font-semibold">What you get</h2>

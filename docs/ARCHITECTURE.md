@@ -181,3 +181,13 @@ them to exercises.muscle_groups through the signed-in client and RLS.
 Existing exercises in a draft only change when musclesConfirmed is set.
 The function uses its existing model fallback and daily coach quota. It
 needs a separate deployment with JWT verification enabled after merge.
+
+### Today layout
+
+HomeHero groups WeeklyReviewCard and the local training calendar into one
+surface. WeeklyReviewCard retains its dedicated /week link and polling.
+Today prioritizes an open session's Resume action; otherwise a compact
+next-workout card contains Start and the alternate-day disclosure. Latest
+workout recap links directly to History. BodyWeightCard keeps its existing
+save and chart behavior in a quieter row. Public /demo mirrors the main
+weekly/workout hierarchy and links to /demo/week.

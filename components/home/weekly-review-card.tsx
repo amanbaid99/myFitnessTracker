@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { LastWorkout } from "./home-hero";
-import { relativeDay } from "@/lib/rotation";
 import { reviewPreview } from "@/lib/review-preview";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { analysisWeek } from "@/lib/analysis-week";
@@ -15,9 +13,8 @@ import { MASK } from "@/lib/mask";
 export type { WeeklyReview };
 
 /** Refreshes while the post-workout background jobs finish, and on returning to Today. */
-export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, last = null, demoReview, fullHref = "/week" }: {
+export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, demoReview, fullHref = "/week" }: {
   lastEndedAt: string | null; lastStartedAt: string | null; lastWorkoutId: string | null;
-  last?: LastWorkout | null;
   /** Public demo only: show sample analysis without making requests. */
   demoReview?: WeeklyReview;
   /** The full analysis page. */
@@ -75,17 +72,17 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, la
   const formatDay = (day: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }).format(new Date(`${day}T12:00:00Z`));
   const preview = review ? reviewPreview(review.summary) : null;
   return (
-    <section className="mt-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-accent/50 via-card to-card p-5" aria-label="Current week analysis" aria-live="polite">
+    <section className="bg-gradient-to-br from-accent/30 via-card to-card px-4 pt-4 pb-1" aria-label="Current week analysis" aria-live="polite">
       <div className="flex items-center gap-2 text-primary"><Sparkles className="size-4" aria-hidden /><h2 className="text-sm font-semibold">Your week so far</h2></div>
       <p className="mt-1 text-xs text-muted-foreground">This week{week ? ` · ${formatDay(week.start)} to ${formatDay(week.end)}` : ""}</p>
       {review ? <div className={MASK}>
-        <h3 className="mt-3 font-medium">{review.title}</h3>
-        <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{preview!.overview}</p>
-        {preview!.focus && <div className="mt-3 rounded-xl bg-primary/10 px-3 py-2.5">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-primary">Next focus</p>
-          <p className="mt-1 line-clamp-3 text-sm leading-relaxed">{preview!.focus}</p>
+        <h3 className="sr-only">{review.title}</h3>
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{preview!.overview}</p>
+        {preview!.focus && <div className="mt-2 flex items-baseline gap-2 border-l-2 border-primary/50 pl-3">
+          <p className="shrink-0 text-xs font-medium text-primary">Next focus</p>
+          <p className="line-clamp-2 text-sm leading-relaxed">{preview!.focus}</p>
         </div>}
-        <Link href={fullHref} className="mt-2 flex min-h-11 items-center justify-between gap-2 text-sm text-muted-foreground">
+        <Link href={fullHref} className="mt-2 flex min-h-11 items-center justify-between gap-2 text-sm font-medium text-foreground">
           Read full analysis
           <ChevronRight className="size-4" aria-hidden />
         </Link>
@@ -93,9 +90,7 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, la
       </div> : <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{failed ? "Could not load your weekly analysis. Reopen Today to try again." : "Your brief weekly analysis appears here after a workout analysis finishes. It builds on all completed workouts this week."}</p>}
       {hasWorkout && (!review || stale) && <Button variant="secondary" className="mt-3 w-full" onClick={retry} disabled={waiting}>{waiting ? "Analysing your week…" : "Refresh weekly analysis"}</Button>}
       {retryError && <p role="alert" className="mt-2 text-sm text-destructive">Could not start the analysis. Check your connection and try again.</p>}
-      {last && <Link href={`/history/${last.id}`} aria-label={`Read last workout analysis${last.dayName ? ` for ${last.dayName}` : ""}`} className="mt-2 flex min-h-11 items-center justify-between gap-2 border-t pt-2 text-sm text-muted-foreground">
-        <span className={`min-w-0 truncate ${MASK}`}>Last workout{last.dayName ? ` · ${last.dayName}` : ""} · {relativeDay(last.endedAt)}</span><ChevronRight className="size-4 shrink-0" aria-hidden />
-      </Link>}
+
     </section>
   );
 }

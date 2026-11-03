@@ -1507,3 +1507,19 @@ Settings shows "Last updated" with the date and time the running build
 went live (`updatedLabel` in lib/version.ts, from the build time CI bakes
 in), next to the short version id. It is formatted on the phone, not the
 server, so it shows the phone's own time zone.
+
+## 2026-11-03: Compact Today UI and approved UI fixes release note
+
+Aman approved the home UI recommendations and requested a live release with
+What's new titled UI fixes. Keep weekly analysis first during normal use,
+but integrate streak and calendar in its footer. Show a two-line preview
+and short next focus. Preserve the dedicated full weekly analysis page
+from PR #19, rather than introducing a competing bottom sheet.
+Move Resume above the insight during active sessions. Put alternate days
+inside the next-workout card; keep a separate one-tap latest recap link.
+Use a quieter body-weight row, with entry and chart available on demand.
+Strengthen the selected navigation state and add short press feedback only
+when reduced motion is off. All changes reuse existing reads and writes.
+No migration, AI change or new dependency. Release via PR and CI, then
+verify the exact live build and mobile demo. The approved release entry
+is UI fixes and describes the cleaner Today layout and quicker resume.

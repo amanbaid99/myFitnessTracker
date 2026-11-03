@@ -173,3 +173,9 @@
 @media (prefers-reduced-motion: reduce) {
   .nav-progress { animation: none; width: 100%; opacity: 0.6; }
 }
+
+/* Brief press feedback without moving page layout. */
+@media (prefers-reduced-motion: no-preference) {
+  button, a[role="button"] { transition: background-color 150ms, color 150ms, transform 150ms; }
+  button:active:not(:disabled), a[role="button"]:active { transform: scale(0.98); }
+}
