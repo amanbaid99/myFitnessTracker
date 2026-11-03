@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisWeek } from "./analysis-week";
+import { analysisWeek , weekRangeLabel } from "./analysis-week";
 
 describe("analysis weeks", () => {
   it("keeps Sunday in the old week and rolls over at Monday midnight", () => {
@@ -16,4 +16,10 @@ it("uses India midnight for query boundaries", () => {
   const week = analysisWeek("2026-10-29T10:00:00Z");
   expect(week.startAt).toBe("2026-10-25T18:30:00.000Z");
   expect(week.nextAt).toBe("2026-11-01T18:30:00.000Z");
+});
+
+describe("weekRangeLabel", () => {
+  it("names the Monday and Sunday", () => {
+    expect(weekRangeLabel(analysisWeek("2026-11-03T09:00:00Z"))).toBe("2 Nov to 8 Nov");
+  });
 });

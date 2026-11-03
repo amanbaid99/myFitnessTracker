@@ -14,3 +14,9 @@ export function analysisWeek(iso: string) {
     nextAt: new Date(next.getTime() - INDIA_OFFSET_MS).toISOString(),
   };
 }
+
+/** "2 Nov to 8 Nov" for a week from analysisWeek. Pure. */
+export function weekRangeLabel(week: { start: string; end: string }): string {
+  const day = (d: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
+  return `${day(week.start)} to ${day(week.end)}`;
+}

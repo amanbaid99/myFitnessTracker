@@ -83,7 +83,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
 
       {workout.source === "app" && (
         <div className="mb-6">
-          <WorkoutRecap rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} detailsHref={`/history/${workout.id}/muscles`} workoutId={workout.id} endedAt={workout.endedAt} review={review} />
+          <WorkoutRecap rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} workoutId={workout.id} endedAt={workout.endedAt} review={review} />
         </div>
       )}
 
