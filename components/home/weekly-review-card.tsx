@@ -78,11 +78,11 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, de
       {review ? <div className={MASK}>
         <h3 className="sr-only">{review.title}</h3>
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{preview!.overview}</p>
-        {preview!.focus && <div className="mt-2 flex items-baseline gap-2 border-l-2 border-primary/50 pl-3">
-          <p className="shrink-0 text-xs font-medium text-primary">Next focus</p>
-          <p className="line-clamp-2 text-sm leading-relaxed">{preview!.focus}</p>
+        {preview!.focus && <div className="mt-3 rounded-xl bg-muted/40 px-3 py-2.5">
+          <p className="text-xs font-medium text-primary">Next focus</p>
+          <p className="mt-1 line-clamp-2 text-sm leading-relaxed">{preview!.focus}</p>
         </div>}
-        <Link href={fullHref} className="mt-2 flex min-h-11 items-center justify-between gap-2 text-sm font-medium text-foreground">
+        <Link href={fullHref} className="mt-1 flex min-h-11 items-center justify-between gap-2 text-sm font-medium text-foreground">
           Read full analysis
           <ChevronRight className="size-4" aria-hidden />
         </Link>

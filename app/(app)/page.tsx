@@ -110,9 +110,8 @@ export default async function TodayPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-primary">Next up</p>
             <p className="text-xs text-muted-foreground">{relativeDay(lastDone.get(next.id))}</p>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{plan.name}</p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">{next.name}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             {next.exercises.length} exercises · Warm-up included
           </p>
           <form action={startWorkout.bind(null, next.id)} className="mt-3" data-guide="start-workout">
@@ -123,6 +122,7 @@ export default async function TodayPage() {
           {others.length > 0 && (
         <details className="group mt-2 border-t border-border/60">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden /></summary>
+          <p className={`pb-2 text-xs text-muted-foreground ${MASK}`}>{plan.name}</p>
           <ul className="divide-y border-t">
             {others.map((routine) => (
               <li key={routine.id} className="flex items-center gap-3 px-4 py-2">

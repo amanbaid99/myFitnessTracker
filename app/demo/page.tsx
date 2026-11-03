@@ -72,7 +72,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
             <p className="text-xs text-muted-foreground">{relativeDay(DEMO_LAST_DONE.get(next.id))}</p>
           </div>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">{next.name}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             {next.exercises.length} exercises · Warm-up included
           </p>
           <Button asChild size="lg" className="mt-3 w-full">

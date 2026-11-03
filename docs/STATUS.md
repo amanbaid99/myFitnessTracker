@@ -8,6 +8,11 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: Today mobile correction from owner screenshot: stack the
+  focus label, align day markers, shorten progress text and remove the
+  extra plan-name line above Start. No backend or training-math changes.
+
+
 - 2026-11-03: History timeline adds weekly/monthly groups, date tiles,
   search, date/type filters, working-set counts and saved-recap labels.
   Public preview at /demo/history. Metadata failures leave history usable.

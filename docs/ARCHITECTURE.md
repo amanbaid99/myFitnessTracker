@@ -202,3 +202,8 @@ and summary metadata, not workout notes. Pure history.ts helpers filter by
 name, local dates and source, grouping by local Monday weeks or month/year.
 Client mounting avoids server/browser timezone mismatches. /demo/history
 renders the same component with generic sample data and demo recap links.
+
+Today mobile focus previews use a stacked label/body inset. The progress
+footer uses seven day markers, a compact count/goal label and a full
+accessible description. Plan name remains inside the alternate-workout
+selector; Start and Resume behavior is unchanged.
