@@ -30,12 +30,14 @@ export function WorkoutReviewCard({
   endedAt,
   initial,
   demo = false,
+  embedded = false,
 }: {
   workoutId: string;
   endedAt: string;
   initial: WorkoutReview | null;
   /** Public sample review: no AI requests or read receipts. */
   demo?: boolean;
+  embedded?: boolean;
 }) {
   const [review, setReview] = useState(initial);
   const [state, setState] = useState(() => (initial ? "done" : pendingState(endedAt, Date.now())));
@@ -114,13 +116,13 @@ export function WorkoutReviewCard({
   }
 
   return (
-    <section aria-live="polite" className="rounded-2xl border border-primary/40 bg-accent/30 p-4">
+    <section aria-live="polite" className={embedded ? "" : "rounded-2xl border border-primary/40 bg-accent/30 p-4"}>
       {review ? (
         <>
-          <h2 className="flex items-start gap-2 font-semibold leading-snug">
+          <h3 className="flex items-start gap-2 font-semibold leading-snug">
             <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
             {review.title}
-          </h2>
+          </h3>
           <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
             <ReactMarkdown components={MD} skipHtml>{review.summary}</ReactMarkdown>
           </div>

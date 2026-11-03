@@ -8,9 +8,11 @@ Last updated: 2026-11-03.
 
 ## In progress
 
-- 2026-11-03: Lightweight front/back workout overview replaces the default
-  3D iframe; View detailed anatomy loads the atlas on demand. Approved
-  body-map What's new entry added. No backend changes.
+- 2026-11-03: Unified workout recap combines analysis and muscle workload
+  in one responsive card. Local overview stays visible during AI polling.
+
+- 2026-11-03: PR #15 is live at 5b2eb5b with the lightweight front/back
+  overview, detailed atlas on demand and approved body-map release note.
 
 ## Live in production
 
