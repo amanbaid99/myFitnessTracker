@@ -20,6 +20,10 @@ export const FAQ: FaqSection[] = [
     title: "Getting started",
     items: [
       {
+        q: "How do I find a past workout?",
+        a: ["History groups sessions into This week, Last week and older months using your device timezone. Search by workout name, or use Filter workouts for dates and entry type. Dates include both the start and end day. Recap ready means a saved workout analysis is available. Working-set counts exclude warm-ups and deleted sets. Tap any row to open it. Search and filters cover the latest 100 entries; the page tells you when that limit is reached."],
+      },
+      {
         q: "Why is an exercise missing from my body map?",
         a: ["It needs muscle groups. Tap Map next to an unmapped exercise in the workout recap, or edit the exercise in your plan. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
       },

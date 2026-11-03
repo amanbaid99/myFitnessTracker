@@ -1523,3 +1523,18 @@ when reduced motion is off. All changes reuse existing reads and writes.
 No migration, AI change or new dependency. Release via PR and CI, then
 verify the exact live build and mobile demo. The approved release entry
 is UI fixes and describes the cleaner Today layout and quicker resume.
+
+## 2026-11-03: History timeline with search and recap visibility
+
+Aman approved weekly grouping, date tiles, compact metadata, filters and
+recap labels after sharing the beige-theme History screenshot. Use the
+viewer timezone consistently for date tiles, inclusive filters and Monday
+week boundaries. Group older rows by month, including the year. Highlight
+only the latest logged session, not imported or starting-weight entries.
+Count active working sets in Postgres through a batched embedded query;
+exclude warm-ups and soft-deleted sets. Recap ready means a saved workout
+review exists. Metadata failure must not block the list or invent counts.
+Search and date/source filters operate on the existing latest 100 entries;
+show that limit when reached. No schema changes, stored metrics or AI calls.
+Keep list rows compact and the full body map inside the workout recap.
+Add a public sample at /demo/history. No new popup until wording approval.

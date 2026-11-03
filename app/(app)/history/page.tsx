@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { DataError } from "@/components/data-error";
-import { LocalDate } from "@/components/local-date";
+import { HistoryTimeline } from "@/components/history/history-timeline";
+import { getHistoryDetails } from "@/lib/history-data";
 import { ScreenHeader } from "@/components/screen-header";
 import { getFinishedWorkouts, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -11,39 +10,19 @@ export const metadata: Metadata = { title: "History" };
 
 export default async function HistoryPage() {
   const supabase = await createClient();
-  const result = await load(() => getFinishedWorkouts(supabase));
+  const result = await load(async () => {
+    const workouts = await getFinishedWorkouts(supabase);
+    const { details, unavailable } = await getHistoryDetails(supabase, workouts.map((w) => w.id));
+    return { unavailable, workouts: workouts.map(({ id, routineName, startedAt, endedAt, source }) => ({ id, routineName, startedAt, endedAt, source, workingSets: details.get(id)?.workingSets ?? null, recapReady: details.get(id)?.recapReady ?? null })) };
+  });
 
   return (
     <>
-      <ScreenHeader title="History" subtitle="Every workout, newest first." />
+      <ScreenHeader title="History" subtitle="Your training, one session at a time." />
       {result.error !== null ? (
         <DataError message={result.error} />
-      ) : result.data.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-          Finished workouts show up here.
-        </p>
-      ) : (
-        <ul className="divide-y rounded-2xl border bg-card">
-          {result.data.map((w) => (
-            <li key={w.id}>
-              <Link href={`/history/${w.id}`} className="flex min-h-14 items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{w.source === "baseline" ? "Starting weights" : (w.routineName ?? "Workout")}</p>
-                  <p className="text-sm text-muted-foreground">
-                    <LocalDate iso={w.startedAt} />
-                    {w.source === "sheet_import" ? " · imported" : w.source === "baseline" ? " · entered by you" : ` · ${minutes(w)} min`}
-                  </p>
-                </div>
-                <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      ) : <HistoryTimeline workouts={result.data.workouts} metadataUnavailable={result.data.unavailable} />}
+
     </>
   );
-}
-
-function minutes(w: { startedAt: string; endedAt: string }) {
-  return Math.max(1, Math.round((new Date(w.endedAt).getTime() - new Date(w.startedAt).getTime()) / 60_000));
 }

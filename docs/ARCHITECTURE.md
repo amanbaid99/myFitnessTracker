@@ -191,3 +191,14 @@ next-workout card contains Start and the alternate-day disclosure. Latest
 workout recap links directly to History. BodyWeightCard keeps its existing
 save and chart behavior in a quieter row. Public /demo mirrors the main
 weekly/workout hierarchy and links to /demo/week.
+
+### History timeline
+
+History loads its existing latest 100 sessions and one batched aggregate
+query from history-data.ts for active working-set counts and saved workout
+reviews. Failure of the optional metadata query shows a notice instead of
+blocking navigation. HistoryTimeline receives only id, dates, name, source
+and summary metadata, not workout notes. Pure history.ts helpers filter by
+name, local dates and source, grouping by local Monday weeks or month/year.
+Client mounting avoids server/browser timezone mismatches. /demo/history
+renders the same component with generic sample data and demo recap links.

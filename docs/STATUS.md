@@ -8,6 +8,12 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: History timeline adds weekly/monthly groups, date tiles,
+  search, date/type filters, working-set counts and saved-recap labels.
+  Public preview at /demo/history. Metadata failures leave history usable.
+  No migration or AI function changes; popup wording awaits approval.
+
+
 - 2026-11-03: Home UI polish combines insight/progress, raises the workout
   action, prioritizes Resume and adds an approved UI fixes release note.
   Preserve the latest dedicated weekly analysis and Settings update info.
