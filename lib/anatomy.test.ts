@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink } from "./anatomy";
+import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles } from "./anatomy";
 import { MUSCLE_GROUPS } from "./muscles";
 
 // Ids from the atlas's src/anatomy/muscles.js that the mapping uses.
@@ -41,5 +41,25 @@ describe("heatLink", () => {
     expect(url).toContain("latissimus-dorsi:0.5");
     expect(url).not.toContain("vastus");
     expect(heatLink({ quads: 0 }, "light")).toBeNull();
+  });
+});
+
+describe("workoutMuscles", () => {
+  it("uses the session's SQL contributions and orders the biggest groups first", () => {
+    expect(workoutMuscles([{ muscle: "triceps", sets: 1.5 }, { muscle: "chest", sets: 3 }, { muscle: "triceps", sets: 0.5 }])).toEqual([
+      { muscle: "chest", sets: 3 }, { muscle: "triceps", sets: 2 },
+    ]);
+  });
+  it("ignores missing, unknown or invalid group data rather than inventing muscles", () => {
+    expect(workoutMuscles([{ muscle: "unknown", sets: 3 }, { muscle: "toString", sets: 2 }, { muscle: "chest", sets: 0 }, { muscle: "lats", sets: NaN }, { muscle: "quads", sets: -1 }])).toEqual([]);
+    expect(workoutMuscles([])).toEqual([]);
+  });
+  it("highlights only the trained session groups in the atlas", () => {
+    const groups = workoutMuscles([{ muscle: "lats", sets: 2 }, { muscle: "biceps", sets: 1 }]);
+    const url = musclesLink(groups.map((r) => r.muscle), "light")!;
+    expect(url).toContain("latissimus-dorsi");
+    expect(url).toContain("biceps-long");
+    expect(url).not.toContain("pectoralis");
+    expect(url).not.toContain("vastus");
   });
 });

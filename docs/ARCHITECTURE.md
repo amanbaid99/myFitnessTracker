@@ -37,7 +37,7 @@ moving part.
 | --- | --- |
 | `(app)/` | Tabbed screens: shared layout with the tab bar (`components/bottom-nav.tsx`), profile button, update banner and the guide (`GuideProvider`) |
 | `(app)/page.tsx` | Today: weekly analysis first, compact streak and activity row, next day in the rotation (`lib/rotation.ts`), one start or resume action, compact body weight card. Full analysis, weight chart and other workout days expand on demand. Sends new accounts to `/welcome` |
-| `(app)/history`, `history/[id]` | Finished workouts; one workout with its AI review and fixable sets |
+| `(app)/history`, `history/[id]` | Finished workouts; one workout with its AI review, post-review muscle recap and fixable sets |
 | `(app)/progress`, `progress/[exerciseId]` | Records, weekly sets per muscle, per-exercise e1RM chart |
 | `(app)/coach` | AI coach chat |
 | `(app)/routines` | The active plan's days |
@@ -156,3 +156,14 @@ tool. Ask Aman before deploying.
 | `seed.yml` | Manual, once: seed a user from `supabase/seed.sql` |
 | `keepalive.yml` | Daily ping so the free Supabase project does not pause |
 | `prod-logs.yml` | Manual, read only: recent 5xx and error logs from Vercel |
+
+
+## Anatomy
+
+The Human Anatomy Explorer remains a separate linked site. The workout
+review's Muscles trained panel reads the existing owner-scoped
+workout_muscle_sets SQL view for that workout, then lights those groups
+through musclesLink in lib/anatomy.ts. The panel appears with the ready
+review, including when polling completes. AtlasSheet loads the external
+model only on a tap; no workout ids, notes or analysis text are sent to
+the atlas. A failed optional muscle read does not hide the review.

@@ -15,6 +15,7 @@ import {
 } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/client";
 import { AskCoach } from "@/components/coach/ask-coach";
+import { WorkoutMuscles } from "@/components/anatomy/workout-muscles";
 import { MD } from "@/components/compact-markdown";
 
 /** How long to wait for a retried review before giving up. */
@@ -29,10 +30,15 @@ export function WorkoutReviewCard({
   workoutId,
   endedAt,
   initial,
+  muscleSets = null,
+  demo = false,
 }: {
   workoutId: string;
   endedAt: string;
   initial: WorkoutReview | null;
+  muscleSets?: { muscle: string; sets: number }[] | null;
+  /** Public sample review: no AI requests or read receipts. */
+  demo?: boolean;
 }) {
   const [review, setReview] = useState(initial);
   const [state, setState] = useState(() => (initial ? "done" : pendingState(endedAt, Date.now())));
@@ -69,7 +75,7 @@ export function WorkoutReviewCard({
   }
 
   useEffect(() => {
-    if (state !== "polling") return;
+    if (demo || state !== "polling") return;
     const supabase = createClient();
     const deadline = retryUntil ?? new Date(endedAt).getTime() + POLL_WINDOW_MS;
     let stopped = false;
@@ -88,14 +94,14 @@ export function WorkoutReviewCard({
       stopped = true;
       clearInterval(t);
     };
-  }, [state, workoutId, endedAt, retryUntil]);
+  }, [state, workoutId, endedAt, retryUntil, demo]);
 
   useEffect(() => {
-    if (review && !review.readAt) markReviewRead(createClient(), review.id).catch(() => {});
-  }, [review]);
+    if (!demo && review && !review.readAt) markReviewRead(createClient(), review.id).catch(() => {});
+  }, [review, demo]);
 
   const retryButton = (
-    <Button variant="secondary" className="mt-3 w-full" onClick={retry} disabled={starting}>
+    <Button variant="secondary" className="mt-3 w-full" onClick={retry} disabled={starting || demo}>
       {starting ? <Loader2 className="animate-spin" /> : <RotateCcw />} {state === "none" ? "Get AI review" : "Try again"}
     </Button>
   );
@@ -121,7 +127,8 @@ export function WorkoutReviewCard({
           <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
             <ReactMarkdown components={MD} skipHtml>{review.summary}</ReactMarkdown>
           </div>
-          <AskCoach workoutId={workoutId} label="Ask about this" className="mt-3 w-full" />
+          {muscleSets && <WorkoutMuscles rows={muscleSets} />}
+          {!demo && <AskCoach workoutId={workoutId} label="Ask about this" className="mt-3 w-full" />}
         </>
       ) : state === "polling" ? (
         <p className="flex items-center gap-2 text-sm">

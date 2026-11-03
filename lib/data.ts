@@ -441,6 +441,18 @@ export async function getMuscleSets(supabase: Supabase, sinceIso: string): Promi
   return (data ?? []).map((r) => ({ workoutId: r.workout_id, startedAt: r.started_at, muscle: r.muscle, sets: Number(r.sets) }));
 }
 
+/** The SQL view includes only live working sets and respects the caller's RLS.
+ * Optional decoration: a failed read must not hide the workout or its review.
+ */
+export async function getWorkoutMuscleSets(supabase: Supabase, workoutId: string): Promise<{ muscle: string; sets: number }[] | null> {
+  const { data, error } = await supabase
+    .from("workout_muscle_sets")
+    .select("muscle, sets")
+    .eq("workout_id", workoutId);
+  if (error) return null;
+  return (data ?? []).map((r) => ({ muscle: String(r.muscle), sets: Number(r.sets) }));
+}
+
 // Exercise notes -----------------------------------------------------------------
 // Reads return empty on error, so screens keep working if the notes table
 // is missing (e.g. before its migration has run).

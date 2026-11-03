@@ -1392,3 +1392,27 @@ the 18 MB model and its CC BY-SA assets into this repo.
 - Repd's 16 broad groups map to the atlas's own muscle ids
   (ATLAS_MUSCLES; a test pins the ids). The model only loads when a sheet
   opens. The theme follows the app (light or beige bases open it light).
+
+## 2026-11-03: Muscles trained alongside the finished workout review (Aman's request)
+
+- Read the latest merges, including PR #12's linked anatomy explorer and
+  PR #11's workout-only ordering. Keep the atlas separate and on demand.
+- Once a workout_review is available, its card also shows Muscles trained:
+  the top four groups and an expandable remainder, with a button that
+  highlights all trained groups in the 3D atlas. It appears both for a
+  review loaded initially and when polling/retry completes. Never open a
+  modal or download the 18 MB model automatically on review completion.
+- The existing SQL workout_muscle_sets view supplies that workout's live
+  working-set contributions, with main muscle 1 and supporting muscle
+  0.5. This reflects the exercises actually logged, including alternates,
+  extras, bodyweight and timed sets, rather than the current plan or AI
+  guesses. Warm-ups and deleted sets are excluded by the existing views.
+- Query by workout_id using the signed-in server client and existing RLS.
+  The read runs alongside the other History reads and is optional; a
+  missing view/read error or unknown muscle group cannot hide the review.
+  The atlas receives only known muscle ids and theme, no workout or user
+  identifiers, notes or review text. No migration or AI change.
+- The public demo's finished state shows a clearly labelled sample review
+  and recap. Sample mode sends no AI requests or read receipts. Anatomy
+  opens reuse anatomy_opened with from=workout_review, without personal
+  properties. What's new wording is drafted in chat and awaits approval.
