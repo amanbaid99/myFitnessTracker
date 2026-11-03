@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink, rankedWorkload, workloadOrSets, topMusclesText } from "./anatomy";
+import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink, rankedWorkload, workloadOrSets, topMusclesText, unmappedExercises } from "./anatomy";
 import { MUSCLE_GROUPS } from "./muscles";
 
 // Ids from the atlas's src/anatomy/muscles.js that the mapping uses.
@@ -109,5 +109,12 @@ describe("ranked workload", () => {
   it("falls back to set totals when there is no workload", () => {
     expect(workloadOrSets([{ muscle: "chest", sets: 3 }, { muscle: "chest", sets: 2 }])).toEqual({ chest: 5 });
     expect(workloadOrSets([{ muscle: "chest", sets: 3 }], { quads: 1 })).toEqual({ quads: 1 });
+  });
+});
+
+describe("unmappedExercises", () => {
+  it("keeps exercises with no known muscle group", () => {
+    const ex = [{ id: "a", muscleGroups: [] }, { id: "b", muscleGroups: ["wings"] }, { id: "c", muscleGroups: ["chest"] }];
+    expect(unmappedExercises(ex).map((e) => e.id)).toEqual(["a", "b"]);
   });
 });

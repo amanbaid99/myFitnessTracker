@@ -1562,3 +1562,14 @@ Keep the existing network reload mechanism and no changes to saved data.
 Use button aria-busy and live status text without suppressing announcements
 on the live region. Spinner animation respects reduced motion. Reuse the
 approved UI fixes release entry for this correction.
+
+## 2026-11-03: Map missing muscles from Progress (Aman's request)
+
+Exercises with no muscle groups add nothing to Sets per muscle. Progress
+now lists every active exercise in the library that has none, under
+Sets per muscle, with the same Map button and muscle picker (manual or
+AI suggestions, confirmed before saving) as the History recap. The list
+and sheet moved into `components/anatomy/unmapped-exercises.tsx`, shared
+by both. Saving updates the exercise, and the SQL view reads muscles
+live, so past weeks count it too. A failed library read only hides the
+list.

@@ -5,7 +5,8 @@ import { DataError } from "@/components/data-error";
 import { ProgressOverview, type ExerciseProgress } from "@/components/progress/progress-overview";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
-import { getExerciseNames, getFinishedWorkouts, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
+import { unmappedExercises } from "@/lib/anatomy";
+import { getExerciseLibrary, getExerciseNames, getFinishedWorkouts, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
 import { progressWindowStart } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,13 +22,15 @@ export default async function ProgressPage() {
   const [profile, result] = await Promise.all([
     getProfile(supabase),
     load(async () => {
-      const [bests, muscleRows, workouts] = await Promise.all([
+      const [bests, muscleRows, workouts, library] = await Promise.all([
         getSessionBests(supabase),
         getMuscleSets(supabase, since),
         getFinishedWorkouts(supabase, 200),
+        // Optional: a failed read only hides the "needs muscles" list.
+        getExerciseLibrary(supabase).catch(() => []),
       ]);
       const names = await getExerciseNames(supabase, [...new Set(bests.map((b) => b.exerciseId))]);
-      return { bests, muscleRows, workouts, names };
+      return { bests, muscleRows, workouts, names, library };
     }),
   ]);
 
@@ -39,7 +42,8 @@ export default async function ProgressPage() {
       </>
     );
   }
-  const { bests, muscleRows: allMuscleRows, workouts: finished, names } = result.data;
+  const { bests, muscleRows: allMuscleRows, workouts: finished, names, library } = result.data;
+  const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
   // Starting weights are numbers to build on, not training: they count for
   // the 1RM charts but not for the streak or sets per muscle.
   const baselineIds = new Set(finished.filter((w) => w.source === "baseline").map((w) => w.id));
@@ -66,6 +70,7 @@ export default async function ProgressPage() {
         muscleRows={muscleRows}
         exercises={[...byExercise.values()]}
         units={profile.units}
+        unmapped={unmapped}
       />
     </>
   );

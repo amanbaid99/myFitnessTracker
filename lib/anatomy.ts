@@ -149,3 +149,8 @@ export function topMusclesText(workload: Record<string, number>, count = 3): str
   const names = rankedWorkload(workload).slice(0, count).map((m, i) => (i === 0 ? m.muscle.charAt(0).toUpperCase() + m.muscle.slice(1) : m.muscle));
   return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
 }
+
+/** Exercises with no known muscle groups, so they are missing from maps and sets per muscle. Pure. */
+export function unmappedExercises<T extends { muscleGroups: string[] }>(exercises: T[]): T[] {
+  return exercises.filter((e) => !e.muscleGroups.some(isGroup));
+}
