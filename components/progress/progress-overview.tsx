@@ -1,217 +1,150 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
-import { ChevronRight, PersonStanding, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronRight, MessageCircle, PersonStanding, Search, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { AtlasSheet, atlasTheme } from "@/components/anatomy/atlas-sheet";
 import { UnmappedExercises } from "@/components/anatomy/unmapped-exercises";
+import { WorkoutBodyDiagram } from "@/components/anatomy/workout-body-diagram";
 import type { WorkoutExercise } from "@/lib/data";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { heatLink } from "@/lib/anatomy";
 import { track } from "@/lib/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatE1rm, formatSet } from "@/lib/format";
-import { muscleWeeks, trainingCalendar, weekStreak, workoutsThisWeek } from "@/lib/progress";
+import { dayKey, muscleWeeks, trainingCalendar, weekStreak, workoutsThisWeek } from "@/lib/progress";
+import { sessionsInRange, sessionChange, type ProgressRange } from "@/lib/progress-range";
 import type { Units } from "@/lib/units";
 import { cn } from "@/lib/utils";
+import { MASK } from "@/lib/mask";
 import { Sparkline } from "./sparkline";
 import { useMounted } from "./use-mounted";
 
 export interface ExerciseProgress {
   id: string;
   name: string;
-  /** Best set per session, oldest first. */
   sessions: { startedAt: string; e1rmKg: number; weightKg: number | null; addedKg: number; reps: number }[];
 }
+const TABS = ["Strength", "Muscles", "Consistency"] as const;
+type Tab = typeof TABS[number];
+type StrengthFilters = { search: string; range: ProgressRange; sort: string };
 
-const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
-const TREND_SESSIONS = 12;
-const MUSCLES_SHOWN = 8;
-
-export function ProgressOverview({
-  workoutDates,
-  muscleRows,
-  exercises,
-  units,
-  unmapped = [],
-}: {
+export function ProgressOverview({ workoutDates, muscleRows, exercises, units, unmapped = [], demo = false }: {
   workoutDates: string[];
   muscleRows: { startedAt: string; muscle: string; sets: number }[];
   exercises: ExerciseProgress[];
   units: Units;
-  /** Exercises with no muscles yet, so their sets are missing from Sets per muscle. */
   unmapped?: WorkoutExercise[];
+  demo?: boolean;
 }) {
   const mounted = useMounted();
-
-  return (
-    <div className="space-y-6">
-      {mounted ? <Consistency workoutDates={workoutDates} /> : <Skeleton className="h-64 w-full rounded-2xl" />}
-      {mounted ? <MuscleVolume rows={muscleRows} unmapped={unmapped} /> : <Skeleton className="h-48 w-full rounded-2xl" />}
-      <ExerciseList exercises={exercises} units={units} />
+  const [tab, setTab] = useState<Tab>("Strength");
+  const [strength, setStrength] = useState<StrengthFilters>({search:"",range:"12",sort:"recent"});
+  const id = useId();
+  const dates = workoutDates.map((d) => new Date(d));
+  const now = new Date();
+  function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    let next = index;
+    if (event.key === "ArrowRight") next = (index + 1) % TABS.length;
+    else if (event.key === "ArrowLeft") next = (index + TABS.length - 1) % TABS.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = TABS.length - 1;
+    else return;
+    event.preventDefault(); setTab(TABS[next]);
+    (event.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus();
+  }
+  return <div>
+    {mounted ? <section aria-label="Progress summary" className="mb-4 grid grid-cols-3 divide-x rounded-2xl border bg-card py-4 text-center">
+      <div><p className="text-2xl font-semibold tabular-nums">{weekStreak(dates, now)}</p><p className="mt-1 text-xs text-muted-foreground">Week streak</p></div>
+      <div><p className="text-2xl font-semibold tabular-nums">{workoutsThisWeek(dates, now)}</p><p className="mt-1 text-xs text-muted-foreground">Workouts this week</p></div>
+      <div><p className="text-2xl font-semibold tabular-nums">{exercises.filter(e => e.sessions.length).length}</p><p className="mt-1 text-xs text-muted-foreground">Exercises tracked</p></div>
+    </section> : <Skeleton className="mb-4 h-24 rounded-2xl" />}
+    <div role="tablist" aria-label="Progress views" className="mb-4 grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1">
+      {TABS.map((name, index) => <button key={name} type="button" role="tab" id={`${id}-${name}`} aria-controls={`${id}-panel`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onKeyDown={e => navigateTabs(e, index)} onClick={() => setTab(name)} className={cn("min-h-11 rounded-lg px-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring", tab === name ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{name}</button>)}
     </div>
-  );
+    <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`} tabIndex={0}>
+      {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} /> : tab === "Muscles" ? <MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo} /> : <Consistency workoutDates={workoutDates} />}
+    </div>
+    <Link href={demo ? "/demo" : "/coach"} className="mt-4 flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><MessageCircle className="size-4" aria-hidden />Ask Coach about {tab.toLowerCase()}</Link>
+  </div>;
 }
 
 function Consistency({ workoutDates }: { workoutDates: string[] }) {
   const now = new Date();
-  const dates = workoutDates.map((d) => new Date(d));
-  const streak = weekStreak(dates, now);
-  const thisWeek = workoutsThisWeek(dates, now);
+  const dates = workoutDates.map(d => new Date(d));
   const calendar = trainingCalendar(dates, now);
-  const fmt = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short" });
-
-  return (
-    <section className="rounded-2xl border bg-card p-4">
-      <h2 className="font-semibold">Consistency</h2>
-      <div className="mt-3 flex items-end gap-6">
-        <div>
-          <p className="text-4xl font-semibold tabular-nums leading-none">{streak}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{streak === 1 ? "week" : "weeks"} in a row</p>
-        </div>
-        <div>
-          <p className="text-xl font-semibold tabular-nums leading-none">{thisWeek}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{thisWeek === 1 ? "workout" : "workouts"} this week</p>
-        </div>
+  const days = calendar.flat();
+  const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+  const month = new Intl.DateTimeFormat("en-GB", { month: "short" });
+  return <section className="rounded-2xl border bg-card p-4">
+    <h2 className="font-semibold">Training rhythm</h2>
+    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">A streak counts weeks with at least one workout. An unfinished week does not break it.</p>
+    <h3 className="mt-4 text-sm font-medium">Recent weeks</h3>
+    <ul className="mt-1 divide-y">{calendar.slice(-4).reverse().map((week, index) => {
+      const start = week[0].key, end = week[6].key;
+      const count = dates.filter(d => dayKey(d) >= start && dayKey(d) <= end).length;
+      return <li key={start} className="flex min-h-11 items-center justify-between gap-2 text-sm"><span>{index === 0 ? "This week" : `${fmt.format(week[0].date)} to ${fmt.format(week[6].date)}`}</span><span className="tabular-nums text-muted-foreground">{count} {count === 1 ? "workout" : "workouts"}</span></li>;
+    })}</ul>
+    <details className="group mt-2 border-t">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium">Training calendar<ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden /></summary>
+      <div role="img" aria-label={`${days.filter(d => d.trained).length} training days over the last 12 weeks. One square per day.`} className="flex gap-2 pb-2">
+        <div className="mt-5 grid shrink-0 grid-rows-7 gap-[3px] text-[10px] leading-[14px] text-muted-foreground" aria-hidden>{["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(d => <span key={d}>{d}</span>)}</div>
+        <div className="min-w-0 flex-1"><div className="mb-1 grid h-4 grid-cols-12 gap-[3px] text-[9px] text-muted-foreground" aria-hidden>{calendar.map((week, i) => <span key={week[0].key}>{i === 0 || week[0].date.getMonth() !== calendar[i - 1][0].date.getMonth() ? month.format(week[0].date) : ""}</span>)}</div>
+        <div className="grid grid-flow-col grid-cols-12 grid-rows-7 gap-[3px]" aria-hidden>{days.map(day => <span key={day.key} title={`${fmt.format(day.date)}: ${day.future ? "future day" : day.trained ? "trained" : "not trained"}`} className={cn("h-[14px] min-w-0 rounded-[3px]", day.trained ? "bg-primary" : day.future ? "border border-border" : "bg-secondary")} />)}</div></div>
       </div>
-
-      <div className="mt-4 flex gap-2" role="img" aria-label={`Training days over the last 12 weeks: ${dates.length} workouts`}>
-        <div className="grid grid-rows-7 gap-[3px] text-[10px] leading-[14px] text-muted-foreground" aria-hidden>
-          {DAY_LETTERS.map((l, i) => (
-            <span key={i}>{i % 2 === 0 ? l : ""}</span>
-          ))}
-        </div>
-        <div className="grid grid-flow-col grid-rows-7 gap-[3px]">
-          {calendar.flat().map((day) => (
-            <span
-              key={day.key}
-              title={`${fmt.format(day.date)}${day.trained ? ": trained" : ""}`}
-              className={cn(
-                "size-[14px] rounded-[3px]",
-                day.trained ? "bg-primary" : day.future ? "border border-border" : "bg-secondary",
-              )}
-            />
-          ))}
-        </div>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">Last 12 weeks, one square per day. A week counts when you train at least once.</p>
-    </section>
-  );
+      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1"><i className="size-2 rounded-sm bg-primary" />Trained</span><span className="flex items-center gap-1"><i className="size-2 rounded-sm bg-secondary" />Not trained</span><span className="flex items-center gap-1"><i className="size-2 rounded-sm border" />Future</span></div>
+      <p className="mt-2 text-xs text-muted-foreground">Last 12 weeks, Monday to Sunday in your device timezone. Multiple sessions on one day share a square.</p>
+    </details>
+  </section>;
 }
 
-function MuscleVolume({ rows, unmapped }: { rows: { startedAt: string; muscle: string; sets: number }[]; unmapped: WorkoutExercise[] }) {
+function MuscleVolume({ rows, unmapped, demo }: { rows: { startedAt: string; muscle: string; sets: number }[]; unmapped: WorkoutExercise[]; demo: boolean }) {
   const [showAll, setShowAll] = useState(false);
   const [heatmap, setHeatmap] = useState<string | null>(null);
   const weeks = muscleWeeks(rows, new Date());
-  const shown = showAll ? weeks : weeks.slice(0, MUSCLES_SHOWN);
-  const max = Math.max(1, ...weeks.map((w) => Math.max(w.thisWeek, w.lastWeek)));
+  const shown = showAll ? weeks : weeks.slice(0, 6);
+  const max = Math.max(1, ...weeks.map(w => Math.max(w.thisWeek, w.lastWeek)));
   const round = (n: number) => Math.round(n * 2) / 2;
-
-  return (
-    <section className="rounded-2xl border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="font-semibold">Sets per muscle this week</h2>
-        {weeks.some((w) => w.thisWeek > 0) && (
-          <Button
-            variant="secondary"
-            className="-my-1 shrink-0"
-            onClick={() => {
-              const url = heatLink(Object.fromEntries(weeks.map((w) => [w.muscle, w.thisWeek])), atlasTheme());
-              if (!url) return;
-              track("anatomy_opened", { from: "progress" });
-              setHeatmap(url);
-            }}
-          >
-            <PersonStanding /> On body
-          </Button>
-        )}
-      </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        Working sets; a set counts fully for its main muscle and half for the others.
-      </p>
-      {weeks.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No working sets in the last two weeks yet.</p>
-      ) : (
-        <ul className="mt-3 space-y-2.5">
-          {shown.map((w) => (
-            <li key={w.muscle} className="grid grid-cols-[6.5rem_1fr] items-center gap-3">
-              <span className="truncate text-sm capitalize">{w.muscle}</span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 min-w-0 flex-1">
-                    {w.thisWeek > 0 && (
-                      <div
-                        className="h-full rounded-r-[4px] bg-primary"
-                        style={{ width: `${(w.thisWeek / max) * 100}%` }}
-                      />
-                    )}
-                  </div>
-                  <span className="w-8 shrink-0 text-right text-sm font-medium tabular-nums">{round(w.thisWeek)}</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground tabular-nums">last week {round(w.lastWeek)}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      {weeks.length > MUSCLES_SHOWN && (
-        <button
-          type="button"
-          onClick={() => setShowAll((s) => !s)}
-          className="mt-2 min-h-11 text-sm text-muted-foreground underline underline-offset-4"
-        >
-          {showAll ? "Show fewer" : `Show all ${weeks.length} muscles`}
-        </button>
-      )}
-      <UnmappedExercises exercises={unmapped} description="Their sets are not counted above. Choose their muscles to include them, past workouts too." />
-      {heatmap && <AtlasSheet url={heatmap} title="This week on your body" onClose={() => setHeatmap(null)} />}
-    </section>
-  );
+  return <section className="rounded-2xl border bg-card p-4">
+    <h2 className="font-semibold">Weekly muscle sets</h2>
+    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Current Monday to Sunday week versus last week, in your device timezone. This week may still be in progress.</p>
+    <div className="mt-3 flex gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-1"><i className="h-2 w-4 rounded bg-primary" />This week</span><span className="flex items-center gap-1"><i className="h-2 w-4 rounded bg-muted-foreground/40" />Last week</span></div>
+    {weeks.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No working sets in the last two weeks yet.</p> : <ul className="mt-3 space-y-4">{shown.map(w => <li key={w.muscle}>
+      <div className="mb-1 flex items-center justify-between gap-2 text-sm"><span className="capitalize">{w.muscle}</span><span className="tabular-nums"><span className="font-medium">{round(w.thisWeek)}</span><span className="text-muted-foreground"> / {round(w.lastWeek)}</span><span className="sr-only"> sets, this week / last week</span></span></div>
+      <div className="space-y-1" aria-hidden><div className="h-1.5 rounded bg-muted"><div className="h-full rounded bg-primary" style={{width:`${w.thisWeek / max * 100}%`}} /></div><div className="h-1.5 rounded bg-muted"><div className="h-full rounded bg-muted-foreground/40" style={{width:`${w.lastWeek / max * 100}%`}} /></div></div>
+    </li>)}</ul>}
+    {weeks.length > 6 && <Button variant="ghost" className="mt-2 w-full" onClick={() => setShowAll(!showAll)}>{showAll ? "Show fewer" : `Show all ${weeks.length} muscles`}</Button>}
+    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Working sets only. Main muscles count fully; supporting muscles count half. More sets do not automatically mean better progress.</p>
+    {weeks.some(w => w.thisWeek > 0) && <details className="group mt-3 border-t"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium">Muscle overview<ChevronRight className="size-4 group-open:rotate-90" aria-hidden /></summary><WorkoutBodyDiagram workload={Object.fromEntries(weeks.map(w => [w.muscle, w.thisWeek]))} /><p className="mt-2 text-xs text-muted-foreground">Illustrative set contributions, not measured muscle activation.</p><Button variant="secondary" className="mt-3 w-full" onClick={() => { const url = heatLink(Object.fromEntries(weeks.map(w => [w.muscle, w.thisWeek])), atlasTheme()); if (!url) return; track("anatomy_opened", {from:"progress"});setHeatmap(url); }}><PersonStanding />View detailed anatomy</Button></details>}
+    <UnmappedExercises exercises={unmapped} demo={demo} description="These exercises are missing from muscle totals. Confirm their muscles to include past sessions too." />
+    {heatmap && <AtlasSheet url={heatmap} title="This week on your body" onClose={() => setHeatmap(null)} />}
+  </section>;
 }
 
-function ExerciseList({ exercises, units }: { exercises: ExerciseProgress[]; units: Units }) {
-  const withData = exercises
-    .filter((e) => e.sessions.length > 0)
-    .sort((a, b) => b.sessions[b.sessions.length - 1].startedAt.localeCompare(a.sessions[a.sessions.length - 1].startedAt));
-
-  return (
-    <section>
-      <h2 className="mb-2 font-semibold">Exercises</h2>
-      {withData.length === 0 ? (
-        <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
-          Log a few workouts and each exercise&apos;s estimated 1RM trend shows up here.
-        </p>
-      ) : (
-        <ul className="divide-y rounded-2xl border bg-card">
-          {withData.map((e) => {
-            const recent = e.sessions.slice(-TREND_SESSIONS);
-            const best = e.sessions.reduce((a, b) => (b.e1rmKg > a.e1rmKg ? b : a));
-            const change = recent[recent.length - 1].e1rmKg - recent[0].e1rmKg;
-            const Trend = change >= 0 ? TrendingUp : TrendingDown;
-            return (
-              <li key={e.id}>
-                <Link href={`/progress/${e.id}`} className="flex min-h-16 items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{e.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Best {formatSet(best, units)} · est. 1RM {formatE1rm(best.e1rmKg, units)}
-                    </p>
-                    {recent.length > 1 && Math.abs(change) >= 0.05 && (
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Trend className="size-3" aria-hidden />
-                        {change > 0 ? "+" : "−"}
-                        {formatE1rm(Math.abs(change), units)} over {recent.length} sessions
-                      </p>
-                    )}
-                  </div>
-                  <Sparkline values={recent.map((s) => s.e1rmKg)} />
-                  <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
-  );
+function ExerciseList({ exercises, units, demo, state, onChange }: { exercises: ExerciseProgress[]; units: Units; demo: boolean; state: StrengthFilters; onChange: (value: StrengthFilters) => void }) {
+  const {search,range,sort} = state;
+  const setSearch = (search: string) => onChange({...state,search});
+  const setRange = (range: ProgressRange) => onChange({...state,range});
+  const setSort = (sort: string) => onChange({...state,sort});
+  const withData = exercises.map(e => ({...e, recent:sessionsInRange(e.sessions, range)}))
+    .filter(e => e.recent.length && e.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+    .sort((a,b) => sort === "name" ? a.name.localeCompare(b.name) : sort === "change" ? (sessionChange(b.recent) ?? -Infinity) - (sessionChange(a.recent) ?? -Infinity) || a.name.localeCompare(b.name) : b.recent.at(-1)!.startedAt.localeCompare(a.recent.at(-1)!.startedAt) || a.name.localeCompare(b.name));
+  return <section>
+    <h2 className="text-base font-semibold">Strength trends</h2>
+    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Latest sets and estimated one-rep max (1RM). Change compares the first and last sessions in your selected period.</p>
+    <div className="relative mt-3"><Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" aria-hidden /><Input value={search} onChange={e => setSearch(e.target.value)} aria-label="Search exercises" placeholder="Search exercises" className={`h-11 pl-9 ${MASK}`} /></div>
+    <div className="mt-2 grid grid-cols-2 gap-2"><label className="text-xs text-muted-foreground">Period<select aria-label="Strength period" value={range} onChange={e => setRange(e.target.value as ProgressRange)} className="mt-1 h-11 w-full rounded-xl border bg-card px-2 text-sm text-foreground"><option value="4">Last 4 weeks</option><option value="12">Last 12 weeks</option><option value="all">All time</option></select></label><label className="text-xs text-muted-foreground">Sort<select aria-label="Sort exercises" value={sort} onChange={e => setSort(e.target.value)} className="mt-1 h-11 w-full rounded-xl border bg-card px-2 text-sm text-foreground"><option value="recent">Most recent</option><option value="name">Name</option><option value="change">Largest 1RM change</option></select></label></div>
+    <p role="status" className="my-3 text-xs text-muted-foreground">{withData.length} {withData.length === 1 ? "exercise" : "exercises"} in this period</p>
+    {!withData.length ? <div className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">{exercises.length ? "No matching sessions. Try another name or All time." : "Log working sets to start tracking your lifts. An estimated 1RM needs a set with weight and reps."}{(search || range !== "all") && <Button variant="ghost" className="mt-2 w-full" onClick={() => {onChange({...state,search:"",range:"all"});}}>Show all exercises</Button>}</div> : <ul className="divide-y overflow-hidden rounded-2xl border bg-card">{withData.map(e => {
+      const latest = e.recent.at(-1)!;
+      const best = e.sessions.reduce((a,b) => b.e1rmKg > a.e1rmKg ? b : a);
+      const change = sessionChange(e.recent);
+      const Icon = change !== null && change > 0.05 ? TrendingUp : change !== null && change < -0.05 ? TrendingDown : Minus;
+      return <li key={e.id}><Link href={demo ? `/demo/progress/${e.id}` : `/progress/${e.id}`} className="flex min-h-20 items-center gap-2 px-3 py-3 transition-colors hover:bg-muted/40 active:bg-muted/60">
+        <div className="min-w-0 flex-1"><p className={`break-words text-sm font-medium ${MASK}`}>{e.name}</p><p className="mt-1 text-xs text-muted-foreground">Latest {formatSet(latest,units)}</p><p className="text-xs text-muted-foreground">Est. 1RM {formatE1rm(latest.e1rmKg,units)}</p><p className="mt-1 flex items-center gap-1 text-xs"><Icon className="size-3 shrink-0 text-primary" aria-hidden />{change === null ? "One session; trend not available" : Math.abs(change) < 0.05 ? `Steady over ${e.recent.length} sessions` : `${change > 0 ? "+" : "−"}${formatE1rm(Math.abs(change),units)} over ${e.recent.length} sessions`}</p><p className="mt-1 text-[11px] text-muted-foreground">All-time best est. 1RM {formatE1rm(best.e1rmKg,units)}</p></div>
+        <Sparkline values={e.recent.map(s => s.e1rmKg)} width={52} /><ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link></li>;
+    })}</ul>}
+  </section>;
 }

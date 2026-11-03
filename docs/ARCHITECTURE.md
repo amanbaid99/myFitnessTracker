@@ -213,3 +213,18 @@ banner and Settings subscribe with useSyncExternalStore, show busy controls
 and status text, then reload after two animation frames so feedback paints.
 Repeated requests are ignored; synchronous reload rejection restores retry.
 Version checking and persisted workout data are unchanged.
+
+### Progress views and data windows
+
+ProgressOverview uses keyboard-accessible Strength/Muscles/Consistency tabs
+with summary metrics. Strength filters stay in the parent across tab changes.
+progress-range.ts sorts and filters sessions for the selected 4/12-week or
+all-time period; latest, change and all-time best are labelled separately.
+Muscles uses existing weighted set contributions for the current and previous
+local week, preserving UnmappedExercises and on-demand anatomy. Consistency
+uses a collapsed 12-week calendar while the streak uses full workout dates.
+progress-data.ts paginates minimal finished-workout metadata under owner RLS.
+getSessionBests and getMuscleSets paginate stable SQL-view ordering too.
+No database metrics are recalculated or stored by this UI. ExerciseProgressView
+is shared by the signed-in detail and /demo/progress/[exerciseId]. E1rmChart
+has period selection, units, click tooltips and a persistent session picker.

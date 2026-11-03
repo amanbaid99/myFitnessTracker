@@ -8,6 +8,13 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: Progress refresh adds Strength/Muscles/Consistency tabs,
+  searchable period-based trends, week comparisons and touch chart details.
+  Full paginated workout dates fix long streaks; session/muscle queries
+  also paginate. Mapping controls preserved. Public preview /demo/progress.
+  No schema or Edge Function changes. New release-note wording pending.
+
+
 - 2026-11-03: Branch `claude/weekly-card-compact`: Today's weekly card shows
   this week's analysis when it exists, otherwise last week's; dates sit in
   the title row and Next focus is one inline line.

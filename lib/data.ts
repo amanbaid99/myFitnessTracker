@@ -417,25 +417,30 @@ export interface SessionBest {
 
 /** Each workout's best set per exercise (optionally one exercise), oldest first. */
 export async function getSessionBests(supabase: Supabase, exerciseId?: string): Promise<SessionBest[]> {
-  let query = supabase
-    .from("exercise_session_best")
-    .select("exercise_id, workout_id, started_at, weight_kg, added_kg, reps, e1rm_kg, working_sets, volume_kg")
-    .order("started_at")
-    .limit(3000);
-  if (exerciseId) query = query.eq("exercise_id", exerciseId);
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => ({
-    exerciseId: r.exercise_id,
-    workoutId: r.workout_id,
-    startedAt: r.started_at,
-    weightKg: num(r.weight_kg),
-    addedKg: Number(r.added_kg ?? 0),
-    reps: Number(r.reps),
-    e1rmKg: Number(r.e1rm_kg),
-    workingSets: Number(r.working_sets),
-    volumeKg: Number(r.volume_kg),
-  }));
+  const rows: SessionBest[] = [];
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    let query = supabase
+      .from("exercise_session_best")
+      .select("exercise_id, workout_id, started_at, weight_kg, added_kg, reps, e1rm_kg, working_sets, volume_kg")
+      .order("started_at").order("exercise_id").order("workout_id")
+      .range(offset, offset + pageSize - 1);
+    if (exerciseId) query = query.eq("exercise_id", exerciseId);
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []).map((r) => ({
+      exerciseId: r.exercise_id,
+      workoutId: r.workout_id,
+      startedAt: r.started_at,
+      weightKg: num(r.weight_kg),
+      addedKg: Number(r.added_kg ?? 0),
+      reps: Number(r.reps),
+      e1rmKg: Number(r.e1rm_kg),
+      workingSets: Number(r.working_sets),
+      volumeKg: Number(r.volume_kg),
+    })));
+    if (!data || data.length < pageSize) return rows;
+  }
 }
 
 export interface MuscleSets {
@@ -447,13 +452,17 @@ export interface MuscleSets {
 
 /** Working sets per muscle per workout since a date. */
 export async function getMuscleSets(supabase: Supabase, sinceIso: string): Promise<MuscleSets[]> {
-  const { data, error } = await supabase
-    .from("workout_muscle_sets")
-    .select("workout_id, started_at, muscle, sets")
-    .gte("started_at", sinceIso)
-    .limit(5000);
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => ({ workoutId: r.workout_id, startedAt: r.started_at, muscle: r.muscle, sets: Number(r.sets) }));
+  const rows: MuscleSets[] = [];
+  const pageSize = 1000;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase.from("workout_muscle_sets")
+      .select("workout_id, started_at, muscle, sets").gte("started_at", sinceIso)
+      .order("started_at").order("workout_id").order("muscle")
+      .range(offset, offset + pageSize - 1);
+    if (error) throw new Error(error.message);
+    rows.push(...(data ?? []).map(r => ({workoutId:r.workout_id,startedAt:r.started_at,muscle:r.muscle,sets:Number(r.sets)})));
+    if (!data || data.length < pageSize) return rows;
+  }
 }
 
 /** The SQL view includes only live working sets and respects the caller's RLS.

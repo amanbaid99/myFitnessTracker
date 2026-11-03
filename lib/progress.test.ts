@@ -60,3 +60,23 @@ describe("muscleWeeks", () => {
     ]);
   });
 });
+
+describe("long streaks",()=>{
+  it("keeps a 32-week streak independently of the 12-week calendar",()=>{
+    const dates=Array.from({length:32},(_,i)=>{const date=new Date(now);date.setDate(date.getDate()-i*7);return date;});
+    expect(weekStreak(dates,now)).toBe(32);expect(trainingCalendar(dates,now)).toHaveLength(12);
+  });
+});
+
+describe("local weeks across daylight saving",()=>{
+  it("uses the next local Monday, not a fixed 168-hour interval",()=>{
+    const previous=process.env.TZ;process.env.TZ="America/New_York";
+    try {
+      const sunday=new Date(2026,2,8,18);
+      const nextMonday=new Date(2026,2,9,0,30);
+      const sameSunday=new Date(2026,2,8,23,30);
+      expect(workoutsThisWeek([nextMonday,sameSunday],sunday)).toBe(1);
+      expect(muscleWeeks([{startedAt:nextMonday.toISOString(),muscle:"chest",sets:3},{startedAt:sameSunday.toISOString(),muscle:"chest",sets:2}],sunday)).toEqual([{muscle:"chest",thisWeek:2,lastWeek:0}]);
+    } finally {if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}
+  });
+});

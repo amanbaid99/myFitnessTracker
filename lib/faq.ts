@@ -25,7 +25,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "Why is an exercise missing from my body map?",
-        a: ["It needs muscle groups. Tap Map next to an unmapped exercise in the workout recap or under Sets per muscle on Progress, or edit the exercise in your plan. When several need muscles, Today shows a card: Suggest with AI fills in all of them with one AI request, then you check each, edit any, and approve. Nothing is saved until you approve, and the card can be dismissed. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
+        a: ["It needs muscle groups. Tap Map next to an unmapped exercise in the workout recap or in the Muscles tab on Progress, or edit the exercise in your plan. When several need muscles, Today shows a card: Suggest with AI fills in all of them with one AI request, then you check each, edit any, and approve. Nothing is saved until you approve, and the card can be dismissed. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
       },
       {
         q: "How does the body map decide how red a muscle is?",
@@ -160,7 +160,9 @@ export const FAQ: FaqSection[] = [
       {
         q: "What do the numbers on Progress mean?",
         a: [
-          "The charts show your estimated one-rep max per exercise over time. Sets per muscle counts each working set for its main muscle as 1 and for other muscles as half. kg moved is weight × reps added up across your sets.",
+          "Progress opens on Strength. Search exercises, choose Last 4 weeks, Last 12 weeks or All time, and sort by recent, name or estimated 1RM change. Rows separate the latest set from the all-time best. Change compares the first and last sessions in the selected period; one session is not a trend.",
+          "Muscles compares this week with last week using working sets: main muscles count fully, supporting muscles half. The current week may be incomplete. Consistency shows recent weeks and an expandable 12-week calendar. Streaks use your full finished-workout history, not just the calendar window.",
+          "Open an exercise for its chart, period filter and Session details picker. Tap a point or select a session to inspect its estimated 1RM and best set. Session rows open the original workout.",
         ],
       },
       {
@@ -199,7 +201,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I see which muscles an exercise works?",
         a: [
-          "In a workout, tap the small body chip on an exercise (for example \"Lats +1\"). It explains each muscle in a line, main one first, and See in 3D opens the anatomy explorer with those muscles lit up. On Progress, On body shows this week's sets as a heatmap: red for the most worked, amber for less, dark for none. The 3D model is large, so it only loads when you open it.",
+          "In a workout, tap the small body chip on an exercise (for example \"Lats +1\"). It explains each muscle in a line, main one first, and See in 3D opens the anatomy explorer with those muscles lit up. On Progress, open Muscles, then Muscle overview for the static front/back diagram of this week's sets. View detailed anatomy opens the 3D atlas only when requested. The shading is illustrative, not a measurement of muscle activation.",
         ],
       },
       {

@@ -1619,3 +1619,26 @@ muscles, and for AI to suggest all of them for one approval.
   right of the title row; below 360 px only the dates show so the title
   is not cut. Next focus is an inline line ("Next focus: ...") instead of
   a callout, and the overview gets three lines instead of two.
+
+## 2026-11-03: Progress organized by strength, muscles and consistency
+
+Aman approved all recommendations after the virtual-browser review. Use a
+compact summary and accessible Strength/Muscles/Consistency tabs, defaulting
+to Strength. Preserve search, period and sort while switching tabs. Coach
+becomes a small secondary link. Show latest performance separately from
+all-time bests, with changes tied to the selected 4/12-week or all-time
+period. A single session never implies improvement or decline.
+Compare this week's muscle sets with last week's on one scale, noting the
+unfinished week and contribution weights. Keep unmapped/bulk mapping from
+the latest merge. Static anatomy is available under Muscle overview, with
+3D loaded only on request. Consistency shows recent weeks and a collapsed
+12-week calendar with month labels and a legend.
+Streaks read full finished, non-cancelled dates with paginated owner-scoped
+queries, excluding starting weights. Session bests and muscle-set reads are
+also paginated so a server row cap cannot silently remove newer sessions.
+All 1RM, volume and set-contribution metrics still come from existing SQL
+views. Local week boundaries use calendar days across DST changes.
+Exercise details share a view with the public demo, include chart periods,
+units and a persistent session picker, plus full-row session touch targets.
+No migration, new dependency, stored metric or Edge Function change.
+New What's new wording still requires approval before insertion.
