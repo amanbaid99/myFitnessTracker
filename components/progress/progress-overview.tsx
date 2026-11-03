@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, PersonStanding, TrendingDown, TrendingUp } from "lucide-react";
 import { AtlasSheet, atlasTheme } from "@/components/anatomy/atlas-sheet";
+import { UnmappedExercises } from "@/components/anatomy/unmapped-exercises";
+import type { WorkoutExercise } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { heatLink } from "@/lib/anatomy";
 import { track } from "@/lib/analytics";
@@ -31,18 +33,21 @@ export function ProgressOverview({
   muscleRows,
   exercises,
   units,
+  unmapped = [],
 }: {
   workoutDates: string[];
   muscleRows: { startedAt: string; muscle: string; sets: number }[];
   exercises: ExerciseProgress[];
   units: Units;
+  /** Exercises with no muscles yet, so their sets are missing from Sets per muscle. */
+  unmapped?: WorkoutExercise[];
 }) {
   const mounted = useMounted();
 
   return (
     <div className="space-y-6">
       {mounted ? <Consistency workoutDates={workoutDates} /> : <Skeleton className="h-64 w-full rounded-2xl" />}
-      {mounted ? <MuscleVolume rows={muscleRows} /> : <Skeleton className="h-48 w-full rounded-2xl" />}
+      {mounted ? <MuscleVolume rows={muscleRows} unmapped={unmapped} /> : <Skeleton className="h-48 w-full rounded-2xl" />}
       <ExerciseList exercises={exercises} units={units} />
     </div>
   );
@@ -94,7 +99,7 @@ function Consistency({ workoutDates }: { workoutDates: string[] }) {
   );
 }
 
-function MuscleVolume({ rows }: { rows: { startedAt: string; muscle: string; sets: number }[] }) {
+function MuscleVolume({ rows, unmapped }: { rows: { startedAt: string; muscle: string; sets: number }[]; unmapped: WorkoutExercise[] }) {
   const [showAll, setShowAll] = useState(false);
   const [heatmap, setHeatmap] = useState<string | null>(null);
   const weeks = muscleWeeks(rows, new Date());
@@ -158,6 +163,7 @@ function MuscleVolume({ rows }: { rows: { startedAt: string; muscle: string; set
           {showAll ? "Show fewer" : `Show all ${weeks.length} muscles`}
         </button>
       )}
+      <UnmappedExercises exercises={unmapped} description="Their sets are not counted above. Choose their muscles to include them, past workouts too." />
       {heatmap && <AtlasSheet url={heatmap} title="This week on your body" onClose={() => setHeatmap(null)} />}
     </section>
   );
