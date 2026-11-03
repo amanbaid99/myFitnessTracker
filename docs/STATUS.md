@@ -8,6 +8,11 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: Update banner and Settings share visible Updating feedback,
+  disable repeat taps and allow a painted frame before network reload.
+  No change to version detection, data storage or the reload mechanism.
+
+
 - 2026-11-03: Today mobile correction from owner screenshot: stack the
   focus label, align day markers, shorten progress text and remove the
   extra plan-name line above Start. No backend or training-math changes.
