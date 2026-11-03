@@ -1595,3 +1595,16 @@ muscles, and for AI to suggest all of them for one approval.
   need muscles. `MappingDialog` moved to its own file.
 - Needs `draft-plan` deployed after merge; the old version rejects the
   new mode, which the sheet handles as "unavailable".
+
+## 2026-11-03: Calendar week with a last-week switch; light theme by default (Aman's choices)
+
+- Aman asked whether the weekly analysis should be the last 7 days or
+  this week. It stays Monday to Sunday (India time): plans, the streak and
+  Progress are weekly, a rolling window would need the AI review rewritten
+  every day and would mix two plan weeks. To avoid a nearly empty card
+  early in the week, Today shows last week's finished analysis, labelled
+  Last week, until this week has a workout. `/week` gets a two-option
+  This week / Last week switch (`?week=last`). No custom ranges.
+- Light is now the default theme (`DEFAULT_THEME` in lib/theme.ts) and
+  the web app manifest colours. The choice still lives in the `wt-theme`
+  cookie per device, so anyone who picked a theme, dark included, keeps it.

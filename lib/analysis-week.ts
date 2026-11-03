@@ -20,3 +20,14 @@ export function weekRangeLabel(week: { start: string; end: string }): string {
   const day = (d: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
   return `${day(week.start)} to ${day(week.end)}`;
 }
+
+/** The week before one from analysisWeek. Pure. */
+export function previousWeek(week: { startAt: string }) {
+  return analysisWeek(new Date(Date.parse(week.startAt) - 86_400_000).toISOString());
+}
+
+/** Which week the full analysis page shows: `?week=last` or the current one. Pure. */
+export function weekForPage(param: string | string[] | undefined, nowIso: string): { which: "this" | "last"; week: ReturnType<typeof analysisWeek> } {
+  const current = analysisWeek(nowIso);
+  return param === "last" ? { which: "last", week: previousWeek(current) } : { which: "this", week: current };
+}

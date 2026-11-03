@@ -3,14 +3,15 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { WeekAnalysis } from "@/components/home/week-analysis";
 import { Badge } from "@/components/ui/badge";
-import { analysisWeek, weekRangeLabel } from "@/lib/analysis-week";
+import { weekForPage, weekRangeLabel } from "@/lib/analysis-week";
 import { workoutMuscles } from "@/lib/anatomy";
 import { DEMO_WEEKLY_REVIEW, DEMO_WORKOUT_MUSCLES } from "@/lib/demo";
 
 export const metadata: Metadata = { title: "Your week" };
 
 /** Public sample of the full weekly analysis page. */
-export default function DemoWeekPage() {
+export default async function DemoWeekPage({ searchParams }: PageProps<"/demo/week">) {
+  const { which, week } = weekForPage((await searchParams).week, new Date().toISOString());
   const workload = Object.fromEntries(workoutMuscles(DEMO_WORKOUT_MUSCLES).map((m) => [m.muscle, m.sets]));
   return (
     <main className="mx-auto w-full max-w-lg px-4 pt-safe pb-[calc(2rem+env(safe-area-inset-bottom))]">
@@ -20,7 +21,7 @@ export default function DemoWeekPage() {
         </Link>
         <Badge variant="accent">Sample data</Badge>
       </div>
-      <div className="mt-2"><WeekAnalysis review={DEMO_WEEKLY_REVIEW} workload={workload} range={weekRangeLabel(analysisWeek(new Date().toISOString()))} /></div>
+      <div className="mt-2"><WeekAnalysis which={which} basePath="/demo/week" review={DEMO_WEEKLY_REVIEW} workload={workload} range={weekRangeLabel(week)} /></div>
     </main>
   );
 }

@@ -9,7 +9,9 @@ describe("theme", () => {
   it("round-trips through the cookie and falls back on anything unknown", () => {
     expect(parseTheme(themeCookieValue({ base: "beige", accent: "teal" }))).toEqual({ base: "beige", accent: "teal" });
     expect(parseTheme(undefined)).toEqual(DEFAULT_THEME);
-    expect(parseTheme("neon.blue")).toEqual({ base: "dark", accent: "blue" });
+    expect(parseTheme("neon.blue")).toEqual({ base: "light", accent: "blue" });
+    expect(parseTheme(undefined).base).toBe("light");
+    expect(parseTheme("dark.yellow").base).toBe("dark");
     expect(parseTheme("light.rainbow")).toEqual({ base: "light", accent: "yellow" });
   });
   it("gives the status bar colour for each base", () => {
