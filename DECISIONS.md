@@ -1457,3 +1457,12 @@ after View detailed anatomy. Keep mapping controls and explanatory totals
 in the recap. This reduces loading and visual clutter while analysis runs.
 Aman approved the Your workout, on the body popup; add the approved copy
 to WHATS_NEW with a History link. No backend or schema changes.
+
+## 2026-11-03: One workout recap for analysis and muscle workload
+
+Aman asked to combine the analysis and body UI. Use one card with the
+analysis first, followed by the local workload map on phones. Wider screens
+place them side by side. Keep polling and retry inside the analysis region
+so pending or missing reviews never block the body overview. Preserve
+mapping controls and load the 3D atlas only on request. Reuse the approved
+body-map release note; this is a layout refinement of the same feature.

@@ -21,11 +21,12 @@ function subscribeTheme(notify: () => void) {
 }
 
 /** Visible immediately after finishing; analysis can arrive later without blocking the map. */
-export function WorkoutMuscles({ rows, workload, exercises = [], demo = false }: {
+export function WorkoutMuscles({ rows, workload, exercises = [], demo = false, embedded = false }: {
   rows: { muscle: string; sets: number }[];
   workload?: Record<string, number>;
   exercises?: WorkoutExercise[];
   demo?: boolean;
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const theme = useSyncExternalStore(subscribeTheme, atlasTheme, () => "dark" as const);
@@ -49,8 +50,8 @@ export function WorkoutMuscles({ rows, workload, exercises = [], demo = false }:
     finally { setSaving(false); }
   }
   return (
-    <section aria-label="Workout body map" className={`rounded-2xl border bg-card p-4 ${MASK}`}>
-      <h2 className="flex items-center gap-2 font-semibold"><PersonStanding className="size-4 text-primary" aria-hidden />Your workout on the body</h2>
+    <section aria-label="Workout body map" className={`${embedded ? "" : "rounded-2xl border bg-card p-4"} ${MASK}`}>
+      <h3 className="flex items-center gap-2 text-sm font-medium"><PersonStanding className="size-4 text-primary" aria-hidden />Muscle workload</h3>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Muscle workload at a glance. Deeper red means more logged work.</p>
       <WorkoutBodyDiagram workload={shading} />
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Light: less work</span><span>Deep red: more work</span></div>

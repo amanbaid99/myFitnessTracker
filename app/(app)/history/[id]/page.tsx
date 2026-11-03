@@ -5,9 +5,8 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, StickyNote } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { LocalDate } from "@/components/local-date";
-import { WorkoutMuscles } from "@/components/anatomy/workout-muscles";
+import { WorkoutRecap } from "@/components/workout-recap";
 import { workoutWorkload } from "@/lib/anatomy";
-import { WorkoutReviewCard } from "@/components/workout-review-card";
 import { FixableSets } from "@/components/history/fixable-sets";
 import {
   getWorkoutExercises,
@@ -84,8 +83,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
 
       {workout.source === "app" && (
         <div className="mb-6">
-          <WorkoutMuscles rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} />
-          <div className="mt-4"><WorkoutReviewCard workoutId={workout.id} endedAt={workout.endedAt} initial={review} /></div>
+          <WorkoutRecap rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} workoutId={workout.id} endedAt={workout.endedAt} review={review} />
         </div>
       )}
 

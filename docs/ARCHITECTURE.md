@@ -161,7 +161,8 @@ tool. Ask Aman before deploying.
 ## Anatomy
 
 The Human Anatomy Explorer remains a separate linked site. Finished
-workouts show an automatic static front/back body map before the AI review is ready.
+workouts use WorkoutRecap to combine the independently updating analysis and
+body overview in one responsive card. They show an automatic static front/back body map before the AI review is ready.
 The existing SQL muscle view supplies set contributions; active working
 sets plus exercise metadata supply an illustrative shading index (ten
 reps or thirty seconds per unit, half for supporting muscles, ten units
