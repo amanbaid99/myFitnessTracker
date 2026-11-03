@@ -9,18 +9,13 @@ import { cn } from "@/lib/utils";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-export interface LastWorkout {
-  id: string;
-  dayName: string | null;
-  endedAt: string;
-}
-
 /** Analysis leads; the viewer's local training calendar stays a compact supporting row. */
-export function HomeHero({ name, workoutDates, daysPerWeek, children }: {
+export function HomeHero({ name, workoutDates, daysPerWeek, children, priority }: {
   name: string | null;
   workoutDates: string[];
   daysPerWeek: number | null;
   children: ReactNode;
+  priority?: ReactNode;
 }) {
   const mounted = useMounted();
   const now = mounted ? new Date() : null;
@@ -37,9 +32,11 @@ export function HomeHero({ name, workoutDates, daysPerWeek, children }: {
         <p className="text-xs text-muted-foreground">{now ? new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short" }).format(now) : "Your training"}</p>
         <h1 className={`mt-1 text-xl font-semibold tracking-tight ${MASK}`}>{name ? `Hi, ${name}` : "Today"}</h1>
       </header>
-      {children}
-      {mounted ? (
-        <section aria-label="Your training" className="mt-3 rounded-2xl border bg-card px-4 py-3">
+      {priority}
+      <div className="mt-4 overflow-hidden rounded-2xl border border-primary/20 bg-card">
+        {children}
+        {mounted ? (
+        <section aria-label="Your training" className="border-t border-border/60 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
             <p className="flex items-center gap-1.5 font-medium"><Flame className="size-4 text-primary" aria-hidden />{streak}-week streak</p>
             <p className="tabular-nums text-muted-foreground">{goal ? `${count} of ${goal} workouts` : `${count} ${count === 1 ? "workout" : "workouts"}`} this week</p>
@@ -51,14 +48,15 @@ export function HomeHero({ name, workoutDates, daysPerWeek, children }: {
               const key = dayKey(date);
               const done = trained.has(key);
               const today = key === dayKey(now!);
-              return <li key={label} aria-label={`${label}${today ? ", today" : ""}, ${done ? "trained" : "not trained"}`} className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
-                <span>{label[0]}</span>
+              return <li key={label} aria-label={`${label}${today ? ", today" : ""}, ${done ? "trained" : "not trained"}`} className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                <span>{label.slice(0, 2)}</span>
                 <span aria-hidden className={cn("size-2 rounded-full bg-muted", done && "bg-primary", today && "ring-1 ring-primary ring-offset-2 ring-offset-card")} />
               </li>;
             })}
           </ol>
         </section>
-      ) : <div aria-hidden className="mt-3 h-20 rounded-2xl bg-muted/60" />}
+      ) : <div aria-hidden className="h-20 border-t bg-muted/30" />}
+      </div>
     </div>
   );
 }

@@ -68,6 +68,13 @@ export interface WhatsNewEntry {
 /** Newest first. Add an entry only once Aman has approved it. */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: "home-ui-fixes",
+    date: "2026-11-03",
+    title: "UI fixes",
+    body: "A cleaner Today screen brings your weekly insight, streak and workout closer together. Resume sessions faster and find your latest recap with one tap.",
+    href: "/",
+  },
+  {
     id: "workout-body-map",
     date: "2026-11-03",
     title: "Your workout, on the body",

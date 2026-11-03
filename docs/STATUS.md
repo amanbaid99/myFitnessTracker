@@ -8,6 +8,11 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: Home UI polish combines insight/progress, raises the workout
+  action, prioritizes Resume and adds an approved UI fixes release note.
+  Preserve the latest dedicated weekly analysis and Settings update info.
+
+
 - 2026-11-03: Branch `claude/weekly-analysis-page`: Read full analysis on
   Today opens `/week` (full weekly analysis plus this week's heatmap).
   Undoes PR #17's split: the History recap shows the map with the
