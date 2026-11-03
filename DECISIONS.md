@@ -1466,3 +1466,21 @@ place them side by side. Keep polling and retry inside the analysis region
 so pending or missing reviews never block the body overview. Preserve
 mapping controls and load the 3D atlas only on request. Reuse the approved
 body-map release note; this is a layout refinement of the same feature.
+
+## 2026-11-03: Short muscle line in the recap, body map on its own page (Aman's request)
+
+Aman found the muscle part of the workout recap too large. The recap now
+shows one line, the three most worked muscles with colour dots, a note
+when exercises are missing muscles, and See body map and details. That
+opens `history/[id]/muscles` (sample at `/demo/muscles`): the front and
+back map, a list from most to least worked with bars, how it is worked
+out, mapping for missing exercises and View in 3D.
+- Aman asked that the darkest part show the most worked muscles, so
+  shading is now relative to that workout: the top muscle is 100% and
+  deepest red, the rest are shaded against it (`rankedWorkload`). This
+  replaces the fixed ten-unit scale for the workout map and its 3D link,
+  so a light session still shows clearly what it hit. The units
+  themselves (reps / 10, hold / 30 s, supporting muscles half) are
+  unchanged. Progress keeps its fixed weekly scale, where an absolute
+  amount of sets matters.
+- A page rather than a sheet, so it has its own back button and link.

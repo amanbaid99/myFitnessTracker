@@ -37,7 +37,7 @@ moving part.
 | --- | --- |
 | `(app)/` | Tabbed screens: shared layout with the tab bar (`components/bottom-nav.tsx`), profile button, update banner and the guide (`GuideProvider`) |
 | `(app)/page.tsx` | Today: weekly analysis first, compact streak and activity row, next day in the rotation (`lib/rotation.ts`), one start or resume action, compact body weight card. Full analysis, weight chart and other workout days expand on demand. Sends new accounts to `/welcome` |
-| `(app)/history`, `history/[id]` | Finished workouts; one workout with its AI review, post-review muscle recap and fixable sets |
+| `(app)/history`, `history/[id]`, `history/[id]/muscles` | Finished workouts; one workout with its recap (analysis plus a short muscle line) and fixable sets; that workout's body map and muscle list |
 | `(app)/progress`, `progress/[exerciseId]` | Records, weekly sets per muscle, per-exercise e1RM chart |
 | `(app)/coach` | AI coach chat |
 | `(app)/routines` | The active plan's days |
@@ -165,10 +165,14 @@ workouts use WorkoutRecap to combine the independently updating analysis and
 body overview in one responsive card. They show an automatic static front/back body map before the AI review is ready.
 The existing SQL muscle view supplies set contributions; active working
 sets plus exercise metadata supply an illustrative shading index (ten
-reps or thirty seconds per unit, half for supporting muscles, ten units
-fully red). This is not stored volume or measured muscle activation.
-WorkoutMuscles also lists unmapped exercises and offers an owner-scoped
-mapping editor. The 3D iframe loads only after View detailed anatomy. Only known muscle ids, numeric shading, theme and camera
+reps or thirty seconds per unit, half for supporting muscles; the most
+worked muscle in that workout is fully red and the rest are shaded
+against it, `rankedWorkload`). This is not stored volume or measured
+muscle activation. The recap shows only `MusclesSummary` (top three and
+a link); the map, ranked list, unmapped exercises with an owner-scoped
+mapping editor and View in 3D live on `history/[id]/muscles`
+(`WorkoutMuscles`; sample at `/demo/muscles`). The 3D iframe loads only
+after View in 3D. Only known muscle ids, numeric shading, theme and camera
 view reach the atlas; iframe requests omit the referrer.
 
 MusclePicker is shared by AddExercise, ExerciseSheet, PlanDraftEditor and

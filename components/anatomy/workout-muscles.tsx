@@ -2,16 +2,16 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, PersonStanding } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { workoutBodyLink, workoutMuscles } from "@/lib/anatomy";
+import { rankedWorkload, workloadOrSets, workoutBodyLink } from "@/lib/anatomy";
 import { MUSCLE_GROUPS } from "@/lib/muscles";
 import type { WorkoutExercise } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
 import { AtlasSheet, atlasTheme } from "./atlas-sheet";
-import { WorkoutBodyDiagram } from "./workout-body-diagram";
+import { heatColor, WorkoutBodyDiagram } from "./workout-body-diagram";
 import { MusclePicker } from "./muscle-picker";
 
 function subscribeTheme(notify: () => void) {
@@ -20,13 +20,12 @@ function subscribeTheme(notify: () => void) {
   return () => observer.disconnect();
 }
 
-/** Visible immediately after finishing; analysis can arrive later without blocking the map. */
-export function WorkoutMuscles({ rows, workload, exercises = [], demo = false, embedded = false }: {
+/** The workout muscles page: body map, ranked list, 3D view and missing mappings. */
+export function WorkoutMuscles({ rows, workload, exercises = [], demo = false }: {
   rows: { muscle: string; sets: number }[];
   workload?: Record<string, number>;
   exercises?: WorkoutExercise[];
   demo?: boolean;
-  embedded?: boolean;
 }) {
   const router = useRouter();
   const theme = useSyncExternalStore(subscribeTheme, atlasTheme, () => "dark" as const);
@@ -35,9 +34,9 @@ export function WorkoutMuscles({ rows, workload, exercises = [], demo = false, e
   const [selection, setSelection] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const muscles = workoutMuscles(rows);
   const unmapped = exercises.filter((e) => !e.muscleGroups.some((g) => (MUSCLE_GROUPS as readonly string[]).includes(g)));
-  const shading = workload ?? Object.fromEntries(muscles.map((m) => [m.muscle, m.sets]));
+  const shading = workloadOrSets(rows, workload);
+  const ranked = rankedWorkload(shading);
   const url = workoutBodyLink(shading, theme);
   async function save() {
     if (!edit || demo) return;
@@ -50,22 +49,32 @@ export function WorkoutMuscles({ rows, workload, exercises = [], demo = false, e
     finally { setSaving(false); }
   }
   return (
-    <section aria-label="Workout body map" className={`${embedded ? "" : "rounded-2xl border bg-card p-4"} ${MASK}`}>
-      <h3 className="flex items-center gap-2 text-sm font-medium"><PersonStanding className="size-4 text-primary" aria-hidden />Muscle workload</h3>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Muscle workload at a glance. Deeper red means more logged work.</p>
-      <WorkoutBodyDiagram workload={shading} />
-      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Light: less work</span><span>Deep red: more work</span></div>
-      <Button variant="ghost" className="mt-2 w-full" onClick={() => { track("anatomy_opened", { from: "workout_review", presentation: "detailed" }); setExpanded(true); }}>View detailed anatomy</Button>
-      <details className="group text-sm">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-muted-foreground [&::-webkit-details-marker]:hidden">Muscles trained and shading<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
-        {muscles.length ? <ul className="space-y-2 pb-3">{muscles.map(({muscle, sets}) => <li key={muscle} className="flex justify-between gap-3"><span className="capitalize">{muscle}</span><span className="tabular-nums text-muted-foreground">{sets} set contributions</span></li>)}</ul> : <p className="pb-3 text-muted-foreground">No muscle set totals available yet.</p>}
-        <p className="pb-3 text-xs leading-relaxed text-muted-foreground">Schematic overview with illustrative workload, not measured muscle activation or growth. Ten reps or 30 seconds of a hold count as one unit; ten units reach the deepest red. A set without reps or time counts as one unit. Supporting muscles count half. Warm-ups and deleted sets are excluded.</p>
-      </details>
-      {unmapped.length > 0 && <div className="mt-2 border-t pt-3">
+    <section aria-label="Workout body map" className={MASK}>
+      <div className="rounded-2xl border bg-card p-4">
+        <WorkoutBodyDiagram workload={shading} />
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground" aria-hidden>
+          <span>Less</span>
+          <span className="h-2 flex-1 rounded-full" style={{ background: `linear-gradient(to right, ${heatColor(0)}, ${heatColor(1)})` }} />
+          <span>Most worked</span>
+        </div>
+        <Button variant="secondary" className="mt-4 w-full" onClick={() => { track("anatomy_opened", { from: "workout_review", presentation: "detailed" }); setExpanded(true); }}>View in 3D</Button>
+      </div>
+      <div className="mt-4 rounded-2xl border bg-card p-4">
+        <h2 className="text-sm font-medium">Most worked first</h2>
+        {ranked.length ? <ul className="mt-3 space-y-3">{ranked.map(({ muscle, share }) => <li key={muscle} className="text-sm">
+          <div className="flex justify-between gap-3"><span className="inline-block first-letter:uppercase">{muscle}</span><span className="tabular-nums text-muted-foreground">{Math.round(share * 100)}%</span></div>
+          <div className="mt-1 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${Math.max(4, share * 100)}%`, background: heatColor(share) }} /></div>
+        </li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">No muscles to show yet.</p>}
+        <details className="group mt-3 text-sm">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-muted-foreground [&::-webkit-details-marker]:hidden">How this is worked out<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
+          <p className="pb-2 text-xs leading-relaxed text-muted-foreground">Each working set adds its reps divided by ten, or its hold time divided by 30 seconds; a set without either adds one. The main muscle gets all of it and supporting muscles half. The most worked muscle is 100% and darkest; the rest are shown against it. Warm-ups and deleted sets do not count. It is a guide, not a measure of muscle activation or growth.</p>
+        </details>
+        {unmapped.length > 0 && <div className="mt-2 border-t pt-3">
         <p className="text-sm font-medium">{unmapped.length} {unmapped.length === 1 ? "exercise needs" : "exercises need"} muscle mapping</p>
         <p className="mt-1 text-xs text-muted-foreground">These exercises are missing from the shading. Confirm their muscles to include them.</p>
         {unmapped.map((exercise) => <Button key={exercise.id} variant="ghost" className="mt-1 w-full justify-start whitespace-normal text-left" disabled={demo} onClick={() => { setEdit(exercise); setSelection(exercise.muscleGroups.filter((g) => (MUSCLE_GROUPS as readonly string[]).includes(g))); setError(null); }}><span className="min-w-0 break-words">Map {exercise.name}</span></Button>)}
       </div>}
+      </div>
       {expanded && <AtlasSheet url={url} title="Workout workload heatmap" onClose={() => setExpanded(false)} />}
       {edit && <MappingDialog title={`Map muscles for ${edit.name}`} disabled={saving} onDismiss={() => setEdit(null)}>
         <div className="mx-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border bg-popover p-5 pb-[calc(1rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>

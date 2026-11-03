@@ -21,15 +21,15 @@ export const FAQ: FaqSection[] = [
     items: [
       {
         q: "Why is an exercise missing from my body map?",
-        a: ["It needs muscle groups. Tap Map next to an unmapped exercise in the workout recap, or edit the exercise in your plan. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
+        a: ["It needs muscle groups. Open the workout from History, tap See body map and details, then tap Map next to the exercise. You can also edit the exercise in your plan. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
       },
       {
         q: "How does the body map decide how red a muscle is?",
-        a: ["The workload shading uses a fixed scale: ten reps or thirty seconds of a hold count as one unit, and ten units reach the deepest red. Supporting muscles receive half the contribution. Sets without reps or time count as one unit. Warm-ups and deleted sets do not contribute. Weight, technique, effort and individual differences are not measured by these colours."],
+        a: ["Each working set counts its reps divided by ten, or its hold time divided by thirty seconds. Supporting muscles receive half. The muscle with the most work in that workout is the deepest red, and every other muscle is shaded against it. Sets without reps or time count as one unit. Warm-ups and deleted sets do not contribute. Weight, technique, effort and individual differences are not measured by these colours."],
       },
       {
         q: "Can I see the muscles I trained after a workout?",
-        a: ["Yes. History combines your analysis and body map in one workout recap. The map is visible as soon as a workout is finished, even while the analysis is pending. Deeper red represents more logged workload from sets and reps; holds use time. It is an illustration, not a measurement of muscle activation or growth. The lightweight front and back diagrams load immediately. Tap View detailed anatomy to load the interactive 3D atlas for a closer look."],
+        a: ["Yes. The workout recap in History names the muscles that did the most work. Tap See body map and details for a front and back heatmap, where the deepest red is the most worked muscle, and a list of every muscle from most to least worked. View in 3D opens the interactive anatomy model. It is a guide, not a measurement of muscle activation or growth."],
       },
       {
         q: "Where are the other workout days and weight graph?",

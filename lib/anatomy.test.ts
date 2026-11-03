@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink } from "./anatomy";
+import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink, rankedWorkload, workloadOrSets, topMusclesText } from "./anatomy";
 import { MUSCLE_GROUPS } from "./muscles";
 
 // Ids from the atlas's src/anatomy/muscles.js that the mapping uses.
@@ -67,14 +67,14 @@ describe("workoutMuscles", () => {
 describe("workout workload shading", () => {
   const ex = [{ id: "chest", muscleGroups: ["chest", "triceps"] }, { id: "glutes", muscleGroups: ["glutes"] }];
   const set = (exerciseId: string, reps: number | null, durationSec: number | null = null) => ({ exerciseId, reps, durationSec, setType: "working" });
-  it("makes two chest sets lighter than eight glute sets, using a fixed scale", () => {
+  it("makes two chest sets lighter than eight glute sets, against the most worked muscle", () => {
     const work = workoutWorkload([...Array.from({length:2},()=>set("chest",10)),...Array.from({length:8},()=>set("glutes",12))],ex);
     expect(work.chest).toBe(2);
     expect(work.triceps).toBe(1);
     expect(work.glutes).toBeCloseTo(9.6);
     const url = new URL(workoutBodyLink(work,"dark"));
-    expect(url.searchParams.get("heat")).toContain("pectoralis-major:0.2");
-    expect(url.searchParams.get("heat")).toContain("gluteus-maximus:0.96");
+    expect(url.searchParams.get("heat")).toContain("pectoralis-major:0.21");
+    expect(url.searchParams.get("heat")).toContain("gluteus-maximus:1");
     expect(url.searchParams.get("view")).toBe("back");
   });
   it("excludes warmups and deleted sets, and keeps unmapped work out", () => {
@@ -82,9 +82,32 @@ describe("workout workload shading", () => {
     expect(work).toEqual({});
     expect(new URL(workoutBodyLink(work,"light")).searchParams.has("heat")).toBe(false);
   });
-  it("supports timed holds and caps the atlas colour without weight assumptions", () => {
+  it("supports timed holds and shades the atlas against the top muscle without weight assumptions", () => {
     const work = workoutWorkload([set("chest",null,60),set("glutes",120)],ex);
     expect(work.chest).toBe(2);
-    expect(new URL(workoutBodyLink(work,"dark")).searchParams.get("heat")).toContain("gluteus-maximus:1");
+    const heat = new URL(workoutBodyLink(work,"dark")).searchParams.get("heat");
+    expect(heat).toContain("gluteus-maximus:1");
+    expect(heat).toContain("pectoralis-major:0.17");
+  });
+});
+
+describe("ranked workload", () => {
+  it("puts the most worked muscle first with the full share and drops invalid values", () => {
+    expect(rankedWorkload({ quads: 8, glutes: 4, calves: 0, biceps: NaN, wings: 9, hamstrings: 4 })).toEqual([
+      { muscle: "quads", units: 8, share: 1 },
+      { muscle: "glutes", units: 4, share: 0.5 },
+      { muscle: "hamstrings", units: 4, share: 0.5 },
+    ]);
+    expect(rankedWorkload({})).toEqual([]);
+  });
+  it("names the top three in plain English", () => {
+    expect(topMusclesText({ quads: 8, glutes: 4, hamstrings: 5, calves: 1 })).toBe("Quads, hamstrings and glutes");
+    expect(topMusclesText({ chest: 3, triceps: 2 })).toBe("Chest and triceps");
+    expect(topMusclesText({ lats: 1 })).toBe("Lats");
+    expect(topMusclesText({})).toBe("");
+  });
+  it("falls back to set totals when there is no workload", () => {
+    expect(workloadOrSets([{ muscle: "chest", sets: 3 }, { muscle: "chest", sets: 2 }])).toEqual({ chest: 5 });
+    expect(workloadOrSets([{ muscle: "chest", sets: 3 }], { quads: 1 })).toEqual({ quads: 1 });
   });
 });
