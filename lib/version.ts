@@ -34,3 +34,13 @@ export async function fetchLiveBuild(): Promise<string | null> {
     return null;
   }
 }
+
+/** When this build went live, e.g. "3 Nov 2026, 3:20 pm", in the viewer's time zone. Null when unknown. */
+export function updatedLabel(builtAt: string | null = BUILT_AT, timeZone?: string): string | null {
+  if (!builtAt) return null;
+  const date = new Date(builtAt);
+  if (Number.isNaN(date.getTime())) return null;
+  const day = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone }).format(date);
+  const time = new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone }).format(date);
+  return `${day}, ${time.replace(/\s/g, " ").toLowerCase()}`;
+}

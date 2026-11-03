@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNewerBuild, versionLabel } from "./version";
+import { isNewerBuild, updatedLabel, versionLabel } from "./version";
 
 describe("isNewerBuild", () => {
   it("is true only for a different, real build id", () => {
@@ -18,5 +18,16 @@ describe("versionLabel", () => {
   it("copes with local builds and a missing date", () => {
     expect(versionLabel("local-2026-10-19T10:00:00.000Z", null)).toBe("local");
     expect(versionLabel("abcdef123", "not a date")).toBe("abcdef1");
+  });
+});
+
+describe("updatedLabel", () => {
+  it("shows the date and time in the given time zone", () => {
+    expect(updatedLabel("2026-11-03T09:50:00.000Z", "Asia/Kolkata")).toBe("3 Nov 2026, 3:20 pm");
+    expect(updatedLabel("2026-11-03T21:05:00.000Z", "UTC")).toBe("3 Nov 2026, 9:05 pm");
+  });
+  it("is null without a valid time", () => {
+    expect(updatedLabel(null)).toBeNull();
+    expect(updatedLabel("not a date")).toBeNull();
   });
 });

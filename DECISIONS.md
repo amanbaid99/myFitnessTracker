@@ -1500,3 +1500,10 @@ heatmap next to the analysis as before.
   form; `history/[id]/muscles` and `MusclesSummary` are removed.
 - Relative shading from PR #17 stays (the most worked muscle is darkest),
   since Aman asked for the dark parts to show the most worked muscles.
+
+## 2026-11-03: Last updated time in Settings (Aman's request)
+
+Settings shows "Last updated" with the date and time the running build
+went live (`updatedLabel` in lib/version.ts, from the build time CI bakes
+in), next to the short version id. It is formatted on the phone, not the
+server, so it shows the phone's own time zone.
