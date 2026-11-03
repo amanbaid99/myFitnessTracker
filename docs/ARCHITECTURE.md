@@ -207,3 +207,9 @@ Today mobile focus previews use a stacked label/body inset. The progress
 footer uses seven day markers, a compact count/goal label and a full
 accessible description. Plan name remains inside the alternate-workout
 selector; Start and Resume behavior is unchanged.
+
+Update application uses a shared client store in use-app-update.ts. The
+banner and Settings subscribe with useSyncExternalStore, show busy controls
+and status text, then reload after two animation frames so feedback paints.
+Repeated requests are ignored; synchronous reload rejection restores retry.
+Version checking and persisted workout data are unchanged.

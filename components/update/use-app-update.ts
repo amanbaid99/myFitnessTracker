@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { fetchLiveBuild, isNewerBuild } from "@/lib/version";
 
 export type UpdateStatus = "idle" | "checking" | "current" | "ready" | "offline";
@@ -50,7 +50,35 @@ export function useAppUpdate({ auto }: { auto: boolean }) {
   return { status, liveId, check };
 }
 
-/** Loads the newest version. Pages always come from the network, so a reload is enough. */
+const updateListeners = new Set<() => void>();
+let updating = false;
+let updateError: string | null = null;
+function notifyUpdate() { updateListeners.forEach((notify) => notify()); }
+function subscribeUpdate(notify: () => void) {
+  updateListeners.add(notify);
+  return () => { updateListeners.delete(notify); };
+}
+
+/** Both update surfaces share one in-flight action, even on the Settings page. */
+export function useUpdateAction() {
+  const busy = useSyncExternalStore(subscribeUpdate, () => updating, () => false);
+  const error = useSyncExternalStore(subscribeUpdate, () => updateError, () => null);
+  return { updating: busy, updateError: error, applyUpdate };
+}
+
+/** Paint feedback before starting the network reload. Pages are never cached. */
 export function applyUpdate() {
-  window.location.reload();
+  if (updating) return;
+  updating = true;
+  updateError = null;
+  notifyUpdate();
+  // The first frame commits React's busy UI; the next lets it paint before reload.
+  window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+    try { window.location.reload(); }
+    catch {
+      updating = false;
+      updateError = "Could not reload the app. Please try again.";
+      notifyUpdate();
+    }
+  }));
 }

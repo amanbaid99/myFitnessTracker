@@ -278,7 +278,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I get the latest version?",
         a: [
-          "When a new version is out, a banner above the tabs says so. Tap Update. You can also go to Settings, then App, then Check for updates; Last updated there shows when the version you have went live. Nothing you've saved is lost.",
+          "When a new version is out, a banner above the tabs says so. Tap Update. A spinner and Updating message appear while the app refreshes, and the update controls pause to prevent repeated taps. You can also go to Settings, then App, then Check for updates; Last updated there shows when the version you have went live. Nothing you've saved is lost.",
         ],
       },
       {

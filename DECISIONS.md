@@ -1550,3 +1550,15 @@ Move the plan name into Choose another workout and tighten workout metadata
 spacing. Preserve active-session priority and all training calculations.
 Validate beige/orange at 320, 390 and 430 px with long sample analysis;
 reuse the existing approved UI fixes release entry for this correction.
+
+## 2026-11-03: Visible feedback while applying an app update
+
+Aman reported that Update worked but gave no feedback. Both the bottom
+banner and Settings now share an Updating state, spinner and disabled
+controls. Commit the state before starting reload and allow a painted
+frame first. Ignore repeated update requests, including across surfaces.
+If the browser rejects reload, restore the controls with a retry message.
+Keep the existing network reload mechanism and no changes to saved data.
+Use button aria-busy and live status text without suppressing announcements
+on the live region. Spinner animation respects reduced motion. Reuse the
+approved UI fixes release entry for this correction.
