@@ -126,7 +126,7 @@ details before sending (`redact.ts`). A user gets 20 AI requests a day.
 | --- | --- | --- |
 | `analyze-workout` | A Supabase Database Webhook when a workout is finished (`ended_at` set). Writes a `workout_review` to `insights`, then a Monday to Sunday India-time `weekly_review` snapshot | No JWT; checks the `x-webhook-secret` header. Uses the service role key inside the function only |
 | `ask-coach` | The Coach tab and "Ask coach" in History | JWT; reads with the caller's own token |
-| `draft-plan` | "Describe your plan" in the new-plan wizard | JWT |
+| `draft-plan` | "Describe your plan" in the new-plan wizard; also muscle suggestions (`mode: "muscles"` for one exercise, `"muscles_batch"` for up to 20 in one request, used by the Today card and Suggest all) | JWT |
 
 Secrets live only in Supabase (`OPENROUTER_API_KEY`, `WEBHOOK_SECRET`,
 plus Supabase's own). **CI does not deploy these functions**: after a

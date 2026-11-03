@@ -154,3 +154,24 @@ export function topMusclesText(workload: Record<string, number>, count = 3): str
 export function unmappedExercises<T extends { muscleGroups: string[] }>(exercises: T[]): T[] {
   return exercises.filter((e) => !e.muscleGroups.some(isGroup));
 }
+
+/** Seen key that hides the Today card for one exercise until another needs muscles. */
+export const muscleHideKey = (exerciseId: string) => `muscles-hide:${exerciseId}`;
+
+/** True when some exercise without muscles has not been dismissed on Today. Pure. */
+export function muscleCardDue(unmappedIds: string[], seen: ReadonlySet<string>): boolean {
+  return unmappedIds.some((id) => !seen.has(muscleHideKey(id)));
+}
+
+/** Most exercises sent to the AI in one batch (the draft-plan function's limit). */
+export const MUSCLE_BATCH_MAX = 20;
+
+/** The AI's batch reply as one known, de-duplicated list per exercise (at most 4), in order. Pure. */
+export function batchSuggestions(data: unknown, count: number): string[][] | null {
+  const list = (data as { suggestions?: unknown } | null)?.suggestions;
+  if (!Array.isArray(list) || list.length !== count) return null;
+  return list.map((s) => {
+    const groups = (s as { groups?: unknown } | null)?.groups;
+    return Array.isArray(groups) ? [...new Set(groups.filter((g): g is string => typeof g === "string" && isGroup(g)))].slice(0, 4) : [];
+  });
+}

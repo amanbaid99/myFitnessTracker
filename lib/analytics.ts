@@ -37,7 +37,10 @@ export type AnalyticsEvent =
   | "guide_tour_ended"
   | "whats_new_closed"
   | "workout_screen_error"
-  | "anatomy_opened";
+  | "anatomy_opened"
+  | "muscles_suggested"
+  | "muscles_approved"
+  | "muscle_card_dismissed";
 
 type Props = Record<string, string | number | boolean | null>;
 

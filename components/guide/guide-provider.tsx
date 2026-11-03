@@ -16,6 +16,10 @@ interface GuideContext {
   request: (key: string) => () => void;
   /** Replays the intro tour (it runs on Today). */
   replayTour: () => void;
+  /** Keys this account has seen or dismissed; null when they could not be loaded. */
+  seen: ReadonlySet<string> | null;
+  /** Remembers keys for this account (at most 50 per call). */
+  markSeen: (keys: string[]) => void;
 }
 
 const Ctx = createContext<GuideContext | null>(null);
@@ -115,7 +119,7 @@ export function GuideProvider({
     router.push("/");
   }, [router]);
 
-  const value = useMemo<GuideContext>(() => ({ busy, request, replayTour }), [busy, request, replayTour]);
+  const value = useMemo<GuideContext>(() => ({ busy, request, replayTour, seen, markSeen }), [busy, request, replayTour, seen, markSeen]);
 
   return (
     <Ctx.Provider value={enabled ? value : null}>

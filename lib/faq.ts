@@ -25,7 +25,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "Why is an exercise missing from my body map?",
-        a: ["It needs muscle groups. Tap Map next to an unmapped exercise in the workout recap or under Sets per muscle on Progress, or edit the exercise in your plan. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
+        a: ["It needs muscle groups. Tap Map next to an unmapped exercise in the workout recap or under Sets per muscle on Progress, or edit the exercise in your plan. When several need muscles, Today shows a card: Suggest with AI fills in all of them with one AI request, then you check each, edit any, and approve. Nothing is saved until you approve, and the card can be dismissed. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
       },
       {
         q: "How does the body map decide how red a muscle is?",
