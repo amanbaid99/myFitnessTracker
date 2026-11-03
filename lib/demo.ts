@@ -206,3 +206,16 @@ export const DEMO_WORKOUT_MUSCLES = [
   { muscle: "front delts", sets: 3 }, { muscle: "side delts", sets: 3 },
   { muscle: "rear delts", sets: 3 },
 ];
+
+/** Public History sample, dated relative to the current preview. Nothing is saved. */
+export function demoHistory(now = new Date()): import("./history").HistoryItem[] {
+  return [0, 3, 5, 8, 10, 13, 25].map((days, i) => {
+    const start = new Date(now); start.setDate(start.getDate() - days);
+    start.setHours(7, 0, 0, 0);
+    return {
+      id: `demo-history-${i}`, routineName: ["Lower 1", "Upper 1", "Lower 2", "Upper 2"][i % 4],
+      startedAt: start.toISOString(), endedAt: new Date(start.getTime() + (76 - i * 3) * 60000).toISOString(),
+      source: i === 6 ? "baseline" : "app", workingSets: 18 + i, recapReady: i !== 1,
+    };
+  });
+}
