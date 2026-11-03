@@ -386,6 +386,21 @@ export async function getExerciseNames(supabase: Supabase, ids: string[]): Promi
   return new Map((data ?? []).map((e) => [e.id as string, e.name as string]));
 }
 
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  equipment: string;
+  muscleGroups: string[];
+}
+
+/** Minimal exercise metadata for the completed session's body map and mapping editor. */
+export async function getWorkoutExercises(supabase: Supabase, ids: string[]): Promise<WorkoutExercise[]> {
+  if (!ids.length) return [];
+  const { data, error } = await supabase.from("exercises").select("id, name, equipment, muscle_groups").in("id", ids);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((e) => ({ id: String(e.id), name: String(e.name), equipment: String(e.equipment), muscleGroups: e.muscle_groups ?? [] }));
+}
+
 // Progress (views compute the metrics; spec rule 4) --------------------------------
 
 export interface SessionBest {

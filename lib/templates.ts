@@ -9,6 +9,8 @@ export type TemplateKey = "full_body" | "upper_lower" | "ppl" | "bro_split";
 type Equipment = "barbell" | "dumbbell" | "machine" | "cable" | "bodyweight" | "other";
 
 export interface TemplateExercise {
+  /** Explicitly accepted by the person while editing this draft. */
+  musclesConfirmed?: boolean;
   name: string;
   equipment: Equipment;
   muscle_groups: string[];

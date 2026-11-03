@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DAILY_LIMIT, DRAFT_MODELS, handle, lastJson, MODELS, PAID_MODEL, prepMessage, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
+import { DAILY_LIMIT, DRAFT_MODELS, handle, lastJson, MODELS, PAID_MODEL, prepMessage, toMuscleSuggestion, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
 import { MUSCLE_GROUPS, EQUIPMENT } from "../../../lib/muscles";
 import { MUSCLES, EQUIPMENT as FN_EQUIPMENT } from "./handler";
 
@@ -81,6 +81,7 @@ function fakeFetch({ asked = 0, models = [] as (Response | Error)[] } = {}) {
       if (next instanceof Error) throw next;
       return next;
     }
+    if (url.endsWith("/auth/v1/user")) return ok({ id: "user-id" });
     if (url.includes("/coach_usage?")) return ok(asked ? [{ questions: asked }] : []);
     if (url.includes("/exercises?")) return ok([{ name: "Lat Pulldown" }]);
     if (url.includes("/rpc/count_coach_question")) return ok(asked + 1);
@@ -218,5 +219,32 @@ describe("warm-up and cool-down", () => {
   });
   it("refuses a day with no exercises", async () => {
     expect((await handle(req({ mode: "prep", day: { name: "Push", exercises: [] } }), ENV, fakeFetch(), () => {}, NOW)).status).toBe(400);
+  });
+});
+
+
+describe("muscle suggestions", () => {
+  it("returns known ordered groups only, and handles ambiguous exercises", () => {
+    expect(toMuscleSuggestion({groups:["Glutes","quads","glutes","unknown"],explanation:"Works the hip."})).toEqual({groups:["glutes","quads"],explanation:"Works the hip."});
+    expect(toMuscleSuggestion({groups:[],explanation:"Which movement?"})?.groups).toEqual([]);
+    expect(toMuscleSuggestion({groups:"chest"})).toBeNull();
+  });
+  it("returns a suggestion without writing exercise metadata or sending the library", async () => {
+    const fetchFn = fakeFetch({models:[reply('{"groups":["glutes","hamstrings"],"explanation":"Hip extension."}')]});
+    const res = await handle(req({mode:"muscles",exercise:{name:"Hip thrust",equipment:"barbell"}}),ENV,fetchFn,()=>{},NOW);
+    expect(res.status).toBe(200);
+    expect((await res.json()).muscles.groups).toEqual(["glutes","hamstrings"]);
+    expect(fetchFn.mock.calls.some(([u])=>String(u).includes("/exercises?"))).toBe(false);
+    expect(fetchFn.mock.calls.filter(([,options])=>options?.method==='POST')).toHaveLength(2);
+  });
+  it("requires an authenticated user and honours the existing daily quota", async () => {
+    expect((await handle(req({mode:"muscles",exercise:{name:"Squat"}},null),ENV,fakeFetch(),()=>{},NOW)).status).toBe(401);
+    const base=fakeFetch();
+    const denied=vi.fn<typeof fetch>(async(url,init)=>String(url).endsWith('/auth/v1/user')?new Response('no',{status:401}):base(url,init));
+    expect((await handle(req({mode:"muscles",exercise:{name:"Squat"}}),ENV,denied,()=>{},NOW)).status).toBe(401);
+    expect(base).not.toHaveBeenCalled();
+    const limited=fakeFetch({asked:DAILY_LIMIT});
+    expect((await handle(req({mode:"muscles",exercise:{name:"Squat"}}),ENV,limited,()=>{},NOW)).status).toBe(429);
+    expect(limited.mock.calls.some(([u])=>String(u).startsWith('https://openrouter.ai'))).toBe(false);
   });
 });

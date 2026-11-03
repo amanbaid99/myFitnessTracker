@@ -38,3 +38,31 @@ describe("exercise addition", () => {
     expect(writes[0]).toMatchObject({ table: "exercises", value: { name: "Custom hold", tracking: "time" } });
   });
 });
+
+
+describe("confirmed muscle mappings", () => {
+  it("saves only explicitly supplied groups for existing exercises", async () => {
+    const {supabase,updates}=client();
+    await exerciseIdFor(supabase,{exerciseId:"known",name:"Hip thrust",equipment:"barbell"});
+    expect(updates).toEqual([]);
+    await exerciseIdFor(supabase,{exerciseId:"known",name:"Hip thrust",equipment:"barbell",muscleGroups:["glutes","hamstrings"]});
+    expect(updates).toEqual([{muscle_groups:["glutes","hamstrings"]}]);
+  });
+  it("retains confirmed groups when a new custom exercise is created", async () => {
+    const {supabase,writes}=client();
+    await exerciseIdFor(supabase,{exerciseId:null,name:"Custom row",equipment:"cable",muscleGroups:["upper back","lats"]});
+    expect(writes[0].value).toMatchObject({muscle_groups:["upper back","lats"]});
+  });
+  it("preserves confirmed edits to a known exercise in a draft plan", async () => {
+    const {supabase,updates}=client([{id:"known",name:"Custom row"}]);
+    await prepareDraftExercises(supabase,[{name:"Day",exercises:[{name:"Custom row",equipment:"cable",muscle_groups:["lats"],musclesConfirmed:true,per_hand:false,sets:3,reps:10}]}]);
+    expect(updates).toEqual([{muscle_groups:["lats"]}]);
+  });
+});
+
+it("keeps a mapping confirmed later in a draft when the exercise was just created", async () => {
+  const {supabase,updates}=client();
+  const exercise={name:"New row",equipment:"cable" as const,muscle_groups:[],per_hand:false,sets:3,reps:10,tracking:"reps" as const};
+  await prepareDraftExercises(supabase,[{name:"A",exercises:[exercise]},{name:"B",exercises:[{...exercise,muscle_groups:["lats"],musclesConfirmed:true}]}]);
+  expect(updates.at(-1)).toEqual({muscle_groups:["lats"]});
+});

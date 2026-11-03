@@ -40,6 +40,7 @@ export function AtlasSheet({ url, title, onClose }: { url: string; title: string
           )}
           <iframe
             src={url}
+            referrerPolicy="no-referrer"
             title={title}
             onLoad={() => setLoaded(true)}
             className="absolute inset-0 h-full w-full border-0"

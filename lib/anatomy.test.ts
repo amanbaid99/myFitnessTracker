@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles } from "./anatomy";
+import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink } from "./anatomy";
 import { MUSCLE_GROUPS } from "./muscles";
 
 // Ids from the atlas's src/anatomy/muscles.js that the mapping uses.
@@ -61,5 +61,30 @@ describe("workoutMuscles", () => {
     expect(url).toContain("biceps-long");
     expect(url).not.toContain("pectoralis");
     expect(url).not.toContain("vastus");
+  });
+});
+
+describe("workout workload shading", () => {
+  const ex = [{ id: "chest", muscleGroups: ["chest", "triceps"] }, { id: "glutes", muscleGroups: ["glutes"] }];
+  const set = (exerciseId: string, reps: number | null, durationSec: number | null = null) => ({ exerciseId, reps, durationSec, setType: "working" });
+  it("makes two chest sets lighter than eight glute sets, using a fixed scale", () => {
+    const work = workoutWorkload([...Array.from({length:2},()=>set("chest",10)),...Array.from({length:8},()=>set("glutes",12))],ex);
+    expect(work.chest).toBe(2);
+    expect(work.triceps).toBe(1);
+    expect(work.glutes).toBeCloseTo(9.6);
+    const url = new URL(workoutBodyLink(work,"dark"));
+    expect(url.searchParams.get("heat")).toContain("pectoralis-major:0.2");
+    expect(url.searchParams.get("heat")).toContain("gluteus-maximus:0.96");
+    expect(url.searchParams.get("view")).toBe("back");
+  });
+  it("excludes warmups and deleted sets, and keeps unmapped work out", () => {
+    const work = workoutWorkload([{...set("chest",100),setType:"warmup"},{...set("chest",50),deletedAt:"now"},set("unknown",100)],ex);
+    expect(work).toEqual({});
+    expect(new URL(workoutBodyLink(work,"light")).searchParams.has("heat")).toBe(false);
+  });
+  it("supports timed holds and caps the atlas colour without weight assumptions", () => {
+    const work = workoutWorkload([set("chest",null,60),set("glutes",120)],ex);
+    expect(work.chest).toBe(2);
+    expect(new URL(workoutBodyLink(work,"dark")).searchParams.get("heat")).toContain("gluteus-maximus:1");
   });
 });

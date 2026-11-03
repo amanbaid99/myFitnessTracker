@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MusclePicker } from "@/components/anatomy/muscle-picker";
+import { FALLBACK_TARGETS } from "@/lib/default-targets";
 import { Input } from "@/components/ui/input";
 import type { Exercise } from "@/lib/data";
 import { EQUIPMENT } from "@/lib/muscles";
@@ -15,6 +17,7 @@ export interface ExercisePick {
   equipment: string;
   tracking?: Tracking;
   targets?: Targets;
+  muscleGroups?: string[];
 }
 
 /** Search the exercise library, or type a new exercise. Used to add or swap. */
@@ -38,6 +41,8 @@ export function AddExercise({
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
   const [tracking, setTracking] = useState<Tracking>("reps");
+  const [muscles, setMuscles] = useState<string[]>([]);
+  const [muscleEdited, setMuscleEdited] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const saving = useRef(false);
@@ -53,9 +58,12 @@ export function AddExercise({
   }
 
   function choose(pick: ExercisePick) {
-    if (!targetsFor) { void submit(pick); return; }
+    const known = library.find((e) => e.id === pick.exerciseId);
+    if (!targetsFor && known?.muscleGroups.length) { void submit(pick); return; }
+    setMuscles(known?.muscleGroups ?? []);
+    setMuscleEdited(false);
     const mode = library.find((e) => e.id === pick.exerciseId)?.tracking ?? defaultTracking(pick.name);
-    const targets = targetsFor(pick.exerciseId);
+    const targets = targetsFor?.(pick.exerciseId) ?? FALLBACK_TARGETS;
     setSelected(pick);
     setTracking(mode);
     setSets(String(targets.sets));
@@ -75,7 +83,7 @@ export function AddExercise({
     return (
       <fieldset disabled={busy} aria-busy={busy} className="min-w-0 space-y-3 p-2">
         <p className="font-medium">{selected.name}</p>
-        <label className="block text-sm">Track by
+        {targetsFor && <><label className="block text-sm">Track by
           <select aria-label="Track by" value={tracking}
             className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-base"
             onChange={(e) => { const t = e.target.value as Tracking; setTracking(t); setReps(t === "time" ? "30" : "10"); }}>
@@ -87,9 +95,11 @@ export function AddExercise({
           <label className="text-sm">Sets<Input type="number" min={1} max={10} inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} /></label>
           <label className="text-sm">{tracking === "time" ? "Seconds per set" : "Reps per set"}<Input type="number" min={1} max={tracking === "time" ? 3600 : 50} inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} /></label>
         </div>
+        </>}
+        <MusclePicker key={`${selected.name}:${selected.equipment}`} name={selected.name} equipment={selected.equipment} value={muscles} onChange={(groups) => { setMuscles(groups); setMuscleEdited(true); }} />
         {!valid && <p className="text-sm text-destructive">Enter 1 to 10 sets and {tracking === "time" ? "1 to 3600 seconds" : "1 to 50 reps"} per set.</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...pickForTracking(selected, tracking, library), targets: { ...targetsFor!(selected.exerciseId), sets: Number(sets), reps: Number(reps) } })}>
+        <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...pickForTracking(selected, tracking, library), ...(muscleEdited || muscles.length ? { muscleGroups: muscles } : {}), ...(targetsFor ? { targets: { ...targetsFor(selected.exerciseId), sets: Number(sets), reps: Number(reps) } } : {}) })}>
           {busy ? <Loader2 className="animate-spin motion-reduce:animate-none" /> : <Plus />} {busy ? "Adding exercise…" : "Add exercise"}
         </Button>
         <Button variant="ghost" className="w-full" onClick={() => setSelected(null)}>Back to exercises</Button>

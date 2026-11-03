@@ -16,10 +16,16 @@ export type DbResult = { error: { message: string; code?: string } | null };
 
 /** The exercise id for a pick, creating a new exercise when it is not in the library yet. */
 export async function exerciseIdFor(supabase: SupabaseClient, pick: ExercisePick): Promise<{ id: string | null } & DbResult> {
-  if (pick.exerciseId) return { id: pick.exerciseId, error: null };
+  if (pick.exerciseId) {
+    if (pick.muscleGroups !== undefined) {
+      const { error } = await supabase.from("exercises").update({ muscle_groups: pick.muscleGroups }).eq("id", pick.exerciseId);
+      if (error) return { id: null, error };
+    }
+    return { id: pick.exerciseId, error: null };
+  }
   const { data, error } = await supabase
     .from("exercises")
-    .insert({ name: pick.name, equipment: pick.equipment, per_hand: pick.equipment === "dumbbell", tracking: pick.tracking ?? defaultTracking(pick.name) })
+    .insert({ name: pick.name, equipment: pick.equipment, per_hand: pick.equipment === "dumbbell", ...(pick.muscleGroups !== undefined ? { muscle_groups: pick.muscleGroups } : {}), tracking: pick.tracking ?? defaultTracking(pick.name) })
     .select("id")
     .single();
   // The insert trigger infers timed holds by name. An explicit choice wins.
@@ -164,18 +170,27 @@ export function friendlyError(error: { message: string; code?: string }): string
  * Existing exercises keep their shared tracking type. Retrying is safe by name.
  */
 export async function prepareDraftExercises(supabase: SupabaseClient, days: TemplateRoutine[]): Promise<DbResult> {
-  const configured = days.flatMap((d) => d.exercises).filter((e) => e.tracking !== undefined);
+  const configured = days.flatMap((d) => d.exercises).filter((e) => e.tracking !== undefined || e.musclesConfirmed);
   if (!configured.length) return { error: null };
   const { data, error } = await supabase.from("exercises").select("id,name").is("archived_at", null);
   if (error) return { error };
   const known = new Set((data ?? []).map((e) => e.name.toLowerCase()));
+  const knownIds = new Map((data ?? []).map((e) => [e.name.toLowerCase(), e.id]));
   for (const e of configured) {
-    if (known.has(e.name.toLowerCase())) continue;
+    if (known.has(e.name.toLowerCase())) {
+      const existingId = knownIds.get(e.name.toLowerCase());
+      if (e.musclesConfirmed && existingId) {
+        const result = await supabase.from("exercises").update({ muscle_groups: e.muscle_groups }).eq("id", existingId);
+        if (result.error) return result;
+      }
+      continue;
+    }
     const made = await exerciseIdFor(supabase, { exerciseId: null, name: e.name, equipment: e.equipment, tracking: e.tracking });
     if (made.error || !made.id) return { error: made.error ?? { message: "Could not create the exercise." } };
     const metadata = await supabase.from("exercises").update({ muscle_groups: e.muscle_groups, per_hand: e.per_hand }).eq("id", made.id);
     if (metadata.error) return metadata;
     known.add(e.name.toLowerCase());
+    knownIds.set(e.name.toLowerCase(), made.id);
   }
   return { error: null };
 }

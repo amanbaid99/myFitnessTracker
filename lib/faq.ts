@@ -20,8 +20,16 @@ export const FAQ: FaqSection[] = [
     title: "Getting started",
     items: [
       {
+        q: "Why is an exercise missing from my body map?",
+        a: ["It needs muscle groups. Tap Map next to an unmapped exercise in the workout recap, or edit the exercise in your plan. Suggest muscles offers AI suggestions from its name and equipment. Review them, choose Use these muscles, edit the selection if needed, then confirm and save. You can also select muscles manually without AI. Saving needs a connection; the mapping applies to that exercise throughout your plan and history."],
+      },
+      {
+        q: "How does the body map decide how red a muscle is?",
+        a: ["The workload shading uses a fixed scale: ten reps or thirty seconds of a hold count as one unit, and ten units reach the deepest red. Supporting muscles receive half the contribution. Sets without reps or time count as one unit. Warm-ups and deleted sets do not contribute. Weight, technique, effort and individual differences are not measured by these colours."],
+      },
+      {
         q: "Can I see the muscles I trained after a workout?",
-        a: ["Yes. When the workout analysis is ready in History, Muscles trained shows the muscle groups from that workout's logged working sets. A set counts as 1 for its main muscle and 0.5 for supporting muscles; warm-ups do not count. Tap See this workout in 3D to open the anatomy explorer with those muscles highlighted. The model only loads when you open it."],
+        a: ["Yes. History shows your body map as soon as a workout is finished, even while the analysis is pending. Deeper red represents more logged workload from sets and reps; holds use time. It is an illustration, not a measurement of muscle activation or growth. Expand the map for a closer look."],
       },
       {
         q: "Where are the other workout days and weight graph?",
@@ -223,7 +231,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "Why is there a limit of 20 AI requests a day?",
         a: [
-          "Workout reviews and new plans are written by a low-cost paid AI model, with free models as a backup. Coach and warm-ups use free models first, which have a shared daily allowance, with the paid model as a backup. To keep that fair, Coach questions, building a plan with AI and writing warm-ups share 20 requests per person per day. Workout reviews don't count towards it.",
+          "Workout reviews and new plans are written by a low-cost paid AI model, with free models as a backup. Coach and warm-ups use free models first, which have a shared daily allowance, with the paid model as a backup. To keep that fair, Coach questions, building a plan with AI and writing warm-ups share 20 requests per person per day. Workout reviews don't count towards it. AI muscle suggestions share the same daily allowance and are only saved after you confirm them.",
         ],
       },
       {

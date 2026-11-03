@@ -20,6 +20,7 @@ import {
 import type { TemplateExercise, TemplateRoutine } from "@/lib/templates";
 import { defaultTracking, formatTarget } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
+import { MusclePicker } from "@/components/anatomy/muscle-picker";
 import { AddExercise } from "./add-exercise";
 
 /**
@@ -116,6 +117,7 @@ export function PlanDraftEditor({
                       exercise={e}
                       first={i === 0}
                       last={i === day.exercises.length - 1}
+                      onMuscles={(groups) => onChange(days.map((day) => ({ ...day, exercises: day.exercises.map((slot) => slot.name.toLowerCase() === e.name.toLowerCase() ? { ...slot, muscle_groups: groups, musclesConfirmed: true } : slot) })))}
                       onTargets={(sets, reps) => onChange(setTargets(days, d, i, sets, reps))}
                       onMove={(dir) => {
                         onChange(moveExercise(days, d, i, dir));
@@ -149,7 +151,8 @@ export function PlanDraftEditor({
                       sets: pick.targets?.sets,
                       reps: pick.targets?.reps,
                       equipment,
-                      muscle_groups: known?.muscleGroups ?? [],
+                      muscle_groups: pick.muscleGroups ?? known?.muscleGroups ?? [],
+                      musclesConfirmed: pick.muscleGroups !== undefined,
                       per_hand: known?.perHand ?? equipment === "dumbbell",
                     }),
                   );
@@ -184,6 +187,7 @@ function ExerciseControls({
   first,
   last,
   onTargets,
+  onMuscles,
   onMove,
   onRemove,
 }: {
@@ -191,6 +195,7 @@ function ExerciseControls({
   first: boolean;
   last: boolean;
   onTargets: (sets: number, reps: number) => void;
+  onMuscles: (groups: string[]) => void;
   onMove: (dir: -1 | 1) => void;
   onRemove: () => void;
 }) {
@@ -200,6 +205,10 @@ function ExerciseControls({
         <Stepper label="Sets" value={exercise.sets} max={MAX_SETS} onChange={(v) => onTargets(v, exercise.reps)} />
         <Stepper label={(exercise.tracking ?? defaultTracking(exercise.name)) === "time" ? "Seconds" : "Reps"} value={exercise.reps} max={(exercise.tracking ?? defaultTracking(exercise.name)) === "time" ? 3600 : MAX_REPS} onChange={(v) => onTargets(exercise.sets, v)} />
       </div>
+      <details className="rounded-xl border bg-card p-3">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm">Review muscles worked</summary>
+        <MusclePicker key={`${exercise.name}:${exercise.equipment}`} name={exercise.name} equipment={exercise.equipment} value={exercise.muscle_groups} onChange={onMuscles} />
+      </details>
       <div className="grid grid-cols-3 gap-2">
         <Button variant="secondary" disabled={first} onClick={() => onMove(-1)}>
           <ArrowUp /> Up

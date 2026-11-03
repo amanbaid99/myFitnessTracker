@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, ChevronDown, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
+import { WorkoutMuscles } from "@/components/anatomy/workout-muscles";
 import { WorkoutReviewCard } from "@/components/workout-review-card";
 import { HomeHero } from "@/components/home/home-hero";
 import { WeeklyReviewCard } from "@/components/home/weekly-review-card";
@@ -57,7 +58,8 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
 
         {finished && <div className="mt-4">
           <p className="mb-2 text-xs text-muted-foreground">Example analysis and muscle recap with sample data</p>
-          <WorkoutReviewCard demo workoutId="demo-finished" endedAt={new Date().toISOString()} initial={DEMO_WORKOUT_REVIEW} muscleSets={DEMO_WORKOUT_MUSCLES} />
+          <WorkoutMuscles demo rows={DEMO_WORKOUT_MUSCLES} />
+          <div className="mt-4"><WorkoutReviewCard demo workoutId="demo-finished" endedAt={new Date().toISOString()} initial={DEMO_WORKOUT_REVIEW} /></div>
         </div>}
 
         <div className="mt-4">
