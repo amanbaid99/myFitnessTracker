@@ -12,10 +12,10 @@ describe("workout schematic", () => {
     expect(html).toContain('aria-label="Front schematic');
     expect(html).toContain('aria-label="Back schematic');
   });
-  it("uses the atlas workload scale, caps heavy work and ignores invalid values", () => {
+  it("shades relative to the most worked muscle and ignores invalid values", () => {
     const html = renderToStaticMarkup(createElement(WorkoutBodyDiagram, { workload: { chest: 2, glutes: 9.6, quads: 30, calves: -1, biceps: NaN } }));
-    expect(html).toContain('data-muscle="chest" data-heat="0.2"');
-    expect(html).toContain('data-muscle="glutes" data-heat="0.96"');
+    expect(html).toContain('data-muscle="chest" data-heat="0.07"');
+    expect(html).toContain('data-muscle="glutes" data-heat="0.32"');
     expect(html).toContain('data-muscle="quads" data-heat="1"');
     expect(html).toContain('data-muscle="calves" data-heat="0"');
     expect(html).toContain('data-muscle="biceps" data-heat="0"');

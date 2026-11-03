@@ -122,9 +122,30 @@ export function workoutWorkload(
   return result;
 }
 
+/** The 3D atlas for one workout, shaded like the flat map: the most worked muscle is fully red. */
 export function workoutBodyLink(workload: Record<string, number>, theme: "light" | "dark"): string {
-  const url = new URL(heatLink(workload, theme) ?? link({}, theme));
+  const relative = Object.fromEntries(rankedWorkload(workload).map((m) => [m.muscle, m.share * HOT_SETS]));
+  const url = new URL(heatLink(relative, theme) ?? link({}, theme));
   const dominant = Object.entries(workload).filter(([g, units]) => isGroup(g) && units > 0).sort((a, b) => b[1] - a[1])[0]?.[0];
   if (dominant) url.searchParams.set("view", ["lats", "upper back", "traps", "rear delts", "glutes", "hamstrings"].includes(dominant) ? "back" : "front");
   return url.toString();
+}
+
+/** Muscles by workload, most first, with share = units / the top muscle's units (0 to 1). Pure. */
+export function rankedWorkload(workload: Record<string, number>): { muscle: string; units: number; share: number }[] {
+  const valid = Object.entries(workload).filter(([g, u]) => isGroup(g) && Number.isFinite(u) && u > 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const top = valid[0]?.[1] ?? 0;
+  return valid.map(([muscle, units]) => ({ muscle, units, share: Math.round((units / top) * 100) / 100 }));
+}
+
+/** Workload from the logged workout when available, else the SQL set totals. Pure. */
+export function workloadOrSets(rows: { muscle: string; sets: number }[], workload?: Record<string, number>): Record<string, number> {
+  return workload ?? Object.fromEntries(workoutMuscles(rows).map((m) => [m.muscle, m.sets]));
+}
+
+/** "Quads, hamstrings and glutes", the top three in sentence case. Pure. */
+export function topMusclesText(workload: Record<string, number>, count = 3): string {
+  const names = rankedWorkload(workload).slice(0, count).map((m, i) => (i === 0 ? m.muscle.charAt(0).toUpperCase() + m.muscle.slice(1) : m.muscle));
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
 }
