@@ -8,18 +8,20 @@ import { reviewPreview } from "@/lib/review-preview";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { analysisWeek } from "@/lib/analysis-week";
 import { createClient } from "@/lib/supabase/client";
-import { POLL_EVERY_MS, POLL_WINDOW_MS } from "@/lib/insights";
+import { newestWeeklyReview, POLL_EVERY_MS, POLL_WINDOW_MS, type WeeklyReview } from "@/lib/insights";
 import { Button } from "@/components/ui/button";
 import { MASK } from "@/lib/mask";
 
-export type WeeklyReview = { title: string; summary: string; details: { coveredThrough?: string; workoutCount?: number } };
+export type { WeeklyReview };
 
 /** Refreshes while the post-workout background jobs finish, and on returning to Today. */
-export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, last = null, demoReview }: {
+export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, last = null, demoReview, fullHref = "/week" }: {
   lastEndedAt: string | null; lastStartedAt: string | null; lastWorkoutId: string | null;
   last?: LastWorkout | null;
   /** Public demo only: show sample analysis without making requests. */
   demoReview?: WeeklyReview;
+  /** The full analysis page. */
+  fullHref?: string;
 }) {
   const [review, setReview] = useState<WeeklyReview | null>(demoReview ?? null);
   const [week, setWeek] = useState<ReturnType<typeof analysisWeek> | null>(null);
@@ -50,9 +52,7 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, la
       setWeek(current);
       setFailed(Boolean(error));
       if (!error) {
-        const rows = (data ?? []) as WeeklyReview[];
-        rows.sort((a, b) => (b.details.coveredThrough ?? "").localeCompare(a.details.coveredThrough ?? ""));
-        const newest = rows[0] ?? null;
+        const newest = newestWeeklyReview((data ?? []) as WeeklyReview[]);
         setReview(newest);
         if (newest && lastEndedAt && Date.parse(newest.details.coveredThrough ?? "") >= Date.parse(lastEndedAt)) setRetryUntil(0);
       }
@@ -85,14 +85,10 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, la
           <p className="text-[11px] font-medium uppercase tracking-wide text-primary">Next focus</p>
           <p className="mt-1 line-clamp-3 text-sm leading-relaxed">{preview!.focus}</p>
         </div>}
-        <details className="group mt-2 text-sm">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 text-muted-foreground [&::-webkit-details-marker]:hidden">
-            <span className="group-open:hidden">Read full analysis</span><span className="hidden group-open:inline">Close full analysis</span>
-            <ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden />
-          </summary>
-          <p className="pb-3 leading-relaxed text-muted-foreground">{review.summary}</p>
-          <p className="pb-3 text-xs text-muted-foreground">Based on {review.details.workoutCount ?? "your"} completed workouts. Updated after your workout analysis. Week runs Monday to Sunday in India time.</p>
-        </details>
+        <Link href={fullHref} className="mt-2 flex min-h-11 items-center justify-between gap-2 text-sm text-muted-foreground">
+          Read full analysis
+          <ChevronRight className="size-4" aria-hidden />
+        </Link>
         {stale && <p className="mt-1 text-xs text-muted-foreground">Updating after your latest workout analysis.</p>}
       </div> : <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{failed ? "Could not load your weekly analysis. Reopen Today to try again." : "Your brief weekly analysis appears here after a workout analysis finishes. It builds on all completed workouts this week."}</p>}
       {hasWorkout && (!review || stale) && <Button variant="secondary" className="mt-3 w-full" onClick={retry} disabled={waiting}>{waiting ? "Analysing your week…" : "Refresh weekly analysis"}</Button>}
