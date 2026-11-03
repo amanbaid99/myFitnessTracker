@@ -192,3 +192,17 @@ export const DEMO_WEEKLY_REVIEW = {
   summary: "Two workouts cover your main pushing and pulling movements. Keep an eye on recovery as the week builds. Aim for one lower-body session before Sunday.",
   details: { workoutCount: 2 },
 };
+
+
+/** A labelled sample of the post-workout recap, not the visitor's logged sets. */
+export const DEMO_WORKOUT_REVIEW = {
+  id: "demo-review",
+  title: "A steady push session",
+  summary: "Your pressing and triceps work covered the front of your upper body. Keep your last reps controlled. Aim for the same load with one more rep next time.",
+  readAt: null,
+};
+export const DEMO_WORKOUT_MUSCLES = [
+  { muscle: "chest", sets: 6 }, { muscle: "triceps", sets: 5 },
+  { muscle: "front delts", sets: 3 }, { muscle: "side delts", sets: 3 },
+  { muscle: "rear delts", sets: 3 },
+];

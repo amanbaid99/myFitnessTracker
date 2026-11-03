@@ -4,7 +4,7 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-10-30.
+Last updated: 2026-11-03.
 
 ## Live in production
 
@@ -26,20 +26,24 @@ tab bar shows a pending state while a tab loads.
 
 Exercise targets and previous-record entry shipped in PR #4 on 2026-10-29.
 PR #5 shipped set skips, tracking variants and the weekly analysis card.
+PR #6 shipped the analysis-first Today layout. PR #12 added exercise
+muscle details and the weekly anatomy heatmap; PR #11 reorders exercises
+within a workout when they are done early.
 Production app commit 3df8b9d and analyze-workout v18 were verified live;
 Aman confirmed analysis works. The function retains webhook authentication.
 
 ## In flight
 
-- 2026-10-30: Branch `feat/analysis-first-home` puts the weekly analysis
-  first on Today, with a compact streak/calendar row and one Start or
-  Resume action. Full analysis, weight trends and other workouts expand
-  on demand. The last-workout link lives inside the analysis card. The
-  public demo and loading skeleton follow the same layout. Browser checks
-  passed at 320, 390 and 768 px, including analysis expansion, weight
-  trend, the log-weight form, empty state and alternate-workout chooser.
-  Lint, TypeScript, all 314 unit tests and production build passed.
-  No database or Edge Function changes. Popup wording awaits approval.
+- 2026-11-03: Branch `feat/post-workout-anatomy` adds the logged workout's
+  muscle recap to its analysis card once the review is ready. Reads the
+  existing workout_muscle_sets view, opens the atlas with trained groups
+  on tap, and preserves pending/retry behaviour. No migration or Edge
+  Function change. Browser checks passed at 320, 390 and 768 px, including
+  polling-to-recap, no automatic atlas download, correct muscles/theme,
+  close, empty-data fallback and the labelled public demo. Lint, type
+  checks, all 332 unit tests and production build passed. Not deployed.
+  Atlas rendering was intercepted in browser tests; the live database
+  view's columns and security_invoker setting were verified read-only.
 
 ## Needs doing by hand
 

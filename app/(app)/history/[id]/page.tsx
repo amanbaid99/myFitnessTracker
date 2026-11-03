@@ -13,6 +13,7 @@ import {
   getProfile,
   getWorkoutNotes,
   getWorkoutSets,
+  getWorkoutMuscleSets,
   load,
   type SetRow,
 } from "@/lib/data";
@@ -29,14 +30,15 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
   const [profile, result] = await Promise.all([
     getProfile(supabase),
     load(async () => {
-      const [workout, sets, review, notes] = await Promise.all([
+      const [workout, sets, review, notes, muscleSets] = await Promise.all([
         getFinishedWorkout(supabase, id),
         getWorkoutSets(supabase, id),
         fetchWorkoutReview(supabase, id),
         getWorkoutNotes(supabase, id),
+        getWorkoutMuscleSets(supabase, id),
       ]);
       const names = await getExerciseNames(supabase, [...new Set(sets.map((s) => s.exerciseId))]);
-      return { workout, sets, review, notes, names };
+      return { workout, sets, review, notes, names, muscleSets };
     }),
   ]);
 
@@ -54,7 +56,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
       </>
     );
   }
-  const { workout, sets, review, notes, names } = result.data;
+  const { workout, sets, review, notes, names, muscleSets } = result.data;
   if (!workout) notFound();
 
   const byExercise = new Map<string, SetRow[]>();
@@ -77,7 +79,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
 
       {workout.source === "app" && (
         <div className="mb-6">
-          <WorkoutReviewCard workoutId={workout.id} endedAt={workout.endedAt} initial={review} />
+          <WorkoutReviewCard workoutId={workout.id} endedAt={workout.endedAt} initial={review} muscleSets={muscleSets} />
         </div>
       )}
 

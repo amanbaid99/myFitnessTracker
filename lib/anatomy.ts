@@ -52,7 +52,7 @@ export const MUSCLE_INFO: Record<Group, string> = {
   core: "Abs and obliques. Brace the trunk, bend and twist it, and protect the spine under load.",
 };
 
-const isGroup = (g: string): g is Group => g in ATLAS_MUSCLES;
+const isGroup = (g: string): g is Group => Object.hasOwn(ATLAS_MUSCLES, g);
 
 /** Weekly working sets that show as fully hot on the heatmap. */
 export const HOT_SETS = 10;
@@ -82,4 +82,18 @@ export function heatLink(setsByGroup: Record<string, number>, theme: "light" | "
     for (const id of ATLAS_MUSCLES[group]) pairs.push(`${id}:${value}`);
   }
   return pairs.length ? link({ heat: pairs.join(",") }, theme) : null;
+}
+
+
+/** A single session's muscle contributions, already calculated by SQL.
+ * Unknown groups remain in History's set list but cannot light the atlas.
+ */
+export function workoutMuscles(rows: { muscle: string; sets: number }[]): { muscle: string; sets: number }[] {
+  const totals = new Map<string, number>();
+  for (const row of rows) {
+    if (!isGroup(row.muscle) || !Number.isFinite(row.sets) || row.sets <= 0) continue;
+    totals.set(row.muscle, (totals.get(row.muscle) ?? 0) + row.sets);
+  }
+  return [...totals].map(([muscle, sets]) => ({ muscle, sets }))
+    .sort((a, b) => b.sets - a.sets || a.muscle.localeCompare(b.muscle));
 }

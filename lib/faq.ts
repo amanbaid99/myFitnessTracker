@@ -20,6 +20,10 @@ export const FAQ: FaqSection[] = [
     title: "Getting started",
     items: [
       {
+        q: "Can I see the muscles I trained after a workout?",
+        a: ["Yes. When the workout analysis is ready in History, Muscles trained shows the muscle groups from that workout's logged working sets. A set counts as 1 for its main muscle and 0.5 for supporting muscles; warm-ups do not count. Tap See this workout in 3D to open the anatomy explorer with those muscles highlighted. The model only loads when you open it."],
+      },
+      {
         q: "Where are the other workout days and weight graph?",
         a: ["Today starts with your weekly analysis, streak and next workout. Open Choose another workout for other days, or Weight trend for your graph. If a workout is open, Resume workout takes priority. Plan editing and new plans are under View full plan, then All plans."],
       },
