@@ -1,44 +1,98 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useMounted } from "@/components/progress/use-mounted";
+import { useRouter } from "next/navigation";
 import { ChevronDown, PersonStanding } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { musclesLink, workoutMuscles } from "@/lib/anatomy";
+import { workoutBodyLink, workoutMuscles } from "@/lib/anatomy";
+import { MUSCLE_GROUPS } from "@/lib/muscles";
+import type { WorkoutExercise } from "@/lib/data";
+import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
 import { AtlasSheet, atlasTheme } from "./atlas-sheet";
+import { MusclePicker } from "./muscle-picker";
 
-/** Revealed with the finished review; the model loads only on an explicit tap. */
-export function WorkoutMuscles({ rows }: { rows: { muscle: string; sets: number }[] }) {
-  const [atlas, setAtlas] = useState<string | null>(null);
+function subscribeTheme(notify: () => void) {
+  const observer = new MutationObserver(notify);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-base"] });
+  return () => observer.disconnect();
+}
+
+/** Visible immediately after finishing; analysis can arrive later without blocking the map. */
+export function WorkoutMuscles({ rows, workload, exercises = [], demo = false }: {
+  rows: { muscle: string; sets: number }[];
+  workload?: Record<string, number>;
+  exercises?: WorkoutExercise[];
+  demo?: boolean;
+}) {
+  const router = useRouter();
+  const mounted = useMounted();
+  const theme = useSyncExternalStore(subscribeTheme, atlasTheme, () => "dark" as const);
+  const [expanded, setExpanded] = useState(false);
+  const [edit, setEdit] = useState<WorkoutExercise | null>(null);
+  const [selection, setSelection] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const muscles = workoutMuscles(rows);
-  if (!muscles.length) return null;
-
-  const list = (items: typeof muscles) => items.map(({ muscle, sets }) => (
-    <li key={muscle} className="flex items-center justify-between gap-3 text-sm">
-      <span className="capitalize">{muscle}</span>
-      <span className="tabular-nums text-muted-foreground">{sets} {sets === 1 ? "set" : "sets"}</span>
-    </li>
-  ));
+  const unmapped = exercises.filter((e) => !e.muscleGroups.some((g) => (MUSCLE_GROUPS as readonly string[]).includes(g)));
+  const url = workoutBodyLink(workload ?? Object.fromEntries(muscles.map((m) => [m.muscle, m.sets])), theme);
+  async function save() {
+    if (!edit || demo) return;
+    setSaving(true); setError(null);
+    try {
+      const { error } = await createClient().from("exercises").update({ muscle_groups: selection }).eq("id", edit.id);
+      if (error) { setError("Could not save. Check your connection and try again."); return; }
+      setEdit(null); router.refresh();
+    } catch { setError("Could not save. Check your connection and try again."); }
+    finally { setSaving(false); }
+  }
   return (
-    <div className={`mt-4 rounded-xl border bg-card p-4 ${MASK}`}>
-      <h3 className="flex items-center gap-2 text-sm font-semibold"><PersonStanding className="size-4 text-primary" aria-hidden />Muscles trained</h3>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">From the working sets you logged in this workout.</p>
-      <ul className="mt-3 space-y-2">{list(muscles.slice(0, 4))}</ul>
-      {muscles.length > 4 && (
-        <details className="group mt-1">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm text-muted-foreground [&::-webkit-details-marker]:hidden">All {muscles.length} muscle groups<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
-          <ul className="space-y-2 pb-2">{list(muscles.slice(4))}</ul>
-        </details>
-      )}
-      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">A set counts as 1 for its main muscle and 0.5 for supporting muscles. Warm-ups are excluded.</p>
-      <Button variant="secondary" className="mt-3 w-full" onClick={() => {
-        const url = musclesLink(muscles.map((row) => row.muscle), atlasTheme());
-        if (!url) return;
-        track("anatomy_opened", { from: "workout_review" });
-        setAtlas(url);
-      }}><PersonStanding />See this workout in 3D</Button>
-      {atlas && <AtlasSheet url={atlas} title="Muscles trained this workout" onClose={() => setAtlas(null)} />}
-    </div>
+    <section aria-label="Workout body map" className={`rounded-2xl border bg-card p-4 ${MASK}`}>
+      <h2 className="flex items-center gap-2 font-semibold"><PersonStanding className="size-4 text-primary" aria-hidden />Your workout on the body</h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Deeper red means more logged work. Explore the body while your analysis runs.</p>
+      <div className="relative mt-3 h-[30rem] overflow-hidden rounded-xl border bg-background">
+        {mounted && !expanded && <iframe src={url} title="Workout workload heatmap" className="h-full w-full border-0" allow="fullscreen" referrerPolicy="no-referrer" />}
+        {!mounted && <p role="status" className="p-6 text-center text-sm text-muted-foreground">Loading your workout map…</p>}
+      </div>
+      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Lighter: less work</span><span>Redder: more work</span></div>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 flex min-h-11 items-center justify-center text-sm text-muted-foreground">Open atlas in a new tab</a>
+      <Button variant="ghost" className="mt-1 w-full" onClick={() => { track("anatomy_opened", { from: "workout_review", presentation: "expanded" }); setExpanded(true); }}>Expand body map</Button>
+      <details className="group text-sm">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-muted-foreground [&::-webkit-details-marker]:hidden">Muscles trained and shading<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
+        {muscles.length ? <ul className="space-y-2 pb-3">{muscles.map(({muscle, sets}) => <li key={muscle} className="flex justify-between gap-3"><span className="capitalize">{muscle}</span><span className="tabular-nums text-muted-foreground">{sets} set contributions</span></li>)}</ul> : <p className="pb-3 text-muted-foreground">No muscle set totals available yet.</p>}
+        <p className="pb-3 text-xs leading-relaxed text-muted-foreground">Illustrative workload, not measured muscle activation or growth. Ten reps or 30 seconds of a hold count as one unit; ten units reach the deepest red. A set without reps or time counts as one unit. Supporting muscles count half. Warm-ups and deleted sets are excluded.</p>
+      </details>
+      {unmapped.length > 0 && <div className="mt-2 border-t pt-3">
+        <p className="text-sm font-medium">{unmapped.length} {unmapped.length === 1 ? "exercise needs" : "exercises need"} muscle mapping</p>
+        <p className="mt-1 text-xs text-muted-foreground">These exercises are missing from the shading. Confirm their muscles to include them.</p>
+        {unmapped.map((exercise) => <Button key={exercise.id} variant="ghost" className="mt-1 w-full justify-start whitespace-normal text-left" disabled={demo} onClick={() => { setEdit(exercise); setSelection(exercise.muscleGroups.filter((g) => (MUSCLE_GROUPS as readonly string[]).includes(g))); setError(null); }}><span className="min-w-0 break-words">Map {exercise.name}</span></Button>)}
+      </div>}
+      {expanded && <AtlasSheet url={url} title="Workout workload heatmap" onClose={() => setExpanded(false)} />}
+      {edit && <MappingDialog title={`Map muscles for ${edit.name}`} disabled={saving} onDismiss={() => setEdit(null)}>
+        <div className="mx-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border bg-popover p-5 pb-[calc(1rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
+          <h3 className="mb-3 break-words font-semibold">{edit.name}</h3>
+          <MusclePicker key={edit.id} name={edit.name} equipment={edit.equipment} value={selection} onChange={setSelection} disabled={saving} />
+          <p className="mt-3 text-xs text-muted-foreground">Applies to this exercise throughout your plan and history.</p>
+          {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
+          <Button className="mt-4 w-full" onClick={save} disabled={saving || selection.length === 0}>{saving ? "Saving…" : "Confirm muscles and save"}</Button>
+          <Button variant="ghost" className="mt-2 w-full" disabled={saving} onClick={() => setEdit(null)}>Cancel</Button>
+        </div>
+      </MappingDialog>}
+    </section>
   );
+}
+
+
+function MappingDialog({ title, disabled, onDismiss, children }: { title: string; disabled: boolean; onDismiss: () => void; children: ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => dialog?.close();
+  }, []);
+  return <dialog ref={ref} aria-label={title} className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-transparent p-0 text-foreground backdrop:bg-background/80" onCancel={(event) => { event.preventDefault(); if (!disabled) onDismiss(); }}>
+    <div className="flex h-full items-end" onClick={() => !disabled && onDismiss()}>{children}</div>
+  </dialog>;
 }

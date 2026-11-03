@@ -1416,3 +1416,34 @@ the 18 MB model and its CC BY-SA assets into this repo.
   and recap. Sample mode sends no AI requests or read receipts. Anatomy
   opens reuse anatomy_opened with from=workout_review, without personal
   properties. What's new wording is drafted in chat and awaits approval.
+
+## 2026-11-03: Automatic body map and confirmed muscle suggestions (Aman's request)
+
+- Supersedes the tap-only post-review map: the linked atlas now loads
+  automatically on the finished workout page, before analysis arrives.
+  It has a fixed-height inline viewport, an expanded view and a separate
+  tab fallback. Expanding unmounts the inline iframe to avoid two active
+  3D renderers. The dominant workload picks the front/back starting view.
+- Shading is an illustrative workload index, not measured activation,
+  fatigue, growth or strength. Each logged working set contributes reps/10
+  or hold seconds/30; missing reps/time contributes one unit. Main muscle
+  gets the full contribution and supporting muscles half. The fixed
+  colour scale reaches full red at ten units. Warm-ups, deleted sets and
+  unmapped groups contribute nothing. No weight assumptions or stored
+  metrics, and the existing SQL muscle-set totals remain unchanged.
+- Reuse draft-plan mode=muscles, its configured models, quota and secrets.
+  Authenticate the user explicitly for this mode. Send only redacted
+  exercise name and equipment; do not send the library, history or ids.
+  Filter output to known muscle groups, with an empty result for ambiguity.
+  The AI never writes exercise metadata. Suggestions remain a separate
+  proposal until Use these muscles; Add/Save is the persistence boundary.
+- The picker is available for custom/unmapped additions, exercise edit
+  sheets, draft exercise controls and missing mappings on the recap.
+  Manual selection remains available when AI is offline or unavailable.
+  The person can change the primary muscle. RLS owns every write; saving
+  applies to that exercise throughout plans/history. Drafts preserve
+  explicit confirmation and carry it across days using the same exercise.
+- No schema migration or new dependencies. Deploy draft-plan separately
+  with JWT verification on after merge. The old function fails gracefully
+  into manual selection until the new mode is deployed. Popup wording
+  still requires approval and is not added automatically.

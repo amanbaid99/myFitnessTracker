@@ -160,10 +160,20 @@ tool. Ask Aman before deploying.
 
 ## Anatomy
 
-The Human Anatomy Explorer remains a separate linked site. The workout
-review's Muscles trained panel reads the existing owner-scoped
-workout_muscle_sets SQL view for that workout, then lights those groups
-through musclesLink in lib/anatomy.ts. The panel appears with the ready
-review, including when polling completes. AtlasSheet loads the external
-model only on a tap; no workout ids, notes or analysis text are sent to
-the atlas. A failed optional muscle read does not hide the review.
+The Human Anatomy Explorer remains a separate linked site. Finished
+workouts show an automatic inline body map before the AI review is ready.
+The existing SQL muscle view supplies set contributions; active working
+sets plus exercise metadata supply an illustrative shading index (ten
+reps or thirty seconds per unit, half for supporting muscles, ten units
+fully red). This is not stored volume or measured muscle activation.
+WorkoutMuscles also lists unmapped exercises and offers an owner-scoped
+mapping editor. Only known muscle ids, numeric shading, theme and camera
+view reach the atlas; iframe requests omit the referrer.
+
+MusclePicker is shared by AddExercise, ExerciseSheet, PlanDraftEditor and
+the recap. It calls draft-plan with mode=muscles and just the exercise
+name/equipment. Proposals stay separate until accepted; Add/Save persists
+them to exercises.muscle_groups through the signed-in client and RLS.
+Existing exercises in a draft only change when musclesConfirmed is set.
+The function uses its existing model fallback and daily coach quota. It
+needs a separate deployment with JWT verification enabled after merge.

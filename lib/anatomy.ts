@@ -97,3 +97,34 @@ export function workoutMuscles(rows: { muscle: string; sets: number }[]): { musc
   return [...totals].map(([muscle, sets]) => ({ muscle, sets }))
     .sort((a, b) => b.sets - a.sets || a.muscle.localeCompare(b.muscle));
 }
+
+/** Illustrative workload units, never a strength, activation or hypertrophy metric.
+ * 10 reps or 30 seconds = one unit. Missing targets count as one set unit.
+ * The existing heat scale fills at 10 units; supporting muscles get half.
+ */
+export function workoutWorkload(
+  sets: { exerciseId: string; setType: string; reps: number | null; durationSec?: number | null; deletedAt?: string | null }[],
+  exercises: { id: string; muscleGroups: string[] }[],
+): Record<string, number> {
+  const groups = new Map(exercises.map((e) => [e.id, e.muscleGroups]));
+  const result: Record<string, number> = {};
+  for (const set of sets) {
+    if (set.setType !== "working" || set.deletedAt) continue;
+    const units = set.durationSec && set.durationSec > 0 ? set.durationSec / 30 : set.reps && set.reps > 0 ? set.reps / 10 : 1;
+    if (!Number.isFinite(units)) continue;
+    const seen = new Set<string>();
+    (groups.get(set.exerciseId) ?? []).forEach((group, i) => {
+      if (!isGroup(group) || seen.has(group)) return;
+      seen.add(group);
+      result[group] = (result[group] ?? 0) + units * (i === 0 ? 1 : 0.5);
+    });
+  }
+  return result;
+}
+
+export function workoutBodyLink(workload: Record<string, number>, theme: "light" | "dark"): string {
+  const url = new URL(heatLink(workload, theme) ?? link({}, theme));
+  const dominant = Object.entries(workload).filter(([g, units]) => isGroup(g) && units > 0).sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (dominant) url.searchParams.set("view", ["lats", "upper back", "traps", "rear delts", "glutes", "hamstrings"].includes(dominant) ? "back" : "front");
+  return url.toString();
+}

@@ -5,10 +5,12 @@ import { notFound } from "next/navigation";
 import { ChevronLeft, StickyNote } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { LocalDate } from "@/components/local-date";
+import { WorkoutMuscles } from "@/components/anatomy/workout-muscles";
+import { workoutWorkload } from "@/lib/anatomy";
 import { WorkoutReviewCard } from "@/components/workout-review-card";
 import { FixableSets } from "@/components/history/fixable-sets";
 import {
-  getExerciseNames,
+  getWorkoutExercises,
   getFinishedWorkout,
   getProfile,
   getWorkoutNotes,
@@ -37,8 +39,9 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
         getWorkoutNotes(supabase, id),
         getWorkoutMuscleSets(supabase, id),
       ]);
-      const names = await getExerciseNames(supabase, [...new Set(sets.map((s) => s.exerciseId))]);
-      return { workout, sets, review, notes, names, muscleSets };
+      const exercises = await getWorkoutExercises(supabase, [...new Set(sets.map((s) => s.exerciseId))]);
+      const names = new Map(exercises.map((e) => [e.id, e.name]));
+      return { workout, sets, review, notes, names, muscleSets, exercises };
     }),
   ]);
 
@@ -56,11 +59,13 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
       </>
     );
   }
-  const { workout, sets, review, notes, names, muscleSets } = result.data;
+  const { workout, sets, review, notes, names, muscleSets, exercises } = result.data;
   if (!workout) notFound();
 
   const byExercise = new Map<string, SetRow[]>();
   for (const s of sets) byExercise.set(s.exerciseId, [...(byExercise.get(s.exerciseId) ?? []), s]);
+  const workingIds = new Set(sets.filter((s) => s.setType === "working").map((s) => s.exerciseId));
+  const worked = exercises.filter((e) => workingIds.has(e.id));
   const workingCount = sets.filter((s) => s.setType === "working").length;
 
   return (
@@ -79,7 +84,8 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
 
       {workout.source === "app" && (
         <div className="mb-6">
-          <WorkoutReviewCard workoutId={workout.id} endedAt={workout.endedAt} initial={review} muscleSets={muscleSets} />
+          <WorkoutMuscles rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} />
+          <div className="mt-4"><WorkoutReviewCard workoutId={workout.id} endedAt={workout.endedAt} initial={review} /></div>
         </div>
       )}
 

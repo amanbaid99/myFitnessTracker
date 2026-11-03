@@ -26,6 +26,7 @@ tab bar shows a pending state while a tab loads.
 
 Exercise targets and previous-record entry shipped in PR #4 on 2026-10-29.
 PR #5 shipped set skips, tracking variants and the weekly analysis card.
+PR #13 shipped the post-analysis muscle recap (production 82e5a87).
 PR #6 shipped the analysis-first Today layout. PR #12 added exercise
 muscle details and the weekly anatomy heatmap; PR #11 reorders exercises
 within a workout when they are done early.
@@ -34,16 +35,16 @@ Aman confirmed analysis works. The function retains webhook authentication.
 
 ## In flight
 
-- 2026-11-03: Branch `feat/post-workout-anatomy` adds the logged workout's
-  muscle recap to its analysis card once the review is ready. Reads the
-  existing workout_muscle_sets view, opens the atlas with trained groups
-  on tap, and preserves pending/retry behaviour. No migration or Edge
-  Function change. Browser checks passed at 320, 390 and 768 px, including
-  polling-to-recap, no automatic atlas download, correct muscles/theme,
-  close, empty-data fallback and the labelled public demo. Lint, type
-  checks, all 332 unit tests and production build passed. Not deployed.
-  Atlas rendering was intercepted in browser tests; the live database
-  view's columns and security_invoker setting were verified read-only.
+- 2026-11-03: Branch `feat/automatic-workout-map` shows the anatomy map
+  immediately after a workout, before analysis, with shading from logged
+  sets/reps/hold time. Missing mappings can be confirmed manually or with
+  AI suggestions, on new exercises, edit sheets, draft plans and History.
+  Reuses draft-plan mode=muscles with auth, vocabulary validation, contact
+  redaction and the existing daily quota. Needs draft-plan deployment with
+  JWT verification on after merge; no schema migration or new secrets.
+  Browser checks covered confirmation-only saves, manual fallback, theme,
+  workload colours and mobile layouts. The real embedded atlas downloaded
+  its model and rendered a nonzero canvas without browser errors.
 
 ## Needs doing by hand
 

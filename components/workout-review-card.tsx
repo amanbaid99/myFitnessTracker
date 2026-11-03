@@ -15,7 +15,6 @@ import {
 } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/client";
 import { AskCoach } from "@/components/coach/ask-coach";
-import { WorkoutMuscles } from "@/components/anatomy/workout-muscles";
 import { MD } from "@/components/compact-markdown";
 
 /** How long to wait for a retried review before giving up. */
@@ -30,13 +29,11 @@ export function WorkoutReviewCard({
   workoutId,
   endedAt,
   initial,
-  muscleSets = null,
   demo = false,
 }: {
   workoutId: string;
   endedAt: string;
   initial: WorkoutReview | null;
-  muscleSets?: { muscle: string; sets: number }[] | null;
   /** Public sample review: no AI requests or read receipts. */
   demo?: boolean;
 }) {
@@ -127,7 +124,6 @@ export function WorkoutReviewCard({
           <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
             <ReactMarkdown components={MD} skipHtml>{review.summary}</ReactMarkdown>
           </div>
-          {muscleSets && <WorkoutMuscles rows={muscleSets} />}
           {!demo && <AskCoach workoutId={workoutId} label="Ask about this" className="mt-3 w-full" />}
         </>
       ) : state === "polling" ? (

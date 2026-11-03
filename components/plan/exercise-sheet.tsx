@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Exercise, RoutineExercise } from "@/lib/data";
 import { AddExercise, type ExercisePick } from "./add-exercise";
-import { EQUIPMENT, MUSCLE_GROUPS, REST_OPTIONS } from "@/lib/muscles";
+import { EQUIPMENT, REST_OPTIONS } from "@/lib/muscles";
 import { MAX_WEIGHT_STEP_KG, parseWeightStep, stepKg } from "@/lib/progression";
 import { formatDuration, type Tracking } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
+import { MusclePicker } from "@/components/anatomy/muscle-picker";
 import { MAX_ALTERNATES } from "@/lib/alternates";
 
 /** Plate and stack steps to choose from, in kg. */
@@ -104,11 +105,6 @@ export function ExerciseSheet({
     setBusy(false);
     if (err) setError(err);
     else setAddingAlt(false);
-  }
-
-  function toggleMuscle(m: string) {
-    // Order matters: the first muscle is the primary one.
-    setMuscles((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
   }
 
   async function save() {
@@ -393,31 +389,7 @@ export function ExerciseSheet({
                 />
               </label>
 
-              <div>
-                <p className="text-sm font-medium">Muscles worked</p>
-                <p className="text-xs text-muted-foreground">Tap in order: the first is the main muscle.</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {MUSCLE_GROUPS.map((m) => {
-                    const index = muscles.indexOf(m);
-                    const on = index !== -1;
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => toggleMuscle(m)}
-                        aria-pressed={on}
-                        className={cn(
-                          "flex h-10 items-center gap-1.5 rounded-full border px-3 text-sm",
-                          on ? "border-primary bg-accent text-accent-foreground" : "text-muted-foreground",
-                        )}
-                      >
-                        {on && <span className="text-xs font-semibold">{index + 1}</span>}
-                        {m}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <MusclePicker key={`${name}:${equipment}`} name={name} equipment={equipment} value={muscles} onChange={setMuscles} disabled={busy} />
 
               <div className={cn("grid gap-2 border-t pt-4", onSwap ? "grid-cols-2" : "grid-cols-3")}>
                 <Button variant="secondary" disabled={!canMoveUp} onClick={() => onMove(-1)}>
