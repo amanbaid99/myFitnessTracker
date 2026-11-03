@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { reviewPreview } from "@/lib/review-preview";
 import { ChevronRight, Sparkles } from "lucide-react";
-import { analysisWeek, previousWeek } from "@/lib/analysis-week";
+import { analysisWeek, previousWeek, shortWeekRange } from "@/lib/analysis-week";
 import { createClient } from "@/lib/supabase/client";
 import { newestWeeklyReview, POLL_EVERY_MS, POLL_WINDOW_MS, type WeeklyReview } from "@/lib/insights";
 import { Button } from "@/components/ui/button";
@@ -74,29 +74,29 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, de
   const hasWorkout = week && lastStartedAt && lastWorkoutId && Date.parse(lastStartedAt) >= Date.parse(week.startAt) && Date.parse(lastStartedAt) < Date.parse(week.nextAt);
   const stale = hasWorkout && review && lastEndedAt && Date.parse(review.details.coveredThrough ?? "") < Date.parse(lastEndedAt);
   const waiting = retrying || retryUntil > 0;
-  const formatDay = (day: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }).format(new Date(`${day}T12:00:00Z`));
-  // Early in a week with no workout yet, last week's analysis is more useful than an empty card.
-  const showLast = !review && !hasWorkout && Boolean(week && lastWeek);
+  // This week's analysis when it exists, otherwise last week's (Aman, 2026-11-03).
+  const showLast = !review && Boolean(week && lastWeek);
   const shown = review ?? (showLast ? lastWeek : null);
-  const shownWeek = showLast && week ? previousWeek(week) : week;
+  // The demo makes no requests, so it works out the week itself.
+  const currentWeek = week ?? (demoReview ? analysisWeek(new Date().toISOString()) : null);
+  const shownWeek = showLast && currentWeek ? previousWeek(currentWeek) : currentWeek;
   const preview = shown ? reviewPreview(shown.summary) : null;
   return (
     <section className="bg-gradient-to-br from-accent/30 via-card to-card px-4 pt-4 pb-1" aria-label="Current week analysis" aria-live="polite">
-      <div className="flex items-center gap-2 text-primary"><Sparkles className="size-4" aria-hidden /><h2 className="text-sm font-semibold">{showLast ? "Last week" : "Your week so far"}</h2></div>
-      <p className="mt-1 text-xs text-muted-foreground">{showLast ? "Last week" : "This week"}{shownWeek ? ` · ${formatDay(shownWeek.start)} to ${formatDay(shownWeek.end)}` : ""}</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2 text-primary"><Sparkles className="size-4 shrink-0" aria-hidden /><h2 className="truncate text-sm font-semibold">{showLast ? "Last week" : "Your week so far"}</h2></div>
+        <p className="shrink-0 text-xs text-muted-foreground">{!showLast && <span className={shownWeek ? "hidden min-[360px]:inline" : ""}>This week{shownWeek ? " · " : ""}</span>}{shownWeek ? shortWeekRange(shownWeek) : ""}</p>
+      </div>
       {shown ? <div className={MASK}>
         <h3 className="sr-only">{shown.title}</h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{preview!.overview}</p>
-        {preview!.focus && <div className="mt-3 rounded-xl bg-muted/40 px-3 py-2.5">
-          <p className="text-xs font-medium text-primary">Next focus</p>
-          <p className="mt-1 line-clamp-2 text-sm leading-relaxed">{preview!.focus}</p>
-        </div>}
+        <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{preview!.overview}</p>
+        {preview!.focus && <p className="mt-2 line-clamp-3 text-sm leading-relaxed"><span className="font-medium text-primary">Next focus: </span>{preview!.focus}</p>}
         <Link href={showLast ? `${fullHref}?week=last` : fullHref} className="mt-1 flex min-h-11 items-center justify-between gap-2 text-sm font-medium text-foreground">
           Read full analysis
           <ChevronRight className="size-4" aria-hidden />
         </Link>
         {stale && <p className="mt-1 text-xs text-muted-foreground">Updating after your latest workout analysis.</p>}
-        {showLast && <p className="mb-2 text-xs text-muted-foreground">This week&apos;s analysis starts after your first workout.</p>}
+        {showLast && !hasWorkout && <p className="mb-2 text-xs text-muted-foreground">This week&apos;s analysis starts after your first workout.</p>}
       </div> : <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{failed ? "Could not load your weekly analysis. Reopen Today to try again." : "Your brief weekly analysis appears here after a workout analysis finishes. It builds on all completed workouts this week."}</p>}
       {hasWorkout && (!review || stale) && <Button variant="secondary" className="mt-3 w-full" onClick={retry} disabled={waiting}>{waiting ? "Analysing your week…" : "Refresh weekly analysis"}</Button>}
       {retryError && <p role="alert" className="mt-2 text-sm text-destructive">Could not start the analysis. Check your connection and try again.</p>}

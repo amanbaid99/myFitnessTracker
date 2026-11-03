@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisWeek , weekRangeLabel, previousWeek, weekForPage } from "./analysis-week";
+import { analysisWeek , weekRangeLabel, previousWeek, weekForPage, shortWeekRange } from "./analysis-week";
 
 describe("analysis weeks", () => {
   it("keeps Sunday in the old week and rolls over at Monday midnight", () => {
@@ -32,5 +32,12 @@ describe("week switch", () => {
     expect(weekForPage("last", "2026-11-03T09:00:00Z").week.start).toBe("2026-10-26");
     expect(weekForPage(undefined, "2026-11-03T09:00:00Z")).toMatchObject({ which: "this", week: { start: "2026-11-02" } });
     expect(weekForPage(["last"], "2026-11-03T09:00:00Z").which).toBe("this");
+  });
+});
+
+describe("shortWeekRange", () => {
+  it("drops the repeated month", () => {
+    expect(shortWeekRange(analysisWeek("2026-11-03T09:00:00Z"))).toBe("2 to 8 Nov");
+    expect(shortWeekRange(analysisWeek("2026-10-28T09:00:00Z"))).toBe("26 Oct to 1 Nov");
   });
 });
