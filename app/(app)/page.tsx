@@ -9,10 +9,12 @@ import { DataError } from "@/components/data-error";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { WeeklyReviewCard } from "@/components/home/weekly-review-card";
 import { BodyWeightCard } from "@/components/home/body-weight-card";
+import { MuscleFixCard } from "@/components/home/muscle-fix-card";
+import { unmappedExercises } from "@/lib/anatomy";
 import { HomeHero } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
-import { getActivePlan, getBodyWeights, getProfile, getRecentWorkouts, load } from "@/lib/data";
+import { getActivePlan, getBodyWeights, getExerciseLibrary, getProfile, getRecentWorkouts, load } from "@/lib/data";
 import { shouldPromptFeedback } from "@/lib/feedback";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
 import { createClient } from "@/lib/supabase/server";
@@ -20,11 +22,14 @@ import { createClient } from "@/lib/supabase/server";
 export default async function TodayPage() {
   const supabase = await createClient();
   // Everything in parallel: one round trip's wait instead of several.
-  const [profile, result, bodyWeights] = await Promise.all([
+  const [profile, result, bodyWeights, library] = await Promise.all([
     getProfile(supabase),
     load(() => Promise.all([getActivePlan(supabase), getRecentWorkouts(supabase)])),
     getBodyWeights(supabase),
+    // Optional: a failed read only hides the muscles card.
+    getExerciseLibrary(supabase).catch(() => []),
   ]);
+  const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
   const bodyWeight = <BodyWeightCard entries={bodyWeights.entries} profileKg={bodyWeights.profileKg} units={profile.units} />;
   const greeting = profile.name ? `Hi, ${profile.name}` : "Today";
 
@@ -163,6 +168,8 @@ export default async function TodayPage() {
       {lastFinished && <Link href={`/history/${lastFinished.id}`} className="mt-3 flex min-h-14 items-center justify-between gap-3 rounded-xl px-1 text-sm transition-colors hover:bg-muted/40 active:bg-muted/60">
         <span className="min-w-0"><span className="block font-medium">Latest workout recap</span><span className={`block truncate text-xs text-muted-foreground ${MASK}`}>{active.routines.find((r) => r.id === lastFinished.routineId)?.name ?? "Workout"} · {relativeDay(lastFinished.endedAt!)}</span></span><ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       </Link>}
+
+      {unmapped.length > 0 && <MuscleFixCard exercises={unmapped} />}
 
       {bodyWeight}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DAILY_LIMIT, DRAFT_MODELS, handle, lastJson, MODELS, PAID_MODEL, prepMessage, toMuscleSuggestion, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
+import { DAILY_LIMIT, DRAFT_MODELS, handle, lastJson, MODELS, PAID_MODEL, prepMessage, toMuscleSuggestion, toMuscleBatch, toMuscleBatchSuggestion, MAX_BATCH, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
 import { MUSCLE_GROUPS, EQUIPMENT } from "../../../lib/muscles";
 import { MUSCLES, EQUIPMENT as FN_EQUIPMENT } from "./handler";
 
@@ -246,5 +246,33 @@ describe("muscle suggestions", () => {
     const limited=fakeFetch({asked:DAILY_LIMIT});
     expect((await handle(req({mode:"muscles",exercise:{name:"Squat"}}),ENV,limited,()=>{},NOW)).status).toBe(429);
     expect(limited.mock.calls.some(([u])=>String(u).startsWith('https://openrouter.ai'))).toBe(false);
+  });
+});
+
+describe("batch muscle suggestions", () => {
+  it("checks the list sent by the app", () => {
+    expect(toMuscleBatch([{ name: " Cable crunch ", equipment: "cable" }, { name: "Farmer carry", equipment: "kettlebell?" }])).toEqual([
+      { name: "Cable crunch", equipment: "cable" }, { name: "Farmer carry", equipment: "other" },
+    ]);
+    expect(toMuscleBatch([])).toBeNull();
+    expect(toMuscleBatch([{ name: "x" }])).toBeNull();
+    expect(toMuscleBatch(Array.from({ length: MAX_BATCH + 1 }, () => ({ name: "Squat" })))).toBeNull();
+  });
+  it("keeps one known suggestion per exercise in order, empty when unsure", () => {
+    expect(toMuscleBatchSuggestion({ items: [{ index: 1, groups: ["Core", "wings"] }, { index: 0, groups: ["glutes"] }, { index: 9, groups: ["chest"] }] }, 3)).toEqual([
+      { groups: ["glutes"] }, { groups: ["core"] }, { groups: [] },
+    ]);
+    expect(toMuscleBatchSuggestion({ groups: [] }, 2)).toBeNull();
+  });
+  it("answers a whole batch with one AI request, counted once, after checking the user", async () => {
+    const fetchFn = fakeFetch({ models: [reply('{"items":[{"index":0,"groups":["core"]},{"index":1,"groups":["traps","core"]}]}')] });
+    const res = await handle(req({ mode: "muscles_batch", exercises: [{ name: "Cable crunch", equipment: "cable" }, { name: "Farmer carry", equipment: "dumbbell" }] }), ENV, fetchFn, () => {}, NOW);
+    expect(res.status).toBe(200);
+    expect((await res.json()).suggestions).toEqual([{ groups: ["core"] }, { groups: ["traps", "core"] }]);
+    expect(fetchFn.mock.calls.filter(([u]) => String(u).startsWith("https://openrouter.ai"))).toHaveLength(1);
+    expect(fetchFn.mock.calls.filter(([u]) => String(u).includes("count_coach_question"))).toHaveLength(1);
+    expect(fetchFn.mock.calls.some(([u]) => String(u).endsWith("/auth/v1/user"))).toBe(true);
+    expect((await handle(req({ mode: "muscles_batch", exercises: [] }), ENV, fakeFetch(), () => {}, NOW)).status).toBe(400);
+    expect((await handle(req({ mode: "muscles_batch", exercises: [{ name: "Squat" }] }, null), ENV, fakeFetch(), () => {}, NOW)).status).toBe(401);
   });
 });

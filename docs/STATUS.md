@@ -8,6 +8,11 @@ Last updated: 2026-11-03.
 
 ## In progress
 
+- 2026-11-03: Branch `claude/bulk-muscle-mapping`: Today card for exercises
+  without muscles, AI suggests all in one request, approve all at once.
+  Needs `draft-plan` deployed (JWT on) after merge for the batch mode;
+  until then the sheet falls back to choosing by hand.
+
 - 2026-11-03: Update banner and Settings share visible Updating feedback,
   disable repeat taps and allow a painted frame before network reload.
   No change to version detection, data storage or the reload mechanism.

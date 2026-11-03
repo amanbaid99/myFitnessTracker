@@ -1573,3 +1573,25 @@ and sheet moved into `components/anatomy/unmapped-exercises.tsx`, shared
 by both. Saving updates the exercise, and the SQL view reads muscles
 live, so past weeks count it too. A failed library read only hides the
 list.
+
+## 2026-11-03: Today card and approve-all AI muscle suggestions (Aman's request)
+
+Aman asked for a dismissable card on Today for exercises without
+muscles, and for AI to suggest all of them for one approval.
+- Today shows the card while any active exercise has no muscles. X marks
+  `muscles-hide:<exercise id>` for each current one via `mark_seen`, so
+  the card returns only when a new exercise needs muscles. Hidden in the
+  demo (no guide).
+- Suggest with AI opens `BulkMuscleSheet`: one `draft-plan` request with
+  `mode: "muscles_batch"` (up to 20 exercises) counts once against the
+  daily AI allowance, instead of one request per exercise. Names and
+  equipment only, redacted, filtered to known groups; an unsure answer is
+  left empty for the person to fill in.
+- Each suggestion is ticked when it has muscles; the person can untick or
+  edit any (same MusclePicker), then Approve saves only the ticked ones.
+  The AI never writes. If the AI is busy or the allowance is used, the
+  sheet says so and the person picks by hand.
+- The Progress and recap lists get Suggest all with AI when two or more
+  need muscles. `MappingDialog` moved to its own file.
+- Needs `draft-plan` deployed after merge; the old version rejects the
+  new mode, which the sheet handles as "unavailable".

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink, rankedWorkload, workloadOrSets, topMusclesText, unmappedExercises } from "./anatomy";
+import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink, rankedWorkload, workloadOrSets, topMusclesText, unmappedExercises, muscleCardDue, muscleHideKey, batchSuggestions } from "./anatomy";
 import { MUSCLE_GROUPS } from "./muscles";
 
 // Ids from the atlas's src/anatomy/muscles.js that the mapping uses.
@@ -116,5 +116,19 @@ describe("unmappedExercises", () => {
   it("keeps exercises with no known muscle group", () => {
     const ex = [{ id: "a", muscleGroups: [] }, { id: "b", muscleGroups: ["wings"] }, { id: "c", muscleGroups: ["chest"] }];
     expect(unmappedExercises(ex).map((e) => e.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("Today muscle card", () => {
+  it("shows until every current exercise without muscles was dismissed", () => {
+    expect(muscleCardDue(["a", "b"], new Set([muscleHideKey("a")]))).toBe(true);
+    expect(muscleCardDue(["a"], new Set([muscleHideKey("a")]))).toBe(false);
+    expect(muscleCardDue([], new Set())).toBe(false);
+    expect(muscleHideKey("3f1c2b8e-0000-4000-8000-000000000000").length).toBeLessThanOrEqual(60);
+  });
+  it("reads the batch reply safely", () => {
+    expect(batchSuggestions({ suggestions: [{ groups: ["core", "wings", "core"] }, { groups: "chest" }] }, 2)).toEqual([["core"], []]);
+    expect(batchSuggestions({ suggestions: [] }, 2)).toBeNull();
+    expect(batchSuggestions(null, 1)).toBeNull();
   });
 });
