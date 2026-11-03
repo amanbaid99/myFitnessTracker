@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { useMounted } from "@/components/progress/use-mounted";
 import { useRouter } from "next/navigation";
 import { ChevronDown, PersonStanding } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
 import { AtlasSheet, atlasTheme } from "./atlas-sheet";
+import { WorkoutBodyDiagram } from "./workout-body-diagram";
 import { MusclePicker } from "./muscle-picker";
 
 function subscribeTheme(notify: () => void) {
@@ -28,7 +28,6 @@ export function WorkoutMuscles({ rows, workload, exercises = [], demo = false }:
   demo?: boolean;
 }) {
   const router = useRouter();
-  const mounted = useMounted();
   const theme = useSyncExternalStore(subscribeTheme, atlasTheme, () => "dark" as const);
   const [expanded, setExpanded] = useState(false);
   const [edit, setEdit] = useState<WorkoutExercise | null>(null);
@@ -37,7 +36,8 @@ export function WorkoutMuscles({ rows, workload, exercises = [], demo = false }:
   const [error, setError] = useState<string | null>(null);
   const muscles = workoutMuscles(rows);
   const unmapped = exercises.filter((e) => !e.muscleGroups.some((g) => (MUSCLE_GROUPS as readonly string[]).includes(g)));
-  const url = workoutBodyLink(workload ?? Object.fromEntries(muscles.map((m) => [m.muscle, m.sets])), theme);
+  const shading = workload ?? Object.fromEntries(muscles.map((m) => [m.muscle, m.sets]));
+  const url = workoutBodyLink(shading, theme);
   async function save() {
     if (!edit || demo) return;
     setSaving(true); setError(null);
@@ -51,18 +51,14 @@ export function WorkoutMuscles({ rows, workload, exercises = [], demo = false }:
   return (
     <section aria-label="Workout body map" className={`rounded-2xl border bg-card p-4 ${MASK}`}>
       <h2 className="flex items-center gap-2 font-semibold"><PersonStanding className="size-4 text-primary" aria-hidden />Your workout on the body</h2>
-      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Deeper red means more logged work. Explore the body while your analysis runs.</p>
-      <div className="relative mt-3 h-[30rem] overflow-hidden rounded-xl border bg-background">
-        {mounted && !expanded && <iframe src={url} title="Workout workload heatmap" className="h-full w-full border-0" allow="fullscreen" referrerPolicy="no-referrer" />}
-        {!mounted && <p role="status" className="p-6 text-center text-sm text-muted-foreground">Loading your workout map…</p>}
-      </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Lighter: less work</span><span>Redder: more work</span></div>
-      <a href={url} target="_blank" rel="noopener noreferrer" className="mt-1 flex min-h-11 items-center justify-center text-sm text-muted-foreground">Open atlas in a new tab</a>
-      <Button variant="ghost" className="mt-1 w-full" onClick={() => { track("anatomy_opened", { from: "workout_review", presentation: "expanded" }); setExpanded(true); }}>Expand body map</Button>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Muscle workload at a glance. Deeper red means more logged work.</p>
+      <WorkoutBodyDiagram workload={shading} />
+      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Light: less work</span><span>Deep red: more work</span></div>
+      <Button variant="ghost" className="mt-2 w-full" onClick={() => { track("anatomy_opened", { from: "workout_review", presentation: "detailed" }); setExpanded(true); }}>View detailed anatomy</Button>
       <details className="group text-sm">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-muted-foreground [&::-webkit-details-marker]:hidden">Muscles trained and shading<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
         {muscles.length ? <ul className="space-y-2 pb-3">{muscles.map(({muscle, sets}) => <li key={muscle} className="flex justify-between gap-3"><span className="capitalize">{muscle}</span><span className="tabular-nums text-muted-foreground">{sets} set contributions</span></li>)}</ul> : <p className="pb-3 text-muted-foreground">No muscle set totals available yet.</p>}
-        <p className="pb-3 text-xs leading-relaxed text-muted-foreground">Illustrative workload, not measured muscle activation or growth. Ten reps or 30 seconds of a hold count as one unit; ten units reach the deepest red. A set without reps or time counts as one unit. Supporting muscles count half. Warm-ups and deleted sets are excluded.</p>
+        <p className="pb-3 text-xs leading-relaxed text-muted-foreground">Schematic overview with illustrative workload, not measured muscle activation or growth. Ten reps or 30 seconds of a hold count as one unit; ten units reach the deepest red. A set without reps or time counts as one unit. Supporting muscles count half. Warm-ups and deleted sets are excluded.</p>
       </details>
       {unmapped.length > 0 && <div className="mt-2 border-t pt-3">
         <p className="text-sm font-medium">{unmapped.length} {unmapped.length === 1 ? "exercise needs" : "exercises need"} muscle mapping</p>

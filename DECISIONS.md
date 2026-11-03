@@ -1447,3 +1447,13 @@ the 18 MB model and its CC BY-SA assets into this repo.
   with JWT verification on after merge. The old function fails gracefully
   into manual selection until the new mode is deployed. Popup wording
   still requires approval and is not added automatically.
+
+## 2026-11-03: Lightweight workout overview and approved release note
+
+Aman requested a basic body overview with detailed anatomy on demand.
+Use a local schematic front/back SVG with the existing workload scale,
+neutral untrained regions and no external assets. The 3D atlas loads only
+after View detailed anatomy. Keep mapping controls and explanatory totals
+in the recap. This reduces loading and visual clutter while analysis runs.
+Aman approved the Your workout, on the body popup; add the approved copy
+to WHATS_NEW with a History link. No backend or schema changes.

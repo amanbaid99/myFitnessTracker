@@ -6,6 +6,12 @@ know. Newest first within each section; date every line.
 
 Last updated: 2026-11-03.
 
+## In progress
+
+- 2026-11-03: Lightweight front/back workout overview replaces the default
+  3D iframe; View detailed anatomy loads the atlas on demand. Approved
+  body-map What's new entry added. No backend changes.
+
 ## Live in production
 
 Logging (warm-ups, working sets, timed holds, notes, seat settings,
