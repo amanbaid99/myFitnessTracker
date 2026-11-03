@@ -8,9 +8,10 @@ Last updated: 2026-11-03.
 
 ## In progress
 
-- 2026-11-03: Branch `claude/compact-muscle-recap`: the recap shows a
-  short muscle line; the body map, ranked list and 3D view moved to
-  `history/[id]/muscles`. Shading is relative to the top muscle.
+- 2026-11-03: Branch `claude/weekly-analysis-page`: Read full analysis on
+  Today opens `/week` (full weekly analysis plus this week's heatmap).
+  Undoes PR #17's split: the History recap shows the map with the
+  analysis again. Shading stays relative to the top muscle.
 
 - 2026-11-03: Unified workout recap combines analysis and muscle workload
   in one responsive card. Local overview stays visible during AI polling.

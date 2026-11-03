@@ -1485,6 +1485,22 @@ out, mapping for missing exercises and View in 3D.
   amount of sets matters.
 - A page rather than a sheet, so it has its own back button and link.
 
+## 2026-11-03: Full weekly analysis page; recap map back in History (Aman's correction)
+
+PR #17 misread the request. What Aman wanted: Today keeps a small "Your
+week so far", and Read full analysis opens a standalone page with the
+full weekly analysis and a body heatmap; the History workout keeps its
+heatmap next to the analysis as before.
+- `/week` (sample `/demo/week`) shows the whole weekly review, then
+  `MuscleMap`: front and back map, Less to Most worked legend, View in
+  3D, a most-to-least list and how it is counted. The week's amounts are
+  the SQL muscle set totals (main muscle one per set, supporting half),
+  Monday to Sunday India time, the same week as the review.
+- The History recap and `WorkoutMuscles` are restored to their PR #16
+  form; `history/[id]/muscles` and `MusclesSummary` are removed.
+- Relative shading from PR #17 stays (the most worked muscle is darkest),
+  since Aman asked for the dark parts to show the most worked muscles.
+
 ## 2026-11-03: Last updated time in Settings (Aman's request)
 
 Settings shows "Last updated" with the date and time the running build

@@ -32,6 +32,21 @@ export async function fetchWorkoutReview(supabase: SupabaseClient, workoutId: st
   return { id: data.id, title: data.title, summary: data.summary, readAt: data.read_at };
 }
 
+export type WeeklyReview = { title: string; summary: string; details: { coveredThrough?: string; workoutCount?: number } };
+
+/** The newest weekly review for a week (period_start is its Monday, YYYY-MM-DD). */
+export function newestWeeklyReview(rows: WeeklyReview[]): WeeklyReview | null {
+  return [...rows].sort((a, b) => (b.details.coveredThrough ?? "").localeCompare(a.details.coveredThrough ?? ""))[0] ?? null;
+}
+
+export async function fetchWeeklyReview(supabase: SupabaseClient, weekStart: string): Promise<WeeklyReview | null> {
+  const { data, error } = await supabase.from("insights").select("title,summary,details")
+    .eq("kind", "weekly_review").eq("period_start", weekStart)
+    .order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error(error.message);
+  return newestWeeklyReview((data ?? []) as WeeklyReview[]);
+}
+
 export async function markReviewRead(supabase: SupabaseClient, id: string): Promise<void> {
   await supabase.from("insights").update({ read_at: new Date().toISOString() }).eq("id", id).is("read_at", null);
 }
