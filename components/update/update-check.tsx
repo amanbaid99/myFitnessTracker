@@ -1,20 +1,31 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { Check, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { versionLabel } from "@/lib/version";
+import { BUILD_ID, updatedLabel, versionLabel } from "@/lib/version";
 import { applyUpdate, useAppUpdate } from "./use-app-update";
 
-/** Settings: the running version, "Check for updates" and "Update now". */
+const noSubscribe = () => () => {};
+
+/** Settings: the running version, when it went live, "Check for updates" and "Update now". */
 export function UpdateCheck() {
   const { status, check } = useAppUpdate({ auto: false });
+  // Formatted on the phone only, so it uses the phone's time zone (the server runs in UTC).
+  const updated = useSyncExternalStore(noSubscribe, () => updatedLabel(), () => null);
 
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="flex items-center justify-between gap-3 text-sm">
         <span className="text-muted-foreground">Version</span>
-        <span className="tabular-nums">{versionLabel()}</span>
+        <span className="tabular-nums">{versionLabel(BUILD_ID, null)}</span>
       </div>
+      {updated && (
+        <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+          <span className="text-muted-foreground">Last updated</span>
+          <span className="tabular-nums">{updated}</span>
+        </div>
+      )}
       {status === "ready" ? (
         <Button size="lg" className="mt-3 w-full" onClick={applyUpdate}>
           <RefreshCw /> Update now

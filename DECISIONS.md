@@ -1484,3 +1484,10 @@ out, mapping for missing exercises and View in 3D.
   unchanged. Progress keeps its fixed weekly scale, where an absolute
   amount of sets matters.
 - A page rather than a sheet, so it has its own back button and link.
+
+## 2026-11-03: Last updated time in Settings (Aman's request)
+
+Settings shows "Last updated" with the date and time the running build
+went live (`updatedLabel` in lib/version.ts, from the build time CI bakes
+in), next to the short version id. It is formatted on the phone, not the
+server, so it shows the phone's own time zone.
