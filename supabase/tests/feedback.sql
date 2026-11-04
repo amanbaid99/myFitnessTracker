@@ -87,6 +87,7 @@ begin
  perform set_config('request.jwt.claim.sub',coach::text,false);
  perform pg_temp.expect_error(format('select public.coaching_client_summary(%L)',connection),'revocation blocks future profile reads');
  perform pg_temp.expect_error(format('select public.coaching_client_report(%L,1)',connection),'revocation blocks delegated reports');
+ perform pg_temp.expect(jsonb_array_length(public.coaching_connections_list())=0,'revoked connections cannot reveal updated counterpart names');
  perform pg_temp.expect_error(format('select public.save_coach_assessment(%L,%L,%L,current_date+28)',connection,'Changed observation','Changed cue'),'revocation blocks assessment writes');
  perform pg_temp.expect((select count(*)=0 from public.client_assessments where id=assessment),'revoked coach loses direct assessment access');
  perform set_config('request.jwt.claim.sub',client::text,false);

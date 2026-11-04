@@ -143,7 +143,7 @@ end $$;
 create function public.coaching_connections_list() returns jsonb language sql stable security definer set search_path='' as $$
  select coalesce(jsonb_agg(jsonb_build_object('id',c.id,'user_id',c.user_id,'client_id',c.client_id,'share_measurements',c.share_measurements,'accepted_at',c.accepted_at,'revoked_at',c.revoked_at,'coach_name',coalesce(coach.name,'Coach'),'client_name',coalesce(client.name,'Client')) order by c.accepted_at desc),'[]'::jsonb)
  from public.coaching_connections c join public.profiles coach on coach.id=c.user_id join public.profiles client on client.id=c.client_id
- where auth.uid() is not null and (c.user_id=auth.uid() or c.client_id=auth.uid());
+ where auth.uid() is not null and c.revoked_at is null and (c.user_id=auth.uid() or c.client_id=auth.uid());
 $$;
 revoke all on function public.coaching_invite_preview(text),public.coaching_connections_list() from public, anon, authenticated;
 grant execute on function public.coaching_invite_preview(text),public.coaching_connections_list() to authenticated;
