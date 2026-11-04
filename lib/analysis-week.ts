@@ -50,3 +50,9 @@ export function weekAnalysisState(o: { hasReview: boolean; reviewFailed: boolean
   if (o.reviewFailed) return "error";
   return o.workoutCount === 0 ? "no-workouts" : "pending";
 }
+
+/** The Today card's one-line message when there is no analysis to show. Pure. */
+export function weeklyCardEmpty(o: { failed: boolean; hasWorkout: boolean }): string {
+  if (o.failed) return "Couldn't load your weekly analysis.";
+  return o.hasWorkout ? "Your weekly analysis is on its way." : "Your weekly analysis appears after your first workout.";
+}

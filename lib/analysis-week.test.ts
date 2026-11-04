@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisWeek , weekRangeLabel, previousWeek, weekForPage, shortWeekRange, weekAnalysisState } from "./analysis-week";
+import { analysisWeek , weekRangeLabel, previousWeek, weekForPage, shortWeekRange, weekAnalysisState, weeklyCardEmpty } from "./analysis-week";
 
 describe("analysis weeks", () => {
   it("keeps Sunday in the old week and rolls over at Monday midnight", () => {
@@ -49,5 +49,13 @@ describe("weekAnalysisState", () => {
     expect(weekAnalysisState({ hasReview: false, reviewFailed: false, workoutCount: 0 })).toBe("no-workouts");
     expect(weekAnalysisState({ hasReview: false, reviewFailed: false, workoutCount: 1 })).toBe("pending");
     expect(weekAnalysisState({ hasReview: false, reviewFailed: false, workoutCount: null })).toBe("pending");
+  });
+});
+
+describe("weeklyCardEmpty", () => {
+  it("keeps the empty Today card to one short line", () => {
+    expect(weeklyCardEmpty({ failed: true, hasWorkout: true })).toBe("Couldn't load your weekly analysis.");
+    expect(weeklyCardEmpty({ failed: false, hasWorkout: true })).toBe("Your weekly analysis is on its way.");
+    expect(weeklyCardEmpty({ failed: false, hasWorkout: false })).toBe("Your weekly analysis appears after your first workout.");
   });
 });

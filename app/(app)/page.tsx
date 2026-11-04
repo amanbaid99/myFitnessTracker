@@ -68,7 +68,6 @@ export default async function TodayPage() {
     return (
       <>
         {hero()}
-        {monthly}
         <div className="mt-6 rounded-2xl border border-dashed p-6 text-center">
           <p className="text-lg font-medium">No active workout plan</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -80,6 +79,8 @@ export default async function TodayPage() {
             </Link>
           </Button>
         </div>
+        {/* Secondary prompts sit below the main action. */}
+        {monthly}
       </>
     );
   }
@@ -126,7 +127,7 @@ export default async function TodayPage() {
           </div>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">{next.name}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {next.exercises.length} exercises · Warm-up included
+            {next.exercises.length} {next.exercises.length === 1 ? "exercise" : "exercises"} · Warm-up included
           </p>
           <form action={startWorkout.bind(null, next.id)} className="mt-3" data-guide="start-workout">
             <SubmitButton size="lg" className="w-full" pendingLabel="Starting…">
@@ -143,7 +144,7 @@ export default async function TodayPage() {
                 <div className="min-w-0 flex-1 py-1">
                   <p className="font-medium">{routine.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {routine.exercises.length} exercises · {relativeDay(lastDone.get(routine.id))}
+                    {routine.exercises.length} {routine.exercises.length === 1 ? "exercise" : "exercises"} · {relativeDay(lastDone.get(routine.id))}
                   </p>
                 </div>
                 <form action={startWorkout.bind(null, routine.id)}>
