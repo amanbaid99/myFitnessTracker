@@ -15,9 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, type Units } from "@/lib/units";
-import { analysisWeek } from "@/lib/analysis-week";
+import { analysisWeek, shortWeekRange } from "@/lib/analysis-week";
 import {
   goalCompletion,
+  historicalGoalLine,
+  targetWeekLabel,
   effectiveWeeklyGoal,
   volumeChange,
   normalizeWeeks,
@@ -50,7 +52,7 @@ export function TrainingReports({
     [scope, setScope] = useState("all"),
     [loading, setLoading] = useState(false),
     [message, setMessage] = useState(""),
-    [goal, setGoal] = useState(String(initial.at(-1)?.target ?? 3)),
+    [goal, setGoal] = useState(String(initial.at(-1)?.target ?? "")),
     [saving, setSaving] = useState(false);
   const request = useRef(0);
   const router=useRouter();
@@ -136,8 +138,7 @@ export function TrainingReports({
   if (!available)
     return (
       <p className="mt-3 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
-        Weekly reports are not available yet. Existing progress is still
-        available.
+        {consistency ? "Weekly targets are temporarily unavailable. Your streak and calendar are still available." : "Weekly reports are not available yet. Existing progress is still available."}
       </p>
     );
   const chart = rows.map((w) => ({
@@ -154,20 +155,20 @@ export function TrainingReports({
       aria-label={
         consistency ? "Weekly goal completion" : "Weekly training volume"
       }
-      className="mt-4 rounded-2xl border bg-card p-4"
+      className={`${consistency ? "" : "mt-4 "}rounded-2xl border bg-card p-4`}
     >
       <h3 className="font-semibold">
-        {consistency ? "Planned and completed" : "Weekly training volume"}
+        {consistency ? "This week’s goal" : "Weekly training volume"}
       </h3>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-        Monday to Sunday in India time. Current week is still in progress.
+        {consistency ? `${shortWeekRange(analysisWeek(new Date().toISOString()))} · India time · In progress` : "Monday to Sunday in India time. Current week is still in progress."}
       </p>
       {consistency ? (
         <>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="text-lg font-semibold">
-              {thisWeek?.workouts ?? 0}
-              {effectiveGoal ? ` / ${effectiveGoal}` : ""} workouts
+          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+            <p className="min-w-0 break-words text-2xl font-semibold tabular-nums">
+              {thisWeek?.workouts ?? "Count unavailable"}
+              {thisWeek && <>{effectiveGoal ? ` of ${effectiveGoal}` : ""} <span className="text-base font-medium">{thisWeek.workouts===1 && !effectiveGoal ? "workout" : "workouts"}</span></>}
             </p>
             <p className="text-sm text-muted-foreground">
               {thisWeek && effectiveGoal
@@ -175,6 +176,7 @@ export function TrainingReports({
                 : "Target unavailable"}
             </p>
           </div>
+          {thisWeek && effectiveGoal && <div role="progressbar" aria-label="Weekly goal completion" aria-valuemin={0} aria-valuemax={100} aria-valuenow={goalCompletion(thisWeek.workouts,effectiveGoal)?.percent} className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${goalCompletion(thisWeek.workouts,effectiveGoal)?.percent}%`}} /></div>}
           {thisWeek?.target && (
             <p className="mt-1 text-xs text-muted-foreground">
               {goalCompletion(thisWeek.workouts, thisWeek.target)?.remaining}{" "}
@@ -198,7 +200,7 @@ export function TrainingReports({
                 />
               </label>
               <Button
-                className="mt-2 w-full"
+                className="mt-2 h-auto min-h-11 w-full whitespace-normal py-2"
                 disabled={saving}
                 onClick={saveGoal}
               >
@@ -206,29 +208,26 @@ export function TrainingReports({
               </Button>
             </details>
           )}
-          <ul className="mt-2 divide-y">
+          <details className="mt-2 border-t"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Recent weeks and targets</summary><ul className="divide-y">
             {[...rows]
+              .filter(w=>w.week_start<currentStart)
               .reverse()
-              .slice(1, 5)
+              .slice(0, 4)
               .map((w) => (
                 <li
                   key={w.week_start}
                   className="flex min-h-11 flex-wrap items-center justify-between gap-1 text-xs"
                 >
-                  <span>Week of {w.week_start}</span>
+                  <span>{targetWeekLabel(w.week_start)}</span>
                   <span className="text-muted-foreground">
-                    {w.workouts}
-                    {w.target
-                      ? ` / ${w.target} · ${goalCompletion(w.workouts, w.target)?.percent}% · ${goalCompletion(w.workouts, w.target)?.remaining} below target`
-                      : " · target unavailable"}
+                    {historicalGoalLine(w)}
                   </span>
                 </li>
               ))}
           </ul>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Unlogged rest days are not missed sessions. Historical targets are
-            only shown where a snapshot exists.
-          </p>
+          {rows.some(w=>w.week_start<currentStart&&w.target===null) && <p className="mt-2 text-xs text-muted-foreground">Earlier targets were not always recorded. Those weeks show completed workouts only.</p>}
+          </details>
+          <p className="mt-2 text-xs text-muted-foreground">Rest days without a workout are not missed sessions.</p>
         </>
       ) : (
         <>

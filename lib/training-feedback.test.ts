@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseRestDuration } from "./rest-duration";
-import { goalCompletion, volumeChange, reportSetsLine } from "./training-reports";
+import { goalCompletion, volumeChange, reportSetsLine, historicalGoalLine, targetWeekLabel } from "./training-reports";
 import { monthlyCheckInDue, coverageFindings } from "./measurements";
 import { parseAdjustments, applyAdjustments } from "./workout-adjustments";
 import type { CoverageData } from "./feedback-data";
@@ -130,5 +130,23 @@ describe("reportSetsLine", () => {
     expect(reportSetsLine(12, 3)).toBe("12 sets counted · 3 sets not counted (bodyweight, bands or timed)");
     expect(reportSetsLine(1, 0)).toBe("1 set counted");
     expect(reportSetsLine(0, 1)).toBe("0 sets counted · 1 set not counted (bodyweight, bands or timed)");
+  });
+});
+
+describe("consistency display", () => {
+  it("shows missing historical targets as counts without making up a goal", () => {
+    expect(historicalGoalLine({workouts:1,target:null})).toBe("1 workout");
+    expect(historicalGoalLine({workouts:0,target:null})).toBe("0 workouts");
+  });
+  it("preserves capped completion and above-target status", () => {
+    expect(historicalGoalLine({workouts:5,target:3})).toBe("5 / 3 · 100% · 2 above target");
+    expect(historicalGoalLine({workouts:3,target:3})).toBe("3 / 3 · 100% · Goal met");
+    expect(historicalGoalLine({workouts:1,target:3})).toBe("1 / 3 · 33% · 2 below target");
+  });
+  it("renders stored week keys without a device-time shift", () => {
+    const previous=process.env.TZ;
+    process.env.TZ="America/Los_Angeles";
+    try { expect(targetWeekLabel("2026-11-02")).toBe("Week of 2 Nov 2026"); }
+    finally { if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous; }
   });
 });

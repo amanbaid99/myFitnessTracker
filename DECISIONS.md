@@ -1824,3 +1824,21 @@ every volume the same rounded way as exercise progress (`volumeLabel`). The
 in-progress week is labelled and drawn lighter. Loading and errors appear
 beside the breakdown menu that caused them. The SQL report, week
 boundaries and the Consistency panel are unchanged.
+
+## 2026-11-04: One current goal in Consistency (P2.7)
+
+After reviewing the owner's merges through PR #37, continue with Consistency
+as suggested by the UI tracker in PR #38. Lead with one recorded current-week
+goal, its dates and completion. Put the four previous weeks behind Recent
+weeks and targets. Missing historical targets show counts only with one
+explanation, rather than repeating unavailable labels or inventing goals.
+Above-target completion keeps the existing 100% cap and extra-workout count.
+
+Remove the duplicate current-week and recent-week lists from this tab. Keep
+the existing streak and expandable 12-week calendar together. Place Progress
+tabs before the supporting summary so they do not jump when switching to
+Consistency. Let tabs reflow with enlarged text. Strength filters remain in
+the parent state. No training calculation or week definition changes here;
+weekly target reports use India time and the streak/calendar retain clearly
+labelled device time. The separate P2.10 review is still open. Coaching stays
+paused, and What's new wording remains subject to owner approval.

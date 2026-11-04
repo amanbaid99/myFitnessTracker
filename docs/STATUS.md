@@ -8,6 +8,14 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: Reviewed merges through PR #37 (94eeeab). Branch
+  `ui/phase-2-consistency` implements P2.7: one goal summary, expandable
+  earlier targets, one missing-target explanation, and streak/calendar
+  together. Local browser evidence at 320/390/430 plus state and large-text
+  checks is in `docs/ui-evidence/phase-2-consistency`. No calculation,
+  schema or week-boundary change. P2.5, P2.6 and P2.10 remain open; human
+  coaching remains paused. Review PR only, no merge or deployment.
+
 - 2026-11-04: P2.9 (exercise progress) live via PR #36. Branch
   `ui/phase-2-volume-reports` does P2.8: plain counted / not counted
   wording, one rounded volume format, lighter in-progress bar, loading
