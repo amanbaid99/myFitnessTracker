@@ -1677,3 +1677,11 @@ Automatic diagnoses and corrective exercise prescriptions are out of scope.
 Production migration approval and separate What's new wording approval remain
 required by the repository rules. Local test approval is not production SQL
 approval. All validation uses disposable synthetic records.
+
+
+## 2026-11-04: Approve the feedback release
+
+Aman approved the exact three migration files and the proposed What's new
+wording, and authorized merging, migrating and deploying PR #29. The SQL
+remains unchanged from the reviewed files. Add the approved popup with a
+Show me link to Progress. Deploy draft-plan separately after migrations.

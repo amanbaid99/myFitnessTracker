@@ -12,9 +12,9 @@ Last updated: 2026-11-04.
   stages: units/custom rest/session substitutions, SQL weekly reports and
   goal snapshots, optional measurements/reminders/coverage, and consent-based
   human coaching with reviewed observations. Three new migrations are tested
-  locally but await the owner's exact SQL approval before merge. `draft-plan`
+  locally and approved by the owner on 4 November for release. `draft-plan`
   adds band/plate equipment vocabulary and needs a separate Edge Function
-  deployment after the schema lands. What's new wording awaits approval.
+  deployment after the schema lands. The owner approved the What's new wording and it is included.
   Local signed-in browser testing uses synthetic accounts, PostgREST and real
   RLS; no production data was changed. See `docs/FEEDBACK-VALIDATION.md`.
 
