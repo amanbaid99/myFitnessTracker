@@ -68,6 +68,13 @@ export interface WhatsNewEntry {
 /** Newest first. Add an entry only once Aman has approved it. */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: "flexible-workout-controls",
+    date: "2026-11-04",
+    title: "More flexible workouts",
+    body: "Change rest with a chip, swap exercises or ask AI for a dumbbell workout today. Metric and imperial units now live together in Settings.",
+    href: "/routines",
+  },
+  {
     id: "training-feedback-and-coaching",
     date: "2026-11-04",
     title: "More flexible training and clearer progress",

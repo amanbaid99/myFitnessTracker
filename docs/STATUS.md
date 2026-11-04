@@ -15,7 +15,7 @@ Last updated: 2026-11-04.
   Human coaching/client sharing UI is paused, including deep links and
   reminders; backend records/consent guards are retained. No migration.
   draft-plan needs a JWT-enabled deployment for alternatives/adapt_day modes.
-  New popup wording awaits owner approval.
+  The owner approved the new popup wording and release.
 
 
 - 2026-11-04: `feat/coach-feedback-stages` implements all four approved feedback

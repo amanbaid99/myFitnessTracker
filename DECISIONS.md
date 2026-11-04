@@ -1739,3 +1739,10 @@ wording for the AI workout controls separately for owner approval.
 Narrow-phone checks also found the existing set-row rep stepper overflowing
 at 320 px. Below 360 px, use a directly editable 48 px rep field instead of
 compressing plus/minus buttons; larger screens keep the steppers.
+
+
+## 2026-11-04: Approve the session controls release
+
+Aman approved the proposed More flexible workouts popup and release of
+PR #30. Add the exact approved wording and deploy draft-plan with JWT
+verification enabled. No database migration is added.
