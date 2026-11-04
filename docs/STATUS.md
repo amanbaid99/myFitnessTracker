@@ -8,6 +8,10 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: P2.2 (History) live via PR #33. Branch `ui/phase-2-today`
+  does P2.1: one-line weekly card states with inline Try again, smaller
+  Refresh, monthly check-in below the main action, singular counts.
+
 - 2026-11-04: P2.4 (weekly page) is live via PR #32. Branch
   `ui/phase-2-history-list` does P2.2: one set of recap labels, active
   filter summary with Clear, filter dot, singular set counts.

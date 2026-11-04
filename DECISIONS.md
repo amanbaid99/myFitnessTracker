@@ -1786,3 +1786,12 @@ Latest added the same way to any of them (`recapStatus` in lib/history.ts).
 An unknown status shows nothing on the row; the single page notice
 explains it. Active filters are summarised beside Clear so they stay
 visible when the panel is closed.
+
+## 2026-11-04: Compact Today card states (UI Phase 2, P2.1)
+
+The weekly card's empty state is one line (`weeklyCardEmpty`): on its way,
+appears after your first workout, or couldn't load with an inline Try again
+that re-reads in place. Refresh analysis became a small secondary button.
+Secondary prompts stay below the main action, so with no plan the monthly
+check-in moved under Create a workout plan. The India-time count versus
+device-week day dots is left for P2.10.

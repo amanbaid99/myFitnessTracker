@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { reviewPreview } from "@/lib/review-preview";
-import { ChevronRight, Sparkles } from "lucide-react";
-import { analysisWeek, previousWeek, shortWeekRange } from "@/lib/analysis-week";
+import { ChevronRight, RotateCcw, Sparkles } from "lucide-react";
+import { analysisWeek, previousWeek, shortWeekRange, weeklyCardEmpty } from "@/lib/analysis-week";
 import { createClient } from "@/lib/supabase/client";
 import { newestWeeklyReview, POLL_EVERY_MS, POLL_WINDOW_MS, type WeeklyReview } from "@/lib/insights";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, de
   const [lastWeek, setLastWeek] = useState<WeeklyReview | null>(null);
   const [week, setWeek] = useState<ReturnType<typeof analysisWeek> | null>(null);
   const [failed, setFailed] = useState(false);
+  // Bumped by Try again to re-read without reloading the page.
+  const [reload, setReload] = useState(0);
   const [retryUntil, setRetryUntil] = useState(0);
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState(false);
@@ -69,7 +71,7 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, de
     document.addEventListener("visibilitychange", visible);
     window.addEventListener("online", check);
     return () => { stopped = true; clearInterval(timer); document.removeEventListener("visibilitychange", visible); window.removeEventListener("online", check); };
-  }, [lastEndedAt, retryUntil, demoReview]);
+  }, [lastEndedAt, retryUntil, demoReview, reload]);
 
   const hasWorkout = week && lastStartedAt && lastWorkoutId && Date.parse(lastStartedAt) >= Date.parse(week.startAt) && Date.parse(lastStartedAt) < Date.parse(week.nextAt);
   const stale = hasWorkout && review && lastEndedAt && Date.parse(review.details.coveredThrough ?? "") < Date.parse(lastEndedAt);
@@ -97,8 +99,11 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, de
         </Link>
         {stale && <p className="mt-1 text-xs text-muted-foreground">Updating after your latest workout analysis.</p>}
         {showLast && !hasWorkout && <p className="mb-2 text-xs text-muted-foreground">This week&apos;s analysis starts after your first workout.</p>}
-      </div> : <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{failed ? "Could not load your weekly analysis. Reopen Today to try again." : "Your brief weekly analysis appears here after a workout analysis finishes. It builds on all completed workouts this week."}</p>}
-      {hasWorkout && (!review || stale) && <Button variant="secondary" className="mt-3 w-full" onClick={retry} disabled={waiting}>{waiting ? "Analysing your week…" : "Refresh weekly analysis"}</Button>}
+      </div> : <div className="mt-2 flex min-h-11 items-center justify-between gap-2" role={failed ? "alert" : "status"}>
+        <p className="min-w-0 text-sm text-muted-foreground">{weeklyCardEmpty({ failed, hasWorkout: Boolean(hasWorkout) })}</p>
+        {failed && <Button variant="ghost" className="-mr-3 shrink-0 px-3" onClick={() => setReload((n) => n + 1)}><RotateCcw className="size-4" />Try again</Button>}
+      </div>}
+      {hasWorkout && (!review || stale) && !failed && <Button variant="ghost" className="-ml-3 mb-1 px-3 text-muted-foreground" onClick={retry} disabled={waiting}><RotateCcw className={`size-4${waiting ? " motion-safe:animate-spin" : ""}`} />{waiting ? "Analysing your week…" : "Refresh analysis"}</Button>}
       {retryError && <p role="alert" className="mt-2 text-sm text-destructive">Could not start the analysis. Check your connection and try again.</p>}
 
     </section>
