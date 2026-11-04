@@ -37,3 +37,29 @@ export function groupHistory(rows: HistoryItem[], now: string, timeZone: string)
   }
   return [...groups].map(([key, value]) => ({ key, ...value }));
 }
+
+/** How long after finishing a missing recap counts as still being written (lib/insights POLL_WINDOW_MS). */
+export const RECAP_PENDING_MS = 10 * 60_000;
+export type RecapStatus = "ready" | "pending" | "none";
+
+/** One recap status for every History row; null when it could not be loaded or does not apply. Pure. */
+export function recapStatus(w: Pick<HistoryItem, "source" | "recapReady" | "endedAt">, nowMs: number): RecapStatus | null {
+  if (w.source !== "app" || w.recapReady === null) return null;
+  if (w.recapReady) return "ready";
+  return nowMs - Date.parse(w.endedAt) < RECAP_PENDING_MS ? "pending" : "none";
+}
+export const RECAP_LABEL: Record<RecapStatus, string> = { ready: "Recap ready", pending: "Recap on its way", none: "No recap" };
+
+const TYPE_LABEL: Record<string, string> = { app: "Logged workouts", sheet_import: "Imported workouts", baseline: "Starting weights" };
+
+/** Short words for the filters in use, so they stay visible when the panel is closed. Pure. */
+export function activeFilterSummary(f: HistoryFilters): string[] {
+  const day = (d: string) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
+  const out: string[] = [];
+  if (f.search.trim()) out.push(`"${f.search.trim()}"`);
+  if (f.source !== "all" && TYPE_LABEL[f.source]) out.push(TYPE_LABEL[f.source]);
+  if (f.from && f.to) out.push(`${day(f.from)} to ${day(f.to)}`);
+  else if (f.from) out.push(`From ${day(f.from)}`);
+  else if (f.to) out.push(`Until ${day(f.to)}`);
+  return out;
+}
