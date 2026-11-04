@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayKey, muscleWeeks, trainingCalendar, weekStart, weekStreak, workoutsThisWeek } from "./progress";
+import { dayKey, muscleWeeks, trainingCalendar, weekStart, weekStreak, workoutsThisWeek, exerciseHeadline, volumeLabel } from "./progress";
 
 // Local-time dates, so the tests hold in any time zone.
 const d = (y: number, m: number, day: number, h = 18) => new Date(y, m - 1, day, h);
@@ -78,5 +78,22 @@ describe("local weeks across daylight saving",()=>{
       expect(workoutsThisWeek([nextMonday,sameSunday],sunday)).toBe(1);
       expect(muscleWeeks([{startedAt:nextMonday.toISOString(),muscle:"chest",sets:3},{startedAt:sameSunday.toISOString(),muscle:"chest",sets:2}],sunday)).toEqual([{muscle:"chest",thisWeek:2,lastWeek:0}]);
     } finally {if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}
+  });
+});
+
+describe("exercise headline", () => {
+  const s = (e1rmKg: number, id: string) => ({ e1rmKg, id });
+  it("leads with the latest session and keeps the best separate", () => {
+    const h = exerciseHeadline([s(80, "a"), s(95, "b"), s(90, "c")])!;
+    expect([h.latest.id, h.best.id, h.latestIsBest]).toEqual(["c", "b", false]);
+    expect(h.topSets.map((x) => x.id)).toEqual(["b", "c", "a"]);
+  });
+  it("marks a latest session that matches the best", () => {
+    expect(exerciseHeadline([s(80, "a"), s(95, "b"), s(95, "c")])!.latestIsBest).toBe(true);
+    expect(exerciseHeadline([s(60, "only")])!.latestIsBest).toBe(true);
+    expect(exerciseHeadline([])).toBeNull();
+  });
+  it("labels volume like the weekly reports", () => {
+    expect(volumeLabel(1240.4, "kg")).toBe("1,240 kg × reps");
   });
 });
