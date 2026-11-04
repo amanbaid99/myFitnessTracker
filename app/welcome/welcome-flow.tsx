@@ -3,6 +3,8 @@
 import { prepareDraftExercises } from "@/lib/routine-edits";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
+import Link from "next/link";
+import { MeasurementSystem } from "@/components/measurement-system";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Dumbbell, Home, PersonStanding, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +25,7 @@ import type { Theme } from "@/lib/theme";
 import type { Exercise } from "@/lib/data";
 import { exerciseCatalog, isEdited } from "@/lib/plan-draft";
 import { buildTemplate, SETUPS, type TemplateRoutine, type TrainingSetup } from "@/lib/templates";
-import { cmToFtIn, fromKg, ftInToCm, toKg, type HeightUnit, type Units } from "@/lib/units";
+import { cmToFtIn, fromKg, ftInToCm, toKg, type Units } from "@/lib/units";
 import { cn } from "@/lib/utils";
 
 export interface WelcomeDetails {
@@ -63,7 +65,9 @@ export function WelcomeFlow({
   const [weight, setWeight] = useState(initial.bodyWeightKg === null ? "" : String(fromKg(initial.bodyWeightKg, initial.units)));
   const [height, setHeight] = useState(initial.heightCm === null ? "" : String(initial.heightCm));
   // Height is stored in cm; feet and inches are only how it is typed.
-  const [heightUnit, setHeightUnit] = useState<HeightUnit>(initial.units === "lb" ? "ftin" : "cm");
+  const heightUnit = units === "lb" ? "ftin" : "cm";
+  const [heightEdited, setHeightEdited] = useState(false);
+  const [weightEdited, setWeightEdited] = useState(false);
   const startFtIn = initial.heightCm === null ? null : cmToFtIn(initial.heightCm);
   const [feet, setFeet] = useState(startFtIn ? String(startFtIn.ft) : "");
   const [inches, setInches] = useState(startFtIn ? String(startFtIn.inches) : "");
@@ -93,6 +97,7 @@ export function WelcomeFlow({
 
   /** The height as typed, in cm, or null if empty or not a number. */
   function heightCm(): number | null {
+    if (!heightEdited) return initial.heightCm;
     if (heightUnit === "cm") {
       const h = Number(height.replace(",", "."));
       return height.trim() && Number.isFinite(h) ? Math.round(h * 10) / 10 : null;
@@ -103,27 +108,31 @@ export function WelcomeFlow({
     return Number.isFinite(ft) && Number.isFinite(inch) ? ftInToCm(ft, inch) : null;
   }
 
-  function switchHeight(next: HeightUnit) {
-    if (next === heightUnit) return;
+  function switchSystem(next: Units) {
+    if (next === units) return;
     const cm = heightCm();
-    if (cm !== null && next === "ftin") {
+    if (cm === null) {
+      setHeight("");setFeet("");setInches("");
+    } else if (next === "lb") {
       const { ft, inches: i } = cmToFtIn(cm);
       setFeet(String(ft));
       setInches(String(i));
     } else if (cm !== null) {
       setHeight(String(cm));
     }
-    setHeightUnit(next);
+    const w = Number(weight.replace(",", "."));
+    if (weight.trim() && Number.isFinite(w)) setWeight(String(fromKg(weightEdited ? toKg(w, units) : initial.bodyWeightKg ?? toKg(w, units), next)));
+    setUnits(next);
   }
 
   function detailsPatch() {
     const w = Number(weight.replace(",", "."));
     return {
       name: name.trim() || null,
-      units,
+      ...(!detailsOnly ? { units } : {}),
       gender,
-      body_weight_kg: weight.trim() && Number.isFinite(w) ? toKg(w, units) : null,
-      height_cm: heightCm(),
+      ...(weightEdited ? {body_weight_kg: weight.trim() && Number.isFinite(w) ? toKg(w, units) : null} : {}),
+      ...(heightEdited ? {height_cm: heightCm()} : {}),
       experience,
     };
   }
@@ -209,48 +218,22 @@ export function WelcomeFlow({
               onChange={(v) => setGender(v as Gender | null)}
             />
 
-            <div className="grid grid-cols-2 gap-3">
-              <Chips
-                label="Weight in"
-                options={[
-                  { key: "kg", label: "kg" },
-                  { key: "lb", label: "lb" },
-                ]}
-                value={units}
-                allowNone={false}
-                onChange={(v) => {
-                  const next = (v ?? "kg") as Units;
-                  const w = Number(weight.replace(",", "."));
-                  if (weight.trim() && Number.isFinite(w) && next !== units) setWeight(String(fromKg(toKg(w, units), next)));
-                  setUnits(next);
-                }}
-              />
-              <Chips
-                label="Height in"
-                options={[
-                  { key: "cm", label: "cm" },
-                  { key: "ftin", label: "ft & in" },
-                ]}
-                value={heightUnit}
-                allowNone={false}
-                onChange={(v) => switchHeight((v ?? "cm") as HeightUnit)}
-              />
-            </div>
+            {detailsOnly ? <Link href="/settings" className="flex min-h-11 items-center text-sm text-primary">{units === "lb" ? "Imperial units · change in Settings" : "Metric units · change in Settings"}</Link> : <MeasurementSystem value={units} onChange={switchSystem} />}
 
             <div className="grid grid-cols-2 gap-3">
               <Field label={`Weight (${units})`} htmlFor="w-weight">
-                <Input id="w-weight" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder={units === "kg" ? "e.g. 72" : "e.g. 160"} />
+                <Input id="w-weight" inputMode="decimal" value={weight} onChange={(e) => {setWeightEdited(true);setWeight(e.target.value);}} placeholder={units === "kg" ? "e.g. 72" : "e.g. 160"} />
               </Field>
               {heightUnit === "cm" ? (
                 <Field label="Height (cm)" htmlFor="w-height">
-                  <Input id="w-height" inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="e.g. 175" />
+                  <Input id="w-height" inputMode="decimal" value={height} onChange={(e) => {setHeightEdited(true);setHeight(e.target.value);}} placeholder="e.g. 175" />
                 </Field>
               ) : (
                 <div className="space-y-1.5">
                   <p className="text-sm font-medium">Height (ft, in)</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input aria-label="Feet" inputMode="numeric" value={feet} onChange={(e) => setFeet(e.target.value)} placeholder="ft" />
-                    <Input aria-label="Inches" inputMode="decimal" value={inches} onChange={(e) => setInches(e.target.value)} placeholder="in" />
+                    <Input aria-label="Feet" inputMode="numeric" value={feet} onChange={(e) => {setHeightEdited(true);setFeet(e.target.value);}} placeholder="ft" />
+                    <Input aria-label="Inches" inputMode="decimal" value={inches} onChange={(e) => {setHeightEdited(true);setInches(e.target.value);}} placeholder="in" />
                   </div>
                 </div>
               )}

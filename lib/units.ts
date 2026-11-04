@@ -42,3 +42,13 @@ export function cmToFtIn(cm: number): { ft: number; inches: number } {
 export function ftInToCm(ft: number, inches: number): number {
   return round((ft * 12 + inches) * CM_PER_INCH, 1);
 }
+
+/** Circumferences follow the account's metric/imperial preference. */
+export function fromCm(cm: number, units: Units): number {
+  return units === "kg" ? cm : round(cm / CM_PER_INCH, 1);
+}
+
+/** Displayed circumferences back to centimetres for storage. */
+export function toCm(value: number, units: Units): number {
+  return units === "kg" ? value : round(value * CM_PER_INCH, 1);
+}

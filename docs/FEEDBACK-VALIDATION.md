@@ -1,54 +1,53 @@
-# Four-stage feedback validation
+# Training feedback and session controls validation
 
-Verified locally on 4 November 2026. No production records were changed.
+Verified locally on 4 November 2026. Tests use disposable synthetic records.
 
 ## Result
 
-- 383 unit tests across 54 files pass, including existing regression tests.
-- ESLint and strict TypeScript pass. Optimized Next.js production build passes.
-- Every migration applies to a fresh disposable PostgreSQL 16 database.
-  The full RLS/seed suite passes, including the new feedback checks.
-- Signed-in Chromium tests pass using synthetic coach, client and unrelated
-  accounts through real PostgREST and database RLS, with a local auth facade.
-  This does not test Supabase's hosted email/password or invitation delivery.
-- Settings, Measurements, Progress and Coaching fit 320, 390 and 768 px widths
-  without horizontal overflow or browser runtime errors.
+- 397 unit tests across 56 files pass, preserving existing regression tests.
+- ESLint, strict TypeScript and optimized Next.js production build pass. All migrations/RLS/seed checks pass on PostgreSQL 16.
+- Signed-in Chromium runs through actual PostgREST/RLS and the actual
+  draft-plan handler. Authentication uses a local facade; provider replies are
+  deterministic fixtures, so no paid model or production user is accessed.
+- The browser suite checks 320, 390 and 768 px widths without horizontal
+  overflow or runtime errors. Hosted email/password flows are not retested.
 
 ## Flows exercised
 
-1. KG/LB and custom default rest save; invalid rest blocks saving. Stored
-   historical loads stay unchanged. Session-only replacement/rest survive
-   refresh without changing the plan. Existing library replacement works
-   offline. Explicit future-plan rest and replacement persist. Logged sets
-   prevent replacement.
-2. SQL volume and weighted muscle filter produce the fixture's expected
-   totals. Current goal edits preserve the previous week's target. Coach
-   reports are read-only and restricted to the consenting client. Unit tests
-   cover unknown goals, unavailable volume and capped completion.
-3. Measurements save atomically with the body-weight log, survive refresh and
-   appear in history. Invalid measurements cannot partially update weight.
-   Monthly reminder preference, exclusions and recovery pause save. Pure tests
-   cover month boundaries, 28-day minimum, snooze expiry, incomplete mappings
-   and insufficient evidence. Body fat requires a method.
-4. Named invitation preview requires explicit consent. Tokens are single-use,
-   expire, and cannot be accepted by the inviter. Unrelated accounts cannot
-   read workouts, reports, measurements or observations, forge a connection,
-   or revoke someone else's connection. Measurements default private, can be
-   opted in and out, and never grant direct access to owner tables. Reviewed
-   observations appear in workout context. Revocation blocks future reads and
-   writes while retaining the client's assessment history. Overdue cues are
-   not treated as current.
+- One Metric/Imperial setting persists and controls workout/body weight,
+  height and circumferences. Settings has no rest controls. Saving personal
+  details preserves unedited canonical values and the current unit setting.
+  Imperial check-ins convert to kg/cm; historical logged loads stay unchanged.
+- Rest timer presets save immediately; invalid custom durations cannot save.
+  Rest persists in the routine and session, survives refresh and syncs after
+  reconnect. Updating an active countdown works. Rest operations do not force
+  reloads, and new set edits are not confused with pre-existing queued edits.
+- Quick swaps use owned/library/template choices and optional AI equipment
+  constraints. Swaps survive refresh, preserve the regular plan and never
+  inherit the original exercise's weights. Owned choices work offline.
+  Logged exercises cannot be replaced. AI quota failures leave manual choices
+  available.
+- Dumbbell adaptation requires preview and acceptance, validates response
+  count, unique exercises, targets and primary muscles, and updates only
+  unlogged planned slots. A provider failure cannot apply a partial preview.
+  Logged sets and original plan rows stay intact; session choices survive
+  refresh. Backend tests cover identity, quota, input redaction and restricted
+  model context without reading the exercise library into new-mode prompts.
+- Weekly SQL volume, muscle filters and editable current goals still work;
+  previous targets remain immutable. Measurements save atomically with the
+  weight log, reject invalid values and preserve reminder/coverage controls.
+- Human coach/client sharing is paused: no navigation links or reminders,
+  and every coaching page is unavailable. Existing records and guarded APIs
+  are retained. The SQL suite continues checking consent, expiry, revocation
+  and owner isolation, alongside pre-migration fallback unit tests.
 
-Missing new tables/functions return unavailable states instead of breaking
-existing training screens; unit tests exercise these compatibility paths.
-
-## Reproduce database and browser tests
+## Reproduce
 
 Use a disposable local PostgreSQL cluster with `psql` on PATH and superuser
 access. Never point these commands at production: the database suite drops
 and recreates `repd_feedback`. The browser adapter enforces loopback access.
-PostgREST 16 and Playwright Chromium are required for the browser harness.
-Playwright can be installed separately without changing app dependencies.
+PostgREST 16 and Playwright Chromium are required. Playwright may be installed
+separately; tsx is already a project development dependency.
 
 ```bash
 export PGHOST=127.0.0.1 PGPORT=55433 PGUSER=agent
@@ -57,31 +56,23 @@ psql -d repd_feedback -v ON_ERROR_STOP=1 -f scripts/feedback-browser/setup.sql
 POSTGREST_BIN=/path/to/postgrest node scripts/feedback-browser/api.cjs
 ```
 
-In a separate terminal, start the app:
+In a second terminal:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55435 \
 NEXT_PUBLIC_SUPABASE_ANON_KEY=test-anon pnpm dev --port 3003
 ```
 
-Then run `node scripts/feedback-browser/run.cjs`. Set
-`PLAYWRIGHT_BROWSERS_PATH` if Chromium is installed outside the default
-location. Run from a fresh database every time; the browser test deliberately
-writes synthetic preferences, measurements, workouts and coaching records.
-Stop the adapter before rerunning the database suite so its connections do
-not prevent the test database being recreated. It generates a random local
-signing key in `/tmp` and never uses production credentials. The setup SQL
-adapts the stubbed `auth.uid()` to PostgREST claims only in the test database.
+Run `node scripts/feedback-browser/run.cjs` from a fresh database each time.
+Set `PLAYWRIGHT_BROWSERS_PATH` if Chromium is outside the default location.
+Stop the adapter before resetting the database. It generates a random local
+signing key in `/tmp`; no production credentials are used. setup.sql adapts
+the local auth stub to PostgREST claims only in the disposable database.
 
-## Rollout gates
+## Release
 
-The exact three migration files require owner approval under `AGENTS.md`
-before merge, which runs production migrations. Apply them in timestamp order.
-No backfill invents historical goals or measurements. Missing-feature reads
-remain compatible while deployment catches up.
-
-`supabase/functions/draft-plan/handler.ts` adds band and plate to its equipment
-vocabulary. CI does not deploy Edge Functions. After the migrations land,
-deploy `draft-plan` separately with JWT verification enabled. Its existing
-modes remain unchanged. New What's new wording also requires owner approval
-before insertion into `lib/guide.ts`.
+PR #29 applied the three approved migrations and deployed ad55908 with
+JWT-enabled draft-plan v9. The session controls and paused coaching UI add no
+migration. Deploy the updated draft-plan separately with JWT verification on
+for alternatives and adapt_day support; merging alone does not deploy it.
+New popup wording remains subject to owner approval.

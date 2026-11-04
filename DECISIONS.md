@@ -1685,3 +1685,57 @@ Aman approved the exact three migration files and the proposed What's new
 wording, and authorized merging, migrating and deploying PR #29. The SQL
 remains unchanged from the reviewed files. Add the approved popup with a
 Show me link to Progress. Deploy draft-plan separately after migrations.
+
+
+## 2026-11-04: Consolidate measurement units and remove Settings rest controls
+
+Aman asked to remove the Settings timer option because each workout already
+provides rest editing. Remove both the default-rest summary and its editor;
+keep workout/plan rest editing and the existing fallback duration. Settings
+has one Units and measurements section with Metric (kg/cm) or Imperial
+(lb, feet/inches for height, inches for circumferences). The existing units
+preference drives the system without a migration. Personal details and
+measurement check-ins use it and link back to Settings instead of offering
+separate selectors. First-run onboarding uses the same combined selector.
+Saving personal details preserves unedited stored weight and height rather
+than round-tripping rounded imperial display values, and does not overwrite
+the measurement preference selected in Settings.
+
+
+## 2026-11-04: Separate rest, quick swaps and today's AI adaptation
+
+Aman replaced the combined Equipment / rest menu with a Rest timer chip.
+Presets save with one tap; custom durations save directly without scope
+selection. Routine rest persists through the existing offline outbox, while
+extra exercises keep session-only rest. A reload only restores edits that
+were pending before the screen opened, and never rest-only operations, so
+saving or reconnecting cannot dismiss the picker unexpectedly.
+
+A separate Swap exercise chip offers ranked library/template choices, search
+and AI alternatives constrained by available equipment and the original
+primary muscle when mapped. A selection changes only this session and uses
+the replacement's own history. Logged sets prevent replacing that exercise.
+AI can adapt up to 15 remaining planned exercises to a dumbbell day. The
+person previews and accepts exercise/muscle/target suggestions first; logged
+exercises and manually added extras stay intact. Bulk cookie adjustments
+resolve replacements together, allow valid slot-to-slot moves and reject
+duplicates. Targets and swaps persist on this device for the active session;
+they do not rewrite the regular plan or logged sets.
+
+The draft-plan alternatives and adapt_day modes explicitly authenticate,
+share the daily quota, redact input and avoid reading the exercise library
+into model prompts. They validate equipment, response counts, duplicate
+exercises and known primary muscles. No body measurements, workout notes or
+coaching observations are sent. A dedicated deployment with JWT verification
+on is required; no migration is added.
+
+Aman also paused human coach/client sharing entirely in the app. Remove its
+entry points and reminders and make all coaching pages unavailable. Retain
+stored records and consent-scoped backend APIs for possible restoration;
+there is no database deletion or new sharing permission. AI Coach remains.
+Remove obsolete coaching claims from release copy and Help. Draft new popup
+wording for the AI workout controls separately for owner approval.
+
+Narrow-phone checks also found the existing set-row rep stepper overflowing
+at 320 px. Below 360 px, use a directly editable 48 px rep field instead of
+compressing plus/minus buttons; larger screens keep the steppers.

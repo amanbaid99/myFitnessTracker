@@ -2,6 +2,7 @@
 import { useMounted } from "@/components/progress/use-mounted";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Line,
   LineChart,
@@ -13,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
-import { fromKg, toKg, type Units } from "@/lib/units";
+import { fromKg, toKg, fromCm, toCm, type Units } from "@/lib/units";
 import { localDay } from "@/lib/body-weight";
 import type { Measurement } from "@/lib/feedback-data";
 import { MASK } from "@/lib/mask";
@@ -42,20 +43,18 @@ export function MeasurementTracker({
   const mounted = useMounted();
   const router = useRouter();
   const [date, setDate] = useState(localDay()),
-    [lengthUnit, setLengthUnit] = useState<"cm" | "in">(
-      units === "lb" ? "in" : "cm",
-    ),
     [values, setValues] = useState<Partial<Record<Metric, string>>>({}),
     [method, setMethod] = useState("smart_scale"),
     [metric, setMetric] = useState<Metric>("weight_kg"),
     [enabled, setEnabled] = useState(reminders),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
+  const lengthUnit = units === "lb" ? "in" : "cm";
   const convert = (key: Metric, n: number) =>
     key === "weight_kg"
       ? fromKg(n, units)
-      : key.endsWith("_cm") && lengthUnit === "in"
-        ? Math.round((n / 2.54) * 10) / 10
+      : key.endsWith("_cm")
+        ? fromCm(n, units)
         : n;
   const unit = (key: Metric) =>
     key === "weight_kg" ? units : key === "body_fat_pct" ? "%" : lengthUnit;
@@ -92,8 +91,8 @@ export function MeasurementTracker({
             ? null
             : key === "weight_kg"
               ? toKg(n, units)
-              : key.endsWith("_cm") && lengthUnit === "in"
-                ? Math.round(n * 2.54 * 10) / 10
+              : key.endsWith("_cm")
+                ? toCm(n, units)
                 : n,
         ];
       }),
@@ -192,7 +191,7 @@ export function MeasurementTracker({
         <h2 className="font-semibold">Record a check-in</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Every field is optional. Enter fresh measurements; previous values are
-          never assumed. Lengths are stored in centimetres.
+          never assumed.
         </p>
         <form onSubmit={save} className={`mt-4 space-y-3 ${MASK}`}>
           <label className="block text-sm">
@@ -205,39 +204,14 @@ export function MeasurementTracker({
               onChange={(e) => setDate(e.target.value)}
             />
           </label>
-          <label className="block text-sm">
-            Length unit
-            <select
-              value={lengthUnit}
-              onChange={(e) => {
-                const next = e.target.value as "cm" | "in";
-                if (next === lengthUnit) return;
-                setValues((prev) =>
-                  Object.fromEntries(
-                    Object.entries(prev).map(([key, v]) => [
-                      key,
-                      key.endsWith("_cm") &&
-                      v?.trim() &&
-                      Number.isFinite(Number(v))
-                        ? String(
-                            Math.round(
-                              Number(v) *
-                                (next === "in" ? 1 / 2.54 : 2.54) *
-                                10,
-                            ) / 10,
-                          )
-                        : v,
-                    ]),
-                  ),
-                );
-                setLengthUnit(next);
-              }}
-              className="mt-1 h-12 w-full rounded-xl border bg-background px-3"
-            >
-              <option value="cm">Centimetres (cm)</option>
-              <option value="in">Inches (in)</option>
-            </select>
-          </label>
+          <Link
+            href="/settings"
+            className="flex min-h-11 items-center text-sm text-primary"
+          >
+            {units === "lb"
+              ? "Imperial units · change in Settings"
+              : "Metric units · change in Settings"}
+          </Link>
           <div className="grid grid-cols-2 gap-3">
             {METRICS.map(([key, label]) => (
               <label key={key} className="min-w-0 text-sm">

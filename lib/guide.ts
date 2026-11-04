@@ -71,7 +71,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     id: "training-feedback-and-coaching",
     date: "2026-11-04",
     title: "More flexible training and clearer progress",
-    body: "Choose KG or LB, customise rest and swap exercises. Review weekly progress, log measurements and share training with a coach.",
+    body: "Choose KG or LB, customise rest and swap exercises. Review weekly progress and log measurements.",
     href: "/progress",
   },
   {

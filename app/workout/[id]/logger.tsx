@@ -6,7 +6,7 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Check, PersonStanding, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Loader2, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowLeftRight, Check, PersonStanding, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Loader2, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Sparkles, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
 import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition } from "@/lib/feel";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, workoutOrder, type Row, type SessionExercise } from "@/lib/session";
-import { enqueue, flush, onOutboxFailure, pendingCount, useOnline, usePendingCount } from "@/lib/outbox/store";
+import { enqueue, flush, onOutboxFailure, pendingCount, pendingRestoreCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 import { formatWeight, fromKg, toKg, type Units } from "@/lib/units";
 import { formatDuration, formatTarget } from "@/lib/tracking";
@@ -36,13 +36,13 @@ import {
   type DbResult,
 } from "@/lib/routine-edits";
 import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
-import { AssessmentReminders } from "@/components/coaching/assessment-reminders";
-import type { Assessment } from "@/lib/feedback-data";
-import { localDay } from "@/lib/body-weight";
-import { WorkoutAdjustment } from "@/components/workout-adjustment";
-import { saveAdjustment } from "@/lib/workout-adjustments";
+import { QuickSwapSheet } from "@/components/quick-swap-sheet";
+import { DumbbellDaySheet } from "@/components/dumbbell-day-sheet";
+import type { Alternative, DayAlternative } from "@/lib/exercise-alternatives";
 import { getPreviousSessions } from "@/lib/previous-sessions";
 import { buildSession } from "@/lib/session";
+import { RestTimerSheet } from "@/components/rest-timer-sheet";
+import { saveAdjustment, saveAdjustments } from "@/lib/workout-adjustments";
 import { saveChoice } from "@/lib/alternates";
 import { MusclesSheet } from "@/components/anatomy/muscles-sheet";
 import { useTip } from "@/components/guide/guide-provider";
@@ -106,21 +106,33 @@ export function Logger(props: {
   lastNotes?: Record<string, string>;
   /** Slots with alternates, by slot id: each option it can be done as today. */
   options?: Record<string, SlotOption[]>;
-  coachReminders?: Assessment[];
   /** Edit the day's exercises mid-workout: in the plan, or for this workout only. */
   editing?: WorkoutEditing;
 }) {
   const { workoutId, units, demo = false, editing } = props;
   // Alternates switched to on this screen, by slot id.
-  const [adjusted,setAdjusted] = useState<Record<string,SlotOption>>({});
+  const [swapped,setSwapped]=useState<Record<string,SlotOption & {targetSets?:number;targetReps?:number}>>({});
+  const [swapIndex,setSwapIndex]=useState<number|null>(null);
+  const [adaptOpen,setAdaptOpen]=useState(false);
   const [restChoices,setRestChoices] = useState<Record<string,number>>({});
-  const [adjustIndex,setAdjustIndex] = useState<number|null>(null);
+  const [restIndex,setRestIndex] = useState<number|null>(null);
   const [choice, setChoice] = useState<Record<string, string>>({});
   const [lockHint, setLockHint] = useState<string | null>(null);
   const items = props.items.map((i) => {
-    const o = adjusted[i.id] ?? (choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined);
-    return { ...i, ...(o?{exercise:o.exercise}:{}),restSec:restChoices[i.id]??i.restSec };
+    const replacement = swapped[i.id];
+    const o = replacement ?? (choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined);
+    return { ...i, ...(o?{exercise:o.exercise}:{}),targetSets:replacement?.targetSets??i.targetSets,targetReps:replacement?.targetReps??i.targetReps,restSec:restChoices[i.id]??i.restSec };
   });
+  const swapLibrary=[...new Map([...(editing?.library??props.items.map(i=>i.exercise)),...Object.values(swapped).map(o=>o.exercise)].map(e=>[e.id,e])).values()];
+  async function prepareReplacement(pick:Alternative):Promise<Exercise>{
+    const known=swapLibrary.find(e=>e.id===pick.id||(e.name.toLowerCase()===pick.name.toLowerCase()&&e.equipment===pick.equipment&&e.tracking===pick.tracking));
+    if(known)return known;
+    if(demo)return {id:`sample:${pick.name}`,name:pick.name,equipment:pick.equipment,muscleGroups:pick.muscleGroups,machineSetting:null,perHand:pick.equipment==="dumbbell",warmupEnabled:true,warmupTemplate:null,weightStepKg:2.5,tracking:pick.tracking};
+    if(!navigator.onLine)throw new Error("Choose an exercise already in your library while offline.");
+    const result=await exerciseIdFor(createClient(),{exerciseId:null,name:pick.name,equipment:pick.equipment,muscleGroups:pick.muscleGroups,tracking:pick.tracking});
+    if(result.error||!result.id)throw new Error("Could not prepare the exercise. Please try again.");
+    return {id:result.id,name:pick.name,equipment:pick.equipment,muscleGroups:pick.muscleGroups,machineSetting:null,perHand:pick.equipment==="dumbbell",warmupEnabled:true,warmupTemplate:null,weightStepKg:2.5,tracking:pick.tracking};
+  }
   // The day's exercises as they are in the plan; extras for today come after.
   const dayItems = items.filter((i) => !isExtraItem(i));
   const home = demo ? "/demo" : "/";
@@ -170,6 +182,7 @@ export function Logger(props: {
   // Opened with changes still on the phone from last time: this page was
   // rendered without them, so reload once they have reached the server.
   const reloadAfterSync = useRef(false);
+  const [openedAt]=useState(()=>Date.now());
   // Counted once per workout, when it is first opened with nothing logged.
   useEffect(() => {
     if (demo || props.hasLoggedSets) return;
@@ -184,12 +197,12 @@ export function Logger(props: {
   }, [demo, props.hasLoggedSets, workoutId, items.length]);
   useEffect(() => {
     if (demo) return;
-    pendingCount(workoutId)
+    pendingRestoreCount(workoutId,openedAt)
       .then((n) => {
         if (n > 0) reloadAfterSync.current = true;
       })
       .catch(() => {});
-  }, [demo, workoutId]);
+  }, [demo, workoutId,openedAt]);
   useEffect(() => {
     if (pending === 0 && reloadAfterSync.current) {
       reloadAfterSync.current = false;
@@ -531,7 +544,7 @@ export function Logger(props: {
     }
     if (hold?.exIndex === exIndex) setHold(null);
     setLockHint(null);
-    setAdjusted(prev=>{const next={...prev};delete next[slotId];return next;});
+    setSwapped(prev=>{const next={...prev};delete next[slotId];return next;});
     if(!demo)saveAdjustment(workoutId,slotId,{exerciseId});
     setChoice((c) => ({ ...c, [slotId]: exerciseId }));
     setExercises((prev) => prev.map((e, i) => (i === exIndex ? option.session : e)));
@@ -744,7 +757,8 @@ export function Logger(props: {
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg space-y-4 px-4 pt-4">
+      <main inert={Boolean(editBusy)||refreshing} aria-busy={Boolean(editBusy)||refreshing} className="mx-auto max-w-lg space-y-4 px-4 pt-4">
+        {!demo&&editing&&<Button variant="secondary" className="w-full" onClick={()=>setAdaptOpen(true)}><Sparkles className="size-4"/>Dumbbell workout with AI</Button>}
         {demo && (
           <p className="rounded-xl border border-primary/40 bg-accent/40 p-3 text-sm">
             Demo workout with sample numbers. Tick sets, pick how they felt and watch the next set adjust.
@@ -772,7 +786,6 @@ export function Logger(props: {
           }
         />
 
-        <AssessmentReminders assessments={props.coachReminders??[]} today={localDay()}/>
         {order.map((exIndex) => {
           const ex = exercises[exIndex];
           if (!ex) return null;
@@ -850,6 +863,10 @@ export function Logger(props: {
                         onSave={(v) => saveSetting(ex.exerciseId, v)}
                       />
                       {item.exercise.perHand && <Badge variant="outline">per hand</Badge>}
+                      <button type="button" onClick={()=>setSwapIndex(exIndex)} aria-label={`Swap exercise ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center"><span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><ArrowLeftRight className="size-3.5" aria-hidden/>Swap exercise</span></button>
+                      <button type="button" onClick={()=>setRestIndex(exIndex)} aria-label={`Rest timer for ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center">
+                        <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><Timer className="size-3.5" aria-hidden/>Rest timer · {clock(item.restSec ?? props.defaultRestSec)}</span>
+                      </button>
                       {item.exercise.muscleGroups.length > 0 && (
                         <button
                           type="button"
@@ -867,7 +884,6 @@ export function Logger(props: {
                       {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
                       {isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}
                     </div>
-                    <Button variant="ghost" className="mt-1 px-0 text-primary" onClick={()=>setAdjustIndex(exIndex)}><Timer className="size-4"/>Equipment / rest</Button>
                     {!demo && item.exercise.tracking !== "time" && (
                       <Link href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
                         try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
@@ -1188,33 +1204,216 @@ export function Logger(props: {
         />
       )}
 
-      {adjustIndex!==null && items[adjustIndex] && <WorkoutAdjustment
-        item={items[adjustIndex]} defaultSec={props.defaultRestSec}
-        library={(editing?.library??props.items.map(i=>i.exercise)).filter(e=>!items.some((item,i)=>i!==adjustIndex&&item.exercise.id===e.id))}
-        locked={[...exercises[adjustIndex].warmups,...exercises[adjustIndex].working].some(r=>r.logged!==null)}
-        canSavePlan={Boolean(editing&&!isExtraItem(items[adjustIndex]))&&!demo}
-        onClose={()=>setAdjustIndex(null)}
-        onRest={async(seconds,plan)=>{
-          const item=items[adjustIndex];
-          if(plan){const {error}=await createClient().from("routine_exercises").update({rest_sec:seconds}).eq("id",item.id).select("id").single();if(error)throw new Error("Could not save the plan rest time. Check your connection.");}
-          if(!demo)saveAdjustment(workoutId,item.id,{restSec:seconds});
-          setRestChoices(prev=>({...prev,[item.id]:seconds}));
-          if(rest)setRest({endsAt:secondsFromNow(seconds),total:seconds});
-        }}
-        onReplace={async(pick,plan)=>{
-          const item=items[adjustIndex];
-          if([...exercises[adjustIndex].warmups,...exercises[adjustIndex].working].some(r=>r.logged))throw new Error("Untick logged sets before replacing this exercise.");
-          if(plan){const result=await exerciseIdFor(createClient(),pick);if(result.error||!result.id)throw new Error("Could not prepare the replacement. Try again online.");if(items.some((value,i)=>i!==adjustIndex&&value.exercise.id===result.id))throw new Error("That exercise is already in this workout.");saveAdjustment(workoutId,item.id,{exerciseId:result.id});const err=await applyEdit(s=>swapExercise(s,item,{...pick,exerciseId:result.id,muscleGroups:undefined}));if(err){saveAdjustment(workoutId,item.id,{exerciseId:item.exercise.id});throw new Error(err);}return;}
-          let replacement=editing?.library.find(e=>e.id===pick.exerciseId)??props.items.map(i=>i.exercise).find(e=>e.id===pick.exerciseId);
-          if(!replacement){if(demo)throw new Error("Choose an existing sample exercise.");const result=await exerciseIdFor(createClient(),pick);if(result.error||!result.id)throw new Error("Could not create the replacement. Try again online.");const lib=await createClient().from("exercises").select("*").eq("id",result.id).single();if(lib.error||!lib.data)throw new Error("Could not load the replacement.");replacement={...item.exercise,id:result.id,name:lib.data.name,equipment:lib.data.equipment,perHand:lib.data.per_hand,muscleGroups:lib.data.muscle_groups??[],machineSetting:lib.data.machine_setting,warmupEnabled:lib.data.warmup_enabled,warmupTemplate:lib.data.warmup_template,weightStepKg:lib.data.weight_step_kg??2.5,tracking:lib.data.tracking??"reps"};}
-          if(items.some((value,i)=>i!==adjustIndex&&value.exercise.id===replacement.id))throw new Error("That exercise is already in this workout.");
-          const previous=!demo&&navigator.onLine?await getPreviousSessions(createClient(),[replacement.id],workoutId).catch(()=>new Map()):new Map();
-          const session=buildSession([{...item,exercise:replacement}],previous,[])[0];
-          if(!demo)saveAdjustment(workoutId,item.id,{exerciseId:replacement.id});
-          setAdjusted(prev=>({...prev,[item.id]:{exercise:replacement!,session}}));
-          setExercises(prev=>prev.map((value,i)=>i===adjustIndex?session:value));setOpenId(replacement.id);
-        }}
-      />}
+      {swapIndex !== null && items[swapIndex] && (
+        <QuickSwapSheet
+          original={items[swapIndex].exercise}
+          library={swapLibrary}
+          excludedIds={items
+            .filter((_, i) => i !== swapIndex)
+            .map((i) => i.exercise.id)}
+          demo={demo}
+          locked={[
+            ...exercises[swapIndex].warmups,
+            ...exercises[swapIndex].working,
+          ].some((r) => r.logged !== null)}
+          onClose={() => setSwapIndex(null)}
+          onSwap={async (pick) => {
+            const item = items[swapIndex];
+            if (
+              [
+                ...exercises[swapIndex].warmups,
+                ...exercises[swapIndex].working,
+              ].some((r) => r.logged)
+            )
+              throw new Error(
+                "Untick logged sets before swapping this exercise.",
+              );
+            const replacement = await prepareReplacement(pick);
+            if (
+              items.some(
+                (e, i) => i !== swapIndex && e.exercise.id === replacement.id,
+              )
+            )
+              throw new Error("That exercise is already in this workout.");
+            const previous =
+              !demo && navigator.onLine
+                ? await getPreviousSessions(
+                    createClient(),
+                    [replacement.id],
+                    workoutId,
+                  ).catch(() => new Map())
+                : new Map();
+            const session = buildSession(
+              [{ ...item, exercise: replacement }],
+              previous,
+              [],
+            )[0];
+            if (!demo) {
+              if (isExtraItem(item)) {
+                removeExtra(workoutId, item.exercise.id);
+                addExtra(workoutId, replacement.id, {
+                  sets: item.targetSets,
+                  reps: item.targetReps,
+                  restSec: item.restSec,
+                });
+              } else
+                saveAdjustment(workoutId, item.id, {
+                  exerciseId: replacement.id,
+                });
+            }
+            setSwapped((prev) => ({
+              ...prev,
+              [item.id]: { exercise: replacement, session },
+            }));
+            setExercises((prev) =>
+              prev.map((e, i) => (i === swapIndex ? session : e)),
+            );
+            setOpenId(replacement.id);
+            if (hold?.exIndex === swapIndex) setHold(null);
+            if (!demo && navigator.onLine) {
+              try {
+                sessionStorage.setItem(
+                  uiKey,
+                  JSON.stringify({ rest, openId: replacement.id }),
+                );
+              } catch {}
+              await flush();
+              startRefresh(() => router.refresh());
+            }
+          }}
+        />
+      )}
+      {adaptOpen && (
+        <DumbbellDaySheet
+          items={items.filter(
+            (item, i) =>
+              !isExtraItem(item) &&
+              ![...exercises[i].warmups, ...exercises[i].working].some(
+                (r) => r.logged,
+              ),
+          )}
+          library={swapLibrary}
+          excludedIds={items
+            .filter(
+              (item, i) =>
+                isExtraItem(item) ||
+                [...exercises[i].warmups, ...exercises[i].working].some(
+                  (r) => r.logged,
+                ),
+            )
+            .map((i) => i.exercise.id)}
+          onClose={() => setAdaptOpen(false)}
+          onApply={async (choices: DayAlternative[]) => {
+            const remaining = items
+              .map((item, i) => ({ item, index: i }))
+              .filter(
+                ({ item, index }) =>
+                  !isExtraItem(item) &&
+                  ![
+                    ...exercises[index].warmups,
+                    ...exercises[index].working,
+                  ].some((r) => r.logged),
+              );
+            if (choices.length !== remaining.length)
+              throw new Error("The workout changed. Generate a fresh version.");
+            const replacements: Exercise[] = [];
+            for (const pick of choices)
+              replacements.push(await prepareReplacement(pick));
+            const lockedIds = items
+              .filter((_, i) => !remaining.some((r) => r.index === i))
+              .map((i) => i.exercise.id);
+            if (
+              new Set(replacements.map((e) => e.id)).size !==
+                replacements.length ||
+              replacements.some((e) => lockedIds.includes(e.id))
+            )
+              throw new Error(
+                "Suggestions repeated an exercise already in this workout. Try another version.",
+              );
+            const previous = await getPreviousSessions(
+              createClient(),
+              replacements.map((e) => e.id),
+              workoutId,
+            ).catch(() => new Map());
+            const changes = Object.fromEntries(
+              remaining.map(({ item }, i) => [
+                item.id,
+                {
+                  exerciseId: replacements[i].id,
+                  targetSets: choices[i].targetSets,
+                  targetReps: choices[i].targetReps,
+                },
+              ]),
+            );
+            saveAdjustments(workoutId, changes);
+            const next = { ...swapped };
+            const sessions = [...exercises];
+            remaining.forEach(({ item, index }, i) => {
+              const updated = {
+                ...item,
+                exercise: replacements[i],
+                targetSets: choices[i].targetSets,
+                targetReps: choices[i].targetReps,
+              };
+              const session = buildSession([updated], previous, [])[0];
+              next[item.id] = {
+                exercise: replacements[i],
+                session,
+                targetSets: updated.targetSets,
+                targetReps: updated.targetReps,
+              };
+              sessions[index] = session;
+            });
+            setSwapped(next);
+            setExercises(sessions);
+            setOpenId(replacements[0]?.id ?? null);
+            setHold(null);
+            await flush();
+            try {
+              sessionStorage.setItem(
+                uiKey,
+                JSON.stringify({ rest, openId: replacements[0]?.id ?? null }),
+              );
+            } catch {}
+            startRefresh(() => router.refresh());
+          }}
+        />
+      )}
+
+      {restIndex !== null && items[restIndex] && (
+        <RestTimerSheet
+          key={items[restIndex].id}
+          exerciseName={items[restIndex].exercise.name}
+          seconds={items[restIndex].restSec ?? props.defaultRestSec}
+          description={
+            demo
+              ? "Try a duration in this sample workout."
+              : isExtraItem(items[restIndex])
+                ? "Saved for this exercise in this session."
+                : `Saved for this exercise in ${props.routineName}. Offline changes sync when you reconnect.`
+          }
+          onClose={() => setRestIndex(null)}
+          onSave={async (seconds) => {
+            const item = items[restIndex];
+            if (!demo) {
+              if (editing && !isExtraItem(item))
+                await enqueue(workoutId, {
+                  kind: "setRest",
+                  routineExerciseId: item.id,
+                  restSec: seconds,
+                });
+              saveAdjustment(workoutId, item.id, { restSec: seconds });
+            }
+            setRestChoices((prev) => ({ ...prev, [item.id]: seconds }));
+            if (rest)
+              setRest(
+                seconds > 0
+                  ? { endsAt: secondsFromNow(seconds), total: seconds }
+                  : null,
+              );
+          }}
+        />
+      )}
 
       {editing && editItem && editIndex >= 0 && (
           <ExerciseSheet
@@ -1722,7 +1921,7 @@ function RepsStepper({
 }) {
   const step = (delta: number) => onChange(Math.min(MAX_REPS, Math.max(1, (value ?? 0) + delta)));
   const button = cn(
-    "flex h-11 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40",
+    "hidden h-11 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40 min-[360px]:flex",
     compact ? "w-8" : "w-11",
   );
   return (
@@ -1746,7 +1945,7 @@ function RepsStepper({
         value={value}
         onChange={(v) => onChange(v === null ? null : Math.round(v))}
         integer
-        className="h-full w-8 rounded-none border-0 bg-transparent"
+        className="h-full w-12 rounded-none border-0 bg-transparent min-[360px]:w-8"
       />
       <button
         type="button"

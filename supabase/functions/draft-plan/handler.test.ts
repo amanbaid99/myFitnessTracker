@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DAILY_LIMIT, DRAFT_MODELS, handle, lastJson, MODELS, PAID_MODEL, prepMessage, toMuscleSuggestion, toMuscleBatch, toMuscleBatchSuggestion, MAX_BATCH, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
+import { DAILY_LIMIT, DRAFT_MODELS, handle, toAlternatives, toAdaptedDay, lastJson, MODELS, PAID_MODEL, prepMessage, toMuscleSuggestion, toMuscleBatch, toMuscleBatchSuggestion, MAX_BATCH, race, toDraft, toLines, toPrep, toPrepDay } from "./handler";
 import { MUSCLE_GROUPS, EQUIPMENT } from "../../../lib/muscles";
 import { MUSCLES, EQUIPMENT as FN_EQUIPMENT } from "./handler";
 
@@ -275,4 +275,53 @@ describe("batch muscle suggestions", () => {
     expect((await handle(req({ mode: "muscles_batch", exercises: [] }), ENV, fakeFetch(), () => {}, NOW)).status).toBe(400);
     expect((await handle(req({ mode: "muscles_batch", exercises: [{ name: "Squat" }] }, null), ENV, fakeFetch(), () => {}, NOW)).status).toBe(401);
   });
+});
+
+
+describe("occupied-station alternatives and dumbbell days",()=>{
+ const exercise=(name:string,equipment="dumbbell",muscles=["chest","triceps"])=>({name,equipment,muscles,sets:2,reps:12});
+ const draft=(exercises:ReturnType<typeof exercise>[])=>({name:"Alternatives",days:[{name:"Today",exercises}]});
+ it("filters original exercises, wrong equipment and mismatched muscles",()=>{
+  const raw=draft([exercise("Bench Press","barbell"),exercise("Goblet Squat","dumbbell",["quads"]),exercise("Floor Press"),exercise("Floor Press")]);
+  expect(toAlternatives(raw,"Bench Press",["dumbbell"],["chest"])?.map(e=>e.name)).toEqual(["Floor Press"]);
+  expect(toAlternatives(raw,"Floor Press",["cable"],["chest"])).toBeNull();
+ });
+ it("requires exactly one unique dumbbell replacement per remaining slot",()=>{
+  expect(toAdaptedDay(draft([exercise("Floor Press")]),1)).toHaveLength(1);
+  expect(toAdaptedDay(draft([exercise("Floor Press")]),1,[["quads"]])).toBeNull();
+  expect(toAdaptedDay(draft([exercise("Floor Press")]),2)).toBeNull();
+  expect(toAdaptedDay(draft([exercise("Floor Press"),exercise("Floor Press")]),2)).toBeNull();
+  expect(toAdaptedDay(draft([exercise("Chest Press","machine")]),1)).toBeNull();
+ });
+ it("suggests without reading the library or writing exercise/plan metadata",async()=>{
+  const fetchFn=fakeFetch({models:[reply(JSON.stringify(draft([exercise("Floor Press")])))]});
+  const res=await handle(req({mode:"alternatives",exercise:{name:"Bench Press",equipment:"barbell",muscles:["chest"]},availableEquipment:["dumbbell"]}),ENV,fetchFn,()=>{},NOW);
+  expect(res.status).toBe(200);expect((await res.json()).alternatives[0].name).toBe("Floor Press");
+  expect(fetchFn.mock.calls.some(([url])=>String(url).includes("/exercises?"))).toBe(false);
+  expect(fetchFn.mock.calls.filter(([,options])=>options?.method==="POST")).toHaveLength(2);
+ });
+ it("adapts a day and redacts contact details from model input",async()=>{
+  const fetchFn=fakeFetch({models:[reply(JSON.stringify(draft([exercise("Floor Press")])))]});
+  const res=await handle(req({mode:"adapt_day",day:{name:"Today",exercises:[{name:"Bench mail me at me@example.com",muscles:["chest"],sets:4,reps:6}]}}),ENV,fetchFn,()=>{},NOW);
+  expect(res.status).toBe(200);expect((await res.json()).adapted).toHaveLength(1);
+  const model=fetchFn.mock.calls.find(([url])=>String(url).startsWith("https://openrouter.ai"));
+  expect(String(model?.[1]?.body)).not.toContain("me@example.com");
+  const message=JSON.parse(String(model?.[1]?.body)).messages[1].content;
+  expect(JSON.parse(message).exercises[0]).toMatchObject({sets:4,reps:6,tracking:"reps"});
+  expect(fetchFn.mock.calls.some(([url])=>String(url).includes("/exercises?"))).toBe(false);
+ });
+ it("requires authentication and applies the shared daily quota",async()=>{
+  const body={mode:"adapt_day",day:{name:"Today",exercises:[{name:"Bench",muscles:["chest"]}]}};
+  expect((await handle(req(body,null),ENV,fakeFetch(),()=>{},NOW)).status).toBe(401);
+  const base=fakeFetch();const denied=vi.fn<typeof fetch>(async(url,init)=>String(url).endsWith("/auth/v1/user")?new Response("no",{status:401}):base(url,init));
+  expect((await handle(req(body),ENV,denied,()=>{},NOW)).status).toBe(401);expect(base).not.toHaveBeenCalled();
+  const limited=fakeFetch({asked:DAILY_LIMIT});expect((await handle(req(body),ENV,limited,()=>{},NOW)).status).toBe(429);
+  expect(limited.mock.calls.some(([url])=>String(url).startsWith("https://openrouter.ai"))).toBe(false);
+ });
+ it("rejects invalid adaptation requests without calling providers",async()=>{
+  const fetchFn=fakeFetch();
+  expect((await handle(req({mode:"adapt_day",day:{exercises:[]}}),ENV,fetchFn,()=>{},NOW)).status).toBe(400);
+  expect((await handle(req({mode:"alternatives",exercise:{name:"Bench"},availableEquipment:[]}),ENV,fetchFn,()=>{},NOW)).status).toBe(400);
+  expect(fetchFn).not.toHaveBeenCalled();
+ });
 });

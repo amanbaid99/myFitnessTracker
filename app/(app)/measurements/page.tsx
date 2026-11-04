@@ -15,6 +15,7 @@ export default async function Page() {
       />
       {data.available ? (
         <MeasurementTracker
+          key={profile.units}
           records={data.records}
           reminders={data.reminders}
           userId={profile.id}
