@@ -37,3 +37,16 @@ export function shortWeekRange(week: { start: string; end: string }): string {
   const fmt = (d: string, month: boolean) => new Intl.DateTimeFormat("en-GB", { day: "numeric", ...(month ? { month: "short" } : {}), timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
   return week.start.slice(0, 7) === week.end.slice(0, 7) ? `${fmt(week.start, false)} to ${fmt(week.end, true)}` : `${fmt(week.start, true)} to ${fmt(week.end, true)}`;
 }
+
+export type WeekAnalysisState = "ready" | "pending" | "no-workouts" | "error";
+
+/**
+ * What the weekly page says about the analysis: shown, still being written,
+ * nothing logged that week, or could not be loaded. `workoutCount` null
+ * means the count is unknown, so it never claims there were no workouts. Pure.
+ */
+export function weekAnalysisState(o: { hasReview: boolean; reviewFailed: boolean; workoutCount: number | null }): WeekAnalysisState {
+  if (o.hasReview) return "ready";
+  if (o.reviewFailed) return "error";
+  return o.workoutCount === 0 ? "no-workouts" : "pending";
+}

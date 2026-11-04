@@ -1766,3 +1766,14 @@ queues, the full effort scale and +15s rest increment. Finish explains
 completed, skipped and unlogged working sets and optional energy endpoints.
 Human coaching stays paused by Aman's explicit clarification; P3.5 to P3.7
 are deferred. Deliver four review PRs without merge or deployment.
+
+## 2026-11-04: Weekly analysis page leads with the takeaway (UI Phase 2, P2.4)
+
+Per the UI requirements, the weekly page now opens with the review title and
+a Next focus line (the review's final recommendation, moved up rather than
+repeated), then the rest of the text, then the body map. Reviews with lists
+or bold markup are left whole. The page separates four states (ready, on
+its way, no workouts, could not load) using a separate count of that week's
+app workouts, and a failed analysis read no longer hides the muscle map.
+Week boundaries and the review text are unchanged. Aman asked to leave
+P3.5 to P3.7 (human coaching) out of this UI work.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisWeek , weekRangeLabel, previousWeek, weekForPage, shortWeekRange } from "./analysis-week";
+import { analysisWeek , weekRangeLabel, previousWeek, weekForPage, shortWeekRange, weekAnalysisState } from "./analysis-week";
 
 describe("analysis weeks", () => {
   it("keeps Sunday in the old week and rolls over at Monday midnight", () => {
@@ -39,5 +39,15 @@ describe("shortWeekRange", () => {
   it("drops the repeated month", () => {
     expect(shortWeekRange(analysisWeek("2026-11-03T09:00:00Z"))).toBe("2 to 8 Nov");
     expect(shortWeekRange(analysisWeek("2026-10-28T09:00:00Z"))).toBe("26 Oct to 1 Nov");
+  });
+});
+
+describe("weekAnalysisState", () => {
+  it("tells the four cases apart", () => {
+    expect(weekAnalysisState({ hasReview: true, reviewFailed: false, workoutCount: 0 })).toBe("ready");
+    expect(weekAnalysisState({ hasReview: false, reviewFailed: true, workoutCount: 2 })).toBe("error");
+    expect(weekAnalysisState({ hasReview: false, reviewFailed: false, workoutCount: 0 })).toBe("no-workouts");
+    expect(weekAnalysisState({ hasReview: false, reviewFailed: false, workoutCount: 1 })).toBe("pending");
+    expect(weekAnalysisState({ hasReview: false, reviewFailed: false, workoutCount: null })).toBe("pending");
   });
 });
