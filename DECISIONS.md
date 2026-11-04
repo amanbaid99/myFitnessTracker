@@ -1777,3 +1777,12 @@ its way, no workouts, could not load) using a separate count of that week's
 app workouts, and a failed analysis read no longer hides the muscle map.
 Week boundaries and the review text are unchanged. Aman asked to leave
 P3.5 to P3.7 (human coaching) out of this UI work.
+
+## 2026-11-04: One set of recap labels in History (UI Phase 2, P2.2)
+
+History rows now say Recap ready, Recap on its way (within 10 minutes of
+finishing, matching the recap page's polling window) or No recap, with
+Latest added the same way to any of them (`recapStatus` in lib/history.ts).
+An unknown status shows nothing on the row; the single page notice
+explains it. Active filters are summarised beside Clear so they stay
+visible when the panel is closed.

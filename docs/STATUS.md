@@ -8,6 +8,10 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: P2.4 (weekly page) is live via PR #32. Branch
+  `ui/phase-2-history-list` does P2.2: one set of recap labels, active
+  filter summary with Clear, filter dot, singular set counts.
+
 - 2026-11-04: UI Phase 1 (PR #31) is live at 4301b56. Branch
   `ui/phase-2-weekly-analysis` does P2.4: weekly page leads with takeaway
   and Next focus, and separates ready, pending, no-workouts and failed

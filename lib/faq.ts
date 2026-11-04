@@ -35,7 +35,7 @@ export const FAQ: FaqSection[] = [
     items: [
       {
         q: "How do I find a past workout?",
-        a: ["History groups sessions into This week, Last week and older months using your device timezone. Search by workout name, or use Filter workouts for dates and entry type. Dates include both the start and end day. Recap ready means a saved workout analysis is available. Working-set counts exclude warm-ups and deleted sets. Tap any row to open it. Search and filters cover the latest 100 entries; the page tells you when that limit is reached."],
+        a: ["History groups sessions into This week, Last week and older months using your device timezone. Search by workout name, or use Filter workouts for dates and entry type. Dates include both the start and end day. Each logged workout shows Recap ready when its analysis is saved, Recap on its way for a few minutes after you finish, or No recap. Filters in use stay listed above the results with Clear, even when the filter panel is closed. Working-set counts exclude warm-ups and deleted sets. Tap any row to open it. Search and filters cover the latest 100 entries; the page tells you when that limit is reached."],
       },
       {
         q: "Why is an exercise missing from my body map?",
