@@ -28,6 +28,8 @@ others); `CLAUDE.md` only points here.
 5. `DECISIONS.md`: why things are the way they are, newest at the end.
    Search it before changing a behaviour; most rules came from Aman.
 6. `docs/SETUP.md`: accounts, secrets and CI, for infra work.
+7. `docs/UI-PLAN.md`: the UI/UX improvement plan and its tracker, for any
+   UI work.
 
 ## Hard rules
 
