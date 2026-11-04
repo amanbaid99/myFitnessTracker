@@ -141,3 +141,9 @@ Aman confirmed analysis works. The function retains webhook authentication.
   pages; there is no `app/global-error.tsx`.
 - The checklist warm-up text is built on the server, so it names the
   alternate chosen at load, not one switched to during the workout.
+
+- 2026-11-04: UI phase 1 on `ui/phase-1-workout`, awaiting review. Current
+  goal snapshots on Today, focused logging, narrow controls, compact
+  preparation/options, real local-save feedback and finish summary. Evidence
+  in `docs/ui-evidence/phase-1`. No schema change or deployment. Subsequent
+  UI phases stack on this PR. Human-coaching UI remains deferred/paused.

@@ -33,3 +33,13 @@ export function normalizeWeeks(
     excluded_sets: Number(r.excluded_sets),
   }));
 }
+
+/** Closed weeks never supply a current goal. The RPC snapshots the plan default. */
+export function effectiveWeeklyGoal(
+  rows: TrainingWeek[], currentStart: string, planDefault: number | null, available: boolean,
+) {
+  if (!available) return null;
+  const current = rows.find(week => week.week_start === currentStart);
+  if (current) return current.target !== null && current.target > 0 ? current.target : null;
+  return planDefault !== null && planDefault > 0 ? planDefault : null;
+}

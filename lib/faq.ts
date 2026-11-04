@@ -20,7 +20,7 @@ export const FAQ: FaqSection[] = [
     title: "Training reports and workout options",
     items: [
       { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Units and measurements, choose Metric (kg, cm) or Imperial (lb, ft/in), then Save units. This single preference controls workout weights, body weight, height and body measurements. Your recorded values stay unchanged."] },
-      { q: "What if the equipment I need is busy?", a: ["Tap Swap exercise on the open exercise. Choose a quick alternative, search, or use Suggest with AI and filter available equipment. Choosing swaps this session only; your plan stays unchanged. Logged sets must be unticked before swapping. Check the replacement weight; it uses its own history. Existing library swaps work offline. AI and new exercises need a connection."] },
+      { q: "What if the equipment I need is busy?", a: ["Open Exercise options and history, then tap Swap exercise. Choose a quick alternative, search, or use Suggest with AI and filter available equipment. Choosing swaps this session only; your plan stays unchanged. Logged sets must be unticked before swapping. Check the replacement weight; it uses its own history. Existing library swaps work offline. AI and new exercises need a connection."] },
       { q: "Can AI make today a dumbbell workout?", a: ["Tap Dumbbell workout with AI during a workout, then Create with AI. Review the proposed exercises, muscles, sets and reps, then choose Use this workout today. Only remaining planned exercises change; logged exercises and added extras stay intact. The regular plan is unchanged. Check each exercise's weight before logging. This supports up to 15 remaining exercises and uses the shared daily AI allowance."] },
       { q: "How is weekly training volume calculated?", a: ["Progress, Strength, Weekly volume reports adds load times reps for eligible working sets in completed app workouts. Weeks run Monday to Sunday in India time. Filter by exercise or muscle. Warm-ups, deleted sets, cancelled sessions, imports, starting records, bodyweight, bands and timed work are excluded. Per-hand weights use the entered load without doubling. Muscle breakdowns credit the primary muscle fully and supporting muscles by half, so muscle totals overlap. This week is unfinished; more volume does not always mean better training."] },
       { q: "What does goal completion mean?", a: ["Progress, Consistency shows completed workouts against your recorded weekly target. You can change the current week's target. Closed weeks keep their recorded targets; older weeks without a snapshot say Target unavailable. We do not guess which days were missed. The calendar uses your device timezone, while weekly reports use India time."] },
@@ -55,7 +55,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "Can I do fewer sets than planned?",
-        a: ["Tap Skip set under any unlogged working set. Undo skip brings it back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
+        a: ["The current working set is highlighted. Tap Log set with its prefilled values, or edit them first. All sets reveals completed and other rows for inspection or out-of-order logging. Tap Skip set under any unlogged working set. Undo skip brings it back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
       },
       {
         q: "What does the weekly analysis cover?",
@@ -142,7 +142,7 @@ export const FAQ: FaqSection[] = [
         q: "How does the rest timer work?",
         a: [
           "It starts when you log a set and beeps when rest is over. Use +15s for more time, the circular arrow to restart it, or Skip. The speaker button mutes the beeps.",
-          "Tap the Rest timer chip on an exercise. A preset saves immediately, or use Custom duration. It updates that exercise in the workout routine, including the next time you train it. Offline changes sync when you reconnect. Exercises added only to this session keep their rest change in this session. You can also edit rest in your plan.",
+          "Open Exercise options and history, then tap Rest timer. A preset saves immediately, or use Custom duration. It updates that exercise in the workout routine, including the next time you train it. Offline changes sync when you reconnect. Exercises added only to this session keep their rest change in this session. You can also edit rest in your plan.",
         ],
       },
       {

@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import {
   Bar,
@@ -16,6 +17,7 @@ import { fromKg, type Units } from "@/lib/units";
 import { analysisWeek } from "@/lib/analysis-week";
 import {
   goalCompletion,
+  effectiveWeeklyGoal,
   volumeChange,
   normalizeWeeks,
   type TrainingWeek,
@@ -48,6 +50,7 @@ export function TrainingReports({
     [goal, setGoal] = useState(String(initial.at(-1)?.target ?? 3)),
     [saving, setSaving] = useState(false);
   const request = useRef(0);
+  const router=useRouter();
   async function reload(filter: string) {
     const id = ++request.current;
     setLoading(true);
@@ -75,13 +78,14 @@ export function TrainingReports({
       if (id === request.current) setLoading(false);
     }
   }
-  const thisWeek = rows.at(-1),
+  const currentStart = analysisWeek(new Date().toISOString()).start;
+  const thisWeek = rows.find(w=>w.week_start===currentStart),
     lastWeek = rows.at(-2),
     change = volumeChange(
       thisWeek?.volume_kg ?? null,
       lastWeek?.volume_kg ?? null,
     );
-  const currentStart = analysisWeek(new Date().toISOString()).start;
+  const effectiveGoal = effectiveWeeklyGoal(rows,currentStart,null,available);
   async function saveGoal() {
     const n = Number(goal);
     if (!Number.isInteger(n) || n < 1 || n > 14) {
@@ -116,6 +120,7 @@ export function TrainingReports({
             .insert({ user_id: userId, week_start: currentStart, target: n });
       if (result.error) throw result.error;
       await reload(scope);
+      router.refresh();
       setMessage(
         "This week's target saved. Previous weeks keep their targets.",
       );
@@ -158,11 +163,11 @@ export function TrainingReports({
           <div className="mt-3 flex items-center justify-between gap-3">
             <p className="text-lg font-semibold">
               {thisWeek?.workouts ?? 0}
-              {thisWeek?.target ? ` / ${thisWeek.target}` : ""} workouts
+              {effectiveGoal ? ` / ${effectiveGoal}` : ""} workouts
             </p>
             <p className="text-sm text-muted-foreground">
-              {thisWeek?.target
-                ? `${goalCompletion(thisWeek.workouts, thisWeek.target)?.percent}% complete`
+              {thisWeek && effectiveGoal
+                ? `${goalCompletion(thisWeek.workouts, effectiveGoal)?.percent}% complete`
                 : "Target unavailable"}
             </p>
           </div>

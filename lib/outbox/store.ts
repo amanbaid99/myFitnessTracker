@@ -79,13 +79,13 @@ async function sendQueued(): Promise<number> {
   }
 }
 
-export function pendingCount(workoutId?: string): Promise<number> {
+export async function pendingCount(workoutId?: string): Promise<number> {
   const ops = outbox().ops;
   return workoutId ? ops.where("workoutId").equals(workoutId).count() : ops.count();
 }
 
 /** Rest changes already have a session cookie; they never need a forced reload. */
-export function pendingRestoreCount(workoutId:string,openedAt:number):Promise<number>{
+export async function pendingRestoreCount(workoutId:string,openedAt:number):Promise<number>{
   return outbox().ops.where("workoutId").equals(workoutId).filter(item=>needsWorkoutReload(item,openedAt)).count();
 }
 

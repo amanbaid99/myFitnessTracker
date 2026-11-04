@@ -1746,3 +1746,23 @@ compressing plus/minus buttons; larger screens keep the steppers.
 Aman approved the proposed More flexible workouts popup and release of
 PR #30. Add the exact approved wording and deploy draft-plan with JWT
 verification enabled. No database migration is added.
+
+## 2026-11-04: UI phase 1, focused logging and current-week goals
+
+Use the explicit current-week snapshot before a plan default. Closed-week
+snapshots stay unchanged; unavailable data shows one explanation. Today uses
+the report count so its goal summary agrees with Progress. Preserve all
+existing week calculations in this phase.
+
+Focus the first unlogged, unskipped working set, with an explicit Log set
+action and All sets access. Keep the most recent effort/undo row visible,
+and preserve entered values when opening secondary controls. Put exercise
+options, previous sessions and ramp-ups in compact disclosures. Preparation
+can be explicitly skipped without checking it off. Add weight names the
+add-on action, and wrapping controls keep 44 px targets on narrow screens.
+
+Only show local save success after IndexedDB accepts a set. Keep offline
+queues, the full effort scale and +15s rest increment. Finish explains
+completed, skipped and unlogged working sets and optional energy endpoints.
+Human coaching stays paused by Aman's explicit clarification; P3.5 to P3.7
+are deferred. Deliver four review PRs without merge or deployment.
