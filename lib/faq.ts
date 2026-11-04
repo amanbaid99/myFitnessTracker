@@ -16,6 +16,21 @@ export interface FaqSection {
 
 export const FAQ: FaqSection[] = [
   {
+    id: "training-feedback",
+    title: "Training reports and coaching",
+    items: [
+      { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Training preferences, choose KG or LB and save. Historical weights remain stored in kilograms; only display and new input units change."] },
+      { q: "What if the equipment I need is busy?", a: ["Open the exercise and tap Equipment / rest, then Choose replacement. Filter your library by equipment or add an exercise. Choose This workout only or This workout and future plan. Replace before logging sets; logged sets must be unticked first. The replacement uses its own history, so check the load before logging. Existing library replacements and workout-only rest changes work offline; plan changes and new exercises need a connection."] },
+      { q: "How is weekly training volume calculated?", a: ["Progress, Strength, Weekly volume reports adds load times reps for eligible working sets in completed app workouts. Weeks run Monday to Sunday in India time. Filter by exercise or muscle. Warm-ups, deleted sets, cancelled sessions, imports, starting records, bodyweight, bands and timed work are excluded. Per-hand weights use the entered load without doubling. Muscle breakdowns credit the primary muscle fully and supporting muscles by half, so muscle totals overlap. This week is unfinished; more volume does not always mean better training."] },
+      { q: "What does goal completion mean?", a: ["Progress, Consistency shows completed workouts against your recorded weekly target. You can change the current week's target. Closed weeks keep their recorded targets; older weeks without a snapshot say Target unavailable. We do not guess which days were missed. The calendar uses your device timezone, while weekly reports use India time."] },
+      { q: "How do monthly measurement reminders work?", a: ["Open Measurements from Settings to record optional weight, waist, chest, hips, arm circumference or a body fat estimate and its method. Weight also updates your daily weight log. A reminder appears on Today in a new month after at least 28 days without a measurement or weight log. Snooze for seven days or turn reminders off. Circumferences support cm and inches; body fat readings are estimates that depend on the method."] },
+      { q: "Why does Progress mention muscle coverage?", a: ["The Muscles tab reviews the last 28 days after at least three completed sessions. It flags selected muscle groups with no logged sets, using your active plan or an explicit balanced-coverage goal. Exclude intentionally omitted groups or pause for recovery. Unmapped exercises prevent conclusions. This describes logged coverage, not a diagnosis or a judgement about your programme."] },
+      { q: "What can a human coach see?", a: ["Settings, Coaching connections lets a coach create a private invitation. The client signs in, reviews the named coach and explicitly accepts. The coach can then view completed app workouts and sets, weekly reports and targets, and observations they record. Private workout notes and account details stay private. Measurement history and latest weight require a separate opt-in. Either person can revoke access; future reads stop, but information already viewed cannot be recalled. Invitation links expire after seven days and work once."] },
+      { q: "Are posture observations automatic?", a: ["No. A connected coach records an observation, an agreed training cue and a review date. Active observations appear on workout and history screens. Overdue observations ask for review instead of presenting an old cue as current. These are reviewed coaching notes, not AI diagnoses. Clients keep their own assessment history after revocation and can archive observations."] },
+    ],
+  },
+
+  {
     id: "start",
     title: "Getting started",
     items: [
@@ -128,7 +143,7 @@ export const FAQ: FaqSection[] = [
         q: "How does the rest timer work?",
         a: [
           "It starts when you log a set and beeps when rest is over. Use +15s for more time, the circular arrow to restart it, or Skip. The speaker button mutes the beeps.",
-          "Each exercise can have its own rest time: edit the exercise in your plan.",
+          "Each exercise can have its own rest time, including custom minutes and seconds. Edit it in your plan or tap Equipment / rest during a workout. Choose whether changes apply only to this session or also to your plan. Settings has your default rest time.",
         ],
       },
       {

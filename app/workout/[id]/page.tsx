@@ -25,6 +25,8 @@ import { chooseForDay, choicesCookieName, dayOptionIds, optionSessions, parseCho
 import { createClient } from "@/lib/supabase/server";
 import { extraExerciseIds, extraItem, extrasCookieName, parseExtras, extraTargetsCookieName, parseExtraTargets } from "@/lib/workout-extras";
 import { defaultTargets, slots } from "@/lib/default-targets";
+import { adjustmentsCookieName, parseAdjustments, applyAdjustments } from "@/lib/workout-adjustments";
+import { getAssessmentReminders } from "@/lib/feedback-data";
 import { Logger } from "./logger";
 import { GuideProvider } from "@/components/guide/guide-provider";
 
@@ -36,6 +38,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   const supabase = await createClient();
 
   const jar = await cookies();
+  const adjustments = parseAdjustments(jar.get(adjustmentsCookieName(id))?.value);
   const cookieIds = parseExtras(jar.get(extrasCookieName(id))?.value);
   const extraTargets = parseExtraTargets(jar.get(extraTargetsCookieName(id))?.value);
   // Alternates switched to during this workout, by slot.
@@ -61,9 +64,10 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     const daySlots = slots(slotsOfDay);
     // A slot with alternates is done as one of them: the one with sets
     // today, the one switched to, else the one after last time's.
-    const dayItems = routine
+    const selectedDayItems = routine
       ? chooseForDay(slotsOfDay, { routineId: routine.id, loggedIds: new Set(logged.map((s) => s.exerciseId)), picked, recent })
       : [];
+    const dayItems = applyAdjustments(selectedDayItems, adjustments, library, new Set(logged.map(s=>s.exerciseId)));
     // Exercises added to this workout only, after the day's own.
     const dayIds = dayItems.map((e) => e.exercise.id);
     const extras = extraExerciseIds(cookieIds, logged.map((s) => s.exerciseId), dayIds)
@@ -97,6 +101,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
+  const coachReminders = await getAssessmentReminders(supabase,profile.id);
   const session = buildSession(items, previous, logged);
   // Each option of a slot with alternates, ready to switch to (offline too).
   const options = optionSessions(items, slotsOfDay, session, previous, logged);
@@ -126,6 +131,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       bodyWeightKg={bodyWeightKg}
       defaultRestSec={profile.defaultRestSec}
       hasLoggedSets={logged.length > 0}
+      coachReminders={coachReminders}
       startedIndexes={startedIndexes(items.map((e) => e.exercise.id), logged)}
       notes={Object.fromEntries(notes)}
       lastNotes={Object.fromEntries(lastNotes)}

@@ -4,9 +4,20 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-03.
+Last updated: 2026-11-04.
 
 ## In progress
+
+- 2026-11-04: `feat/coach-feedback-stages` implements all four approved feedback
+  stages: units/custom rest/session substitutions, SQL weekly reports and
+  goal snapshots, optional measurements/reminders/coverage, and consent-based
+  human coaching with reviewed observations. Three new migrations are tested
+  locally but await the owner's exact SQL approval before merge. `draft-plan`
+  adds band/plate equipment vocabulary and needs a separate Edge Function
+  deployment after the schema lands. What's new wording awaits approval.
+  Local signed-in browser testing uses synthetic accounts, PostgREST and real
+  RLS; no production data was changed. See `docs/FEEDBACK-VALIDATION.md`.
+
 
 - 2026-11-03: Progress refresh adds Strength/Muscles/Consistency tabs,
   searchable period-based trends, week comparisons and touch chart details.

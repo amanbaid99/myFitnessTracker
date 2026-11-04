@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import { CoachChat, type Message, type Scope, type Starter } from "./coach-chat";
 
 const STARTERS: Starter[] = [
@@ -57,6 +58,8 @@ export function CoachScreen() {
           </Button>
         )}
       </header>
+
+      <Link href="/coaching" className="mb-3 flex min-h-11 items-center text-sm text-primary">Human coaching and shared records</Link>
 
       <div role="radiogroup" aria-label="Talk about" className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {SCOPES.map((s) => (

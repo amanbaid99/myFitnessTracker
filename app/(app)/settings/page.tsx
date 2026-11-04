@@ -1,3 +1,4 @@
+import { TrainingPreferences } from "@/components/settings/training-preferences";
 import type { Metadata } from "next";
 import { FeedbackButtons } from "@/components/feedback-buttons";
 import Link from "next/link";
@@ -36,14 +37,13 @@ export default async function SettingsPage() {
         <Row label="Units" value={profile?.units ?? "kg"} />
         <Row label="Default rest" value={`${profile?.default_rest_sec ?? 90} s`} />
       </dl>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Editing units and rest, and CSV export, arrive in Milestone 6.
-      </p>
+      <TrainingPreferences userId={claims?.sub??""} units={profile?.units==="lb"?"lb":"kg"} restSec={profile?.default_rest_sec??90} />
 
       <Button asChild variant="outline" className="mt-3 w-full">
         <Link href="/welcome?details=1">Your details: gender, weight, height, experience</Link>
       </Button>
 
+      <section className="mt-6 space-y-2"><Button asChild variant="secondary" className="w-full"><Link href="/measurements">Measurements and monthly check-ins</Link></Button><Button asChild variant="secondary" className="w-full"><Link href="/coaching">Coaches, clients and sharing</Link></Button></section>
       <section className="mt-8">
         <h2 className="mb-3 text-sm font-medium">Appearance</h2>
         <ThemePicker initial={parseTheme((await cookies()).get(THEME_COOKIE)?.value)} />

@@ -1,3 +1,5 @@
+import { MonthlyCheckIn } from "@/components/measurements/monthly-check-in";
+import { getMeasurementReminder } from "@/lib/feedback-data";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { MASK } from "@/lib/mask";
@@ -30,6 +32,8 @@ export default async function TodayPage() {
     getExerciseLibrary(supabase).catch(() => []),
   ]);
   const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
+  const checkIn = await getMeasurementReminder(supabase,profile.id,bodyWeights.entries.at(-1)?.day??null);
+  const monthly = checkIn ? <MonthlyCheckIn userId={profile.id} {...checkIn} /> : null;
   const bodyWeight = <BodyWeightCard entries={bodyWeights.entries} profileKg={bodyWeights.profileKg} units={profile.units} />;
   const greeting = profile.name ? `Hi, ${profile.name}` : "Today";
 
@@ -60,6 +64,7 @@ export default async function TodayPage() {
     return (
       <>
         {hero()}
+        {monthly}
         <div className="mt-6 rounded-2xl border border-dashed p-6 text-center">
           <p className="text-lg font-medium">No active workout plan</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -172,6 +177,7 @@ export default async function TodayPage() {
       {unmapped.length > 0 && <MuscleFixCard exercises={unmapped} />}
 
       {bodyWeight}
+      {monthly}
 
       <Button asChild variant="ghost" className="mt-3 w-full text-muted-foreground">
         <Link href="/routines">View full plan <ChevronRight /></Link>

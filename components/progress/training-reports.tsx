@@ -1,0 +1,350 @@
+"use client";
+import { useRef, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createClient } from "@/lib/supabase/client";
+import { fromKg, type Units } from "@/lib/units";
+import { analysisWeek } from "@/lib/analysis-week";
+import {
+  goalCompletion,
+  volumeChange,
+  normalizeWeeks,
+  type TrainingWeek,
+} from "@/lib/training-reports";
+import { MUSCLE_GROUPS } from "@/lib/muscles";
+import { MASK } from "@/lib/mask";
+export function TrainingReports({
+  initial,
+  available,
+  userId,
+  exercises,
+  units,
+  demo = false,
+  consistency = false,
+  connectionId,
+}: {
+  initial: TrainingWeek[];
+  available: boolean;
+  userId: string;
+  exercises: { id: string; name: string }[];
+  units: Units;
+  demo?: boolean;
+  consistency?: boolean;
+  connectionId?: string;
+}) {
+  const [rows, setRows] = useState(initial),
+    [scope, setScope] = useState("all"),
+    [loading, setLoading] = useState(false),
+    [message, setMessage] = useState(""),
+    [goal, setGoal] = useState(String(initial.at(-1)?.target ?? 3)),
+    [saving, setSaving] = useState(false);
+  const request = useRef(0);
+  async function reload(filter: string) {
+    const id = ++request.current;
+    setLoading(true);
+    setMessage("");
+    try {
+      const { data, error } = await createClient().rpc(
+        connectionId ? "coaching_client_report" : "training_weekly_report",
+        {
+          ...(connectionId ? { p_connection: connectionId } : {}),
+          p_weeks: 12,
+          p_exercise: filter.startsWith("exercise:") ? filter.slice(9) : null,
+          p_muscle: filter.startsWith("muscle:") ? filter.slice(7) : null,
+        },
+      );
+      if (id !== request.current) return;
+      if (error) throw error;
+      setScope(filter);
+      setRows(normalizeWeeks(data ?? []));
+    } catch {
+      if (id === request.current)
+        setMessage(
+          "Could not load the selected report. Showing the previous report. Try again.",
+        );
+    } finally {
+      if (id === request.current) setLoading(false);
+    }
+  }
+  const thisWeek = rows.at(-1),
+    lastWeek = rows.at(-2),
+    change = volumeChange(
+      thisWeek?.volume_kg ?? null,
+      lastWeek?.volume_kg ?? null,
+    );
+  const currentStart = analysisWeek(new Date().toISOString()).start;
+  async function saveGoal() {
+    const n = Number(goal);
+    if (!Number.isInteger(n) || n < 1 || n > 14) {
+      setMessage("Choose 1 to 14 workouts.");
+      return;
+    }
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (demo) {
+        setRows((prev) =>
+          prev.map((w) =>
+            w.week_start === currentStart ? { ...w, target: n } : w,
+          ),
+        );
+        setMessage("Sample goal updated. Nothing is saved.");
+        return;
+      }
+      const s = createClient();
+      const result = rows.some(
+        (w) => w.week_start === currentStart && w.target !== null,
+      )
+        ? await s
+            .from("weekly_targets")
+            .update({ target: n })
+            .eq("user_id", userId)
+            .eq("week_start", currentStart)
+            .select("target")
+            .single()
+        : await s
+            .from("weekly_targets")
+            .insert({ user_id: userId, week_start: currentStart, target: n });
+      if (result.error) throw result.error;
+      await reload(scope);
+      setMessage(
+        "This week's target saved. Previous weeks keep their targets.",
+      );
+    } catch {
+      setMessage("Could not save this week's target. Try again online.");
+    } finally {
+      setSaving(false);
+    }
+  }
+  if (!available)
+    return (
+      <p className="mt-3 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground">
+        Weekly reports are not available yet. Existing progress is still
+        available.
+      </p>
+    );
+  const chart = rows.map((w) => ({
+    label: new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    }).format(new Date(w.week_start + "T12:00:00Z")),
+    value: w.volume_kg === null ? null : fromKg(w.volume_kg, units),
+  }));
+  return (
+    <section
+      aria-label={
+        consistency ? "Weekly goal completion" : "Weekly training volume"
+      }
+      className="mt-4 rounded-2xl border bg-card p-4"
+    >
+      <h3 className="font-semibold">
+        {consistency ? "Planned and completed" : "Weekly training volume"}
+      </h3>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        Monday to Sunday in India time. Current week is still in progress.
+      </p>
+      {consistency ? (
+        <>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="text-lg font-semibold">
+              {thisWeek?.workouts ?? 0}
+              {thisWeek?.target ? ` / ${thisWeek.target}` : ""} workouts
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {thisWeek?.target
+                ? `${goalCompletion(thisWeek.workouts, thisWeek.target)?.percent}% complete`
+                : "Target unavailable"}
+            </p>
+          </div>
+          {thisWeek?.target && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {goalCompletion(thisWeek.workouts, thisWeek.target)?.remaining}{" "}
+              remaining this week
+              {goalCompletion(thisWeek.workouts, thisWeek.target)?.extra
+                ? ` · ${goalCompletion(thisWeek.workouts, thisWeek.target)?.extra} above target`
+                : ""}
+            </p>
+          )}
+          {!connectionId && (
+            <details className="mt-3 border-t">
+              <summary className="flex min-h-11 cursor-pointer items-center text-sm">
+                Set this week&apos;s target
+              </summary>
+              <label className="text-xs">
+                Planned workouts
+                <Input
+                  inputMode="numeric"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                />
+              </label>
+              <Button
+                className="mt-2 w-full"
+                disabled={saving}
+                onClick={saveGoal}
+              >
+                {saving ? "Saving…" : "Save weekly target"}
+              </Button>
+            </details>
+          )}
+          <ul className="mt-2 divide-y">
+            {[...rows]
+              .reverse()
+              .slice(1, 5)
+              .map((w) => (
+                <li
+                  key={w.week_start}
+                  className="flex min-h-11 flex-wrap items-center justify-between gap-1 text-xs"
+                >
+                  <span>Week of {w.week_start}</span>
+                  <span className="text-muted-foreground">
+                    {w.workouts}
+                    {w.target
+                      ? ` / ${w.target} · ${goalCompletion(w.workouts, w.target)?.percent}% · ${goalCompletion(w.workouts, w.target)?.remaining} below target`
+                      : " · target unavailable"}
+                  </span>
+                </li>
+              ))}
+          </ul>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Unlogged rest days are not missed sessions. Historical targets are
+            only shown where a snapshot exists.
+          </p>
+        </>
+      ) : (
+        <>
+          <label className="mt-3 block text-xs">
+            Report breakdown
+            <select
+              aria-label="Report breakdown"
+              value={scope}
+              disabled={loading || demo}
+              onChange={(e) => void reload(e.target.value)}
+              className="mt-1 h-12 w-full rounded-xl border bg-background px-2 text-sm"
+            >
+              <option value="all">All eligible exercises</option>
+              <optgroup label="Exercises">
+                {exercises.map((e) => (
+                  <option key={e.id} value={`exercise:${e.id}`}>
+                    {e.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Muscle estimates">
+                {MUSCLE_GROUPS.map((m) => (
+                  <option key={m} value={`muscle:${m}`}>
+                    {m}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </label>
+          <div aria-busy={loading} className={`mt-3 ${MASK}`}>
+            <p className="text-2xl font-semibold tabular-nums">
+              {thisWeek?.volume_kg === null || !thisWeek
+                ? "No eligible volume"
+                : `${fromKg(thisWeek.volume_kg, units).toLocaleString()} ${units} × reps`}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              This week so far · {thisWeek?.eligible_sets ?? 0} eligible sets ·{" "}
+              {thisWeek?.excluded_sets ?? 0} excluded set contributions
+            </p>
+            {change && (
+              <p className="mt-2 text-sm">
+                {change.absolute >= 0 ? "Increased" : "Decreased"} by{" "}
+                {Math.abs(fromKg(change.absolute, units)).toLocaleString()}{" "}
+                {units} × reps
+                {change.percent !== null
+                  ? ` (${Math.abs(change.percent).toFixed(1)}%)`
+                  : ""}{" "}
+                versus last full week
+              </p>
+            )}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Previous week:{" "}
+              {lastWeek?.volume_kg === null || !lastWeek
+                ? "No eligible volume"
+                : `${fromKg(lastWeek.volume_kg, units).toLocaleString()} ${units} × reps`}
+            </p>
+            <div
+              className="mt-4 h-44 w-full"
+              role="group"
+              aria-label={`Weekly volume in ${units} times reps`}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chart}
+                  margin={{ left: -20, right: 4 }}
+                  accessibilityLayer
+                >
+                  <CartesianGrid vertical={false} stroke="var(--border)" />
+                  <XAxis
+                    dataKey="label"
+                    minTickGap={22}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                  />
+                  <Tooltip
+                    trigger="click"
+                    contentStyle={{
+                      background: "var(--popover)",
+                      borderColor: "var(--border)",
+                      color: "var(--foreground)",
+                    }}
+                    formatter={(v) => [
+                      `${v ?? "unavailable"} ${units} × reps`,
+                      "Volume",
+                    ]}
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill="var(--primary)"
+                    radius={[3, 3, 0, 0]}
+                    isAnimationActive={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <details className="mt-3 text-xs text-muted-foreground">
+            <summary className="flex min-h-11 cursor-pointer items-center">
+              How volume is counted
+            </summary>
+            <p className="leading-relaxed">
+              Sum of logged load × reps for eligible working sets. Warm-ups,
+              deleted sets, cancelled workouts, imports and starting weights are
+              excluded. Bodyweight, bands and timed holds have no comparable
+              external-load volume and are excluded. Per-hand loads use the
+              entered value and are not doubled. Muscle estimates assign full
+              volume to the main muscle and half to supporting muscles; they
+              overlap and must not be added together. More volume does not
+              automatically mean better progress.
+            </p>
+          </details>
+        </>
+      )}
+      {loading && (
+        <p role="status" className="mt-2 text-xs">
+          Loading report…
+        </p>
+      )}
+      {message && (
+        <p role="status" className="mt-2 text-xs text-muted-foreground">
+          {message}
+        </p>
+      )}
+    </section>
+  );
+}
