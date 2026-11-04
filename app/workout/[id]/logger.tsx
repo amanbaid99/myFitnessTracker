@@ -1,5 +1,6 @@
 "use client";
 
+import { currentWorkingKey,workoutCompletion } from "@/lib/workout-focus";
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
@@ -161,6 +162,10 @@ export function Logger(props: {
   }, [exercises]);
   const [checked, setChecked] = useState<number[]>([]);
   const [skipped, setSkipped] = useState<string[]>([]);
+  const [allSetsOpen,setAllSetsOpen]=useState<Record<string,boolean>>({});
+  const writing=useRef(new Set<string>());
+  const [saveState,setSaveState]=useState<"idle"|"local"|"synced"|"error">("idle");
+  const syncFailed=useRef(false);
   const [feelKey, setFeelKey] = useState<string | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
   /** A timed set being held (plank): counts down, then logs the set. */
@@ -175,7 +180,7 @@ export function Logger(props: {
 
   // Changes the database refused (not retried) are shown, never silent.
   useEffect(
-    () => onOutboxFailure((message) => setError(`A change could not be saved: ${message}`)),
+    () => onOutboxFailure((message) => {syncFailed.current=true;setSaveState("error");setError(`A change could not be saved: ${message}`);}),
     [],
   );
 
@@ -459,6 +464,14 @@ export function Logger(props: {
       durationSec: row.durationSec ?? null,
       rpe: null,
     };
+    if(writing.current.has(row.key))return;
+    writing.current.add(row.key);
+    syncFailed.current=false;
+    try {
+      if(!demo)await enqueue(workoutId,{kind:"insertSet",row:{id,workout_id:workoutId,exercise_id:item.exercise.id,set_no:row.setNo,set_type:row.setType,weight_kg:row.weightKg,added_kg:row.addedKg,reps:row.reps,...(row.durationSec!=null?{duration_sec:row.durationSec}:{})}});
+    }catch{setError("Could not save on this device. Your input is kept; try again.");writing.current.delete(row.key);return;}
+    writing.current.delete(row.key);
+    if(!syncFailed.current)setSaveState("local");
     updateRow(exIndex, row.key, { logged });
     if (row.setType === "working") {
       setWarmupOpen(false);
@@ -474,21 +487,7 @@ export function Logger(props: {
     if (demo) return;
     track("set_logged", { set_type: row.setType });
 
-    // Saved on the phone first, sent when there is a connection.
-    await enqueue(workoutId, {
-      kind: "insertSet",
-      row: {
-        id,
-        workout_id: workoutId,
-        exercise_id: item.exercise.id,
-        set_no: row.setNo,
-        set_type: row.setType,
-        weight_kg: row.weightKg,
-        added_kg: row.addedKg,
-        reps: row.reps,
-        ...(row.durationSec != null ? { duration_sec: row.durationSec } : {}),
-      },
-    });
+    void flush().then(async()=>{if(!syncFailed.current&&await pendingCount(workoutId)===0)setSaveState("synced");});
   }
 
   // A finished hold logs its set with the full time; the latest row is read
@@ -765,6 +764,7 @@ export function Logger(props: {
             Nothing is saved.
           </p>
         )}
+        {saveState!=="idle"&&<p role="status" className="text-xs text-muted-foreground">{saveState==="error"?"A save needs attention":saveState==="synced"?"Synced":pending>0?"Saved on this device · waiting to sync":"Saved on this device"}</p>}
         {error && (
           <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
             {error}
@@ -779,6 +779,7 @@ export function Logger(props: {
           onToggle={toggleChecklist}
           open={warmupOpen}
           onOpenChange={setWarmupOpen}
+          onSkip={()=>setWarmupOpen(false)}
           footer={
             items[0] && exercises[0]?.warmups.length > 0
               ? `Then ramp up on ${items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.`
@@ -792,6 +793,7 @@ export function Logger(props: {
           const item = items[exIndex];
           const pr = props.prs[item.exercise.id];
           const workingDone = isExerciseDone(ex);
+          const currentKey=currentWorkingKey(ex);
           const showWarmups = ex.warmups.length > 0 && !skipped.includes(ex.exerciseId);
           const open = openId === ex.exerciseId;
           if (!open) {
@@ -854,15 +856,10 @@ export function Logger(props: {
                         lockedHint={lockHint === item.id ? `Sets are logged on ${item.exercise.name}. Untick them to switch.` : null}
                       />
                     )}
+                    <div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{formatTarget(item.targetSets,item.targetReps,item.exercise.tracking)}</Badge>{item.exercise.perHand&&<Badge variant="outline">per hand</Badge>}<SettingBadge value={ex.exerciseId in settings?settings[ex.exerciseId]:item.exercise.machineSetting} onSave={v=>saveSetting(ex.exerciseId,v)}/></div>
+                    <p className="mt-1 text-xs text-muted-foreground">{ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</p>
+                    <details className="mt-1"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-primary">Exercise options and history</summary>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
-                      <Badge variant="muted">
-                        {formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
-                      </Badge>
-                      <SettingBadge
-                        value={ex.exerciseId in settings ? settings[ex.exerciseId] : item.exercise.machineSetting}
-                        onSave={(v) => saveSetting(ex.exerciseId, v)}
-                      />
-                      {item.exercise.perHand && <Badge variant="outline">per hand</Badge>}
                       <button type="button" onClick={()=>setSwapIndex(exIndex)} aria-label={`Swap exercise ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center"><span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><ArrowLeftRight className="size-3.5" aria-hidden/>Swap exercise</span></button>
                       <button type="button" onClick={()=>setRestIndex(exIndex)} aria-label={`Rest timer for ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center">
                         <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><Timer className="size-3.5" aria-hidden/>Rest timer · {clock(item.restSec ?? props.defaultRestSec)}</span>
@@ -930,6 +927,7 @@ export function Logger(props: {
                         )}
                       </div>
                     )}
+                    </details>
                   </div>
                   {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
                   {editing && !isExtraItem(item) && (
@@ -954,7 +952,7 @@ export function Logger(props: {
                     <ChevronUp />
                   </Button>
                 </div>
-                <div className="mt-2 space-y-0.5 text-xs">
+                <details className="text-xs"><summary className="flex min-h-11 cursor-pointer items-center text-muted-foreground">Previous sessions and records</summary><div className="space-y-0.5">
                   {pr && (
                     <p className="flex items-center gap-1 text-muted-foreground">
                       <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
@@ -982,11 +980,11 @@ export function Logger(props: {
                       <span className={MASK}>Last note: {props.lastNotes[ex.exerciseId]}</span>
                     </p>
                   )}
-                </div>
+                </div></details>
               </div>
 
               {showWarmups && (
-                <div className="mt-3 border-t border-dashed px-2 pt-1">
+                <details className="mt-2 border-t border-dashed px-2"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">Ramp-up sets · {ex.warmups.filter(r=>r.logged).length}/{ex.warmups.length}</summary>
                   {ex.warmups.map((row) => (
                     <SetRow
                       key={row.key}
@@ -1012,12 +1010,14 @@ export function Logger(props: {
                       Skip warm-up
                     </button>
                   )}
-                </div>
+                </details>
               )}
 
               <div className="mt-1 border-t px-2 pt-1">
-                {ex.working.map((row) => (
-                  <div key={row.key}>
+                <div className="flex min-h-11 items-center justify-between gap-2 px-2"><p className="text-sm font-medium">{currentKey?"Current working set":"Working sets complete"}</p><Button variant="ghost" aria-expanded={Boolean(allSetsOpen[ex.exerciseId])} onClick={()=>setAllSetsOpen(p=>({...p,[ex.exerciseId]:!p[ex.exerciseId]}))}>All sets ({ex.working.length})</Button></div>
+                {[...ex.working].sort((a,b)=>Number(b.key===currentKey)-Number(a.key===currentKey)).map((row) => (
+                  <div key={row.key} hidden={row.key!==currentKey&&row.key!==feelKey&&!allSetsOpen[ex.exerciseId]} className={row.key===currentKey?"rounded-xl border-2 border-primary bg-primary/5 p-1":"border-t"}>
+                    {row.key===currentKey&&<p className="px-2 pt-2 text-sm font-medium">Set {row.setNo} of {ex.working.length} · {formatTarget(1,item.targetReps,item.exercise.tracking)}</p>}
                     {row.skipped && !row.logged ? (
                       <div className="flex min-h-11 items-center justify-between px-2 text-sm text-muted-foreground">
                         <span>Set {row.label} skipped</span>
@@ -1460,6 +1460,7 @@ export function Logger(props: {
         <FinishSheet
           workoutId={workoutId}
           anyLogged={anyLogged}
+          completion={workoutCompletion(exercises)}
           demo={demo}
           onClose={() => setFinishing(false)}
           onDone={(result) => {
@@ -1577,11 +1578,11 @@ function SetRow({
   const holding = holdLeft !== null;
 
   return (
-    <div data-guide={guide} className={cn("flex min-h-14 items-center px-2", stepper ? "gap-1" : "gap-2", warmup && "text-muted-foreground")}>
+    <div data-guide={guide} className={cn("flex min-h-14 flex-wrap items-center gap-y-2 px-2 py-2", stepper ? "gap-1" : "gap-2", warmup && "text-muted-foreground")}>
       <span
         className={cn(
           "shrink-0 text-center text-sm tabular-nums",
-          stepper ? "w-5" : "w-7",
+          "w-full text-left",
           warmup ? "text-xs" : "font-semibold",
         )}
       >
@@ -1593,7 +1594,7 @@ function SetRow({
         onChange={(v) => onChange({ weightKg: v === null ? null : toKg(v, units), weightEdited: true })}
         disabled={done}
         suffix={units}
-        className="w-[4.5rem]"
+        className="min-w-20 flex-1"
       />
       {showAddOn ? (
         <NumberField
@@ -1601,8 +1602,9 @@ function SetRow({
           value={row.addedKg ? fromKg(row.addedKg, units) : null}
           onChange={(v) => onChange({ addedKg: v === null ? 0 : toKg(v, units), weightEdited: true })}
           disabled={done}
-          prefix="+"
-          className={stepper ? "w-12" : "w-14"}
+          prefix="Add-on"
+          suffix={units}
+          className="min-w-28 flex-1"
         />
       ) : (
         !done &&
@@ -1611,10 +1613,10 @@ function SetRow({
           <button
             type="button"
             onClick={() => setShowAddOn(true)}
-            className="h-11 w-6 shrink-0 text-muted-foreground"
+            className="flex min-h-11 min-w-11 items-center gap-1 rounded-lg border px-2 text-xs text-muted-foreground"
             aria-label="Add pin add-on weight"
           >
-            <Plus className="mx-auto size-3.5" />
+            <Plus className="size-3.5" aria-hidden /> Add weight
           </button>
         )
       )}
@@ -1668,11 +1670,11 @@ function SetRow({
       <button
         type="button"
         onClick={done ? onUntick : onTick}
-        className="ml-auto flex size-11 shrink-0 items-center justify-center"
+        className={cn("flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 font-medium",done?"bg-muted text-muted-foreground":"bg-primary text-primary-foreground")}
         aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`}
         aria-pressed={done}
       >
-        <TickCircle on={done} small={warmup} />
+        {done?<TickCircle on small={warmup}/>:<Check className="size-4" aria-hidden/>}{done?`Undo ${warmup?"warm-up":"set"} ${row.label}`:`Log ${warmup?"warm-up":"set"} ${row.label}`}
       </button>
     </div>
   );
@@ -1688,6 +1690,7 @@ function ChecklistCard({
   open,
   onOpenChange,
   footer,
+  onSkip,
 }: {
   title: string;
   icon: React.ReactNode;
@@ -1697,6 +1700,7 @@ function ChecklistCard({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   footer?: string;
+  onSkip?:()=>void;
 }) {
   return (
     <section className="rounded-2xl border bg-card px-4 py-2">
@@ -1743,6 +1747,7 @@ function ChecklistCard({
               );
             })}
           </ul>
+          {onSkip&&<Button variant="ghost" className="mt-1 w-full" onClick={onSkip}>Skip preparation for now</Button>}
           {footer && <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">{footer}</p>}
         </>
       )}
@@ -1885,7 +1890,7 @@ function DurationStepper({
 }) {
   if (disabled) return <span className="min-w-12 text-sm tabular-nums">{value === null ? "?" : formatDuration(value)}</span>;
   const step = (delta: number) => onChange(Math.min(MAX_HOLD_SEC, Math.max(5, (value ?? 0) + delta)));
-  const button = "flex h-11 w-9 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40";
+  const button = "flex h-11 w-11 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40";
   return (
     <div className="flex h-11 shrink-0 items-center overflow-hidden rounded-lg border bg-background" role="group" aria-label={`Set ${label} time`}>
       <button type="button" className={button} onClick={() => step(-5)} disabled={value === null || value <= 5} aria-label={`5 seconds less on set ${label}`}>
@@ -1921,8 +1926,8 @@ function RepsStepper({
 }) {
   const step = (delta: number) => onChange(Math.min(MAX_REPS, Math.max(1, (value ?? 0) + delta)));
   const button = cn(
-    "hidden h-11 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40 min-[360px]:flex",
-    compact ? "w-8" : "w-11",
+    "flex h-11 min-w-11 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40",
+    compact ? "w-11" : "w-11",
   );
   return (
     // One bordered pill, so − 10 + reads as a unit next to the pin add-on +.
@@ -1945,7 +1950,7 @@ function RepsStepper({
         value={value}
         onChange={(v) => onChange(v === null ? null : Math.round(v))}
         integer
-        className="h-full w-12 rounded-none border-0 bg-transparent min-[360px]:w-8"
+        className="h-full w-12 rounded-none border-0 bg-transparent"
       />
       <button
         type="button"
@@ -2154,13 +2159,13 @@ function RestBar({
   };
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-popover pb-[env(safe-area-inset-bottom)]">
-      <div className="h-1 bg-primary transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />
+      <div className="h-1 bg-primary transition-[width] duration-1000 ease-linear motion-reduce:transition-none" style={{ width: `${pct}%` }} />
       <div className="mx-auto flex max-w-lg items-center gap-1.5 px-4 py-2">
         <Timer className="mr-1 size-5 shrink-0 text-primary" aria-hidden />
         <p className="flex-1 whitespace-nowrap text-lg font-semibold tabular-nums" aria-live="polite">
           Rest {clock(remaining)}
         </p>
-        <Button
+        <details className="relative"><summary className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center text-sm">More</summary><div className="absolute bottom-full right-0 flex rounded-xl border bg-popover p-2">        <Button
           variant="ghost"
           size="icon"
           onClick={toggleSound}
@@ -2173,6 +2178,7 @@ function RestBar({
         <Button variant="ghost" size="icon" onClick={onReset} aria-label="Restart rest timer" className="text-muted-foreground">
           <RotateCcw />
         </Button>
+</div></details>
         <Button variant="secondary" className="px-3" onClick={onAdd}>
           +15s
         </Button>
@@ -2187,12 +2193,14 @@ function RestBar({
 function FinishSheet({
   workoutId,
   anyLogged,
+  completion,
   demo,
   onClose,
   onDone,
 }: {
   workoutId: string;
   anyLogged: boolean;
+  completion: ReturnType<typeof workoutCompletion>;
   demo: boolean;
   onClose: () => void;
   /** saved: finished and on the server; queued: finished on this phone, not synced yet; discarded. */
@@ -2207,6 +2215,8 @@ function FinishSheet({
   async function save() {
     if (demo) return onDone("saved");
     setBusy(true);
+    setError(null);
+    try {
     // Queued after every set and effort, so it always arrives last.
     await enqueue(workoutId, {
       kind: "finishWorkout",
@@ -2217,6 +2227,10 @@ function FinishSheet({
     });
     await flush();
     onDone((await pendingCount(workoutId)) === 0 ? "saved" : "queued");
+    } catch {
+      setError("Could not save on this device. Your notes are kept; try again.");
+      setBusy(false);
+    }
   }
 
   async function discard() {
@@ -2249,7 +2263,7 @@ function FinishSheet({
       <div
         role="dialog"
         aria-labelledby="finish-title"
-        className="mx-auto w-full max-w-lg rounded-t-3xl border bg-popover p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+        className="mx-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border bg-popover p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -2263,7 +2277,7 @@ function FinishSheet({
 
         {anyLogged ? (
           <>
-            <p className="mt-3 text-sm font-medium">Energy today</p>
+            <p className="mt-3 text-sm">{completion.completed} completed working sets · {completion.skipped} skipped · {completion.unlogged} unlogged</p><p className="mt-3 text-sm font-medium">Energy today (optional)</p><p className="text-xs text-muted-foreground">1 = very low · 5 = very high</p>
             <div className="mt-2 grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -2281,7 +2295,7 @@ function FinishSheet({
               ))}
             </div>
             <label htmlFor="notes" className="mt-4 block text-sm font-medium">
-              Notes
+              Notes (optional)
             </label>
             <textarea
               id="notes"

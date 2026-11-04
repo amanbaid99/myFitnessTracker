@@ -1,4 +1,7 @@
 import { MonthlyCheckIn } from "@/components/measurements/monthly-check-in";
+import { analysisWeek } from "@/lib/analysis-week";
+import { effectiveWeeklyGoal } from "@/lib/training-reports";
+import { getWeeklyReports } from "@/lib/feedback-data";
 import { getMeasurementReminder } from "@/lib/feedback-data";
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -24,12 +27,13 @@ import { createClient } from "@/lib/supabase/server";
 export default async function TodayPage() {
   const supabase = await createClient();
   // Everything in parallel: one round trip's wait instead of several.
-  const [profile, result, bodyWeights, library] = await Promise.all([
+  const [profile, result, bodyWeights, library, reports] = await Promise.all([
     getProfile(supabase),
     load(() => Promise.all([getActivePlan(supabase), getRecentWorkouts(supabase)])),
     getBodyWeights(supabase),
     // Optional: a failed read only hides the muscles card.
     getExerciseLibrary(supabase).catch(() => []),
+    getWeeklyReports(supabase),
   ]);
   const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
   const checkIn = await getMeasurementReminder(supabase,profile.id,bodyWeights.entries.at(-1)?.day??null);
@@ -44,7 +48,7 @@ export default async function TodayPage() {
   const finishedAll = workouts.filter((w) => w.endedAt && w.source !== "baseline");
   const lastFinished = finishedAll.find((w) => w.source === "app");
   const hero = (priority?: ReactNode) => (
-    <HomeHero priority={priority} name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={result.data?.[0]?.plan.daysPerWeek ?? null}>
+    <HomeHero priority={priority} name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
       <WeeklyReviewCard lastEndedAt={lastFinished?.endedAt ?? null} lastStartedAt={lastFinished?.startedAt ?? null} lastWorkoutId={lastFinished?.id ?? null} />
     </HomeHero>
   );

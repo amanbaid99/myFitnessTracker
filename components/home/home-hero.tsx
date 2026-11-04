@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 /** Analysis leads; the viewer's local training calendar stays a compact supporting row. */
-export function HomeHero({ name, workoutDates, daysPerWeek, children, priority }: {
+export function HomeHero({ name, workoutDates, daysPerWeek, weeklyCount, children, priority }: {
   name: string | null;
   workoutDates: string[];
   daysPerWeek: number | null;
+  weeklyCount?: number;
   children: ReactNode;
   priority?: ReactNode;
 }) {
@@ -21,7 +22,7 @@ export function HomeHero({ name, workoutDates, daysPerWeek, children, priority }
   const now = mounted ? new Date() : null;
   const dates = workoutDates.map((d) => new Date(d));
   const streak = now ? weekStreak(dates, now) : 0;
-  const count = now ? workoutsThisWeek(dates, now) : 0;
+  const count = weeklyCount ?? (now ? workoutsThisWeek(dates, now) : 0);
   const goal = daysPerWeek && daysPerWeek > 0 ? daysPerWeek : null;
   const trained = new Set(dates.map(dayKey));
   const monday = now ? weekStart(now) : null;
@@ -41,6 +42,7 @@ export function HomeHero({ name, workoutDates, daysPerWeek, children, priority }
             <p className="flex shrink-0 items-center gap-1.5 font-medium"><Flame className="size-4 text-primary" aria-hidden />{streak}-week streak</p>
             <p className="text-right tabular-nums text-muted-foreground" aria-label={`${count}${goal ? ` of ${goal}` : ""} workouts this week`}>{goal ? `${count} / ${goal}` : count} this week</p>
           </div>
+          {!goal&&<p className="mt-1 text-xs text-muted-foreground">Weekly target unavailable.</p>}
           <ol className="mt-3 grid grid-cols-7 gap-1" aria-label="Days trained this week">
             {DAYS.map((label, i) => {
               const date = new Date(monday!);
