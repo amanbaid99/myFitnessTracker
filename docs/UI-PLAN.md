@@ -12,13 +12,14 @@ Last updated: 2026-11-04.
 | Item | Status | PR | Notes |
 | --- | --- | --- | --- |
 | Phase 1 (P1.1 to P1.8) | Live | #31 (4301b56) | One PR for the whole phase. Evidence `ui-evidence/phase-1` |
+| P1.3 owner follow-up: full set list | In review | `ui/review-show-all-sets` | All working rows visible in stable order; next pending row highlighted |
 | P2.1 Today | Live | #34 (50ce96e) | One-line card states, inline Try again, smaller Refresh, prompts below Start |
 | P2.2 History list | Live | #33 (7684faf) | One set of recap labels, active filter summary |
 | P2.3 Workout recap | Live | #35 (53ed6d4) | Session results first; map kept visible but smaller (Aman wanted it beside the analysis) |
 | P2.4 Weekly analysis | Live | #32 (c12326b) | Takeaway and Next focus first, four clear states |
-| P2.5 Progress: Strength | To do | | |
+| P2.5 Progress: Strength | In review | #40 | Latest/period changes first; evidence in PR #40 |
 | P2.6 Progress: Muscles | To do | | |
-| P2.7 Progress: Consistency | Next | | Suggested next item |
+| P2.7 Progress: Consistency | In review | #39 | One weekly goal summary; not merged |
 | P2.8 Weekly volume reports | Live | #37 (94eeeab) | Plain counted wording, one rounded volume format |
 | P2.9 Exercise progress | Live | #36 (830471e) | Latest first, best secondary, Top sets collapsed |
 | P2.10 Week boundaries | To do, ask first | | Changes how weeks are counted: get Aman's OK before touching calculations |

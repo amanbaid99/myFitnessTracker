@@ -1824,3 +1824,19 @@ every volume the same rounded way as exercise progress (`volumeLabel`). The
 in-progress week is labelled and drawn lighter. Loading and errors appear
 beside the breakdown menu that caused them. The SQL report, week
 boundaries and the Consistency panel are unchanged.
+
+## 2026-11-04: Show every working set in its original order (owner feedback)
+
+Aman logs some sets after performing them and needs the full set list to
+stay visible. Replace the single-set default and All sets toggle with an
+always-visible list for the open exercise. Keep the next unlogged, unskipped
+set highlighted without moving it ahead of earlier rows. The header shows
+logged and total counts, with skipped work identified separately.
+
+Keep editable prefilled values, one-tap logging on any row, effort feedback,
+Undo, skip/restore, added sets and all existing workout behavior. No save,
+outbox, metric, progression or week calculation changes. This supersedes the
+Phase 1 default of hiding other working rows, while retaining its visual
+current-set focus. Carry the review-only CI guard from PR #40 so validation
+of this independent fix does not publish a preview; production releases and
+other feature previews keep their existing behavior.

@@ -152,7 +152,7 @@ tool. Ask Aman before deploying.
 
 | Workflow | What |
 | --- | --- |
-| `ci.yml` | Every push and PR: lint, typecheck, tests, build, migrations plus RLS checks. Then on the default branch only: apply new migrations to the live database, deploy to Vercel production. Other branches: preview deploy |
+| `ci.yml` | Every push and PR: lint, typecheck, tests, build, migrations plus RLS checks. Then on the default branch only: apply new migrations to the live database, deploy to Vercel production. Other branches: preview deploy, except `ui/review-*` which validate without deploying |
 | `migrate.yml` | Manual: migration status, dry run, repairs |
 | `seed.yml` | Manual, once: seed a user from `supabase/seed.sql` |
 | `keepalive.yml` | Daily ping so the free Supabase project does not pause |

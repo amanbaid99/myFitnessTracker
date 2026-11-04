@@ -32,3 +32,14 @@ describe("working set focus", () => {
     expect(workoutCompletion([ex])).toEqual({ completed: 0, skipped: 3, unlogged: 0 });
   });
 });
+
+it("keeps the first pending set focused when another set is logged first", () => {
+  const [exercise] = buildSession([{exercise:{id:"press",name:"Press",equipment:"machine",warmupEnabled:false,warmupTemplate:null},targetSets:3,targetReps:10,restSec:90}],new Map(),[]);
+  exercise.working[1].logged = {id:"set-2",exerciseId:"press",setNo:2,setType:"working",weightKg:20,addedKg:0,reps:10,rpe:null};
+  expect(currentWorkingKey(exercise)).toBe(exercise.working[0].key);
+  expect(exercise.working.map(row=>row.setNo)).toEqual([1,2,3]);
+  expect(workoutCompletion([exercise])).toEqual({completed:1,skipped:0,unlogged:2});
+  exercise.working[0].skipped = true;
+  expect(currentWorkingKey(exercise)).toBe(exercise.working[2].key);
+  expect(exercise.working.map(row=>row.setNo)).toEqual([1,2,3]);
+});
