@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import {
   Bar,
   BarChart,
+  Cell,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
@@ -20,8 +21,10 @@ import {
   effectiveWeeklyGoal,
   volumeChange,
   normalizeWeeks,
+  reportSetsLine,
   type TrainingWeek,
 } from "@/lib/training-reports";
+import { volumeLabel } from "@/lib/progress";
 import { MUSCLE_GROUPS } from "@/lib/muscles";
 import { MASK } from "@/lib/mask";
 export function TrainingReports({
@@ -144,6 +147,7 @@ export function TrainingReports({
       timeZone: "UTC",
     }).format(new Date(w.week_start + "T12:00:00Z")),
     value: w.volume_kg === null ? null : fromKg(w.volume_kg, units),
+    current: w.week_start === currentStart,
   }));
   return (
     <section
@@ -254,21 +258,23 @@ export function TrainingReports({
               </optgroup>
             </select>
           </label>
-          <div aria-busy={loading} className={`mt-3 ${MASK}`}>
-            <p className="text-2xl font-semibold tabular-nums">
+          {loading && <p role="status" className="mt-2 text-xs text-muted-foreground">Loading report…</p>}
+          {message && <p role="alert" className="mt-2 text-xs text-destructive">{message}</p>}
+          <div aria-busy={loading} className={`mt-3 transition-opacity ${loading ? "opacity-50" : ""} ${MASK}`}>
+            <p className="text-xs font-medium text-muted-foreground">This week so far, still in progress</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
               {thisWeek?.volume_kg === null || !thisWeek
-                ? "No eligible volume"
-                : `${fromKg(thisWeek.volume_kg, units).toLocaleString()} ${units} × reps`}
+                ? "No counted volume yet"
+                : volumeLabel(fromKg(thisWeek.volume_kg, units), units)}
             </p>
+            <p className="mt-1 text-xs text-muted-foreground">Weight lifted times reps, added up across working sets.</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              This week so far · {thisWeek?.eligible_sets ?? 0} eligible sets ·{" "}
-              {thisWeek?.excluded_sets ?? 0} excluded set contributions
+              {reportSetsLine(thisWeek?.eligible_sets ?? 0, thisWeek?.excluded_sets ?? 0)}
             </p>
             {change && (
               <p className="mt-2 text-sm">
-                {change.absolute >= 0 ? "Increased" : "Decreased"} by{" "}
-                {Math.abs(fromKg(change.absolute, units)).toLocaleString()}{" "}
-                {units} × reps
+                {change.absolute >= 0 ? "Up" : "Down"}{" "}
+                {volumeLabel(Math.abs(fromKg(change.absolute, units)), units)}
                 {change.percent !== null
                   ? ` (${Math.abs(change.percent).toFixed(1)}%)`
                   : ""}{" "}
@@ -276,10 +282,10 @@ export function TrainingReports({
               </p>
             )}
             <p className="mt-1 text-xs text-muted-foreground">
-              Previous week:{" "}
+              Last full week:{" "}
               {lastWeek?.volume_kg === null || !lastWeek
-                ? "No eligible volume"
-                : `${fromKg(lastWeek.volume_kg, units).toLocaleString()} ${units} × reps`}
+                ? "No counted volume"
+                : volumeLabel(fromKg(lastWeek.volume_kg, units), units)}
             </p>
             <div
               className="mt-4 h-44 w-full"
@@ -300,6 +306,7 @@ export function TrainingReports({
                   />
                   <YAxis
                     tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                    tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v))}
                   />
                   <Tooltip
                     trigger="click"
@@ -309,7 +316,7 @@ export function TrainingReports({
                       color: "var(--foreground)",
                     }}
                     formatter={(v) => [
-                      `${v ?? "unavailable"} ${units} × reps`,
+                      typeof v === "number" ? volumeLabel(v, units) : "No counted volume",
                       "Volume",
                     ]}
                   />
@@ -318,10 +325,13 @@ export function TrainingReports({
                     fill="var(--primary)"
                     radius={[3, 3, 0, 0]}
                     isAnimationActive={false}
-                  />
+                  >
+                    {chart.map((c) => <Cell key={c.label} fill="var(--primary)" fillOpacity={c.current ? 0.4 : 1} />)}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">The lighter last bar is this week, still in progress.</p>
           </div>
           <details className="mt-3 text-xs text-muted-foreground">
             <summary className="flex min-h-11 cursor-pointer items-center">
@@ -340,12 +350,12 @@ export function TrainingReports({
           </details>
         </>
       )}
-      {loading && (
+      {consistency && loading && (
         <p role="status" className="mt-2 text-xs">
           Loading report…
         </p>
       )}
-      {message && (
+      {consistency && message && (
         <p role="status" className="mt-2 text-xs text-muted-foreground">
           {message}
         </p>

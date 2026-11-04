@@ -43,3 +43,10 @@ export function effectiveWeeklyGoal(
   if (current) return current.target !== null && current.target > 0 ? current.target : null;
   return planDefault !== null && planDefault > 0 ? planDefault : null;
 }
+
+/** The line under the weekly volume headline, in plain words. Pure. */
+export function reportSetsLine(eligible: number, excluded: number): string {
+  const sets = (n: number) => `${n} ${n === 1 ? "set" : "sets"}`;
+  const counted = `${sets(eligible)} counted`;
+  return excluded > 0 ? `${counted} · ${sets(excluded)} not counted (bodyweight, bands or timed)` : counted;
+}
