@@ -8,41 +8,16 @@ Last updated: 2026-11-04.
 
 ## In progress
 
-- 2026-11-04: Reviewed merges through PR #37 (94eeeab). Branch
-  `ui/phase-2-consistency` implements P2.7: one goal summary, expandable
-  earlier targets, one missing-target explanation, and streak/calendar
-  together. Local browser evidence at 320/390/430 plus state and large-text
-  checks is in `docs/ui-evidence/phase-2-consistency`. No calculation,
-  schema or week-boundary change. P2.5, P2.6 and P2.10 remain open; human
-  coaching remains paused. PR #39 is review only, no merge or production
-  release. Branch CI automatically published a preview before cancellation;
-  available Vercel tools cannot delete it. Evidence README records this.
+- 2026-11-04: UI/UX improvement plan in progress. Tracker and requirements:
+  `docs/UI-PLAN.md`. Live: Phase 1 and P2.1 to P2.4, P2.8, P2.9
+  (PRs #31 to #37). P2.7 Consistency is ready in PR #39, not merged.
+  Evidence: `docs/ui-evidence/phase-2-consistency`. Next implementation:
+  P2.5 Strength, then P2.6 Muscles. P2.10 needs owner approval before
+  changing week calculations. Human coaching stays paused.
+  PR #39's branch CI published a preview before cancellation; no production
+  release occurred. Cancel push workflows immediately during this handoff;
+  pull-request CI performs app/database checks without deploying.
 
-- 2026-11-04: P2.9 (exercise progress) live via PR #36. Branch
-  `ui/phase-2-volume-reports` does P2.8: plain counted / not counted
-  wording, one rounded volume format, lighter in-progress bar, loading
-  and errors beside the breakdown menu.
-
-- 2026-11-04: P2.3 (recap) live via PR #35. Branch
-  `ui/phase-2-exercise-progress` does P2.9: latest first with best
-  secondary, Top sets collapsed, volume worded like weekly reports.
-
-- 2026-11-04: P2.1 (Today) live via PR #34. Branch `ui/phase-2-recap` does
-  P2.3: local session results first in the recap, smaller body map,
-  Jump to logged sets.
-
-- 2026-11-04: P2.2 (History) live via PR #33. Branch `ui/phase-2-today`
-  does P2.1: one-line weekly card states with inline Try again, smaller
-  Refresh, monthly check-in below the main action, singular counts.
-
-- 2026-11-04: P2.4 (weekly page) is live via PR #32. Branch
-  `ui/phase-2-history-list` does P2.2: one set of recap labels, active
-  filter summary with Clear, filter dot, singular set counts.
-
-- 2026-11-04: UI Phase 1 (PR #31) is live at 4301b56. Branch
-  `ui/phase-2-weekly-analysis` does P2.4: weekly page leads with takeaway
-  and Next focus, and separates ready, pending, no-workouts and failed
-  states. P3.5 to P3.7 (human coaching) are out of scope per Aman.
 
 - 2026-11-04: `fix/settings-measurement-system` consolidates units into one
   Metric/Imperial section and removes Settings rest controls. Workouts gain
