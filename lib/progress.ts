@@ -102,3 +102,20 @@ export function muscleWeeks(rows: { startedAt: string; muscle: string; sets: num
 export function progressWindowStart(weeks: number, now = Date.now()): string {
   return new Date(now - (weeks * 7 + 1) * DAY_MS).toISOString();
 }
+
+/**
+ * One exercise's headline: the latest session first, the best ever second,
+ * and whether the latest is the best (ties count as best). Sessions are
+ * oldest first. Pure.
+ */
+export function exerciseHeadline<T extends { e1rmKg: number }>(sessions: T[]): { latest: T; best: T; latestIsBest: boolean; topSets: T[] } | null {
+  if (!sessions.length) return null;
+  const latest = sessions[sessions.length - 1];
+  const topSets = [...sessions].sort((a, b) => b.e1rmKg - a.e1rmKg).slice(0, 5);
+  return { latest, best: topSets[0], latestIsBest: latest.e1rmKg >= topSets[0].e1rmKg, topSets };
+}
+
+/** Volume with the same unit wording as the weekly reports, e.g. "1,240 kg × reps". Pure. */
+export function volumeLabel(value: number, units: string): string {
+  return `${Math.round(value).toLocaleString("en-GB")} ${units} × reps`;
+}

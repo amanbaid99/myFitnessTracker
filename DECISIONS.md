@@ -1805,3 +1805,12 @@ reduce the body map's footprint; Aman asked on 3 November to keep the map
 visible beside the analysis, so it stays visible but smaller in the recap
 (`compact` on WorkoutBodyDiagram) rather than collapsing behind a tap. A
 Jump to logged sets link keeps corrections close.
+
+## 2026-11-04: Exercise progress leads with the latest session (UI Phase 2, P2.9)
+
+The exercise page now opens with the latest session and shows the best ever
+as a secondary line, or "Your best yet" when they match
+(`exerciseHeadline` in lib/progress.ts), so a lift that has dipped does not
+lead with an old record. Top sets became a collapsed section after Sessions,
+and session volume uses the weekly reports' "kg × reps" wording. Chart and
+session details are unchanged.

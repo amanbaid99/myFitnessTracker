@@ -8,6 +8,10 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: P2.3 (recap) live via PR #35. Branch
+  `ui/phase-2-exercise-progress` does P2.9: latest first with best
+  secondary, Top sets collapsed, volume worded like weekly reports.
+
 - 2026-11-04: P2.1 (Today) live via PR #34. Branch `ui/phase-2-recap` does
   P2.3: local session results first in the recap, smaller body map,
   Jump to logged sets.
