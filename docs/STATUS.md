@@ -10,7 +10,7 @@ Last updated: 2026-11-04.
 
 - 2026-11-04: Rechecked the PR #38 tracker merge at e3d8f24 and resolved
   its STATUS overlap with the still-open Consistency PR #39. Branch
-  `ui/review-phase-2-strength` implements P2.5: exercise results appear
+  `ui/review-phase-2-strength` (PR #40) implements P2.5: exercise results appear
   sooner, latest performance and period changes lead, activity summary
   moves behind Training overview, and metric exclusions stay accessible.
   Strength and combined Consistency browser checks pass at 320/390/430,

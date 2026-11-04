@@ -1854,7 +1854,9 @@ load/rep estimates are not zero progress. Keep filtering, sort, periods,
 SQL metrics, kg storage and week boundaries unchanged. Align the trend arrow
 with the existing 0.05 display threshold, including exact boundary values.
 Mask complete performance rows for replay privacy. Tabs and summary cards
-reflow at larger text sizes without shrinking touch targets.
+reflow at larger text sizes without shrinking touch targets. Filters stack
+and sparklines stay with secondary record details so larger text retains
+space for readable exercise names and performance.
 
 A review-only handoff must not race automatic preview jobs. The existing
 workflow published previews during earlier branch updates before cancellation

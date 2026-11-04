@@ -1,23 +1,9 @@
 # P2.5: Strength review evidence
 
-## Draft status after workspace failure
-
-The final source is preserved on GitHub, including filters that stack for
-enlarged text and sparklines beside secondary record details. That exact
-patch passed local lint, typecheck, 418 tests, production build and browser
-checks before the workspace became unavailable.
-
-The updated screenshots were generated locally but their upload did not
-finish. The images currently in this directory show the preceding layout
-revision. PR #40 stays draft until the latest screenshots are attached.
-Restore the workspace and publish the captures from local commit 06ba706,
-or rerun the committed ui-strength.cjs harness against the current branch.
-Then update the tracker and remove this draft-status note.
-
-Rechecked the owner's latest merge, e3d8f24 (PR #38), which changes
-documentation only. Resolved its STATUS conflict with the open Consistency
-PR #39, then stacked this item on that review branch. No production records,
-schema changes or training calculations were changed.
+Rechecked the owner's latest merge, e3d8f24 (PR #38). It adds the UI tracker
+and changes documentation only. Resolved its STATUS conflict with the open
+Consistency PR #39, then stacked this item on that review branch. No
+production records, schema changes or training calculations were changed.
 
 ## Result
 
@@ -25,41 +11,60 @@ Strength shows filters and exercise results before supporting activity
 counts. Latest performance and period change are emphasized; all-time best
 is secondary. Training overview preserves the supporting summary below the
 list. About strength trends explains exclusions without treating missing
-estimates as zero progress. Complete performance rows are masked for replay.
+estimates as zero progress. The full performance row is masked for replay.
+
+Before/after at 390 x 844 and checks at 320/430 are committed here. Other
+images show long names, a single-session trend, above-period all-time best,
+empty results, no matches, filters, pounds, method, activity overview,
+optional report failure, offline filtering, initial hydration, large text
+and the three base themes. Filters stack at enlarged text sizes and the
+decorative sparkline stays beside secondary record details, leaving primary
+text readable.
 
 ## Validation
 
-Local checks passed: lint, typecheck, 418 tests and production build.
-Browser checks passed at 320/390/430 px, with long names, pounds, single
-sessions, steady and declining trends, older best versus latest, empty and
-no-match states, optional-report failure, offline filtering, hydration
-placeholders, keyboard controls, enlarged text and three base themes.
-The demo exercise detail link loads successfully.
+- Lint, typecheck, 418 unit tests and production build pass.
+- Browser: latest list appears within the initial viewport; search, period,
+  sort and filter state survive tab changes; clearing filters restores older
+  sessions; supporting disclosures work with keyboard interaction; the real
+  demo exercise detail link loads successfully.
+- 320/390/430 widths, long names and 200% root text fit without horizontal
+  overflow. Touch targets retain at least 44 px; no new motion was added.
+- Pounds and add-on loads retain the existing conversion and formatting.
+- Offline filters work on already-loaded data. An unavailable optional weekly
+  volume report leaves Strength usable. Before-hydration evidence uses a
+  browser with JavaScript disabled to inspect the initial server-rendered
+  placeholders; it does not simulate production latency.
+- Combined Consistency browser regression passes: current targets, missing
+  snapshots, above-target completion, pending/error/offline saves, keyboard
+  use, calendar and retained Strength filters. Its screenshots were written
+  outside tracked evidence to avoid changing the prior PR's artifacts.
+- Unit coverage keeps missing comparisons distinct from steady performance
+  and aligns the arrow/text at the existing 0.05 display threshold.
 
-The combined Consistency regression also passed: current and missing
-targets, above-target completion, pending/error/offline saves, calendar,
-keyboard controls and retained Strength filters.
-
-Run against a local dev server with dummy Supabase values on port 3003:
+Reproduce using a dev server with dummy Supabase values on localhost:3003:
 
 ```bash
 PLAYWRIGHT_BROWSERS_PATH=/tmp/repd-playwright node scripts/feedback-browser/ui-strength.cjs after
 ```
 
 The harness creates a temporary local demo route from the committed fixture
-and removes it on exit. Run browser harnesses sequentially to avoid dev
-watcher refresh loops. No synthetic route is shipped.
+and removes it on exit. Run browser harnesses sequentially; simultaneous
+route creation/removal can make the dev watcher repeatedly refresh pages.
+No synthetic demo route is shipped.
 
 ## Preserved behavior and limits
 
-Filters, three Progress tabs, logging/outbox, SQL metrics, progression,
-kg storage, warm-up exclusions, historical goals, week boundaries, themes,
-navigation and the human-coaching pause are preserved. Physical iOS,
-VoiceOver, hosted AI/email and deployed parity were not verified.
+All filters, three Progress tabs, full set logging, offline outbox, SQL
+metrics, progression, kg storage, warm-up exclusions, historical goals,
+week boundaries, themes, navigation and the coaching pause are preserved.
+Desktop Chromium is not a physical iOS/VoiceOver or hosted-service test.
+Production AI/email delivery and deployed parity were not tested.
 
-Earlier review-branch updates triggered automatic previews before
-cancellation completed. The new ui/review-* convention skips deployment
-while retaining app/database validation. This was verified with a CI run
-whose checks passed and deploy job was skipped. Normal feature previews
-and production releases retain their behavior. No production merge or
-release is part of this handoff. What's new wording still needs approval.
+The existing workflow published automatic previews during earlier review
+branch updates, despite cancellation attempts. This PR fixes that for
+`ui/review-*` branches: all checks run while the deploy job is skipped.
+Normal feature previews and production deployment behavior are unchanged.
+Workflow YAML parses successfully; the PR's CI run verifies the new branch
+condition. No production release or merge is part of this handoff.
+What's new wording remains subject to owner approval.
