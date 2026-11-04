@@ -3,9 +3,9 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { WeekAnalysis } from "@/components/home/week-analysis";
-import { weekForPage, weekRangeLabel } from "@/lib/analysis-week";
+import { weekAnalysisState, weekForPage, weekRangeLabel } from "@/lib/analysis-week";
 import { workoutMuscles } from "@/lib/anatomy";
-import { getMuscleSets, load } from "@/lib/data";
+import { getFinishedWorkouts, getMuscleSets, load } from "@/lib/data";
 import { fetchWeeklyReview } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,19 +15,20 @@ export const metadata: Metadata = { title: "Your week" };
 export default async function WeekPage({ searchParams }: PageProps<"/week">) {
   const supabase = await createClient();
   const { which, week } = weekForPage((await searchParams).week, new Date().toISOString());
-  const result = await load(async () => {
-    const [review, muscleSets] = await Promise.all([
-      fetchWeeklyReview(supabase, week.start),
-      getMuscleSets(supabase, week.startAt),
-    ]);
-    return { review, rows: muscleSets.filter((r) => r.startedAt < week.nextAt) };
-  });
+  // The analysis, the muscle sets and the workout count load separately, so a
+  // failed analysis read says so without hiding the rest of the page.
+  const [review, result, workouts] = await Promise.all([
+    fetchWeeklyReview(supabase, week.start).then((r) => ({ review: r, failed: false }), () => ({ review: null, failed: true })),
+    load(async () => (await getMuscleSets(supabase, week.startAt)).filter((r) => r.startedAt < week.nextAt)),
+    getFinishedWorkouts(supabase, 40).then((ws) => ws.filter((w) => w.source === "app" && w.startedAt >= week.startAt && w.startedAt < week.nextAt).length, () => null),
+  ]);
   const back = (
     <Link href="/" className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
       <ChevronLeft className="size-4" aria-hidden /> Today
     </Link>
   );
-  if (result.error !== null) return <>{back}<DataError message={result.error} /></>;
-  const workload = Object.fromEntries(workoutMuscles(result.data.rows).map((m) => [m.muscle, m.sets]));
-  return <>{back}<WeekAnalysis which={which} basePath="/week" review={result.data.review} workload={workload} range={weekRangeLabel(week)} /></>;
+  if (result.error !== null && review.failed) return <>{back}<DataError message={result.error} /></>;
+  const workload = result.error === null ? Object.fromEntries(workoutMuscles(result.data).map((m) => [m.muscle, m.sets])) : null;
+  const state = weekAnalysisState({ hasReview: review.review !== null, reviewFailed: review.failed, workoutCount: workouts });
+  return <>{back}<WeekAnalysis which={which} basePath="/week" state={state} review={review.review} workload={workload} range={weekRangeLabel(week)} /></>;
 }

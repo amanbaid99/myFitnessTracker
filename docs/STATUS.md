@@ -8,6 +8,11 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: UI Phase 1 (PR #31) is live at 4301b56. Branch
+  `ui/phase-2-weekly-analysis` does P2.4: weekly page leads with takeaway
+  and Next focus, and separates ready, pending, no-workouts and failed
+  states. P3.5 to P3.7 (human coaching) are out of scope per Aman.
+
 - 2026-11-04: `fix/settings-measurement-system` consolidates units into one
   Metric/Imperial section and removes Settings rest controls. Workouts gain
   separate Rest timer and Swap exercise chips, offline rest syncing, AI
