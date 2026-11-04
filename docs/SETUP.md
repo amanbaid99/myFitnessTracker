@@ -72,6 +72,9 @@ Fine for one user; add custom SMTP later if needed.
 
 Deploys come from GitHub Actions, after CI passes. `vercel.json` turns off
 Vercel's own Git deploys so nothing deploys twice or skips the checks.
+Branches beginning `ui/review-` run validation without an automatic preview.
+Other feature branches keep previews, and the default branch still releases
+to production after checks pass.
 
 1. [vercel.com/new](https://vercel.com/new) > import `amanbaid99/myFitnessTracker`
    (Hobby plan is fine). Let the first deploy run or cancel it; later deploys
@@ -156,8 +159,9 @@ top must show "17 of 17 present"; the workflow then records the init
 migration as applied and applies only the newer ones. If fewer than 17 are
 present it refuses and changes nothing.
 
-**Deploy job says "skipping".** One of the three `VERCEL_*` secrets is
-missing or misspelt.
+**Deploy job says "skipping".** This is intentional on pull requests and
+`ui/review-*` branches. On other push runs, check whether one of the three
+`VERCEL_*` secrets is missing or misspelt.
 
 **Preview sign-in fails.** Add the preview domain pattern to Supabase
 Redirect URLs, e.g. `https://my-fitness-tracker-*.vercel.app/**`.

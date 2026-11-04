@@ -117,8 +117,9 @@ jobs:
 
   deploy:
     needs: [app, database, migrate]
-    # Push events only: a PR's branch is already deployed by its own push.
-    if: github.event_name != 'pull_request'
+    # Review-only UI branches validate without publishing a preview.
+    # Production and other feature branches retain their deployment behavior.
+    if: github.event_name != 'pull_request' && !startsWith(github.ref_name, 'ui/review-')
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-${{ github.ref }}

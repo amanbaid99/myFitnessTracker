@@ -38,7 +38,10 @@ others); `CLAUDE.md` only points here.
   the live database and deploys to production, with no review step. Never
   push to it directly: work on a new branch and open a PR into it. Aman
   merges. Pushes to other branches only get a preview deploy and never
-  touch the live database.
+  touch the live database. For review-only UI work, use a `ui/review-*`
+  branch: app and database CI still run, but automatic preview deployment
+  is skipped. This does not change production releases or previews on
+  other feature branches.
 - **Migrations:** new files in `supabase/migrations/` with a timestamp
   prefix. Show Aman the exact final SQL in chat and get a yes before the
   PR is merged; merging applies it. If the SQL changes after approval,

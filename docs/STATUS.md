@@ -8,6 +8,17 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: Rechecked the PR #38 tracker merge at e3d8f24 and resolved
+  its STATUS overlap with the still-open Consistency PR #39. Branch
+  `ui/review-phase-2-strength` implements P2.5: exercise results appear
+  sooner, latest performance and period changes lead, activity summary
+  moves behind Training overview, and metric exclusions stay accessible.
+  Strength and combined Consistency browser checks pass at 320/390/430,
+  including long names, units, filters, offline states, themes and large
+  text. No metric, outbox or week-boundary changes. CI now skips automatic
+  previews for `ui/review-*` while keeping checks and production releases.
+  P2.6 is next; human coaching stays paused.
+
 - 2026-11-04: UI/UX improvement plan in progress. Tracker and requirements:
   `docs/UI-PLAN.md`. Live: Phase 1 and P2.1 to P2.4, P2.8, P2.9
   (PRs #31 to #37). P2.7 Consistency is ready in PR #39, not merged.
@@ -15,8 +26,8 @@ Last updated: 2026-11-04.
   P2.5 Strength, then P2.6 Muscles. P2.10 needs owner approval before
   changing week calculations. Human coaching stays paused.
   PR #39's branch CI published a preview before cancellation; no production
-  release occurred. Cancel push workflows immediately during this handoff;
-  pull-request CI performs app/database checks without deploying.
+  release occurred. The new `ui/review-*` convention prevents automatic previews during this
+  handoff; pull-request CI also performs checks without deploying.
 
 
 - 2026-11-04: `fix/settings-measurement-system` consolidates units into one

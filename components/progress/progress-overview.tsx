@@ -18,7 +18,7 @@ import { track } from "@/lib/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatE1rm, formatSet } from "@/lib/format";
 import { muscleWeeks, trainingCalendar, weekStreak, workoutsThisWeek } from "@/lib/progress";
-import { sessionsInRange, sessionChange, type ProgressRange } from "@/lib/progress-range";
+import { sessionsInRange, sessionChange, strengthTrend, type ProgressRange } from "@/lib/progress-range";
 import type { Units } from "@/lib/units";
 import { cn } from "@/lib/utils";
 import { MASK } from "@/lib/mask";
@@ -49,8 +49,6 @@ export function ProgressOverview({ workoutDates, muscleRows, exercises, units, u
   const [tab, setTab] = useState<Tab>("Strength");
   const [strength, setStrength] = useState<StrengthFilters>({search:"",range:"12",sort:"recent"});
   const id = useId();
-  const dates = workoutDates.map((d) => new Date(d));
-  const now = new Date();
   function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     let next = index;
     if (event.key === "ArrowRight") next = (index + 1) % TABS.length;
@@ -65,16 +63,21 @@ export function ProgressOverview({ workoutDates, muscleRows, exercises, units, u
     <div role="tablist" aria-label="Progress views" className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] gap-1 rounded-xl bg-muted/60 p-1">
       {TABS.map((name, index) => <button key={name} type="button" role="tab" id={`${id}-${name}`} aria-controls={`${id}-panel`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onKeyDown={e => navigateTabs(e, index)} onClick={() => setTab(name)} className={cn("min-h-11 min-w-0 break-words rounded-lg px-1 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring", tab === name ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{name}</button>)}
     </div>
-    {tab !== "Consistency" && (mounted ? <section aria-label="Progress summary" className="mb-4 grid grid-cols-3 divide-x rounded-2xl border bg-card py-4 text-center">
-      <div><p className="text-2xl font-semibold tabular-nums">{weekStreak(dates, now)}</p><p className="mt-1 text-xs text-muted-foreground">Week streak</p></div>
-      <div><p className="text-2xl font-semibold tabular-nums">{workoutsThisWeek(dates, now)}</p><p className="mt-1 text-xs text-muted-foreground">Workouts this week</p></div>
-      <div><p className="text-2xl font-semibold tabular-nums">{exercises.filter(e => e.sessions.length).length}</p><p className="mt-1 text-xs text-muted-foreground">Exercises tracked</p></div>
-    </section> : <Skeleton className="mb-4 h-24 rounded-2xl" />)}
+    {tab === "Muscles" && (mounted ? <ProgressSummary workoutDates={workoutDates} exercises={exercises}/> : <Skeleton className="mb-4 h-24 rounded-2xl" />)}
     <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`} tabIndex={0}>
-      {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <><ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} />{reports&&<details className="mt-4"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Weekly volume reports</summary><TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo}/></details>}</> : tab === "Muscles" ? <>{coverage&&<CoverageInsights initial={coverage} userId={userId} demo={demo}/>}<MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo}/></> : <>{reports&&<TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo} consistency/>}<div className="mt-4"><Consistency workoutDates={workoutDates}/></div></>}
+      {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <><ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} /><details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Training overview</summary><ProgressSummary workoutDates={workoutDates} exercises={exercises}/><p className="text-xs text-muted-foreground">Activity uses your device timezone.</p></details>{reports&&<details className="mt-4"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Weekly volume reports</summary><TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo}/></details>}</> : tab === "Muscles" ? <>{coverage&&<CoverageInsights initial={coverage} userId={userId} demo={demo}/>}<MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo}/></> : <>{reports&&<TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo} consistency/>}<div className="mt-4"><Consistency workoutDates={workoutDates}/></div></>}
     </div>
     <Link href={demo ? "/demo" : "/coach"} className="mt-4 flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><MessageCircle className="size-4" aria-hidden />Ask Coach about {tab.toLowerCase()}</Link>
   </div>;
+}
+
+function ProgressSummary({workoutDates,exercises}:{workoutDates:string[];exercises:ExerciseProgress[]}) {
+  const dates=workoutDates.map(date=>new Date(date)),now=new Date();
+  return <section aria-label="Progress summary" className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] divide-x rounded-2xl border bg-card py-4 text-center">
+    <div><p className="text-2xl font-semibold tabular-nums">{weekStreak(dates,now)}</p><p className="mt-1 text-xs text-muted-foreground">Week streak</p></div>
+    <div><p className="text-2xl font-semibold tabular-nums">{workoutsThisWeek(dates,now)}</p><p className="mt-1 text-xs text-muted-foreground">Workouts this week</p></div>
+    <div><p className="text-2xl font-semibold tabular-nums">{exercises.filter(exercise=>exercise.sessions.length).length}</p><p className="mt-1 text-xs text-muted-foreground">Exercises tracked</p></div>
+  </section>;
 }
 
 function Consistency({ workoutDates }: { workoutDates: string[] }) {
@@ -134,19 +137,20 @@ function ExerciseList({ exercises, units, demo, state, onChange }: { exercises: 
     .sort((a,b) => sort === "name" ? a.name.localeCompare(b.name) : sort === "change" ? (sessionChange(b.recent) ?? -Infinity) - (sessionChange(a.recent) ?? -Infinity) || a.name.localeCompare(b.name) : b.recent.at(-1)!.startedAt.localeCompare(a.recent.at(-1)!.startedAt) || a.name.localeCompare(b.name));
   return <section>
     <h2 className="text-base font-semibold">Strength trends</h2>
-    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Latest sets and estimated one-rep max (1RM). Change compares the first and last sessions in your selected period.</p>
+    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Latest performance and estimated one-rep max (1RM) change in your selected period.</p>
     <div className="relative mt-3"><Search className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground" aria-hidden /><Input value={search} onChange={e => setSearch(e.target.value)} aria-label="Search exercises" placeholder="Search exercises" className={`h-11 pl-9 ${MASK}`} /></div>
     <div className="mt-2 grid grid-cols-2 gap-2"><label className="text-xs text-muted-foreground">Period<select aria-label="Strength period" value={range} onChange={e => setRange(e.target.value as ProgressRange)} className="mt-1 h-11 w-full rounded-xl border bg-card px-2 text-sm text-foreground"><option value="4">Last 4 weeks</option><option value="12">Last 12 weeks</option><option value="all">All time</option></select></label><label className="text-xs text-muted-foreground">Sort<select aria-label="Sort exercises" value={sort} onChange={e => setSort(e.target.value)} className="mt-1 h-11 w-full rounded-xl border bg-card px-2 text-sm text-foreground"><option value="recent">Most recent</option><option value="name">Name</option><option value="change">Largest 1RM change</option></select></label></div>
-    <p role="status" className="my-3 text-xs text-muted-foreground">{withData.length} {withData.length === 1 ? "exercise" : "exercises"} in this period</p>
+    <p role="status" className="my-2 text-xs text-muted-foreground">{withData.length} {withData.length === 1 ? "exercise" : "exercises"} in this period</p>
     {!withData.length ? <div className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">{exercises.length ? "No matching sessions. Try another name or All time." : "Log working sets to start tracking your lifts. An estimated 1RM needs a set with weight and reps."}{(search || range !== "all") && <Button variant="ghost" className="mt-2 w-full" onClick={() => {onChange({...state,search:"",range:"all"});}}>Show all exercises</Button>}</div> : <ul className="divide-y overflow-hidden rounded-2xl border bg-card">{withData.map(e => {
       const latest = e.recent.at(-1)!;
       const best = e.sessions.reduce((a,b) => b.e1rmKg > a.e1rmKg ? b : a);
-      const change = sessionChange(e.recent);
-      const Icon = change !== null && change > 0.05 ? TrendingUp : change !== null && change < -0.05 ? TrendingDown : Minus;
-      return <li key={e.id}><Link href={demo ? `/demo/progress/${e.id}` : `/progress/${e.id}`} className="flex min-h-20 items-center gap-2 px-3 py-3 transition-colors hover:bg-muted/40 active:bg-muted/60">
-        <div className="min-w-0 flex-1"><p className={`break-words text-sm font-medium ${MASK}`}>{e.name}</p><p className="mt-1 text-xs text-muted-foreground">Latest {formatSet(latest,units)}</p><p className="text-xs text-muted-foreground">Est. 1RM {formatE1rm(latest.e1rmKg,units)}</p><p className="mt-1 flex items-center gap-1 text-xs"><Icon className="size-3 shrink-0 text-primary" aria-hidden />{change === null ? "One session; trend not available" : Math.abs(change) < 0.05 ? `Steady over ${e.recent.length} sessions` : `${change > 0 ? "+" : "−"}${formatE1rm(Math.abs(change),units)} over ${e.recent.length} sessions`}</p><p className="mt-1 text-[11px] text-muted-foreground">All-time best est. 1RM {formatE1rm(best.e1rmKg,units)}</p></div>
+      const {change,direction}=strengthTrend(e.recent);
+      const Icon = direction === "up" ? TrendingUp : direction === "down" ? TrendingDown : Minus;
+      return <li key={e.id} className={MASK}><Link href={demo ? `/demo/progress/${e.id}` : `/progress/${e.id}`} className="flex min-h-20 items-center gap-2 px-3 py-3 transition-colors hover:bg-muted/40 active:bg-muted/60">
+        <div className="min-w-0 flex-1"><p className={`break-words text-sm font-medium ${MASK}`}>{e.name}</p><p className="mt-1 flex flex-wrap items-baseline gap-x-2"><span className="text-xs text-muted-foreground">Latest</span><span className="text-base font-semibold">{formatSet(latest,units)}</span></p><p className="text-xs text-muted-foreground">Est. 1RM {formatE1rm(latest.e1rmKg,units)}</p><p className="mt-1 flex items-start gap-1 text-sm font-medium"><Icon className="mt-1 size-3 shrink-0 text-primary" aria-hidden /><span className="min-w-0 break-words">{change === null ? "One session; trend not available" : direction === "steady" ? `Steady over ${e.recent.length} sessions` : `${change > 0 ? "+" : "−"}${formatE1rm(Math.abs(change),units)} over ${e.recent.length} sessions`}</span></p><p className="mt-1 text-[11px] text-muted-foreground">All-time best est. 1RM {formatE1rm(best.e1rmKg,units)}</p></div>
         <Sparkline values={e.recent.map(s => s.e1rmKg)} width={52} /><ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       </Link></li>;
     })}</ul>}
+    <details className="mt-2 text-xs text-muted-foreground"><summary className="flex min-h-11 cursor-pointer items-center">About strength trends</summary><p className="leading-relaxed">Change compares the first and latest session in the selected period. The all-time best stays separate. Estimates use working sets with recorded load and reps; warm-ups and deleted sets do not count. Sets without load or reps, including unweighted bodyweight work and timed holds, cannot produce an estimate here. Those workouts remain in History; a missing estimate is not zero progress.</p></details>
   </section>;
 }
