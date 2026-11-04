@@ -591,36 +591,7 @@ export async function getWorkoutSets(supabase: Supabase, workoutId: string): Pro
  * For each exercise: the working sets of the most recent *other* workout that
  * included it, in order. Drives pre-fill, the warm-up ramp and the aim.
  */
-export async function getPreviousSessions(
-  supabase: Supabase,
-  exerciseIds: string[],
-  excludeWorkoutId?: string,
-): Promise<Map<string, SetRow[]>> {
-  const map = new Map<string, SetRow[]>();
-  if (exerciseIds.length === 0) return map;
-  let query = supabase
-    .from("sets")
-    .select(SET_COLS)
-    .in("exercise_id", exerciseIds)
-    .eq("set_type", "working")
-    .is("deleted_at", null)
-    .order("logged_at", { ascending: false })
-    .limit(2000);
-  if (excludeWorkoutId) query = query.neq("workout_id", excludeWorkoutId);
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-
-  const lastWorkout = new Map<string, string>();
-  for (const row of (data ?? []).map(toSet)) {
-    const w = lastWorkout.get(row.exerciseId);
-    if (w === undefined) lastWorkout.set(row.exerciseId, row.workoutId);
-    else if (w !== row.workoutId) continue;
-    const list = map.get(row.exerciseId) ?? [];
-    list.unshift(row); // rows arrive newest first; keep oldest first
-    map.set(row.exerciseId, list);
-  }
-  return map;
-}
+export { getPreviousSessions } from "./previous-sessions";
 
 /**
  * Recent working sets of these exercises with the day they were done on,

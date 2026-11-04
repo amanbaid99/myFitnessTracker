@@ -228,3 +228,43 @@ getSessionBests and getMuscleSets paginate stable SQL-view ordering too.
 No database metrics are recalculated or stored by this UI. ExerciseProgressView
 is shared by the signed-in detail and /demo/progress/[exerciseId]. E1rmChart
 has period selection, units, click tooltips and a persistent session picker.
+
+
+## Training feedback and human coaching (2026-11-04)
+
+- `components/rest-duration.tsx` provides validated custom rest input in plan
+  editing, Settings and workout adjustments. `lib/previous-sessions.ts` is
+  shared by server and browser reads; it has no server-only runtime dependency.
+- Workout-only adjustments are a 48-hour cookie keyed by workout and routine
+  slot, validated against the owner's exercise library on resume. They never
+  rewrite logged sets. Plan edits remain explicit and online. Replacement
+  progression uses the replacement exercise's own history.
+- `weekly_exercise_volume` and `weekly_muscle_volume` are security-invoker SQL
+  views. Reports compute metrics, never store them. Eligible external-load
+  work excludes bodyweight, bands, time, warm-ups, deleted sets and non-app,
+  incomplete or cancelled sessions. Per-hand loads use the entered value.
+  Supporting muscles receive half credit; muscle totals overlap.
+- `weekly_targets` stores intent, not a derived metric. Invoker triggers on
+  plan activation/change and current-week workout creation capture the India
+  Monday week once. Progress also ensures a current snapshot. Only the current
+  target is editable. No past targets are invented.
+- `/measurements` stores optional kg/cm readings and method-labelled body fat
+  estimates. `save_body_measurement` atomically upserts the check-in and any
+  supplied weight into the existing body-weight log. Monthly reminders use the
+  device date, a new month plus 28-day gap, and latest measurement or weight.
+  Preferences allow opt-out or seven-day snooze. Coverage uses 28 days of
+  completed app workouts, requires three sessions and complete mappings, and
+  respects selected goals, exclusions and recovery pauses.
+- `/coaching` is human coaching, separate from AI Coach. Hashed invitations
+  expire after seven days and are single use. A client previews the named
+  coach and explicitly accepts. Measurements require separate opt-in.
+  Existing workout/sets RLS remains owner-only; narrowly scoped security-definer
+  RPCs check the authenticated coach, active connection and exact client on
+  every read/write. They expose completed workouts, sets, SQL reports and the
+  coach's reviewed observations. Workout notes and account details are omitted.
+  Either party can revoke future reads. Client-owned assessment history remains
+  available after revocation. Review dates prevent stale cues from appearing
+  current. No automatic posture diagnosis or medical recommendations were added.
+- New schema reads fall back when unavailable, preserving existing training
+  screens during rollout. New writes return recoverable errors. Apply approved
+  migrations before deploying the updated draft-plan Edge Function.

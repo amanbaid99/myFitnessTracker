@@ -1,5 +1,9 @@
 "use client";
 
+import { TrainingReports } from "./training-reports";
+import { CoverageInsights } from "./coverage-insights";
+import type { TrainingWeek } from "@/lib/training-reports";
+import type { CoverageData } from "@/lib/feedback-data";
 import { useId, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { ChevronRight, MessageCircle, PersonStanding, Search, TrendingDown, TrendingUp, Minus } from "lucide-react";
@@ -30,13 +34,16 @@ const TABS = ["Strength", "Muscles", "Consistency"] as const;
 type Tab = typeof TABS[number];
 type StrengthFilters = { search: string; range: ProgressRange; sort: string };
 
-export function ProgressOverview({ workoutDates, muscleRows, exercises, units, unmapped = [], demo = false }: {
+export function ProgressOverview({ workoutDates, muscleRows, exercises, units, unmapped = [], demo = false, reports,coverage,userId="" }: {
   workoutDates: string[];
   muscleRows: { startedAt: string; muscle: string; sets: number }[];
   exercises: ExerciseProgress[];
   units: Units;
   unmapped?: WorkoutExercise[];
   demo?: boolean;
+  reports?: {rows:TrainingWeek[];available:boolean};
+  coverage?: CoverageData|null;
+  userId?:string;
 }) {
   const mounted = useMounted();
   const [tab, setTab] = useState<Tab>("Strength");
@@ -64,7 +71,7 @@ export function ProgressOverview({ workoutDates, muscleRows, exercises, units, u
       {TABS.map((name, index) => <button key={name} type="button" role="tab" id={`${id}-${name}`} aria-controls={`${id}-panel`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onKeyDown={e => navigateTabs(e, index)} onClick={() => setTab(name)} className={cn("min-h-11 rounded-lg px-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring", tab === name ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{name}</button>)}
     </div>
     <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`} tabIndex={0}>
-      {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} /> : tab === "Muscles" ? <MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo} /> : <Consistency workoutDates={workoutDates} />}
+      {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <><ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} />{reports&&<details className="mt-4"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Weekly volume reports</summary><TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo}/></details>}</> : tab === "Muscles" ? <>{coverage&&<CoverageInsights initial={coverage} userId={userId} demo={demo}/>}<MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo}/></> : <>{reports&&<TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo} consistency/>}<div className="mt-4"><Consistency workoutDates={workoutDates}/></div></>}
     </div>
     <Link href={demo ? "/demo" : "/coach"} className="mt-4 flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><MessageCircle className="size-4" aria-hidden />Ask Coach about {tab.toLowerCase()}</Link>
   </div>;

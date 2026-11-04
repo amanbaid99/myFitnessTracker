@@ -25,6 +25,7 @@ export default function PrivacyPage() {
           </li>
           <li>Your plans, workouts, sets, notes and the AI reviews of your workouts.</li>
           <li>The body weights you log, one per day, to show your trend and count as the load of bodyweight exercises.</li>
+          <li>Optional measurement check-ins, reminder preferences, weekly training targets, coaching connections and reviewed assessment observations.</li>
           <li>Feedback and bug reports you send, with the page and browser they came from.</li>
           <li>A daily count of your AI requests, to keep within the free limit.</li>
           <li>How the app is used: which screens are opened and what is tapped, plus recordings of app sessions. See below.</li>
@@ -85,7 +86,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Cookies</h2>
         <p>
-          The ones the app needs, to keep you signed in, remember your colour theme, and remember exercises added to a workout in
+          The ones the app needs, to keep you signed in, remember your colour theme, and remember exercises added or substituted and rest times chosen for a workout in
           progress, plus one from PostHog that recognises your device for the usage analytics above. No advertising cookies.
         </p>
       </section>
@@ -93,7 +94,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Who can see your data</h2>
         <p>
-          Other users cannot see your data; the database only lets each account read its own. The app&apos;s owner can see it when
+          Your records are private by default. If you accept a coaching invitation, that coach can view your completed app workouts and sets, weekly reports and targets, and observations they record for you. Your workout notes and account details stay private. Measurement history and latest body weight require a separate opt-in. Either participant can revoke future access; information already viewed cannot be recalled. You retain your own assessment history after revocation. Assessment observations and measurement circumferences are not sent to AI by these features. The app&apos;s owner can see data when
           running or fixing the app, and does not look at it otherwise.
         </p>
       </section>

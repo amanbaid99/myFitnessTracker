@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DataError } from "@/components/data-error";
 import { ProgressOverview, type ExerciseProgress } from "@/components/progress/progress-overview";
 import { ScreenHeader } from "@/components/screen-header";
+import { getWeeklyReports,getCoverage } from "@/lib/feedback-data";
 import { getProgressWorkouts } from "@/lib/progress-data";
 import { unmappedExercises } from "@/lib/anatomy";
 import { getExerciseLibrary, getExerciseNames, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
@@ -20,15 +21,16 @@ export default async function ProgressPage() {
   const [profile, result] = await Promise.all([
     getProfile(supabase),
     load(async () => {
-      const [bests, muscleRows, workouts, library] = await Promise.all([
+      const [bests, muscleRows, workouts, library,reports,coverage] = await Promise.all([
         getSessionBests(supabase),
         getMuscleSets(supabase, since),
         getProgressWorkouts(supabase),
         // Optional: a failed read only hides the "needs muscles" list.
         getExerciseLibrary(supabase).catch(() => []),
+        getWeeklyReports(supabase),getCoverage(supabase),
       ]);
       const names = await getExerciseNames(supabase, [...new Set(bests.map((b) => b.exerciseId))]);
-      return { bests, muscleRows, workouts, names, library };
+      return { bests, muscleRows, workouts, names, library,reports,coverage };
     }),
   ]);
 
@@ -40,7 +42,7 @@ export default async function ProgressPage() {
       </>
     );
   }
-  const { bests, muscleRows: allMuscleRows, workouts: finished, names, library } = result.data;
+  const { bests, muscleRows: allMuscleRows, workouts: finished, names, library,reports,coverage } = result.data;
   const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
   // Starting weights are numbers to build on, not training: they count for
   // the 1RM charts but not for the streak or sets per muscle.
@@ -64,6 +66,7 @@ export default async function ProgressPage() {
         exercises={[...byExercise.values()]}
         units={profile.units}
         unmapped={unmapped}
+        reports={reports} coverage={coverage} userId={profile.id}
       />
     </>
   );

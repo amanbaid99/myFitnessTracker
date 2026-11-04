@@ -1642,3 +1642,46 @@ Exercise details share a view with the public demo, include chart periods,
 units and a persistent session picker, plus full-row session touch targets.
 No migration, new dependency, stored metric or Edge Function change.
 New What's new wording still requires approval before insertion.
+
+
+## 2026-11-04: Four-stage coach feedback implementation
+
+Aman requested all four stages and full testing. Keep the three Progress tabs
+and disclose reports progressively rather than adding dashboard cards.
+KG/LB changes convert display/input only. Custom rest accepts whole seconds
+from zero to one hour. Equipment substitutions explicitly choose session-only
+or future-plan scope, cannot replace logged exercises and never inherit the
+original exercise's weights. Band and plate are distinct equipment values.
+
+Weekly external-load volume is SQL-derived and excludes incomparable work.
+Per-hand loads stay entered-load values, unlike the broader AI review's total
+kg moved. Label this difference and the primary/full, supporting/half muscle
+estimates. Report weeks use Asia/Kolkata as previously requested. Snapshot
+weekly goals prospectively, preserve closed weeks, cap completion at 100% and
+show above-target sessions separately. Do not infer missed days or old goals.
+
+Measurements are optional, normalized to kg/cm, and body fat needs a method.
+Monthly prompts require a different month and 28 days, count recent weight
+logs, and support snooze/disable. Coverage is a factual zero-set observation
+against an explicit goal, withheld for insufficient or unmapped history;
+exclusions and recovery pauses avoid treating every omission as a problem.
+
+Human coaching requires a private single-use expiring invitation, named coach
+preview and explicit client consent. Measurements default private. Keep core
+owner RLS intact and expose only whitelisted client records through guarded
+RPCs. Revoke future access immediately; previously viewed information cannot
+be recalled. Clients retain assessment history. Coaches record observations,
+agreed adaptations and review dates manually; stale cues request review.
+Automatic diagnoses and corrective exercise prescriptions are out of scope.
+
+Production migration approval and separate What's new wording approval remain
+required by the repository rules. Local test approval is not production SQL
+approval. All validation uses disposable synthetic records.
+
+
+## 2026-11-04: Approve the feedback release
+
+Aman approved the exact three migration files and the proposed What's new
+wording, and authorized merging, migrating and deploying PR #29. The SQL
+remains unchanged from the reviewed files. Add the approved popup with a
+Show me link to Progress. Deploy draft-plan separately after migrations.

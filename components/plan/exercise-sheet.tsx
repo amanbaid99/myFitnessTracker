@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Exercise, RoutineExercise } from "@/lib/data";
 import { AddExercise, type ExercisePick } from "./add-exercise";
-import { EQUIPMENT, REST_OPTIONS } from "@/lib/muscles";
+import { RestDuration } from "@/components/rest-duration";
+import { EQUIPMENT } from "@/lib/muscles";
 import { MAX_WEIGHT_STEP_KG, parseWeightStep, stepKg } from "@/lib/progression";
 import { formatDuration, type Tracking } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,7 @@ export function ExerciseSheet({
     setTracking(next);
     setReps(next === "time" ? 30 : 10);
   }
+  const [restValid,setRestValid] = useState(true);
   const [rest, setRest] = useState<number | null>(item.restSec);
   const [seat, setSeat] = useState(e.machineSetting ?? "");
   const [equipment, setEquipment] = useState(e.equipment);
@@ -108,6 +110,7 @@ export function ExerciseSheet({
   }
 
   async function save() {
+    if (!restValid) return;
     if (!name.trim()) {
       setError("Give the exercise a name.");
       return;
@@ -236,20 +239,7 @@ export function ExerciseSheet({
                 )}
               </div>
 
-              <Field label="Rest between sets" htmlFor="ex-rest">
-                <select
-                  id="ex-rest"
-                  value={rest ?? ""}
-                  onChange={(ev) => setRest(ev.target.value === "" ? null : Number(ev.target.value))}
-                  className="h-12 w-full rounded-xl border bg-card px-3 text-base"
-                >
-                  {REST_OPTIONS.map((r) => (
-                    <option key={r ?? "default"} value={r ?? ""}>
-                      {r === null ? `Default (${defaultRestSec} s)` : `${r} s`}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <RestDuration value={rest} defaultSec={defaultRestSec} onChange={setRest} onValidityChange={setRestValid} />
 
               {library && onAddAlternate && onRemoveAlternate && (
                 <div>
@@ -415,7 +405,7 @@ export function ExerciseSheet({
                   {error}
                 </p>
               )}
-              <Button size="lg" className="w-full" onClick={save} disabled={busy}>
+              <Button size="lg" className="w-full" onClick={save} disabled={busy||!restValid}>
                 {busy ? "Saving…" : "Save"}
               </Button>
             </div>

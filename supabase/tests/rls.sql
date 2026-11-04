@@ -603,5 +603,6 @@ select pg_temp.expect_error($$select public.correct_set(gen_random_uuid(), 1, 0,
 select pg_temp.expect_error($$select public.mark_seen(array['x'])$$, 'anon cannot mark tips seen');
 reset role;
 
+\i supabase/tests/feedback.sql
 \o
 \echo 'All RLS checks passed.'

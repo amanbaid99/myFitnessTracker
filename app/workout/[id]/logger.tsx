@@ -36,6 +36,13 @@ import {
   type DbResult,
 } from "@/lib/routine-edits";
 import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
+import { AssessmentReminders } from "@/components/coaching/assessment-reminders";
+import type { Assessment } from "@/lib/feedback-data";
+import { localDay } from "@/lib/body-weight";
+import { WorkoutAdjustment } from "@/components/workout-adjustment";
+import { saveAdjustment } from "@/lib/workout-adjustments";
+import { getPreviousSessions } from "@/lib/previous-sessions";
+import { buildSession } from "@/lib/session";
 import { saveChoice } from "@/lib/alternates";
 import { MusclesSheet } from "@/components/anatomy/muscles-sheet";
 import { useTip } from "@/components/guide/guide-provider";
@@ -99,16 +106,20 @@ export function Logger(props: {
   lastNotes?: Record<string, string>;
   /** Slots with alternates, by slot id: each option it can be done as today. */
   options?: Record<string, SlotOption[]>;
+  coachReminders?: Assessment[];
   /** Edit the day's exercises mid-workout: in the plan, or for this workout only. */
   editing?: WorkoutEditing;
 }) {
   const { workoutId, units, demo = false, editing } = props;
   // Alternates switched to on this screen, by slot id.
+  const [adjusted,setAdjusted] = useState<Record<string,SlotOption>>({});
+  const [restChoices,setRestChoices] = useState<Record<string,number>>({});
+  const [adjustIndex,setAdjustIndex] = useState<number|null>(null);
   const [choice, setChoice] = useState<Record<string, string>>({});
   const [lockHint, setLockHint] = useState<string | null>(null);
   const items = props.items.map((i) => {
-    const o = choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined;
-    return o ? { ...i, exercise: o.exercise } : i;
+    const o = adjusted[i.id] ?? (choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined);
+    return { ...i, ...(o?{exercise:o.exercise}:{}),restSec:restChoices[i.id]??i.restSec };
   });
   // The day's exercises as they are in the plan; extras for today come after.
   const dayItems = items.filter((i) => !isExtraItem(i));
@@ -418,7 +429,7 @@ export function Logger(props: {
             },
       ),
     );
-  }, []);
+  }, [setExercises]);
 
   async function tick(exIndex: number, row: Row) {
     const item = items[exIndex];
@@ -520,6 +531,8 @@ export function Logger(props: {
     }
     if (hold?.exIndex === exIndex) setHold(null);
     setLockHint(null);
+    setAdjusted(prev=>{const next={...prev};delete next[slotId];return next;});
+    if(!demo)saveAdjustment(workoutId,slotId,{exerciseId});
     setChoice((c) => ({ ...c, [slotId]: exerciseId }));
     setExercises((prev) => prev.map((e, i) => (i === exIndex ? option.session : e)));
     setOpenId((id) => (id === current.exerciseId ? exerciseId : id));
@@ -759,6 +772,7 @@ export function Logger(props: {
           }
         />
 
+        <AssessmentReminders assessments={props.coachReminders??[]} today={localDay()}/>
         {order.map((exIndex) => {
           const ex = exercises[exIndex];
           if (!ex) return null;
@@ -853,6 +867,7 @@ export function Logger(props: {
                       {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
                       {isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}
                     </div>
+                    <Button variant="ghost" className="mt-1 px-0 text-primary" onClick={()=>setAdjustIndex(exIndex)}><Timer className="size-4"/>Equipment / rest</Button>
                     {!demo && item.exercise.tracking !== "time" && (
                       <Link href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
                         try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
@@ -1172,6 +1187,34 @@ export function Logger(props: {
           onSkip={() => setRest(null)}
         />
       )}
+
+      {adjustIndex!==null && items[adjustIndex] && <WorkoutAdjustment
+        item={items[adjustIndex]} defaultSec={props.defaultRestSec}
+        library={(editing?.library??props.items.map(i=>i.exercise)).filter(e=>!items.some((item,i)=>i!==adjustIndex&&item.exercise.id===e.id))}
+        locked={[...exercises[adjustIndex].warmups,...exercises[adjustIndex].working].some(r=>r.logged!==null)}
+        canSavePlan={Boolean(editing&&!isExtraItem(items[adjustIndex]))&&!demo}
+        onClose={()=>setAdjustIndex(null)}
+        onRest={async(seconds,plan)=>{
+          const item=items[adjustIndex];
+          if(plan){const {error}=await createClient().from("routine_exercises").update({rest_sec:seconds}).eq("id",item.id).select("id").single();if(error)throw new Error("Could not save the plan rest time. Check your connection.");}
+          if(!demo)saveAdjustment(workoutId,item.id,{restSec:seconds});
+          setRestChoices(prev=>({...prev,[item.id]:seconds}));
+          if(rest)setRest({endsAt:secondsFromNow(seconds),total:seconds});
+        }}
+        onReplace={async(pick,plan)=>{
+          const item=items[adjustIndex];
+          if([...exercises[adjustIndex].warmups,...exercises[adjustIndex].working].some(r=>r.logged))throw new Error("Untick logged sets before replacing this exercise.");
+          if(plan){const result=await exerciseIdFor(createClient(),pick);if(result.error||!result.id)throw new Error("Could not prepare the replacement. Try again online.");if(items.some((value,i)=>i!==adjustIndex&&value.exercise.id===result.id))throw new Error("That exercise is already in this workout.");saveAdjustment(workoutId,item.id,{exerciseId:result.id});const err=await applyEdit(s=>swapExercise(s,item,{...pick,exerciseId:result.id,muscleGroups:undefined}));if(err){saveAdjustment(workoutId,item.id,{exerciseId:item.exercise.id});throw new Error(err);}return;}
+          let replacement=editing?.library.find(e=>e.id===pick.exerciseId)??props.items.map(i=>i.exercise).find(e=>e.id===pick.exerciseId);
+          if(!replacement){if(demo)throw new Error("Choose an existing sample exercise.");const result=await exerciseIdFor(createClient(),pick);if(result.error||!result.id)throw new Error("Could not create the replacement. Try again online.");const lib=await createClient().from("exercises").select("*").eq("id",result.id).single();if(lib.error||!lib.data)throw new Error("Could not load the replacement.");replacement={...item.exercise,id:result.id,name:lib.data.name,equipment:lib.data.equipment,perHand:lib.data.per_hand,muscleGroups:lib.data.muscle_groups??[],machineSetting:lib.data.machine_setting,warmupEnabled:lib.data.warmup_enabled,warmupTemplate:lib.data.warmup_template,weightStepKg:lib.data.weight_step_kg??2.5,tracking:lib.data.tracking??"reps"};}
+          if(items.some((value,i)=>i!==adjustIndex&&value.exercise.id===replacement.id))throw new Error("That exercise is already in this workout.");
+          const previous=!demo&&navigator.onLine?await getPreviousSessions(createClient(),[replacement.id],workoutId).catch(()=>new Map()):new Map();
+          const session=buildSession([{...item,exercise:replacement}],previous,[])[0];
+          if(!demo)saveAdjustment(workoutId,item.id,{exerciseId:replacement.id});
+          setAdjusted(prev=>({...prev,[item.id]:{exercise:replacement!,session}}));
+          setExercises(prev=>prev.map((value,i)=>i===adjustIndex?session:value));setOpenId(replacement.id);
+        }}
+      />}
 
       {editing && editItem && editIndex >= 0 && (
           <ExerciseSheet

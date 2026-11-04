@@ -68,7 +68,7 @@ export const MUSCLES = [
   "chest", "front delts", "side delts", "rear delts", "upper back", "lats", "traps", "biceps",
   "triceps", "quads", "hamstrings", "glutes", "abductors", "adductors", "calves", "core",
 ];
-export const EQUIPMENT = ["machine", "cable", "dumbbell", "barbell", "bodyweight", "other"];
+export const EQUIPMENT = ["machine", "cable", "dumbbell", "barbell", "bodyweight", "band", "plate", "other"];
 
 type Log = (message: string, fields?: Record<string, unknown>) => void;
 
