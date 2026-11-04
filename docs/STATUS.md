@@ -8,31 +8,11 @@ Last updated: 2026-11-04.
 
 ## In progress
 
-- 2026-11-04: P2.9 (exercise progress) live via PR #36. Branch
-  `ui/phase-2-volume-reports` does P2.8: plain counted / not counted
-  wording, one rounded volume format, lighter in-progress bar, loading
-  and errors beside the breakdown menu.
-
-- 2026-11-04: P2.3 (recap) live via PR #35. Branch
-  `ui/phase-2-exercise-progress` does P2.9: latest first with best
-  secondary, Top sets collapsed, volume worded like weekly reports.
-
-- 2026-11-04: P2.1 (Today) live via PR #34. Branch `ui/phase-2-recap` does
-  P2.3: local session results first in the recap, smaller body map,
-  Jump to logged sets.
-
-- 2026-11-04: P2.2 (History) live via PR #33. Branch `ui/phase-2-today`
-  does P2.1: one-line weekly card states with inline Try again, smaller
-  Refresh, monthly check-in below the main action, singular counts.
-
-- 2026-11-04: P2.4 (weekly page) is live via PR #32. Branch
-  `ui/phase-2-history-list` does P2.2: one set of recap labels, active
-  filter summary with Clear, filter dot, singular set counts.
-
-- 2026-11-04: UI Phase 1 (PR #31) is live at 4301b56. Branch
-  `ui/phase-2-weekly-analysis` does P2.4: weekly page leads with takeaway
-  and Next focus, and separates ready, pending, no-workouts and failed
-  states. P3.5 to P3.7 (human coaching) are out of scope per Aman.
+- 2026-11-04: UI/UX improvement plan in progress. Tracker, full
+  requirements and how evidence is made: `docs/UI-PLAN.md`. Live: Phase 1
+  (PR #31) and P2.1 to P2.4, P2.8, P2.9 (PRs #32 to #37). Next: P2.7
+  Consistency, then P2.5, P2.6. P2.10 changes week counting, so ask Aman
+  first. P3.5 to P3.7 (human coaching) are skipped per Aman.
 
 - 2026-11-04: `fix/settings-measurement-system` consolidates units into one
   Metric/Imperial section and removes Settings rest controls. Workouts gain
