@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseRestDuration } from "./rest-duration";
-import { goalCompletion, volumeChange } from "./training-reports";
+import { goalCompletion, volumeChange, reportSetsLine } from "./training-reports";
 import { monthlyCheckInDue, coverageFindings } from "./measurements";
 import { parseAdjustments, applyAdjustments } from "./workout-adjustments";
 import type { CoverageData } from "./feedback-data";
@@ -122,5 +122,13 @@ describe("training feedback boundaries", () => {
         new Set(),
       )[0].exercise.id,
     ).toBe("c");
+  });
+});
+
+describe("reportSetsLine", () => {
+  it("says what was counted in plain words", () => {
+    expect(reportSetsLine(12, 3)).toBe("12 sets counted · 3 sets not counted (bodyweight, bands or timed)");
+    expect(reportSetsLine(1, 0)).toBe("1 set counted");
+    expect(reportSetsLine(0, 1)).toBe("0 sets counted · 1 set not counted (bodyweight, bands or timed)");
   });
 });

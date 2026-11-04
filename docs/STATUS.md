@@ -8,6 +8,11 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: P2.9 (exercise progress) live via PR #36. Branch
+  `ui/phase-2-volume-reports` does P2.8: plain counted / not counted
+  wording, one rounded volume format, lighter in-progress bar, loading
+  and errors beside the breakdown menu.
+
 - 2026-11-04: P2.3 (recap) live via PR #35. Branch
   `ui/phase-2-exercise-progress` does P2.9: latest first with best
   secondary, Top sets collapsed, volume worded like weekly reports.

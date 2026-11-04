@@ -1814,3 +1814,13 @@ as a secondary line, or "Your best yet" when they match
 lead with an old record. Top sets became a collapsed section after Sessions,
 and session volume uses the weekly reports' "kg × reps" wording. Chart and
 session details are unchanged.
+
+## 2026-11-04: Plain wording in weekly volume reports (UI Phase 2, P2.8)
+
+The volume report now says what its number means under the headline, uses
+"sets counted / not counted (bodyweight, bands or timed)" instead of
+eligible and excluded set contributions (`reportSetsLine`), and formats
+every volume the same rounded way as exercise progress (`volumeLabel`). The
+in-progress week is labelled and drawn lighter. Loading and errors appear
+beside the breakdown menu that caused them. The SQL report, week
+boundaries and the Consistency panel are unchanged.
