@@ -94,7 +94,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Who can see your data</h2>
         <p>
-          Your records are private by default. If you accept a coaching invitation, that coach can view your completed app workouts and sets, weekly reports and targets, and observations they record for you. Your workout notes and account details stay private. Measurement history and latest body weight require a separate opt-in. Either participant can revoke future access; information already viewed cannot be recalled. You retain your own assessment history after revocation. Assessment observations and measurement circumferences are not sent to AI by these features. The app&apos;s owner can see data when
+          Your records are private by default. Human coach and client sharing is currently unavailable in the app. Any previously stored coaching records are retained privately. Exercise swaps and dumbbell workout suggestions send exercise names and target muscles to AI; body measurement circumferences and coaching observations are not sent by these features. The app&apos;s owner can see data when
           running or fixing the app, and does not look at it otherwise.
         </p>
       </section>

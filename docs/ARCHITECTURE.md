@@ -233,7 +233,9 @@ has period selection, units, click tooltips and a persistent session picker.
 ## Training feedback and human coaching (2026-11-04)
 
 - `components/rest-duration.tsx` provides validated custom rest input in plan
-  editing, Settings and workout adjustments. `lib/previous-sessions.ts` is
+  editing and workout adjustments. Settings has one Metric/Imperial preference
+  for weight, height and circumference units; other measurement forms inherit
+  it. Onboarding uses the shared measurement-system selector. `lib/previous-sessions.ts` is
   shared by server and browser reads; it has no server-only runtime dependency.
 - Workout-only adjustments are a 48-hour cookie keyed by workout and routine
   slot, validated against the owner's exercise library on resume. They never
@@ -268,3 +270,31 @@ has period selection, units, click tooltips and a persistent session picker.
 - New schema reads fall back when unavailable, preserving existing training
   screens during rollout. New writes return recoverable errors. Apply approved
   migrations before deploying the updated draft-plan Edge Function.
+
+
+## Session controls and paused sharing (2026-11-04)
+
+Settings has one Metric/Imperial preference. It controls kg/lb, height cm or
+ft/in and circumference cm/in. Measurement forms inherit it instead of
+providing independent selectors. Unedited profile measurements retain their
+canonical values when saving other details. Rest editing lives in workouts
+and plans, with a Rest timer chip and idempotent setRest outbox operation.
+Rest-only operations are excluded from forced restore reloads.
+
+QuickSwapSheet uses local library/template ranking and optional draft-plan
+alternatives. DumbbellDaySheet requests adapt_day for unlogged planned slots,
+validates a complete dumbbell-only preview, and applies accepted mappings and
+targets atomically to the session cookie. Original plan rows and logged sets
+are preserved. New library exercises are created only after acceptance; own
+history is fetched, never copied from the old exercise. Offline swaps use
+existing owned exercises. AI and new exercise creation need a connection.
+The two new modes explicitly authenticate and consume the existing shared
+quota. Provider prompts include redacted exercise names, planned sets/reps and
+target muscles, not
+profile measurements or coaching notes. Local browser tests run the actual
+handler through synthetic auth/PostgREST with deterministic model responses.
+
+Human coaching/client sharing is currently paused in the UI. Entry points
+and assessment reminders are removed, and all /coaching routes return not
+found. Existing tables, consent guards and private records remain; no data is
+deleted or access broadened. AI Coach remains available.

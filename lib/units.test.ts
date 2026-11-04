@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cmToFtIn, formatWeight, fromKg, ftInToCm, toKg } from "./units";
+import { cmToFtIn, formatWeight, fromKg, ftInToCm, toKg, fromCm, toCm } from "./units";
 
 describe("units", () => {
   it("leaves kg alone", () => {
@@ -30,5 +30,15 @@ describe("height", () => {
     expect(cmToFtIn(182.9)).toEqual({ ft: 6, inches: 0 });
     expect(ftInToCm(5, 9)).toBe(175.3);
     expect(ftInToCm(6, 0)).toBe(182.9);
+  });
+});
+
+describe("measurement system circumferences", () => {
+  it("preserves metric precision and converts imperial input to canonical cm", () => {
+    expect(fromCm(80.2, "kg")).toBe(80.2);
+    expect(toCm(80.2, "kg")).toBe(80.2);
+    expect(fromCm(80, "lb")).toBe(31.5);
+    expect(toCm(31.5, "lb")).toBe(80);
+    expect(toCm(12.25, "lb")).toBe(31.1);
   });
 });

@@ -28,6 +28,7 @@ export type Op =
   | { kind: "insertNote"; row: { id: string; workout_id: string; exercise_id: string; note: string } }
   | { kind: "updateNote"; id: string; note: string }
   | { kind: "deleteNote"; id: string }
+  | { kind: "setRest"; routineExerciseId: string; restSec: number }
   | { kind: "setSetting"; exerciseId: string; setting: string | null };
 
 export interface QueuedOp {
@@ -94,4 +95,9 @@ export async function runQueue(
     }
   }
   return { sent, failed, stopped: false };
+}
+
+/** New edits must not be mistaken for changes waiting when this screen opened. */
+export function needsWorkoutReload(item:QueuedOp,openedAt:number):boolean {
+  return item.op.kind!=="setRest"&&Date.parse(item.createdAt)<openedAt;
 }

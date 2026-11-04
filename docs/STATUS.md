@@ -8,6 +8,16 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: `fix/settings-measurement-system` consolidates units into one
+  Metric/Imperial section and removes Settings rest controls. Workouts gain
+  separate Rest timer and Swap exercise chips, offline rest syncing, AI
+  alternatives and previewed dumbbell adaptation for remaining exercises.
+  Human coaching/client sharing UI is paused, including deep links and
+  reminders; backend records/consent guards are retained. No migration.
+  draft-plan needs a JWT-enabled deployment for alternatives/adapt_day modes.
+  The owner approved the new popup wording and release.
+
+
 - 2026-11-04: `feat/coach-feedback-stages` implements all four approved feedback
   stages: units/custom rest/session substitutions, SQL weekly reports and
   goal snapshots, optional measurements/reminders/coverage, and consent-based

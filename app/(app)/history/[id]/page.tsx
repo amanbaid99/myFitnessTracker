@@ -1,6 +1,3 @@
-import { AssessmentReminders } from "@/components/coaching/assessment-reminders";
-import { getAssessmentReminders } from "@/lib/feedback-data";
-import { localDay } from "@/lib/body-weight";
 import type { Metadata } from "next";
 import { MASK } from "@/lib/mask";
 import Link from "next/link";
@@ -64,7 +61,6 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
   const { workout, sets, review, notes, names, muscleSets, exercises } = result.data;
   if (!workout) notFound();
 
-  const coachReminders = await getAssessmentReminders(supabase,profile.id);
   const byExercise = new Map<string, SetRow[]>();
   for (const s of sets) byExercise.set(s.exerciseId, [...(byExercise.get(s.exerciseId) ?? []), s]);
   const workingIds = new Set(sets.filter((s) => s.setType === "working").map((s) => s.exerciseId));
@@ -85,7 +81,6 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
         {sets.length > 0 && <p className="mt-1 text-xs text-muted-foreground">Logged something wrong? Tap a set to fix it.</p>}
       </header>
 
-      <AssessmentReminders assessments={coachReminders} today={localDay()}/>
       {workout.source === "app" && (
         <div className="mb-6">
           <WorkoutRecap rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} workoutId={workout.id} endedAt={workout.endedAt} review={review} />

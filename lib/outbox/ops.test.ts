@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTransient, runQueue, toResult, type Op, type QueuedOp, type SendResult } from "./ops";
+import { isTransient, runQueue, toResult, needsWorkoutReload, type Op, type QueuedOp, type SendResult } from "./ops";
 
 const q = (seq: number, op: Op): QueuedOp => ({ seq, workoutId: "w1", op, createdAt: "2026-09-26T10:00:00Z" });
 const rpe = (id: string): Op => ({ kind: "setRpe", id, rpe: 7.5 });
@@ -59,4 +59,14 @@ describe("runQueue", () => {
     }, { onSent: () => {}, onFailed: () => {} });
     expect(out.stopped).toBe(true);
   });
+});
+
+
+describe("rest edits never force a workout reload",()=>{
+ it("restores old set edits only, excluding new edits and rest-only updates",()=>{
+  const opened=Date.parse("2026-09-26T10:01:00Z");
+  expect(needsWorkoutReload(q(1,rpe("a")),opened)).toBe(true);
+  expect(needsWorkoutReload({...q(1,rpe("a")),createdAt:"2026-09-26T10:02:00Z"},opened)).toBe(false);
+  expect(needsWorkoutReload(q(1,{kind:"setRest",routineExerciseId:"slot",restSec:90}),opened)).toBe(false);
+ });
 });

@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
+require("tsx/cjs");
+const { handle } = require("../../supabase/functions/draft-plan/handler.ts");
 // Local-only Supabase-shaped auth facade. Database authorization is real PostgREST/RLS.
 const http = require("node:http"),
   crypto = require("node:crypto"),
@@ -60,7 +62,7 @@ function user(req) {
     return null;
   }
 }
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:3003");
   res.setHeader(
     "Access-Control-Allow-Headers",
@@ -75,6 +77,78 @@ const server = http.createServer((req, res) => {
   if (req.method === "OPTIONS") {
     res.writeHead(204);
     res.end();
+    return;
+  }
+  if (req.url.startsWith("/functions/v1/draft-plan")) {
+    try {
+      let body = "";
+      for await (const chunk of req) body += chunk;
+      const payload = JSON.parse(body || "{}");
+      const modelFetch = async (url, options) => {
+        if (String(url).startsWith("https://openrouter.ai/")) {
+          const exercises =
+            payload.mode === "adapt_day"
+              ? payload.day.exercises.map((e, i) => ({
+                  name: `Fixture Dumbbell Day ${e.muscles[0] || "chest"} ${i + 1}`,
+                  equipment: "dumbbell",
+                  muscles: e.muscles.length ? e.muscles : ["chest"],
+                  sets: 2,
+                  reps: 12,
+                }))
+              : [
+                  {
+                    name: "Dumbbell Floor Press",
+                    equipment: "dumbbell",
+                    muscles: ["chest", "triceps"],
+                    sets: 3,
+                    reps: 10,
+                  },
+                  {
+                    name: "Fixture Dumbbell Press",
+                    equipment: "dumbbell",
+                    muscles: ["chest", "triceps"],
+                    sets: 3,
+                    reps: 10,
+                  },
+                ];
+          return Response.json({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    name: "Fixture alternatives",
+                    days: [{ name: "Today", exercises }],
+                  }),
+                },
+              },
+            ],
+          });
+        }
+        return fetch(url, options);
+      };
+      const response = await handle(
+        new Request("http://127.0.0.1:55435/functions/v1/draft-plan", {
+          method: "POST",
+          headers: {
+            authorization: req.headers.authorization || "",
+            "content-type": "application/json",
+          },
+          body,
+        }),
+        {
+          SUPABASE_URL: "http://127.0.0.1:55435",
+          SUPABASE_ANON_KEY: "test-anon",
+          OPENROUTER_API_KEY: "fixture-only",
+        },
+        modelFetch,
+        () => {},
+      );
+      res.writeHead(response.status, Object.fromEntries(response.headers));
+      res.end(await response.text());
+    } catch {
+      res.statusCode = 500;
+      res.end('{"error":"local fixture failed"}');
+    }
     return;
   }
   if (req.url.startsWith("/rest/v1")) {

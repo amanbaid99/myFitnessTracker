@@ -89,31 +89,106 @@ async function rpc(role, name, args = {}) {
     page.on("pageerror", (e) => errors.push(e.message));
     return page;
   }
-  const client = await pageFor("client"),
-    coach = await pageFor("coach");
-  // Stage 1: real profile writes, custom rest and unchanged stored loads.
+  const client = await pageFor("client");
+  // Stage 1: one measurement system; rest remains an exercise setting.
+  await req("client", `profiles?id=eq.${ids.client}`, "PATCH", {
+    body_weight_kg: 72.12,
+    height_cm: 175.2,
+  });
+  const before = (
+    await req(
+      "client",
+      `profiles?select=units,default_rest_sec,body_weight_kg,height_cm&id=eq.${ids.client}`,
+    )
+  ).data[0];
   await client.goto(base + "/settings");
-  await client.getByRole("heading", { name: "Training preferences" }).waitFor();
-  await client.getByLabel("Weight unit").selectOption("lb");
   await client
-    .getByLabel("Rest between sets", { exact: true })
-    .selectOption("custom");
-  await client.getByLabel("Minutes", { exact: true }).fill("4");
-  await client.getByLabel("Seconds", { exact: true }).fill("5");
-  await client
-    .getByRole("button", { name: "Save preferences", exact: true })
-    .click();
-  await client
-    .getByText("Preferences saved. Historical weights are unchanged.", {
-      exact: true,
-    })
+    .getByRole("heading", { name: "Units and measurements" })
     .waitFor();
-  let prefs = await req(
-    "client",
-    `profiles?select=units,default_rest_sec&id=eq.${ids.client}`,
+  assert.equal(
+    await client.getByLabel("Rest between sets", { exact: true }).count(),
+    0,
   );
-  assert.equal(prefs.data[0].units, "lb");
-  assert.equal(prefs.data[0].default_rest_sec, 245);
+  assert.equal(
+    await client.getByText("Default rest", { exact: true }).count(),
+    0,
+  );
+  assert.equal(
+    await client
+      .getByRole("combobox", { name: "Measurement system", exact: true })
+      .count(),
+    1,
+  );
+  await client
+    .getByLabel("Measurement system", { exact: true })
+    .selectOption("lb");
+  await client.getByRole("button", { name: "Save units", exact: true }).click();
+  await client
+    .getByText("Measurement system saved.", { exact: true })
+    .waitFor();
+  const imperial = (
+    await req(
+      "client",
+      `profiles?select=units,default_rest_sec,body_weight_kg,height_cm&id=eq.${ids.client}`,
+    )
+  ).data[0];
+  assert.equal(imperial.units, "lb");
+  assert.equal(imperial.default_rest_sec, before.default_rest_sec);
+  assert.equal(imperial.body_weight_kg, before.body_weight_kg);
+  assert.equal(imperial.height_cm, before.height_cm);
+  await client.reload();
+  assert.equal(
+    await client.getByLabel("Measurement system", { exact: true }).inputValue(),
+    "lb",
+  );
+  await client.goto(base + "/measurements");
+  await client.getByLabel("Weight (lb)", { exact: true }).waitFor();
+  await client.getByLabel("Waist (in)", { exact: true }).waitFor();
+  assert.equal(
+    await client.getByLabel("Length unit", { exact: true }).count(),
+    0,
+  );
+  await client.getByLabel("Weight (lb)", { exact: true }).fill("160");
+  await client.getByLabel("Waist (in)", { exact: true }).fill("31.5");
+  await client
+    .getByRole("button", { name: "Save check-in", exact: true })
+    .click();
+  await client.getByText("Check-in saved.", { exact: false }).waitFor();
+  const converted = (
+    await req(
+      "client",
+      "body_measurements?select=weight_kg,waist_cm&order=measured_on.desc&limit=1",
+    )
+  ).data[0];
+  assert.equal(Number(converted.weight_kg), 72.57);
+  assert.equal(Number(converted.waist_cm), 80);
+  await client.goto(base + "/welcome?details=1");
+  await client.getByLabel("Feet", { exact: true }).waitFor();
+  assert.equal(
+    await client.getByLabel("Measurement system", { exact: true }).count(),
+    0,
+  );
+  await client.getByRole("button", { name: "Save", exact: true }).click();
+  await client.waitForURL(base + "/settings");
+  const untouched = (
+    await req(
+      "client",
+      `profiles?select=units,body_weight_kg,height_cm&id=eq.${ids.client}`,
+    )
+  ).data[0];
+  assert.equal(untouched.units, "lb");
+  assert.equal(untouched.body_weight_kg, 72.12);
+  assert.equal(untouched.height_cm, 175.2);
+  await client
+    .getByLabel("Measurement system", { exact: true })
+    .selectOption("kg");
+  await client.getByRole("button", { name: "Save units", exact: true }).click();
+  await client
+    .getByText("Measurement system saved.", { exact: true })
+    .waitFor();
+  await client.goto(base + "/welcome?details=1");
+  await client.getByLabel("Height (cm)", { exact: true }).waitFor();
+  assert.equal(await client.getByLabel("Feet", { exact: true }).count(), 0);
   assert.equal(
     (
       await req(
@@ -123,18 +198,16 @@ async function rpc(role, name, args = {}) {
     ).data[0].weight_kg,
     10,
   );
-  await client.getByLabel("Minutes", { exact: true }).fill("61");
-  assert(
-    await client
-      .getByRole("button", { name: "Save preferences", exact: true })
-      .isDisabled(),
-  );
-  await client.getByLabel("Minutes", { exact: true }).fill("4");
-  await client.getByLabel("Weight unit").selectOption("kg");
+  await client.goto(base + "/welcome");
   await client
-    .getByRole("button", { name: "Save preferences", exact: true })
-    .click();
-  await client.waitForTimeout(300);
+    .getByLabel("Measurement system", { exact: true })
+    .selectOption("lb");
+  await client.getByLabel("Weight (lb)", { exact: true }).waitFor();
+  await client.getByLabel("Feet", { exact: true }).waitFor();
+  await client
+    .getByLabel("Measurement system", { exact: true })
+    .selectOption("kg");
+  await client.getByLabel("Height (cm)", { exact: true }).waitFor();
   const slot = (
     await req(
       "client",
@@ -154,119 +227,102 @@ async function rpc(role, name, args = {}) {
       })
     ).ok,
   );
-  await client.goto(base + "/workout/" + workout);
-  await client
-    .getByRole("button", { name: "Equipment / rest", exact: true })
-    .click();
-  let sheet = client.getByRole("dialog", { name: "Workout adjustments" });
-  await sheet
-    .getByLabel("Rest between sets", { exact: true })
-    .selectOption("custom");
-  await sheet.getByLabel("Minutes", { exact: true }).fill("3");
-  await sheet.getByLabel("Seconds", { exact: true }).fill("10");
-  await sheet
-    .getByRole("button", { name: "Save rest time", exact: true })
-    .click();
-  await sheet.waitFor({ state: "hidden" });
-  assert.equal(
-    (await req("client", `routine_exercises?select=rest_sec&id=eq.${slot.id}`))
-      .data[0].rest_sec,
-    90,
-  );
-  await client.reload();
-  await client
-    .getByRole("button", { name: "Equipment / rest", exact: true })
-    .click();
-  sheet = client.getByRole("dialog", { name: "Workout adjustments" });
-  assert.equal(
-    await sheet.getByLabel("Minutes", { exact: true }).inputValue(),
-    "3",
-  );
-  assert.equal(
-    await sheet.getByLabel("Seconds", { exact: true }).inputValue(),
-    "10",
-  );
-  await sheet
-    .getByRole("button", { name: "Choose replacement", exact: true })
-    .click();
-  await sheet
-    .getByRole("button", { name: "Fixture Band", exact: false })
-    .click();
-  await sheet.waitFor({ state: "hidden" });
-  await client
-    .getByRole("heading", { name: "Fixture Band", exact: true })
-    .waitFor();
-  assert.equal(
+  const dbPress = crypto.randomUUID();
+  assert(
     (
-      await req(
-        "client",
-        `routine_exercises?select=exercise_id&id=eq.${slot.id}`,
-      )
-    ).data[0].exercise_id,
-    "55550000-0000-0000-0000-000000000003",
+      await req("client", "exercises", "POST", {
+        id: dbPress,
+        name: "Fixture Dumbbell Press",
+        equipment: "dumbbell",
+        muscle_groups: ["chest", "triceps"],
+      })
+    ).ok,
   );
-  await client.reload();
+  async function restSaved(value) {
+    for (let i = 0; i < 60; i++) {
+      if (
+        (
+          await req(
+            "client",
+            `routine_exercises?select=rest_sec&id=eq.${slot.id}`,
+          )
+        ).data[0].rest_sec === value
+      )
+        return;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    assert.fail("Rest did not sync: " + value);
+  }
+  await client.goto(base + "/workout/" + workout);
+  assert.equal(
+    await client
+      .getByRole("button", { name: "Equipment / rest", exact: true })
+      .count(),
+    0,
+  );
   await client
-    .getByRole("heading", { name: "Fixture Band", exact: true })
-    .waitFor();
-  await client.context().setOffline(true);
-  await client
-    .getByRole("button", { name: "Equipment / rest", exact: true })
+    .getByRole("button", { name: "Rest timer for Fixture Press", exact: true })
     .click();
-  sheet = client.getByRole("dialog", { name: "Workout adjustments" });
-  await sheet
-    .getByRole("button", { name: "Choose replacement", exact: true })
-    .click();
-  await sheet
-    .getByRole("button", { name: "Fixture Bodyweight", exact: false })
-    .click();
+  let sheet = client.getByRole("dialog", { name: "Rest timer", exact: true });
+  assert.equal(
+    await sheet.getByLabel("Available equipment", { exact: true }).count(),
+    0,
+  );
+  assert.equal(
+    await sheet.getByLabel("Apply changes to", { exact: true }).count(),
+    0,
+  );
+  await sheet.getByRole("button", { name: "Rest 2:00", exact: true }).click();
   await sheet.waitFor({ state: "hidden" });
-  await client
-    .getByRole("heading", { name: "Fixture Bodyweight", exact: true })
-    .waitFor();
-  await client.context().setOffline(false);
+  await restSaved(120);
   await client.reload();
   await client
-    .getByRole("heading", { name: "Fixture Bodyweight", exact: true })
+    .getByRole("button", { name: "Rest timer for Fixture Press", exact: true })
+    .filter({ hasText: "2:00" })
     .waitFor();
   await client
-    .getByRole("button", { name: "Equipment / rest", exact: true })
+    .getByRole("button", { name: "Rest timer for Fixture Press", exact: true })
     .click();
-  sheet = client.getByRole("dialog", { name: "Workout adjustments" });
+  sheet = client.getByRole("dialog", { name: "Rest timer", exact: true });
   await sheet
-    .getByLabel("Apply changes to", { exact: true })
-    .selectOption("plan");
-  await sheet
-    .getByLabel("Rest between sets", { exact: true })
-    .selectOption("custom");
+    .getByRole("button", { name: "Custom duration", exact: true })
+    .click();
+  await sheet.getByLabel("Minutes", { exact: true }).fill("61");
+  assert(
+    await sheet
+      .getByRole("button", { name: "Save rest timer", exact: true })
+      .isDisabled(),
+  );
   await sheet.getByLabel("Minutes", { exact: true }).fill("2");
   await sheet.getByLabel("Seconds", { exact: true }).fill("35");
   await sheet
-    .getByRole("button", { name: "Save rest time", exact: true })
+    .getByRole("button", { name: "Save rest timer", exact: true })
     .click();
+  await sheet.waitFor({ state: "hidden" });
+  await restSaved(155);
+  await client.context().setOffline(true);
+  await client
+    .getByRole("button", { name: "Rest timer for Fixture Press", exact: true })
+    .click();
+  sheet = client.getByRole("dialog", { name: "Rest timer", exact: true });
+  await sheet.getByRole("button", { name: "Rest 3:00", exact: true }).click();
   await sheet.waitFor({ state: "hidden" });
   assert.equal(
     (await req("client", `routine_exercises?select=rest_sec&id=eq.${slot.id}`))
       .data[0].rest_sec,
     155,
   );
-  await client
-    .getByRole("button", { name: "Equipment / rest", exact: true })
-    .click();
-  sheet = client.getByRole("dialog", { name: "Workout adjustments" });
-  await sheet
-    .getByLabel("Apply changes to", { exact: true })
-    .selectOption("plan");
-  await sheet
-    .getByRole("button", { name: "Choose replacement", exact: true })
-    .click();
-  await sheet
-    .getByRole("button", { name: "Fixture Press", exact: false })
-    .click();
-  await sheet.waitFor({ state: "hidden" });
+  await client.context().setOffline(false);
+  await restSaved(180);
   await client.reload();
   await client
-    .getByRole("heading", { name: "Fixture Press", exact: true })
+    .getByRole("button", { name: "Swap exercise Fixture Press", exact: true })
+    .click();
+  sheet = client.getByRole("dialog", { name: "Swap exercise", exact: true });
+  await sheet.getByRole("button", { name: /Fixture Dumbbell Press/ }).click();
+  await sheet.waitFor({ state: "hidden" });
+  await client
+    .getByRole("heading", { name: "Fixture Dumbbell Press", exact: true })
     .waitFor();
   assert.equal(
     (
@@ -275,39 +331,255 @@ async function rpc(role, name, args = {}) {
         `routine_exercises?select=exercise_id&id=eq.${slot.id}`,
       )
     ).data[0].exercise_id,
-    "55550000-0000-0000-0000-000000000003",
+    slot.exercise_id,
+  );
+  await client.reload();
+  await client
+    .getByRole("heading", { name: "Fixture Dumbbell Press", exact: true })
+    .waitFor();
+  await client.context().setOffline(true);
+  await client
+    .getByRole("button", {
+      name: "Swap exercise Fixture Dumbbell Press",
+      exact: true,
+    })
+    .click();
+  sheet = client.getByRole("dialog", { name: "Swap exercise", exact: true });
+  await sheet.getByRole("button", { name: /Fixture Press/ }).click();
+  await sheet.waitFor({ state: "hidden" });
+  await client
+    .getByRole("heading", { name: "Fixture Press", exact: true })
+    .waitFor();
+  await client.context().setOffline(false);
+  await client.reload();
+  await client
+    .getByRole("button", { name: "Swap exercise Fixture Press", exact: true })
+    .click();
+  sheet = client.getByRole("dialog", { name: "Swap exercise", exact: true });
+  await sheet
+    .getByLabel("Available equipment", { exact: true })
+    .selectOption("dumbbell");
+  await client.route("**/functions/v1/draft-plan", (route) =>
+    route.fulfill({
+      status: 429,
+      contentType: "application/json",
+      body: '{"error":"limit"}',
+    }),
+  );
+  await sheet
+    .getByRole("button", { name: "Suggest with AI", exact: true })
+    .click();
+  await sheet
+    .getByText(
+      "Today's AI limit is reached. You can still choose an alternative below.",
+      { exact: true },
+    )
+    .waitFor();
+  await client.unroute("**/functions/v1/draft-plan");
+  await sheet
+    .getByRole("button", { name: "Suggest with AI", exact: true })
+    .click();
+  await sheet
+    .getByRole("region", { name: "AI alternatives", exact: true })
+    .waitFor();
+  await sheet
+    .getByRole("region", { name: "AI alternatives", exact: true })
+    .getByRole("button", { name: /Dumbbell Floor Press/ })
+    .click();
+  await sheet.waitFor({ state: "hidden" });
+  await client
+    .getByRole("heading", { name: "Dumbbell Floor Press", exact: true })
+    .waitFor();
+  assert.equal(await client.getByLabel(/^Set 1 weight/).inputValue(), "");
+  await client.getByLabel(/^Set 1 weight/).fill("5");
+  await client.getByRole("button", { name: "Log set 1", exact: true }).click();
+  await client
+    .getByRole("button", { name: "Undo set 1", exact: true })
+    .waitFor();
+  await client
+    .getByRole("button", {
+      name: "Rest timer for Dumbbell Floor Press",
+      exact: true,
+    })
+    .click();
+  sheet = client.getByRole("dialog", { name: "Rest timer", exact: true });
+  await sheet.getByRole("button", { name: "Rest 0:30", exact: true }).click();
+  await sheet.waitFor({ state: "hidden" });
+  await restSaved(30);
+  await client.getByText(/^Rest 0:[23][0-9]$/).waitFor();
+  await client
+    .getByRole("button", {
+      name: "Swap exercise Dumbbell Floor Press",
+      exact: true,
+    })
+    .click();
+  sheet = client.getByRole("dialog", { name: "Swap exercise", exact: true });
+  await sheet
+    .getByText(
+      "Sets are already logged. Untick them before swapping this exercise.",
+      { exact: true },
+    )
+    .waitFor();
+  await sheet.getByRole("button", { name: "Close", exact: true }).click();
+  const workout2 = crypto.randomUUID();
+  assert(
+    (
+      await req("client", "workouts", "POST", {
+        id: workout2,
+        routine_id: "55550000-0000-0000-0000-000000000002",
+        started_at: new Date().toISOString(),
+      })
+    ).ok,
+  );
+  await client.goto(base + "/workout/" + workout2);
+  await client
+    .getByRole("button", { name: "Dumbbell workout with AI", exact: true })
+    .click();
+  sheet = client.getByRole("dialog", {
+    name: "Dumbbell workout for today",
+    exact: true,
+  });
+  await client.route("**/functions/v1/draft-plan", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: '{"error":"busy"}',
+    }),
+  );
+  await sheet
+    .getByRole("button", { name: "Create with AI", exact: true })
+    .click();
+  await sheet.getByRole("alert").waitFor();
+  assert.equal(
+    await sheet
+      .getByRole("button", { name: "Use this workout today", exact: true })
+      .count(),
+    0,
+  );
+  await client.unroute("**/functions/v1/draft-plan");
+  await sheet
+    .getByRole("button", { name: "Create with AI", exact: true })
+    .click();
+  await sheet
+    .getByText("Fixture Dumbbell Day chest 1", { exact: true })
+    .waitFor();
+  assert.equal(
+    (
+      await req(
+        "client",
+        `routine_exercises?select=exercise_id&id=eq.${slot.id}`,
+      )
+    ).data[0].exercise_id,
+    slot.exercise_id,
+  );
+  await sheet
+    .getByRole("button", { name: "Use this workout today", exact: true })
+    .click();
+  await sheet.waitFor({ state: "hidden" });
+  await client
+    .getByRole("heading", { name: "Fixture Dumbbell Day chest 1", exact: true })
+    .waitFor();
+  await client.reload();
+  await client
+    .getByRole("heading", { name: "Fixture Dumbbell Day chest 1", exact: true })
+    .waitFor();
+  assert.equal(
+    (
+      await req(
+        "client",
+        `routine_exercises?select=target_sets&id=eq.${slot.id}`,
+      )
+    ).data[0].target_sets,
+    3,
+  );
+  assert.equal(
+    (
+      await req(
+        "client",
+        "sets?select=weight_kg&id=eq.55550000-0000-0000-0000-000000000010",
+      )
+    ).data[0].weight_kg,
+    10,
+  );
+  const extraSlot = crypto.randomUUID();
+  assert(
+    (
+      await req("client", "routine_exercises", "POST", {
+        id: extraSlot,
+        routine_id: "55550000-0000-0000-0000-000000000002",
+        exercise_id: "55550000-0000-0000-0000-000000000004",
+        sort_order: 2,
+        target_sets: 3,
+        target_reps: 10,
+      })
+    ).ok,
+  );
+  const workout3 = crypto.randomUUID(),
+    loggedSet = crypto.randomUUID();
+  assert(
+    (
+      await req("client", "workouts", "POST", {
+        id: workout3,
+        routine_id: "55550000-0000-0000-0000-000000000002",
+        started_at: new Date().toISOString(),
+      })
+    ).ok,
   );
   assert(
     (
       await req("client", "sets", "POST", {
-        id: crypto.randomUUID(),
-        workout_id: workout,
+        id: loggedSet,
+        workout_id: workout3,
         exercise_id: slot.exercise_id,
         set_no: 1,
         set_type: "working",
-        weight_kg: 5,
+        weight_kg: 10,
         reps: 10,
       })
     ).ok,
   );
-  await client.reload();
+  await client.goto(base + "/workout/" + workout3);
   await client
-    .getByRole("button", { name: "Equipment / rest", exact: true })
+    .getByRole("button", { name: "Dumbbell workout with AI", exact: true })
     .click();
-  await client
-    .getByText(
-      "Sets are already logged. Untick them before replacing this exercise.",
-      { exact: true },
-    )
+  sheet = client.getByRole("dialog", {
+    name: "Dumbbell workout for today",
+    exact: true,
+  });
+  await sheet
+    .getByRole("button", { name: "Create with AI", exact: true })
+    .click();
+  await sheet
+    .getByText("Fixture Dumbbell Day lats 1", { exact: true })
     .waitFor();
-  await client
-    .getByRole("dialog", { name: "Workout adjustments" })
-    .getByRole("button", { name: "Cancel", exact: true })
+  await sheet
+    .getByRole("button", { name: "Use this workout today", exact: true })
     .click();
-  console.log(
-    "PASS stage 1: units/custom rest, historical loads, session-only refresh, offline replacement, future-plan rest/swap and logged-set lock",
+  await sheet.waitFor({ state: "hidden" });
+  await client
+    .getByRole("heading", { name: "Fixture Dumbbell Day lats 1", exact: true })
+    .waitFor();
+  assert.equal(
+    (
+      await req(
+        "client",
+        `sets?select=weight_kg,exercise_id&id=eq.${loggedSet}`,
+      )
+    ).data[0].exercise_id,
+    slot.exercise_id,
   );
-
+  assert.equal(
+    (
+      await req(
+        "client",
+        `routine_exercises?select=exercise_id&id=eq.${extraSlot}`,
+      )
+    ).data[0].exercise_id,
+    "55550000-0000-0000-0000-000000000004",
+  );
+  console.log(
+    "PASS session UX: one unit system, preserved records, quick rest with offline sync, manual/AI swaps, logged-set protection and previewed session-only dumbbell adaptation",
+  );
   // Stage 2: live SQL reports, filters and current goal changes.
   await client.goto(base + "/progress");
   await client.getByRole("tab", { name: "Strength", exact: true }).waitFor();
@@ -412,123 +684,36 @@ async function rpc(role, name, args = {}) {
   console.log(
     "PASS stage 3: measurement and weight atomic save, refresh/history, invalid values, reminder preference and recovery/exclusion controls",
   );
-  // Stage 4: invitation review and consent; private by default; reminders and revocation.
-  await coach.goto(base + "/coaching");
-  await coach
-    .getByRole("button", { name: "Create client invitation", exact: true })
-    .click();
-  const invite = coach.getByRole("textbox", {
-    name: "Private invitation link",
-  });
-  await invite.waitFor();
-  const inviteUrl = await invite.inputValue(),
-    inviteCode = new URL(inviteUrl).hash.slice("#invite=".length);
-  await client.goto(inviteUrl);
-  await client
-    .getByRole("button", { name: "Review invitation", exact: true })
-    .click();
-  await client
-    .getByText("Connect with Fixture Coach", { exact: true })
-    .waitFor();
-  assert(
-    await client
-      .getByRole("button", { name: "Accept coaching connection", exact: true })
-      .isDisabled(),
-  );
-  await client.getByLabel("I agree to this sharing", { exact: true }).check();
-  await client
-    .getByRole("button", { name: "Accept coaching connection", exact: true })
-    .click();
-  await client.getByText("Sharing accepted.", { exact: false }).waitFor();
-  assert(
-    !(
-      await rpc("other", "accept_coaching_invite", {
-        p_token: inviteCode,
-        p_share_measurements: false,
-      })
-    ).ok,
-  );
-  await coach.reload();
-  await coach
-    .getByRole("link", { name: "Fixture Client · Open client", exact: true })
-    .click();
-  await coach.waitForURL(/\/coaching\/[0-9a-f-]{36}$/);
-  const connection = new URL(coach.url()).pathname.split("/").at(-1);
-  await coach.getByText("Weekly training reports", { exact: true }).click();
+  // Human coaching is paused in the app; records and API security remain covered by SQL tests.
+  await client.goto(base + "/settings");
   assert.equal(
-    await coach.getByText("Set this week's target", { exact: true }).count(),
+    await client
+      .getByRole("link", { name: "Coaches, clients and sharing", exact: true })
+      .count(),
     0,
   );
-  await coach.getByLabel("Report breakdown").selectOption("muscle:triceps");
-  await coach
-    .getByText("Loading report…", { exact: true })
-    .waitFor({ state: "hidden" });
-  await coach
-    .getByText("The client has not enabled measurement sharing.", {
-      exact: true,
-    })
-    .waitFor();
-  assert(
-    !(
-      await rpc("other", "coaching_client_summary", {
-        p_connection: connection,
+  await client.goto(base + "/coach");
+  assert.equal(
+    await client
+      .getByRole("link", {
+        name: "Human coaching and shared records",
+        exact: true,
       })
-    ).ok,
+      .count(),
+    0,
   );
-  await coach
-    .getByLabel("Observation", { exact: true })
-    .fill("Fixture shoulder mobility observation");
-  await coach
-    .getByLabel("Reviewed training cue or adaptation", { exact: true })
-    .fill("Use the agreed pain-free range and a controlled warm-up.");
-  await coach
-    .getByRole("button", { name: "Save reviewed observation", exact: true })
-    .click();
-  await coach
-    .getByText("Reviewed observation saved.", { exact: false })
-    .waitFor();
-  await coach.reload();
-  await coach.getByText("Coach observations · 1", { exact: true }).waitFor();
-  await coach.getByRole("link", { name: /Fixture Day.*View/ }).click();
-  await coach.getByText("Coach observations · 1", { exact: true }).waitFor();
-  await coach.getByText("Fixture Press · Set 1", { exact: true }).waitFor();
-  await client.goto(base + "/coaching");
-  await client
-    .getByRole("button", {
-      name: "Share measurements with this coach",
-      exact: true,
-    })
-    .click();
-  await client
-    .getByRole("button", { name: "Stop sharing measurements", exact: true })
-    .waitFor();
-  await coach.goto(base + "/coaching/" + connection);
-  await coach.reload();
-  await coach.getByText("Latest weight: 71.5 kg", { exact: false }).waitFor();
-  await client
-    .getByRole("button", { name: "Revoke this coach's access", exact: true })
-    .click();
-  await client
-    .getByRole("button", { name: "Revoke access", exact: true })
-    .click();
-  await client.getByText("Access revoked.", { exact: false }).waitFor();
-  await coach.reload();
-  await coach
-    .getByText("This client record is unavailable.", { exact: false })
-    .waitFor();
-  assert(
-    !(
-      await rpc("coach", "coaching_client_summary", {
-        p_connection: connection,
-      })
-    ).ok,
-  );
-  await client.goto(base + "/coaching");
-  await client
-    .getByText("Fixture shoulder mobility observation", { exact: true })
-    .waitFor();
+  for (const path of [
+    "/coaching",
+    "/coaching/44444444-4444-4444-4444-444444444444",
+    "/coaching/44444444-4444-4444-4444-444444444444/workouts/55550000-0000-0000-0000-000000000006",
+  ]) {
+    await client.goto(base + path);
+    await client
+      .getByText("This page could not be found.", { exact: true })
+      .waitFor();
+  }
   console.log(
-    "PASS stage 4: explicit consent, single-use invite, unrelated-user denial, private measurements, reviewed reminders/workout context, opt-in sharing and revocation",
+    "PASS coaching pause: no entry points and all client-sharing routes unavailable",
   );
   for (const path of ["/settings", "/measurements", "/progress", "/coaching"]) {
     await client.goto(base + path);

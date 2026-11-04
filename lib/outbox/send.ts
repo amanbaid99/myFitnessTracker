@@ -6,16 +6,31 @@ import { ALREADY_SAVED, toResult, type Op, type SendResult } from "./ops";
  * updates only touch rows still in the expected state (a set not yet
  * deleted, a workout not yet finished), deletes of a missing row are no-ops.
  */
-export async function sendOp(supabase: SupabaseClient, op: Op): Promise<SendResult> {
+export async function sendOp(
+  supabase: SupabaseClient,
+  op: Op,
+): Promise<SendResult> {
   switch (op.kind) {
     case "insertSet":
-      return toResult(await supabase.from("sets").insert(op.row), [ALREADY_SAVED]);
+      return toResult(await supabase.from("sets").insert(op.row), [
+        ALREADY_SAVED,
+      ]);
     case "deleteSet":
       return toResult(
-        await supabase.from("sets").update({ deleted_at: op.deletedAt }).eq("id", op.id).is("deleted_at", null),
+        await supabase
+          .from("sets")
+          .update({ deleted_at: op.deletedAt })
+          .eq("id", op.id)
+          .is("deleted_at", null),
       );
     case "setRpe":
-      return toResult(await supabase.from("sets").update({ rpe: op.rpe }).eq("id", op.id).is("deleted_at", null));
+      return toResult(
+        await supabase
+          .from("sets")
+          .update({ rpe: op.rpe })
+          .eq("id", op.id)
+          .is("deleted_at", null),
+      );
     case "finishWorkout":
       return toResult(
         await supabase
@@ -25,14 +40,35 @@ export async function sendOp(supabase: SupabaseClient, op: Op): Promise<SendResu
           .is("ended_at", null),
       );
     case "insertNote":
-      return toResult(await supabase.from("exercise_notes").insert(op.row), [ALREADY_SAVED]);
+      return toResult(await supabase.from("exercise_notes").insert(op.row), [
+        ALREADY_SAVED,
+      ]);
     case "updateNote":
-      return toResult(await supabase.from("exercise_notes").update({ note: op.note }).eq("id", op.id));
+      return toResult(
+        await supabase
+          .from("exercise_notes")
+          .update({ note: op.note })
+          .eq("id", op.id),
+      );
     case "deleteNote":
-      return toResult(await supabase.from("exercise_notes").delete().eq("id", op.id));
+      return toResult(
+        await supabase.from("exercise_notes").delete().eq("id", op.id),
+      );
+    case "setRest":
+      return toResult(
+        await supabase
+          .from("routine_exercises")
+          .update({ rest_sec: op.restSec })
+          .eq("id", op.routineExerciseId)
+          .select("id")
+          .single(),
+      );
     case "setSetting":
       return toResult(
-        await supabase.from("exercises").update({ machine_setting: op.setting }).eq("id", op.exerciseId),
+        await supabase
+          .from("exercises")
+          .update({ machine_setting: op.setting })
+          .eq("id", op.exerciseId),
       );
   }
 }

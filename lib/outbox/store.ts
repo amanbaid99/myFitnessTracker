@@ -9,7 +9,7 @@ import Dexie, { type Table } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { runQueue, type Op, type QueuedOp } from "./ops";
+import { runQueue, needsWorkoutReload, type Op, type QueuedOp } from "./ops";
 import { sendOp } from "./send";
 
 class OutboxDb extends Dexie {
@@ -82,6 +82,11 @@ async function sendQueued(): Promise<number> {
 export function pendingCount(workoutId?: string): Promise<number> {
   const ops = outbox().ops;
   return workoutId ? ops.where("workoutId").equals(workoutId).count() : ops.count();
+}
+
+/** Rest changes already have a session cookie; they never need a forced reload. */
+export function pendingRestoreCount(workoutId:string,openedAt:number):Promise<number>{
+  return outbox().ops.where("workoutId").equals(workoutId).filter(item=>needsWorkoutReload(item,openedAt)).count();
 }
 
 /** Live count of changes waiting on this phone (optionally for one workout). */

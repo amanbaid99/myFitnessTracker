@@ -26,7 +26,6 @@ import { createClient } from "@/lib/supabase/server";
 import { extraExerciseIds, extraItem, extrasCookieName, parseExtras, extraTargetsCookieName, parseExtraTargets } from "@/lib/workout-extras";
 import { defaultTargets, slots } from "@/lib/default-targets";
 import { adjustmentsCookieName, parseAdjustments, applyAdjustments } from "@/lib/workout-adjustments";
-import { getAssessmentReminders } from "@/lib/feedback-data";
 import { Logger } from "./logger";
 import { GuideProvider } from "@/components/guide/guide-provider";
 
@@ -74,7 +73,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       .map((exId) => library.find((e) => e.id === exId))
       .filter((e) => e !== undefined)
       .map((e, i) => extraItem(e, i, extraTargets[e.id] ?? defaultTargets(e.id, daySlots, planSlots)));
-    const items = [...dayItems, ...extras];
+    const items = [...dayItems, ...extras.map(item => ({...item,restSec:adjustments[item.id]?.restSec ?? item.restSec}))];
     const exerciseIds = [...new Set([...items.map((e) => e.exercise.id), ...optionIds])];
     const [profile, previous, prs, notes, lastNotes, plan, bodyWeights] = await Promise.all([
       getProfile(supabase),
@@ -101,7 +100,6 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   if (workout.endedAt) redirect("/");
   if (!routine) notFound();
 
-  const coachReminders = await getAssessmentReminders(supabase,profile.id);
   const session = buildSession(items, previous, logged);
   // Each option of a slot with alternates, ready to switch to (offline too).
   const options = optionSessions(items, slotsOfDay, session, previous, logged);
@@ -131,7 +129,6 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       bodyWeightKg={bodyWeightKg}
       defaultRestSec={profile.defaultRestSec}
       hasLoggedSets={logged.length > 0}
-      coachReminders={coachReminders}
       startedIndexes={startedIndexes(items.map((e) => e.exercise.id), logged)}
       notes={Object.fromEntries(notes)}
       lastNotes={Object.fromEntries(lastNotes)}
