@@ -57,7 +57,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
 
         {finished && <div className="mt-4">
           <p className="mb-2 text-xs text-muted-foreground">Example analysis and muscle recap with sample data</p>
-          <WorkoutRecap demo rows={DEMO_WORKOUT_MUSCLES} workoutId="demo-finished" endedAt={new Date().toISOString()} review={DEMO_WORKOUT_REVIEW} />
+          <WorkoutRecap demo results={[{ label: "Duration", value: "58 min" }, { label: "Exercises", value: "5" }, { label: "Sets", value: "17" }, { label: "Energy", value: "4/5" }]} rows={DEMO_WORKOUT_MUSCLES} workoutId="demo-finished" endedAt={new Date().toISOString()} review={DEMO_WORKOUT_REVIEW} />
         </div>}
 
         <div className="mt-4">

@@ -7,6 +7,7 @@ import { DataError } from "@/components/data-error";
 import { LocalDate } from "@/components/local-date";
 import { WorkoutRecap } from "@/components/workout-recap";
 import { workoutWorkload } from "@/lib/anatomy";
+import { sessionResults } from "@/lib/history";
 import { FixableSets } from "@/components/history/fixable-sets";
 import {
   getWorkoutExercises,
@@ -75,15 +76,14 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
           {workout.source === "baseline" ? "Starting weights" : (workout.routineName ?? "Workout")}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          <LocalDate iso={workout.startedAt} withTime /> · {workingCount} working sets
-          {workout.energy !== null && ` · energy ${workout.energy}/5`}
+          <LocalDate iso={workout.startedAt} withTime />{workout.source !== "app" && ` · ${workingCount} ${workingCount === 1 ? "working set" : "working sets"}`}
         </p>
-        {sets.length > 0 && <p className="mt-1 text-xs text-muted-foreground">Logged something wrong? Tap a set to fix it.</p>}
+        {sets.length > 0 && <a href="#logged-sets" className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-primary">Jump to logged sets</a>}
       </header>
 
       {workout.source === "app" && (
         <div className="mb-6">
-          <WorkoutRecap rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} workoutId={workout.id} endedAt={workout.endedAt} review={review} />
+          <WorkoutRecap results={sessionResults({ startedAt: workout.startedAt, endedAt: workout.endedAt, exercises: worked.length, workingSets: workingCount, energy: workout.energy })} rows={muscleSets ?? []} workload={workoutWorkload(sets, worked)} exercises={worked} workoutId={workout.id} endedAt={workout.endedAt} review={review} />
         </div>
       )}
 
@@ -91,7 +91,8 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
         <p className={`mb-6 rounded-xl border bg-card p-4 text-sm whitespace-pre-wrap ${MASK}`}>{workout.notes}</p>
       )}
 
-      <div className="space-y-3">
+      <div id="logged-sets" className="scroll-mt-4 space-y-3">
+        {sets.length > 0 && <p className="text-xs text-muted-foreground">Logged something wrong? Tap a set to fix it.</p>}
         {[...byExercise].map(([exerciseId, rows]) => (
           <section key={exerciseId} className="rounded-2xl border bg-card px-4 py-3">
             <h2 className="font-medium">{names.get(exerciseId) ?? "Exercise"}</h2>

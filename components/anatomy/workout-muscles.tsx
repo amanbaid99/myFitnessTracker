@@ -34,7 +34,7 @@ export function WorkoutMuscles({ rows, workload, exercises = [], demo = false, e
     <section aria-label="Workout body map" className={`${embedded ? "" : "rounded-2xl border bg-card p-4"} ${MASK}`}>
       <h3 className="flex items-center gap-2 text-sm font-medium"><PersonStanding className="size-4 text-primary" aria-hidden />Muscle workload</h3>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Muscle workload at a glance. Deeper red means more logged work.</p>
-      <WorkoutBodyDiagram workload={shading} />
+      <WorkoutBodyDiagram workload={shading} compact={embedded} />
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>Light: less work</span><span>Deep red: more work</span></div>
       <Button variant="ghost" className="mt-2 w-full" onClick={() => { track("anatomy_opened", { from: "workout_review", presentation: "detailed" }); setExpanded(true); }}>View detailed anatomy</Button>
       <details className="group text-sm">

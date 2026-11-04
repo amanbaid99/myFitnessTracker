@@ -63,3 +63,15 @@ export function activeFilterSummary(f: HistoryFilters): string[] {
   else if (f.to) out.push(`Until ${day(f.to)}`);
   return out;
 }
+
+/** The local results shown at the top of a recap, before any AI analysis. Sets are working sets only. Pure. */
+export function sessionResults(o: { startedAt: string; endedAt: string; exercises: number; workingSets: number; energy: number | null }): { label: string; value: string }[] {
+  const minutes = Math.max(1, Math.round((Date.parse(o.endedAt) - Date.parse(o.startedAt)) / 60000));
+  const out = [
+    { label: "Duration", value: minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min` },
+    { label: o.exercises === 1 ? "Exercise" : "Exercises", value: String(o.exercises) },
+    { label: o.workingSets === 1 ? "Set" : "Sets", value: String(o.workingSets) },
+  ];
+  if (o.energy !== null) out.push({ label: "Energy", value: `${o.energy}/5` });
+  return out;
+}
