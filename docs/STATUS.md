@@ -14,7 +14,9 @@ Last updated: 2026-11-04.
   together. Local browser evidence at 320/390/430 plus state and large-text
   checks is in `docs/ui-evidence/phase-2-consistency`. No calculation,
   schema or week-boundary change. P2.5, P2.6 and P2.10 remain open; human
-  coaching remains paused. Review PR only, no merge or deployment.
+  coaching remains paused. PR #39 is review only, no merge or production
+  release. Branch CI automatically published a preview before cancellation;
+  available Vercel tools cannot delete it. Evidence README records this.
 
 - 2026-11-04: P2.9 (exercise progress) live via PR #36. Branch
   `ui/phase-2-volume-reports` does P2.8: plain counted / not counted

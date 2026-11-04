@@ -2,7 +2,12 @@
 
 Based on merged production commit 94eeeab, including PRs #31 to #37.
 Local synthetic accounts and isolated component fixtures only, 4 November 2026.
-No production records, schema changes, merge or deployment.
+No production records, schema changes, merge or production deployment.
+Publishing the review branch triggered the repository's automatic preview
+workflow. Cancellation arrived after its preview publish step completed.
+The connected Vercel tools cannot delete a ready deployment, and no local
+Vercel CLI credential is configured. This exception is recorded in the PR;
+the production app is unchanged.
 
 ## Before and after
 
