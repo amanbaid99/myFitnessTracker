@@ -8,6 +8,10 @@ Last updated: 2026-11-04.
 
 ## In progress
 
+- 2026-11-04: P2.1 (Today) live via PR #34. Branch `ui/phase-2-recap` does
+  P2.3: local session results first in the recap, smaller body map,
+  Jump to logged sets.
+
 - 2026-11-04: P2.2 (History) live via PR #33. Branch `ui/phase-2-today`
   does P2.1: one-line weekly card states with inline Try again, smaller
   Refresh, monthly check-in below the main action, singular counts.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeFilterSummary, filterHistory, groupHistory, historyDay, historyName, recapStatus, type HistoryItem } from "./history";
+import { activeFilterSummary, filterHistory, groupHistory, historyDay, historyName, recapStatus, sessionResults, type HistoryItem } from "./history";
 const row = (id: string, startedAt: string, extra: Partial<HistoryItem> = {}): HistoryItem => ({ id, startedAt, endedAt: startedAt, routineName: "Lower 1", source: "app", workingSets: 18, recapReady: true, ...extra });
 const rows = [row("a", "2026-11-02T00:00:00+05:30"), row("b", "2026-11-01T20:00:00Z"), row("c", "2026-10-31T07:00:00Z"), row("d", "2026-10-20T07:00:00Z")];
 describe("History timeline", () => {
@@ -40,5 +40,16 @@ describe("History active filters", () => {
     expect(activeFilterSummary({ search: " push ", source: "sheet_import", from: "2026-11-01", to: "2026-11-04" })).toEqual(['"push"', "Imported workouts", "1 Nov to 4 Nov"]);
     expect(activeFilterSummary({ search: "", source: "all", from: "2026-10-01", to: "" })).toEqual(["From 1 Oct"]);
     expect(activeFilterSummary({ search: "", source: "all", from: "", to: "" })).toEqual([]);
+  });
+});
+
+describe("recap session results", () => {
+  it("summarises the session without AI, singular where one", () => {
+    expect(sessionResults({ startedAt: "2026-11-04T10:00:00Z", endedAt: "2026-11-04T11:12:00Z", exercises: 5, workingSets: 18, energy: 4 })).toEqual([
+      { label: "Duration", value: "1 h 12 min" }, { label: "Exercises", value: "5" }, { label: "Sets", value: "18" }, { label: "Energy", value: "4/5" },
+    ]);
+    expect(sessionResults({ startedAt: "2026-11-04T10:00:00Z", endedAt: "2026-11-04T10:00:20Z", exercises: 1, workingSets: 1, energy: null })).toEqual([
+      { label: "Duration", value: "1 min" }, { label: "Exercise", value: "1" }, { label: "Set", value: "1" },
+    ]);
   });
 });

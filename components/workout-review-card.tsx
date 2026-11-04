@@ -101,7 +101,7 @@ export function WorkoutReviewCard({
 
   const retryButton = (
     <Button variant="secondary" className="mt-3 w-full" onClick={retry} disabled={starting || demo}>
-      {starting ? <Loader2 className="animate-spin" /> : <RotateCcw />} {state === "none" ? "Get AI review" : "Try again"}
+      {starting ? <Loader2 className="motion-safe:animate-spin" /> : <RotateCcw />} {state === "none" ? "Get AI review" : "Try again"}
     </Button>
   );
 
@@ -130,7 +130,7 @@ export function WorkoutReviewCard({
         </>
       ) : state === "polling" ? (
         <p className="flex items-center gap-2 text-sm">
-          <Loader2 className="size-4 animate-spin text-primary" aria-hidden />
+          <Loader2 className="size-4 text-primary motion-safe:animate-spin" aria-hidden />
           {retryUntil ? "Analysing your session... usually under a minute." : "Analysing your session..."}
         </p>
       ) : (

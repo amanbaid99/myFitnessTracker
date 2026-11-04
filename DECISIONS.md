@@ -1795,3 +1795,13 @@ that re-reads in place. Refresh analysis became a small secondary button.
 Secondary prompts stay below the main action, so with no plan the monthly
 check-in moved under Create a workout plan. The India-time count versus
 device-week day dots is left for P2.10.
+
+## 2026-11-04: Recap leads with session results (UI Phase 2, P2.3)
+
+The workout recap now opens with local results (duration, exercises,
+working sets, energy; `sessionResults` in lib/history.ts) so there is
+something useful while the AI analysis is pending. The requirement asked to
+reduce the body map's footprint; Aman asked on 3 November to keep the map
+visible beside the analysis, so it stays visible but smaller in the recap
+(`compact` on WorkoutBodyDiagram) rather than collapsing behind a tap. A
+Jump to logged sets link keeps corrections close.
