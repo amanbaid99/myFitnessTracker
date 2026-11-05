@@ -1840,3 +1840,30 @@ Phase 1 default of hiding other working rows, while retaining its visual
 current-set focus. Carry the review-only CI guard from PR #40 so validation
 of this independent fix does not publish a preview; production releases and
 other feature previews keep their existing behavior.
+## 2026-11-04: One current goal in Consistency (P2.7)
+
+After reviewing the owner's merges through PR #37, continue with Consistency
+as suggested by the UI tracker in PR #38. Lead with one recorded current-week
+goal, its dates and completion. Put the four previous weeks behind Recent
+weeks and targets. Missing historical targets show counts only with one
+explanation, rather than repeating unavailable labels or inventing goals.
+Above-target completion keeps the existing 100% cap and extra-workout count.
+
+Remove the duplicate current-week and recent-week lists from this tab. Keep
+the existing streak and expandable 12-week calendar together. Place Progress
+tabs before the supporting summary so they do not jump when switching to
+Consistency. Let tabs reflow with enlarged text. Strength filters remain in
+the parent state. No training calculation or week definition changes here;
+weekly target reports use India time and the streak/calendar retain clearly
+labelled device time. The separate P2.10 review is still open. Coaching stays
+paused, and What's new wording remains subject to owner approval.
+
+## 2026-11-05: Finish and release the remaining UI phases (owner approval)
+
+Aman explicitly approved completing all remaining UI changes one by one and
+releasing them without another approval step. Continue using review branches,
+PRs, browser evidence and passing checks, then merge and verify production.
+This authorizes the remaining weekly-boundary alignment and concise release
+copy describing the delivered changes. Human coaching remains paused as
+previously requested. No schema changes are planned; preserve existing data,
+logging, privacy and training behavior.
