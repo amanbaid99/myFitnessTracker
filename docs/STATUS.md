@@ -4,46 +4,20 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-04.
+Last updated: 2026-11-05.
 
 ## In progress
 
-- 2026-11-04: Owner feedback on delayed set logging: branch
-  `ui/review-show-all-sets` shows every working set by default in its
-  original order, highlights the next pending row and displays logged/total
-  counts plus skipped work. Independent fix based on production e3d8f24.
-  Browser checks cover 320/390/430, logging 2-3-1, retained inputs, Undo,
-  skip/restore, added sets and offline demo interactions. Logging/outbox
-  operations are unchanged. Review-only CI skips preview deployment.
-  Consistency #39 and Strength #40 remain separate open review PRs; #40's
-  final screenshots have been recovered and validation passed.
-
-- 2026-11-04: UI/UX improvement plan in progress. Tracker, full
-  requirements and how evidence is made: `docs/UI-PLAN.md`. Live: Phase 1
-  (PR #31) and P2.1 to P2.4, P2.8, P2.9 (PRs #32 to #37). Next: P2.7
-  Consistency, then P2.5, P2.6. P2.10 changes week counting, so ask Aman
-  first. P3.5 to P3.7 (human coaching) are skipped per Aman.
-- 2026-11-04: Rechecked the PR #38 tracker merge at e3d8f24 and resolved
-  its STATUS overlap with the still-open Consistency PR #39. Branch
-  `ui/review-phase-2-strength` (PR #40) implements P2.5: exercise results appear
-  sooner, latest performance and period changes lead, activity summary
-  moves behind Training overview, and metric exclusions stay accessible.
-  Strength and combined Consistency browser checks pass at 320/390/430,
-  including long names, units, filters, offline states, themes and large
-  text. No metric, outbox or week-boundary changes. CI now skips automatic
-  previews for `ui/review-*` while keeping checks and production releases.
-  P2.6 is next; human coaching stays paused.
-
-- 2026-11-04: UI/UX improvement plan in progress. Tracker and requirements:
-  `docs/UI-PLAN.md`. Live: Phase 1 and P2.1 to P2.4, P2.8, P2.9
-  (PRs #31 to #37). P2.7 Consistency is ready in PR #39, not merged.
-  Evidence: `docs/ui-evidence/phase-2-consistency`. Next implementation:
-  P2.5 Strength, then P2.6 Muscles. P2.10 needs owner approval before
-  changing week calculations. Human coaching stays paused.
-  PR #39's branch CI published a preview before cancellation; no production
-  release occurred. The new `ui/review-*` convention prevents automatic previews during this
-  handoff; pull-request CI also performs checks without deploying.
-
+- 2026-11-05: Owner approved completion and release of all remaining UI phases
+  without another approval step. Human coaching stays paused. Phase 1 and
+  P2.1 to P2.5, P2.7 to P2.9 are live. PRs #39, #40 and #41 passed CI,
+  production version checks and public sample browser checks. All working
+  sets stay visible in stable order, with the next pending row highlighted.
+- 2026-11-05: P2.6 on `ui/review-phase-2-muscles` puts compact coverage status
+  above muscle results and moves preferences into a modal sheet. Cancel,
+  recovery pause, exclusions, online saves and failed/offline saves retain
+  their behavior. Evidence in `docs/ui-evidence/phase-2-muscles`. Next P2.10
+  aligns directly comparable weekly metrics to approved India-time weeks.
 
 - 2026-11-04: `fix/settings-measurement-system` consolidates units into one
   Metric/Imperial section and removes Settings rest controls. Workouts gain

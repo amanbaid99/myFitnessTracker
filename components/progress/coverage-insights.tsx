@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { Sheet } from "@/components/ui/sheet";
+import { MASK } from "@/lib/mask";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { localDay } from "@/lib/body-weight";
@@ -54,9 +56,27 @@ export function CoverageInsights({
   return (
     <section
       aria-label="Muscle coverage insights"
-      className="mb-4 rounded-xl bg-muted/40 p-3"
+      className={`mb-3 rounded-xl bg-muted/40 p-3 ${MASK}`}
     >
       <h3 className="text-sm font-medium">Muscle coverage · last 28 days</h3>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        {findings.status === "paused" ? "Coverage reminders paused for recovery."
+          : findings.status === "unmapped" ? "Confirm missing muscle mappings before reviewing coverage."
+          : findings.status === "limited" ? "More history needed: log at least three completed sessions."
+          : findings.status === "no-plan" ? "Choose a plan or balanced coverage goal."
+          : findings.missing.length ? `${findings.missing.length} selected muscle ${findings.missing.length === 1 ? "group" : "groups"} to review.`
+          : `All ${findings.expected.length} selected groups have logged sets.`}
+      </p>
+      <Button
+        variant="ghost"
+        className="mt-1 h-auto min-h-11 w-full whitespace-normal py-2"
+        onClick={() => { setGoal(data.goal); setExcluded(data.exclusions); setError(""); setEditing(true); }}
+      >
+        Coverage details and goals
+      </Button>
+      {editing && (
+        <Sheet title="Coverage goals" onClose={() => { if (!busy) setEditing(false); }}>
+        <div className={`space-y-3 ${MASK}`}>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
         {findings.status === "paused"
           ? `Coverage reminders paused until ${data.paused_until}.`
@@ -70,32 +90,15 @@ export function CoverageInsights({
                   ? `No logged sets for ${findings.missing.join(", ")}. Review whether this is intentional for your plan, recovery or restrictions.`
                   : `All ${findings.expected.length} selected muscle groups have logged sets. This shows coverage, not training quality.`}
       </p>
-      <Button
-        variant="ghost"
-        className="mt-1 w-full"
-        onClick={() => setEditing(!editing)}
-      >
-        Adjust coverage goals
-      </Button>
-      {editing && (
-        <div className="mt-2 space-y-3">
-          <label className="block text-xs">
-            Compare against
-            <select
-              aria-label="Compare against"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value as "plan" | "balanced")}
-              className="mt-1 h-12 w-full rounded-xl border bg-card px-2"
-            >
-              <option value="plan">Muscles in my active plan</option>
-              <option value="balanced">All supported muscle groups</option>
-            </select>
-          </label>
+
+          <fieldset><legend className="text-sm font-medium">Compare against</legend>
+            {([['plan', 'Muscles in my active plan'], ['balanced', 'All supported muscle groups']] as const).map(([value, label]) => <label key={value} className="flex min-h-11 items-center gap-2 py-2 text-sm"><input type="radio" name="coverage-goal" value={value} checked={goal === value} onChange={() => setGoal(value)} /><span className="min-w-0 break-words">{label}</span></label>)}
+          </fieldset>
           <p className="text-xs text-muted-foreground">
             Exclude groups intentionally outside your programme or with a
             reviewed restriction.
           </p>
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-1">
             {MUSCLE_GROUPS.map((m) => (
               <label
                 key={m}
@@ -117,7 +120,7 @@ export function CoverageInsights({
             ))}
           </div>
           <Button
-            className="w-full"
+            className="h-auto min-h-11 w-full whitespace-normal py-2"
             disabled={busy}
             onClick={() => save(false)}
           >
@@ -125,18 +128,16 @@ export function CoverageInsights({
           </Button>
           <Button
             variant="secondary"
-            className="w-full"
+            className="h-auto min-h-11 w-full whitespace-normal py-2"
             disabled={busy}
             onClick={() => save(true)}
           >
             Recovery week: pause for 7 days
           </Button>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <Button variant="ghost" className="w-full" disabled={busy} onClick={() => setEditing(false)}>Cancel</Button>
         </div>
-      )}
-      {error && (
-        <p role="alert" className="text-xs text-destructive">
-          {error}
-        </p>
+        </Sheet>
       )}
     </section>
   );
