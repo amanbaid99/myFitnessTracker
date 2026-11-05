@@ -2013,3 +2013,11 @@ kinds wrapping over two lines and a separate record link). Suggested and an
 Options toggle now share one line; Options opens full width with history in
 small text and one even row of tiles: Swap, Rest, Muscles, Add record.
 Ready to increase and This workout only moved into the visible chip row.
+
+## 2026-11-05: One meta line under the exercise name (Aman's request)
+
+The header had a row of alternate pills that repeated today's exercise and a
+row of chips. They are now one quiet line, for example "4 × 10 · Seat 3 · ⇆
+or Pull-up": only the other alternates are named (one tap switches, as
+before), a saved seat is tappable text, and adding a seat moved to an
+Options tile. Ready to increase stays visible in that line.

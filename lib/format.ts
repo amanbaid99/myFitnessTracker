@@ -61,3 +61,8 @@ export function formatE1rm(kg: number, units: Units): string {
 export function showSettingChip(setting: string | null, equipment: string): boolean {
   return Boolean(setting) || !["dumbbell", "barbell", "bodyweight"].includes(equipment);
 }
+
+/** The quiet meta line under an exercise name, e.g. ["3 × 10", "per hand"]. Pure. */
+export function exerciseMeta(o: { target: string; perHand: boolean; extra: boolean }): string[] {
+  return [o.target, ...(o.perHand ? ["per hand"] : []), ...(o.extra ? ["this workout only"] : [])];
+}
