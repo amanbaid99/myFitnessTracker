@@ -984,7 +984,8 @@ export function Logger(props: {
               </div>
 
               {showWarmups && (
-                <details className="mt-2 border-t border-dashed px-2"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">Ramp-up sets · {ex.warmups.filter(r=>r.logged).length}/{ex.warmups.length}</summary>
+                <div className="mt-2 border-t border-dashed px-2" role="group" aria-label="Ramp-up sets">
+                  <div className="flex min-h-11 items-center justify-between gap-2 px-2"><p className="text-sm text-muted-foreground">Ramp-up sets</p><p className="text-xs tabular-nums text-muted-foreground">{ex.warmups.filter(r=>r.logged).length} of {ex.warmups.length} logged</p></div>
                   {ex.warmups.map((row) => (
                     <SetRow
                       key={row.key}
@@ -1010,7 +1011,7 @@ export function Logger(props: {
                       Skip warm-up
                     </button>
                   )}
-                </details>
+                </div>
               )}
 
               <div className="mt-1 border-t px-2 pt-1">

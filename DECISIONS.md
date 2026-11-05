@@ -2003,3 +2003,7 @@ Clutter: "Weight per hand" shows once beside Working sets; the two
 disclosures merge into "Options and history"; the empty "+ Seat / pin" chip
 is hidden for dumbbell, barbell and bodyweight exercises unless a setting
 is saved (`showSettingChip`).
+
+Also at Aman's request, ramp-up sets are always shown when an exercise has
+them instead of folded behind a tap; exercises without them keep the
+Warm-up button to add them.

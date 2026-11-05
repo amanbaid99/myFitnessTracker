@@ -23,6 +23,9 @@ card.
 - "Weight per hand" shows once beside Working sets, not under every row.
 - "Exercise options and history" and "Previous sessions and records" are one
   section, "Options and history", with the history first.
+- Ramp-up sets are always shown when an exercise has them (Aman's request),
+  with a "0 of 2 logged" count, instead of folded behind a tap. Exercises
+  without them keep the Warm-up button to add them. `after-rampup-{320,390}.png`.
 - The empty "+ Seat / pin" chip is hidden on dumbbell, barbell and
   bodyweight exercises (`showSettingChip`); a saved setting still shows.
 
