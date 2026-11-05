@@ -2032,3 +2032,16 @@ saved at once (offline-safe), but the slider stays open for 1.2 s
 (`FEEL_SETTLE_MS`, lib/feel.ts) before closing to a tag, a new pick restarts
 the pause, and a finished exercise waits the same time before moving on. No
 timer is shown.
+
+## 2026-11-05: A step up takes the add-on off (Aman's rule)
+
+Aman uses a half-step clip (3.75 kg on a 7.5 kg stack) between stack
+steps. Before, when he earned an increase the main weight went up a step and
+the clip stayed on, a jump of a step and a half. Now an increase takes the
+add-on off and moves the main weight up a full step (`stepUp` in
+lib/progression.ts): 50 kg + 3.75 becomes 57.5 kg with no add-on, and he can
+put the clip back. If the add-on was a full step or more, the main weight
+moves enough steps to stay heavier than before. This applies to the next
+session's aim and to Easy raising the next set mid-workout; Good, Hard,
+Max and repeats keep the add-on. Replaces the earlier behaviour that kept
+the add-on on a step up.
