@@ -76,7 +76,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "I already lift. Can I start from my current weights?",
         a: [
-          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, tap Options on the open exercise, then Add record. Enter weight and reps for one set and skip any you don't know.",
+          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, an exercise you have never logged shows Add record under Options. Once it has history, add records from the exercise in your plan. Enter weight and reps for one set and skip any you don't know.",
           "Your next workout's suggested weights, warm-ups and records build on these. They don't count as a workout, so they don't change your streak or totals.",
         ],
       },

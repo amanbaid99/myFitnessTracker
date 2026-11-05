@@ -2032,3 +2032,19 @@ saved at once (offline-safe), but the slider stays open for 1.2 s
 (`FEEL_SETTLE_MS`, lib/feel.ts) before closing to a tag, a new pick restarts
 the pause, and a finished exercise waits the same time before moving on. No
 timer is shown.
+
+## 2026-11-05: Muscles sheet diagram, Add record for new exercises only (Aman's requests)
+
+The Muscles worked sheet in the logger now shows the same static front and
+back diagram used in workout recaps, shaded with the exercise's main muscle
+at full and the others at half (`exerciseWorkload`, lib/anatomy.ts), above
+the muscle list. See in 3D stays for the full atlas.
+
+Add record in the logger's Options now appears only when the exercise has
+no record and no previous session. Aman's reasoning: it is for new users and
+new exercises; once an exercise has history, records are added from the
+plan's exercise sheet, which already supports it. This keeps Options short.
+
+Add weight and Skip set were two mismatched buttons, one of which wrapped
+onto two lines at 390 px. They are now two equal, one-line buttons in a row,
+and the add-on field's label no longer wraps at 320 px.

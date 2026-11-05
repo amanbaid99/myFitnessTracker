@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink, rankedWorkload, workloadOrSets, topMusclesText, unmappedExercises, muscleCardDue, muscleHideKey, batchSuggestions } from "./anatomy";
+import { ATLAS_MUSCLES, ATLAS_URL, heatLink, MUSCLE_INFO, musclesLink, workoutMuscles, workoutWorkload, workoutBodyLink, rankedWorkload, workloadOrSets, topMusclesText, unmappedExercises, muscleCardDue, muscleHideKey, batchSuggestions, exerciseWorkload } from "./anatomy";
 import { MUSCLE_GROUPS } from "./muscles";
 
 // Ids from the atlas's src/anatomy/muscles.js that the mapping uses.
@@ -130,5 +130,13 @@ describe("Today muscle card", () => {
     expect(batchSuggestions({ suggestions: [{ groups: ["core", "wings", "core"] }, { groups: "chest" }] }, 2)).toEqual([["core"], []]);
     expect(batchSuggestions({ suggestions: [] }, 2)).toBeNull();
     expect(batchSuggestions(null, 1)).toBeNull();
+  });
+});
+
+describe("exerciseWorkload", () => {
+  it("shades the main muscle fully and supporting ones half, known groups only", () => {
+    expect(exerciseWorkload(["chest", "front delts", "triceps", "wings"])).toEqual({ chest: 1, "front delts": 0.5, triceps: 0.5 });
+    expect(exerciseWorkload(["traps"])).toEqual({ traps: 1 });
+    expect(exerciseWorkload([])).toEqual({});
   });
 });

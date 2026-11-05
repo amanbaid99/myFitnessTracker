@@ -8,6 +8,11 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Branch `ui/review-muscles-sheet`: the Muscles worked sheet shows
+  the static front and back diagram above the list (See in 3D kept), Add
+  record shows only for exercises with no history, and Add weight / Skip set
+  are two equal one-line buttons. PR #49 (add-on step-up) is also open.
+
 - 2026-11-05: PR #47 (feel lock, logger declutter) is live. Branch
   `ui/review-logger-header`: one quiet meta line under the exercise name
   (target, per hand, seat, "or <alternate>"), seat adding moved to Options.
