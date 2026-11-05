@@ -8,8 +8,13 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Branch `ui/review-muscles-sheet`: the Muscles worked sheet shows
+  the static front and back diagram above the list (See in 3D kept), Add
+  record shows only for exercises with no history, and Add weight / Skip set
+  are two equal one-line buttons. PR #50.
+
 - 2026-11-05: PR #48 (one-line header and logged sets, feel pause) is live.
-  Branch `fix/addon-progression`: a step up takes the add-on off and moves
+  PR #49 (live): a step up takes the add-on off and moves
   the main weight a full step (Aman's rule).
 
 - 2026-11-05: PR #47 (feel lock, logger declutter) is live. Branch
