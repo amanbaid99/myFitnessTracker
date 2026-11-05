@@ -591,13 +591,15 @@ export function Logger(props: {
         equipment: items[exIndex].exercise.equipment,
         weightStepKg: items[exIndex].exercise.weightStepKg,
       });
+      // A step up takes any add-on off (stepUp); otherwise the add-on stays.
+      const addOn = adjusted.addedKg !== undefined ? { addedKg: adjusted.addedKg } : {};
       if (adjusted.weightKg !== planned.weightKg || adjusted.reps !== planned.reps) {
-        updateRow(exIndex, next.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });
+        updateRow(exIndex, next.key, { weightKg: adjusted.weightKg, reps: adjusted.reps, ...addOn });
         // Later sets not changed by hand follow, so set 3 does not lag behind set 2.
         if (adjusted.weightKg !== planned.weightKg) {
           for (const r of ex.working) {
             if (r.setNo > next.setNo && !r.logged && !r.weightEdited && !r.repsEdited) {
-              updateRow(exIndex, r.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });
+              updateRow(exIndex, r.key, { weightKg: adjusted.weightKg, reps: adjusted.reps, ...addOn });
             }
           }
         }
