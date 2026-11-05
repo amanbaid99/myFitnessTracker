@@ -70,3 +70,6 @@ export function feelDisplay(o: { rowKey: string; justLogged: string | null; edit
   if (o.rowKey === o.justLogged || o.rowKey === o.editing) return "slider";
   return o.rpe === null ? "none" : "summary";
 }
+
+/** How long the feel slider stays open after a pick before it closes to a tag (ms). The pick is saved at once. */
+export const FEEL_SETTLE_MS = 1200;

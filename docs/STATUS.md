@@ -8,6 +8,10 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: PR #47 (feel lock, logger declutter) is live. Branch
+  `ui/review-logger-header`: one quiet meta line under the exercise name
+  (target, per hand, seat, "or <alternate>"), seat adding moved to Options.
+
 - 2026-11-05: Branch `ui/review-logger-declutter`: feel is locked to a one-line
   summary after picking (Change to edit), the slider no longer reacts to
   scrolling, per-hand label shown once, one Options and history section,

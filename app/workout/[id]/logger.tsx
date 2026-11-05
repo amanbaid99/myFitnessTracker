@@ -7,14 +7,14 @@ import { confirmDialog } from "@/components/confirm-dialog";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Check, PersonStanding, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Loader2, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Sparkles, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { Armchair, ArrowLeftRight, Check, PersonStanding, ChevronDown, CloudOff, ChevronLeft, ChevronUp, Flame, Loader2, Minus, Pencil, Play, Plus, RotateCcw, Square, StickyNote, Sparkles, Timer, Wind, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatSet, formatSets, settingLabel, showSettingChip } from "@/lib/format";
+import { formatSet, formatSets, settingLabel, showSettingChip, exerciseMeta } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
-import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition, feelDisplay, feelGesture } from "@/lib/feel";
+import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition, feelDisplay, feelGesture, FEEL_SETTLE_MS } from "@/lib/feel";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, workoutOrder, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, pendingRestoreCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
@@ -168,6 +168,16 @@ export function Logger(props: {
   const [feelKey, setFeelKey] = useState<string | null>(null);
   // A logged set whose feel the person chose to change; others stay locked.
   const [feelEdit, setFeelEdit] = useState<string | null>(null);
+  // The exercise whose empty seat or pin setting is being added (from Options).
+  const [seatEditFor, setSeatEditFor] = useState<string | null>(null);
+  // Closes the feel slider a moment after a pick, so the choice can be seen (and changed) first.
+  const feelSettle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function pickFeel(exIndex: number, row: Row, rpe: number) {
+    setFeelEdit(row.key);
+    void setFeel(exIndex, row, rpe);
+    if (feelSettle.current) clearTimeout(feelSettle.current);
+    feelSettle.current = setTimeout(() => setFeelEdit((cur) => (cur === row.key ? null : cur)), FEEL_SETTLE_MS);
+  }
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
   /** A timed set being held (plank): counts down, then logs the set. */
   const [hold, setHold] = useState<{ exIndex: number; key: string; startedAt: number; endsAt: number; total: number } | null>(null);
@@ -566,8 +576,10 @@ export function Logger(props: {
     // That was the last set: close this exercise and open the next one.
     if (isExerciseDone(ex)) {
       // The next unfinished one in the order shown, with this exercise moved up if it was done early.
+      // Waits as long as the feel slider does, so the pick is seen before the card closes.
       const next = workoutOrder(exercises.length, startedRef.current);
-      openExercise(nextOpenExercise(next.map((i) => exercises[i]), next.indexOf(exIndex)));
+      const target = nextOpenExercise(next.map((i) => exercises[i]), next.indexOf(exIndex));
+      setTimeout(() => openExercise(target), FEEL_SETTLE_MS);
     }
     if (next) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
@@ -793,6 +805,7 @@ export function Logger(props: {
           if (!ex) return null;
           const item = items[exIndex];
           const pr = props.prs[item.exercise.id];
+          const setting = ex.exerciseId in settings ? settings[ex.exerciseId] : item.exercise.machineSetting;
           const workingDone = isExerciseDone(ex);
           const showWarmups = ex.warmups.length > 0 && !skipped.includes(ex.exerciseId);
           const open = openId === ex.exerciseId;
@@ -848,15 +861,20 @@ export function Logger(props: {
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <h2 className="font-semibold leading-snug">{item.exercise.name}</h2>
-                    {props.options?.[item.id] && (
-                      <OptionChips
+                    <div className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                      <span>{exerciseMeta({ target: formatTarget(item.targetSets, item.targetReps, item.exercise.tracking), perHand: item.exercise.perHand, extra: isExtraItem(item) }).join(" · ")}</span>
+                      {setting && <><span aria-hidden>·</span><SettingBadge plain value={setting} onSave={v=>saveSetting(ex.exerciseId,v)}/></>}
+                      {ex.aim?.readyToIncrease && <><span aria-hidden>·</span><span className="font-medium text-primary">Ready to increase</span></>}
+                      {props.options?.[item.id] && <><span aria-hidden>·</span>
+                        <OptionChips
                         options={props.options[item.id]}
                         activeId={item.exercise.id}
                         onPick={(exerciseId) => switchOption(exIndex, item.id, exerciseId)}
                         lockedHint={lockHint === item.id ? `Sets are logged on ${item.exercise.name}. Untick them to switch.` : null}
                       />
-                    )}
-                    <div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{formatTarget(item.targetSets,item.targetReps,item.exercise.tracking)}</Badge>{item.exercise.perHand&&<Badge variant="outline">per hand</Badge>}{ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}{isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}{(()=>{const setting=ex.exerciseId in settings?settings[ex.exerciseId]:item.exercise.machineSetting;return showSettingChip(setting,item.exercise.equipment)&&<SettingBadge value={setting} onSave={v=>saveSetting(ex.exerciseId,v)}/>;})()}</div>
+                      </>}
+                    </div>
+                    {!setting && seatEditFor === ex.exerciseId && <SettingBadge value={null} startEditing onClose={() => setSeatEditFor(null)} onSave={async (v) => { const ok = await saveSetting(ex.exerciseId, v); if (ok) setSeatEditFor(null); return ok; }}/>}
                   </div>
                   {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
                   {editing && !isExtraItem(item) && (
@@ -918,6 +936,9 @@ export function Logger(props: {
                     <div className="mb-2 flex gap-1.5">
                       <ActionTile icon={<ArrowLeftRight />} label="Swap" onClick={()=>setSwapIndex(exIndex)} ariaLabel={`Swap exercise ${item.exercise.name}`} />
                       <ActionTile icon={<Timer />} label={`Rest ${clock(item.restSec ?? props.defaultRestSec)}`} onClick={()=>setRestIndex(exIndex)} ariaLabel={`Rest timer for ${item.exercise.name}, ${clock(item.restSec ?? props.defaultRestSec)}`} />
+                      {!setting && showSettingChip(null, item.exercise.equipment) && (
+                        <ActionTile icon={<Armchair />} label="Seat" onClick={() => setSeatEditFor(ex.exerciseId)} ariaLabel={`Add a seat or pin setting for ${item.exercise.name}`} />
+                      )}
                       {item.exercise.muscleGroups.length > 0 && (
                         <ActionTile icon={<PersonStanding />} label="Muscles" onClick={() => setMusclesFor({ name: item.exercise.name, groups: item.exercise.muscleGroups })} ariaLabel={`Muscles worked by ${item.exercise.name}`} />
                       )}
@@ -1002,7 +1023,7 @@ export function Logger(props: {
 
               <div className="mt-1 border-t px-2 pt-1">
                 <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-2">
-                  <p className="text-sm font-medium">Working sets{item.exercise.perHand && <span className="font-normal text-muted-foreground"> · weight per hand</span>}</p>
+                  <p className="text-sm font-medium">Working sets</p>
                   <p className="text-xs tabular-nums text-muted-foreground">{ex.working.filter(row=>row.logged).length} of {ex.working.length} logged{ex.working.some(row=>row.skipped&&!row.logged)?` · ${ex.working.filter(row=>row.skipped&&!row.logged).length} skipped`:""}</p>
                 </div>
                 {ex.working.map((row) => (
@@ -1025,18 +1046,18 @@ export function Logger(props: {
                       onTick={() => tick(exIndex, row)}
                       onUntick={() => untick(exIndex, row)}
                       onSkip={() => skipSet(exIndex, row, true)}
+                      feel={row.logged && row.logged.rpe !== null && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "summary"
+                        ? <FeelChip rpe={row.logged.rpe} onChange={() => setFeelEdit(row.key)} /> : undefined}
                     />}
                     {row.logged && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "slider" && (
                       <FeelSlider
                         guide={feelKey === row.key ? "tip:feel" : undefined}
                         rpe={row.logged.rpe}
-                        onPick={(rpe) => { setFeelEdit(null); setFeel(exIndex, row, rpe); }}
+                        onPick={(rpe) => pickFeel(exIndex, row, rpe)}
                         onDone={feelEdit === row.key ? () => setFeelEdit(null) : undefined}
                       />
                     )}
-                    {row.logged && row.logged.rpe !== null && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "summary" && (
-                      <FeelSummary rpe={row.logged.rpe} onChange={() => setFeelEdit(row.key)} />
-                    )}
+
                   </div>
                 ))}
                 {editingNote === ex.exerciseId ? (
@@ -1480,8 +1501,8 @@ export function Logger(props: {
 // ---------------------------------------------------------------------------
 
 /**
- * One line of pills under the exercise name: the slot's options, today's
- * highlighted. One tap switches.
+ * One quiet line under the exercise name naming the slot's other options
+ * ("or Pull-up"); the name above is today's. One tap switches.
  */
 function OptionChips({
   options,
@@ -1496,33 +1517,20 @@ function OptionChips({
 }) {
   return (
     <>
-      <div role="radiogroup" aria-label="Do this as" data-guide="tip:alternates" className="-my-1 flex items-center gap-1 overflow-x-auto">
-        <ArrowLeftRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-        {options.map((o) => {
-          const on = o.exercise.id === activeId;
-          return (
-            <button
-              key={o.exercise.id}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => onPick(o.exercise.id)}
-              className="flex min-h-11 shrink-0 items-center"
-            >
-              <span
-                className={cn(
-                  "max-w-44 truncate rounded-full border px-3 py-1 text-xs",
-                  on ? "border-primary bg-primary/15 font-medium text-foreground" : "text-muted-foreground active:bg-secondary",
-                )}
-              >
-                {o.exercise.name}
-              </span>
+      <span role="group" aria-label="Do this as" data-guide="tip:alternates" className="inline-flex flex-wrap items-center gap-x-1.5">
+        <ArrowLeftRight className="size-3.5 shrink-0" aria-hidden />
+        <span>or</span>
+        {options.filter((o) => o.exercise.id !== activeId).map((o, i, rest) => (
+          <span key={o.exercise.id} className="contents">
+            <button type="button" onClick={() => onPick(o.exercise.id)} aria-label={`Do ${o.exercise.name} instead`} className="flex min-h-11 max-w-48 items-center">
+              <span className="truncate font-medium text-primary underline-offset-4 active:underline">{o.exercise.name}</span>
             </button>
-          );
-        })}
-      </div>
+            {i < rest.length - 1 && <span aria-hidden>·</span>}
+          </span>
+        ))}
+      </span>
       {lockedHint && (
-        <p role="status" className="text-xs text-muted-foreground">
+        <p role="status" className="basis-full text-xs text-muted-foreground">
           {lockedHint}
         </p>
       )}
@@ -1552,6 +1560,7 @@ function SetRow({
   onTick,
   onUntick,
   onSkip,
+  feel,
 }: {
   row: Row;
   /** Marks the row for a first-time tip (data-guide). */
@@ -1570,12 +1579,21 @@ function SetRow({
   onTick: () => void;
   onUntick: () => void;
   onSkip?: () => void;
+  /** The locked feel chip, shown inside a logged row. */
+  feel?: React.ReactNode;
 }) {
   const done = row.logged !== null;
   const [options, setOptions] = useState(row.addedKg > 0);
   const [showAddOn, setShowAddOn] = useState(row.addedKg > 0);
   const holding = holdLeft !== null;
   const hasOptions = (!warmup && !done) || showAddOn;
+  // A logged set is one compact line: what was done, its feel, and the tick to undo.
+  if (row.logged) return <div data-guide={guide} className={cn("flex min-h-12 items-center gap-1 px-2", warmup && "text-muted-foreground")}>
+    <span className="flex w-11 shrink-0 justify-center text-sm tabular-nums">{row.label}</span>
+    <span className="min-w-0 flex-1 truncate font-medium tabular-nums">{formatSet(row.logged, units)}</span>
+    {feel}
+    <button type="button" onClick={onUntick} className="flex size-11 shrink-0 items-center justify-center" aria-label={`Undo set ${row.label}`} aria-pressed><TickCircle on small={warmup}/></button>
+  </div>;
 
   return <div data-guide={guide}>
     <div className={cn("flex min-h-14 flex-wrap items-center gap-1 px-2 py-1", warmup && "text-muted-foreground")}>
@@ -1680,8 +1698,17 @@ function ChecklistCard({
  * The seat or pin badge in an exercise header. Tap to change it; with no
  * setting yet it offers "+ Seat / pin".
  */
-function SettingBadge({ value, onSave }: { value: string | null; onSave: (v: string) => Promise<boolean> }) {
-  const [editing, setEditing] = useState(false);
+function SettingBadge({ value, onSave, plain = false, startEditing = false, onClose }: {
+  value: string | null;
+  onSave: (v: string) => Promise<boolean>;
+  /** Shown as quiet text in the exercise's meta line instead of a chip. */
+  plain?: boolean;
+  /** Opens straight into the form (adding from Options). */
+  startEditing?: boolean;
+  onClose?: () => void;
+}) {
+  const [editing, setEditingState] = useState(startEditing);
+  const setEditing = (on: boolean) => { setEditingState(on); if (!on) onClose?.(); };
   const [text, setText] = useState(value ?? "");
   const [busy, setBusy] = useState(false);
 
@@ -1696,7 +1723,9 @@ function SettingBadge({ value, onSave }: { value: string | null; onSave: (v: str
         className="-my-2 flex min-h-11 items-center"
         aria-label={value ? `Change setting: ${settingLabel(value)}` : "Add seat or pin setting"}
       >
-        {value ? (
+        {value && plain ? (
+          <span className="font-medium text-foreground underline decoration-dotted underline-offset-4">{settingLabel(value)}</span>
+        ) : value ? (
           <Badge variant="accent">{settingLabel(value)}</Badge>
         ) : (
           <Badge variant="outline">+ Seat / pin</Badge>
@@ -1951,15 +1980,14 @@ const FEEL_COLOR = ["var(--success)", "var(--primary)", "color-mix(in oklab, var
 /** Half the thumb's width: the track's ends sit under the thumb's centre at Easy and Max. */
 const FEEL_INSET = 14;
 
-/** A logged set's feel once chosen: one locked line, opened again only with Change. */
-function FeelSummary({ rpe, onChange }: { rpe: number; onChange: () => void }) {
+/** A logged set's feel once chosen, inside its row: locked, tap to change. */
+function FeelChip({ rpe, onChange }: { rpe: number; onChange: () => void }) {
   const feel = feelFromRpe(rpe);
-  const color = colorAt(positionOf(rpe), FEEL_COLOR);
+  const label = feel === null ? `RPE ${rpe}` : FEEL_LABEL[feel];
   return (
-    <div className="flex min-h-11 items-center justify-between gap-2 pb-1 pl-11 pr-3 text-xs">
-      <span className="text-muted-foreground">Felt <span className="font-medium" style={{ color }}>{feel === null ? `effort ${rpe}` : FEEL_LABEL[feel]}</span></span>
-      <button type="button" onClick={onChange} className="-mr-2 min-h-11 px-2 font-medium text-primary" aria-label={`Change how this set felt, now ${feel === null ? `effort ${rpe}` : FEEL_LABEL[feel]}`}>Change</button>
-    </div>
+    <button type="button" onClick={onChange} className="flex min-h-11 shrink-0 items-center px-1" aria-label={`Felt ${label}. Change how this set felt`}>
+      <span className="rounded-full bg-muted/60 px-2.5 py-1 text-xs font-medium" style={{ color: colorAt(positionOf(rpe), FEEL_COLOR) }}>{label}</span>
+    </button>
   );
 }
 

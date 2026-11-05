@@ -2013,3 +2013,22 @@ kinds wrapping over two lines and a separate record link). Suggested and an
 Options toggle now share one line; Options opens full width with history in
 small text and one even row of tiles: Swap, Rest, Muscles, Add record.
 Ready to increase and This workout only moved into the visible chip row.
+
+## 2026-11-05: One meta line under the exercise name (Aman's request)
+
+The header had a row of alternate pills that repeated today's exercise and a
+row of chips. They are now one quiet line, for example "4 × 10 · Seat 3 · ⇆
+or Pull-up": only the other alternates are named (one tap switches, as
+before), a saved seat is tappable text, and adding a seat moved to an
+Options tile. Ready to increase stays visible in that line.
+
+Aman then found logged sets too spread out. A logged set is now one line
+("1 · 28 kg × 9 · Hard ✓"); the feel is a small tag that opens the slider
+when tapped, and "weight per hand" left the Working sets heading since the
+meta line already says per hand.
+
+Aman found the slider vanished too quickly after a pick. The pick is still
+saved at once (offline-safe), but the slider stays open for 1.2 s
+(`FEEL_SETTLE_MS`, lib/feel.ts) before closing to a tag, a new pick restarts
+the pause, and a finished exercise waits the same time before moving on. No
+timer is shown.

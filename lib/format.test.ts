@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatLoad, formatSet, formatSets, settingLabel, showSettingChip } from "./format";
+import { formatLoad, formatSet, formatSets, settingLabel, showSettingChip, exerciseMeta } from "./format";
 
 describe("formatSet", () => {
   it.each([
@@ -51,5 +51,12 @@ describe("showSettingChip", () => {
     expect(showSettingChip("3", "dumbbell")).toBe(true);
     expect(showSettingChip(null, "machine")).toBe(true);
     expect(showSettingChip(null, "cable")).toBe(true);
+  });
+});
+
+describe("exerciseMeta", () => {
+  it("lists only what applies", () => {
+    expect(exerciseMeta({ target: "3 × 10", perHand: true, extra: false })).toEqual(["3 × 10", "per hand"]);
+    expect(exerciseMeta({ target: "4 × 6", perHand: false, extra: true })).toEqual(["4 × 6", "this workout only"]);
   });
 });
