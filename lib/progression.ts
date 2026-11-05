@@ -56,6 +56,18 @@ export function stepKg(equipment: string, weightStepKg: number = DEFAULT_WEIGHT_
   }
 }
 
+/**
+ * The next heavier load when an add-on (a half-step clip or pin weight) was
+ * on: take the add-on off and move the main weight up a full step, so
+ * 50 kg + 3.75 add-on on a 7.5 kg stack becomes 57.5 kg with no add-on. The
+ * person can put the add-on back. If the add-on was a full step or more, it
+ * moves enough steps to stay heavier than before (Aman, 5 Nov). Pure.
+ */
+export function stepUp(weightKg: number, addedKg: number, step: number): { weightKg: number; addedKg: number } {
+  const steps = addedKg > 0 ? Math.floor(addedKg / step + 1e-9) + 1 : 1;
+  return { weightKg: round2(weightKg + steps * step), addedKg: 0 };
+}
+
 export function aimForSession(input: {
   lastSets: LoggedSet[]; // last session's working sets, in order
   targetSets: number;
@@ -94,13 +106,15 @@ export function aimForSession(input: {
   }
 
   if (allHit && (hardest === null || hardest <= 8)) {
-    const up = round2(first.weightKg + step);
+    const up = stepUp(first.weightKg, first.addedKg, step);
     return {
-      weightKg: up,
-      addedKg: first.addedKg,
+      weightKg: up.weightKg,
+      addedKg: up.addedKg,
       // Fewer reps at the heavier weight, then build back up to the target.
-      reps: repsForHeavier(loadOf(first), input.targetReps, up + first.addedKg, input.targetReps),
-      reason: hardest === null ? "You hit every target last time" : "Hit every target and it felt manageable",
+      reps: repsForHeavier(loadOf(first), input.targetReps, up.weightKg + up.addedKg, input.targetReps),
+      reason: first.addedKg > 0
+        ? "Hit every target: up a full step, add-on off"
+        : hardest === null ? "You hit every target last time" : "Hit every target and it felt manageable",
       readyToIncrease: true,
     };
   }
@@ -139,7 +153,7 @@ export function adjustNextSet(input: {
   feel: Feel;
   equipment: string;
   weightStepKg?: number;
-}): { weightKg: number | null; reps: number } {
+}): { weightKg: number | null; reps: number; addedKg?: number } {
   const step = stepKg(input.equipment, input.weightStepKg);
   const doneReps = input.done.reps ?? input.planned.reps;
   if (input.feel === "easy") {
@@ -147,9 +161,9 @@ export function adjustNextSet(input: {
       return { weightKg: input.done.weightKg, reps: Math.min(input.targetReps, doneReps + 1) };
     }
     if (step !== null && input.done.weightKg !== null) {
-      const up = round2(input.done.weightKg + step);
       const added = input.done.addedKg ?? 0;
-      return { weightKg: up, reps: repsForHeavier(input.done.weightKg + added, doneReps, up + added, input.targetReps) };
+      const up = stepUp(input.done.weightKg, added, step);
+      return { weightKg: up.weightKg, addedKg: up.addedKg, reps: repsForHeavier(input.done.weightKg + added, doneReps, up.weightKg, input.targetReps) };
     }
     return { weightKg: input.done.weightKg, reps: doneReps + 1 };
   }

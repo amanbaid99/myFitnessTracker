@@ -175,3 +175,10 @@ export function batchSuggestions(data: unknown, count: number): string[][] | nul
     return Array.isArray(groups) ? [...new Set(groups.filter((g): g is string => typeof g === "string" && isGroup(g)))].slice(0, 4) : [];
   });
 }
+
+/** One exercise's shading for the body diagram: the main muscle full, supporting muscles half. Pure. */
+export function exerciseWorkload(groups: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  groups.filter(isGroup).forEach((g, i) => { if (!(g in out)) out[g] = i === 0 ? 1 : 0.5; });
+  return out;
+}

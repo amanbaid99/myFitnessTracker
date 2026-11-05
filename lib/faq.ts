@@ -76,7 +76,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "I already lift. Can I start from my current weights?",
         a: [
-          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, tap Options on the open exercise, then Add record. Enter weight and reps for one set and skip any you don't know.",
+          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, an exercise you have never logged shows Add record under Options. Once it has history, add records from the exercise in your plan. Enter weight and reps for one set and skip any you don't know.",
           "Your next workout's suggested weights, warm-ups and records build on these. They don't count as a workout, so they don't change your streak or totals.",
         ],
       },
@@ -103,7 +103,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How are the weight and reps for each set chosen?",
         a: [
-          "They come from the last time you did that exercise, starting from the heaviest weight you used. If you hit every target last time and it didn't feel too hard, the weight goes up by that exercise's weight step, with fewer reps so the total work stays about the same (5 kg x 12 becomes 7.5 kg x 8), and you build back up from there. If not, you stay at that weight and aim for one more rep than your weakest set.",
+          "They come from the last time you did that exercise, starting from the heaviest weight you used. If you hit every target last time and it didn't feel too hard, the weight goes up by that exercise's weight step, with fewer reps so the total work stays about the same (5 kg x 12 becomes 7.5 kg x 8), and you build back up from there. If you used an add-on, such as a 3.75 kg clip on a 7.5 kg stack, it comes off and the main weight goes up a full step instead (50 kg plus the clip becomes 57.5 kg); add the clip back when you are ready. If not, you stay at that weight and aim for one more rep than your weakest set.",
           "The sets are filled in for you, so logging a set is one tap. Change any number before you tap if today is different.",
         ],
       },

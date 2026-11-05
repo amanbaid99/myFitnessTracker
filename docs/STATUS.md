@@ -11,7 +11,16 @@ Last updated: 2026-11-05.
 - 2026-11-05: Branch `ui/review-exercise-sheet`: the plan exercise sheet no
   longer hides sections in collapsed boxes (Aman could not tell they opened).
   Everything shows in one scroll under plain headings; Add previous record is
-  back at the top.
+  back at the top. PR #51.
+
+- 2026-11-05: Branch `ui/review-muscles-sheet`: the Muscles worked sheet shows
+  the static front and back diagram above the list (See in 3D kept), Add
+  record shows only for exercises with no history, and Add weight / Skip set
+  are two equal one-line buttons. PR #50 (live).
+
+- 2026-11-05: PR #48 (one-line header and logged sets, feel pause) is live.
+  PR #49 (live): a step up takes the add-on off and moves
+  the main weight a full step (Aman's rule).
 
 - 2026-11-05: PR #47 (feel lock, logger declutter) is live. Branch
   `ui/review-logger-header`: one quiet meta line under the exercise name

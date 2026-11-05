@@ -591,13 +591,15 @@ export function Logger(props: {
         equipment: items[exIndex].exercise.equipment,
         weightStepKg: items[exIndex].exercise.weightStepKg,
       });
+      // A step up takes any add-on off (stepUp); otherwise the add-on stays.
+      const addOn = adjusted.addedKg !== undefined ? { addedKg: adjusted.addedKg } : {};
       if (adjusted.weightKg !== planned.weightKg || adjusted.reps !== planned.reps) {
-        updateRow(exIndex, next.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });
+        updateRow(exIndex, next.key, { weightKg: adjusted.weightKg, reps: adjusted.reps, ...addOn });
         // Later sets not changed by hand follow, so set 3 does not lag behind set 2.
         if (adjusted.weightKg !== planned.weightKg) {
           for (const r of ex.working) {
             if (r.setNo > next.setNo && !r.logged && !r.weightEdited && !r.repsEdited) {
-              updateRow(exIndex, r.key, { weightKg: adjusted.weightKg, reps: adjusted.reps });
+              updateRow(exIndex, r.key, { weightKg: adjusted.weightKg, reps: adjusted.reps, ...addOn });
             }
           }
         }
@@ -942,7 +944,8 @@ export function Logger(props: {
                       {item.exercise.muscleGroups.length > 0 && (
                         <ActionTile icon={<PersonStanding />} label="Muscles" onClick={() => setMusclesFor({ name: item.exercise.name, groups: item.exercise.muscleGroups })} ariaLabel={`Muscles worked by ${item.exercise.name}`} />
                       )}
-                      {!demo && item.exercise.tracking !== "time" && (
+                      {/* Only for an exercise with no history yet; later records go through the plan's exercise sheet. */}
+                      {!demo && item.exercise.tracking !== "time" && !pr && ex.last.length === 0 && (
                         <ActionTile icon={<Trophy />} label="Add record" href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
                           try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
                         }} ariaLabel={`Add a previous record for ${item.exercise.name}`} />
@@ -1611,10 +1614,13 @@ function SetRow({
       <button type="button" onClick={done ? onUntick : onTick} className="ml-auto flex size-11 shrink-0 items-center justify-center" aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`} aria-pressed={done}><TickCircle on={done} small={warmup}/></button>
     </div>
     {row.addedKg > 0 && !options && <p className="px-3 text-xs text-muted-foreground">+ {fromKg(row.addedKg,units)} {units} add-on</p>}
-    {options && hasOptions && <div className="mx-2 mb-2 space-y-2 rounded-xl bg-muted/40 p-2">
-      {showAddOn ? <NumberField label={`Set ${row.label} add-on weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="Add-on" suffix={units} className="w-full"/> : !done && !warmup && !timed && <Button variant="ghost" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
+    {options && hasOptions && <div className="mx-2 mb-2 space-y-2 min-[380px]:pl-11">
+      {showAddOn && <NumberField label={`Set ${row.label} add-on weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="Add-on" suffix={units} className="w-full"/>}
       {!warmup && !done && !timed && <div className="min-[380px]:hidden"><RepsStepper label={row.label} value={row.reps} compact={false} onChange={reps => onChange({reps,repsEdited:true})}/></div>}
-      {!done && onSkip && <Button variant="ghost" disabled={holding} onClick={onSkip} aria-label={`Skip set ${row.label}`}>Skip set</Button>}
+      {!done && <div className="flex gap-2 [&>*]:flex-1 [&>*]:whitespace-nowrap [&>*]:px-3 [&>*]:text-sm">
+        {!showAddOn && !warmup && !timed && <Button variant="secondary" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
+        {onSkip && <Button variant="outline" disabled={holding} onClick={onSkip} aria-label={`Skip set ${row.label}`}>Skip set</Button>}
+      </div>}
     </div>}
   </div>;
 }
@@ -1939,7 +1945,7 @@ function NumberField({
   return (
     <label className={cn("relative flex h-11 shrink-0 items-center rounded-lg border bg-background", disabled && "border-transparent bg-transparent", className)}>
       <span className="sr-only">{label}</span>
-      {prefix && <span className="pl-1.5 text-xs text-muted-foreground">{prefix}</span>}
+      {prefix && <span className="shrink-0 whitespace-nowrap pl-1.5 text-xs text-muted-foreground">{prefix}</span>}
       <input
         inputMode={integer ? "numeric" : "decimal"}
         value={shown}
