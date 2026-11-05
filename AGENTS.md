@@ -127,10 +127,15 @@ pnpm build
 - Update the FAQ (`lib/faq.ts`) when behaviour it describes changes.
 - New analytics events: add the name to `AnalyticsEvent` in
   `lib/analytics.ts`; never send personal data as properties.
-- New user-facing feature: draft a What's new entry (title, 1 to 2
-  lines, optional Show me link) in chat and add it to `WHATS_NEW` in
-  `lib/guide.ts` only if Aman approves. Many changes ship without one. A
-  feature can also get a first-time tip: add it to `TIPS`, mark the
+- Update announcements (Aman, 5 Nov): use guided sample tours, grouped
+  across owner-chosen releases, instead of a text popup for every feature.
+  Prepare a concrete tour preview with Next, Previous and Skip, show the
+  proposed scope/wording, and ask before activating a batch. Aman can also
+  request a batch directly. Publish only approved batches in `UPDATE_TOURS`
+  (`lib/update-tours.ts`); merges never activate tours automatically.
+  Keep historical `WHATS_NEW` entries as an archive. Do not add unapproved
+  wording or silently restore per-feature popups. A feature can also get
+  a first-time tip: add it to `TIPS`, mark the
   element with `data-guide="<key>"` and call `useTip("<key>")`.
 - If the demo should show it, extend `lib/demo.ts`.
 - Update `docs/STATUS.md` when you finish, start or discover something

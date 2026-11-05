@@ -24,7 +24,7 @@ export const INTRO_TOUR: GuideStep[] = [
     body: "Your next day from the plan is ready, with weights filled in from last time.",
   },
   { target: "nav-history", title: "History", body: "Every workout you finish, with a short AI review of how it went." },
-  { target: "nav-progress", title: "Progress", body: "Your records, weekly sets per muscle and how each lift is moving." },
+  { target: "nav-progress", title: "Progress", body: "Charts for training volume, strength, body weight and consistency. Tap a chart for details." },
   { target: "nav-coach", title: "AI Coach", body: "Ask about your training. The coach knows your plan and your recent sessions." },
   { target: "nav-routines", title: "Routines", body: "Your plan. Change days, exercises, sets and reps whenever you like." },
   {

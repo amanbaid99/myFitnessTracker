@@ -8,7 +8,23 @@ Last updated: 2026-11-05.
 
 ## In progress
 
-- 2026-11-05: Focused Progress follow-up on `ui/review-progress-dashboard`.
+- 2026-11-05: `ui/review-workout-changes-tour` addresses both workout
+  replacement flows and owner-requested guided release batches. Exercise
+  replacement now uses readable equipment choices and an explicit review;
+  dumbbell adaptation shows original/new exercises and targets before use.
+  Both preserve session-only scope, logged-set protection and existing
+  handlers. A 12-stop draft tour groups all available user-facing merges
+  from 3 to 5 Nov in India time, with safe examples and Previous/Next/Skip.
+  `UPDATE_TOURS` stays empty until owner wording/activation approval. No
+  automatic per-feature text popups, new schema or AI-provider deployment.
+  Lint, strict types, 457 tests and production build pass. Both replacement
+  browser suites and all 12 tour stops pass at 320/390/430, including safe
+  sample interactions, URL navigation, themes and larger text. No data/AI
+  requests occur during the sample tour. Evidence is under
+  `docs/ui-evidence/exercise-swap` and `docs/ui-evidence/update-tour`;
+  copy/scope is in `docs/UPDATE-TOUR-DRAFT.md`. Ready for owner review.
+
+- 2026-11-05: Progress follow-up is live in #53 (ad9980a).
   Owner approved a four-chart overview with one period control and detail
   navigation. Existing filters, reports, goals, muscle mapping and exercise
   history remain in the detail views. Dated body weights use the existing
@@ -17,8 +33,9 @@ Last updated: 2026-11-05.
   work remains paused. Lint, strict types, 451 tests and production build
   pass. Browser assertions cover all views at 320/390/430, larger text,
   themes, stored lift selection, retained filters and offline/error states.
-  Evidence: `docs/ui-evidence/progress-dashboard`. Preparing a review PR;
-  no merge/deployment or unapproved What's new wording in this task.
+  Evidence: `docs/ui-evidence/progress-dashboard`. Production CI, exact live
+  version and public sample mobile checks passed. No unapproved release
+  wording was published.
 
 - 2026-11-05: Home refinement is live in #52 (c3eb397), based on #51. Analysis
   keeps the same content with tighter hierarchy; Start and Resume share

@@ -2129,3 +2129,44 @@ AI is not needed to draw or compare these charts. Link the existing weekly
 analysis and retain AI Coach access within details. No new AI generation,
 provider, schema, outbox or logger changes. Only this focused improvement
 is resumed; unrelated paused work and release wording approval remain.
+
+## 2026-11-05: Clear workout changes and owner-controlled update tours
+
+Aman clarified that both single-exercise replacement and the remaining-day
+AI dumbbell option were confusing. Use Replace in the exercise tools,
+readable equipment buttons, ordinary exercise names and a review showing
+what is being replaced. The named accessible acceptance action is explicit;
+visible labels stay short enough for larger text. Preserve the existing
+search/ranking, all equipment, AI request contracts, tracking constraints,
+load/history checks, logged-set locks and session-only persistence. The
+bulk preview pairs original and proposed exercises with sets/reps and
+muscles. Discard a stale draft if its source exercises or targets change.
+Cancelling never calls the replacement handler. Errors retain the review,
+and actions remain visible in the sheet. No new model or SQL calculation.
+
+Aman also requested guided examples instead of individual text What's new
+popups, released in batches only when he asks or approves. The initial
+preview covers all available user-facing changes merged 3–5 November in
+India time. Group the current final behaviors into 12 stops, rather than
+replaying superseded intermediate designs. Human coaching remains paused;
+unreleased auth/recovery work and repository-only tracking are excluded.
+The two new replacement UIs are clearly identified as still in review.
+
+Use actual public sample pages, Previous/Next/Skip/Finish, a visible sample
+label, and per-batch seen keys through the existing owner-scoped mark_seen
+RPC. Starting or skipping the invitation acknowledges it, avoiding repeat
+prompts; approved tours can be replayed from What's new. New accounts keep
+the intro first. Never interrupt the workout logger with an update invite.
+Intro tours also gain Previous and respect reduced motion when scrolling.
+Keep legacy release text in an expandable archive. The published batch
+list stays empty until wording and activation are approved. An individual
+merge does not create an announcement.
+
+The example replacement sheets are embedded versions of the same controls.
+Sample dumbbell suggestions are local fixtures, never provider requests;
+all example apply handlers only update local state. Plan/preferences
+examples are read-only so there is no path to an account write or AI call.
+Only validated /demo destinations can be used by a release batch. Tour
+navigation uses URL state and restores focus; its measured footer reserves
+space for large text and moves the sample rest bar above it. Ordinary
+logging, outbox, progression and privacy controls are preserved.

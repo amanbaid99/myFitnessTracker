@@ -57,6 +57,12 @@ the changed files, then restoring the branch.
 
 ## Rules for every item
 
+Owner follow-up (5 Nov): clarify both exercise replacement and remaining-
+workout dumbbell adaptation, with explicit review and today-only scope.
+Release updates now use owner-approved guided sample batches with Next,
+Previous and Skip. The first draft covers available 3–5 Nov changes. Draft
+content must not become an automatic announcement until approved.
+
 Read `AGENTS.md`, `docs/STATUS.md`, `docs/ARCHITECTURE.md`, `docs/SPEC.md`
 and the relevant `DECISIONS.md` entries first. Recheck each finding against
 current code; the app changes often.
