@@ -17,7 +17,8 @@ import { heatLink } from "@/lib/anatomy";
 import { track } from "@/lib/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatE1rm, formatSet } from "@/lib/format";
-import { muscleWeeks, trainingCalendar, weekStreak, workoutsThisWeek } from "@/lib/progress";
+import { muscleWeeks, trainingCalendar, weekStreak } from "@/lib/progress";
+import { analysisActivity } from "@/lib/analysis-week";
 import { sessionsInRange, sessionChange, strengthTrend, type ProgressRange } from "@/lib/progress-range";
 import type { Units } from "@/lib/units";
 import { cn } from "@/lib/utils";
@@ -64,7 +65,7 @@ export function ProgressOverview({ workoutDates, muscleRows, exercises, units, u
       {TABS.map((name, index) => <button key={name} type="button" role="tab" id={`${id}-${name}`} aria-controls={`${id}-panel`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onKeyDown={e => navigateTabs(e, index)} onClick={() => setTab(name)} className={cn("min-h-11 min-w-0 break-words rounded-lg px-1 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring", tab === name ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{name}</button>)}
     </div>
     <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`} tabIndex={0}>
-      {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <><ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} /><details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Training overview</summary><ProgressSummary workoutDates={workoutDates} exercises={exercises}/><p className="text-xs text-muted-foreground">Activity uses your device timezone.</p></details>{reports&&<details className="mt-4"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Weekly volume reports</summary><TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo}/></details>}</> : tab === "Muscles" ? <>{coverage&&<CoverageInsights initial={coverage} userId={userId} demo={demo}/>}<MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo}/><details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Training overview</summary><ProgressSummary workoutDates={workoutDates} exercises={exercises}/></details></> : <>{reports&&<TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo} consistency/>}<div className="mt-4"><Consistency workoutDates={workoutDates}/></div></>}
+      {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <><ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} /><details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Training overview</summary><ProgressSummary workoutDates={workoutDates} exercises={exercises}/><p className="text-xs text-muted-foreground">Weekly counts use India time; streaks use your device timezone.</p></details>{reports&&<details className="mt-4"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Weekly volume reports</summary><TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo}/></details>}</> : tab === "Muscles" ? <>{coverage&&<CoverageInsights initial={coverage} userId={userId} demo={demo}/>}<MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo}/><details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Training overview</summary><ProgressSummary workoutDates={workoutDates} exercises={exercises}/></details></> : <>{reports&&<TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo} consistency/>}<div className="mt-4"><Consistency workoutDates={workoutDates}/></div></>}
     </div>
     <Link href={demo ? "/demo" : "/coach"} className="mt-4 flex min-h-11 items-center justify-center gap-2 text-sm text-muted-foreground"><MessageCircle className="size-4" aria-hidden />Ask Coach about {tab.toLowerCase()}</Link>
   </div>;
@@ -74,7 +75,7 @@ function ProgressSummary({workoutDates,exercises}:{workoutDates:string[];exercis
   const dates=workoutDates.map(date=>new Date(date)),now=new Date();
   return <section aria-label="Progress summary" className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] divide-x rounded-2xl border bg-card py-4 text-center">
     <div><p className="text-2xl font-semibold tabular-nums">{weekStreak(dates,now)}</p><p className="mt-1 text-xs text-muted-foreground">Week streak</p></div>
-    <div><p className="text-2xl font-semibold tabular-nums">{workoutsThisWeek(dates,now)}</p><p className="mt-1 text-xs text-muted-foreground">Workouts this week</p></div>
+    <div><p className="text-2xl font-semibold tabular-nums">{analysisActivity(workoutDates,now.toISOString()).count}</p><p className="mt-1 text-xs text-muted-foreground">Workouts this week</p></div>
     <div><p className="text-2xl font-semibold tabular-nums">{exercises.filter(exercise=>exercise.sessions.length).length}</p><p className="mt-1 text-xs text-muted-foreground">Exercises tracked</p></div>
   </section>;
 }
@@ -112,7 +113,7 @@ function MuscleVolume({ rows, unmapped, demo }: { rows: { startedAt: string; mus
   const round = (n: number) => Math.round(n * 2) / 2;
   return <section className="rounded-2xl border bg-card p-4">
     <h2 className="font-semibold">Weekly muscle sets</h2>
-    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Current Monday to Sunday week versus last week, in your device timezone. This week may still be in progress.</p>
+    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Current Monday to Sunday week versus last week, in India time (Asia/Kolkata). This week may still be in progress.</p>
     <div className="mt-3 flex gap-4 text-xs text-muted-foreground"><span className="flex items-center gap-1"><i className="h-2 w-4 rounded bg-primary" />This week</span><span className="flex items-center gap-1"><i className="h-2 w-4 rounded bg-muted-foreground/40" />Last week</span></div>
     {weeks.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No working sets in the last two weeks yet.</p> : <ul className="mt-3 space-y-4">{shown.map(w => <li key={w.muscle}>
       <div className="mb-1 flex items-center justify-between gap-2 text-sm"><span className="capitalize">{w.muscle}</span><span className="tabular-nums"><span className="font-medium">{round(w.thisWeek)}</span><span className="text-muted-foreground"> / {round(w.lastWeek)}</span><span className="sr-only"> sets, this week / last week</span></span></div>

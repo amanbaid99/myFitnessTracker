@@ -1,8 +1,10 @@
 /**
- * Progress maths that depends on the viewer's own calendar (weeks start on
- * Monday, local time), so it runs in the browser. The metrics themselves
+ * Activity streaks/calendar follow the device. Comparable weekly muscle
+ * results use India-time report boundaries. The metrics themselves
  * (best sets, estimated 1RM, sets per muscle) come from SQL views.
  */
+
+import { analysisWeek, previousWeek } from "./analysis-week";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -81,9 +83,10 @@ export interface MuscleWeek {
 
 /** Sets per muscle this week and last week, busiest this week first. */
 export function muscleWeeks(rows: { startedAt: string; muscle: string; sets: number }[], now: Date): MuscleWeek[] {
-  const thisStart = weekStart(now).getTime();
-  const lastStart = addDays(weekStart(now), -7).getTime();
-  const nextStart = addDays(weekStart(now), 7).getTime();
+  const week = analysisWeek(now.toISOString());
+  const thisStart = Date.parse(week.startAt);
+  const lastStart = Date.parse(previousWeek(week).startAt);
+  const nextStart = Date.parse(week.nextAt);
   const byMuscle = new Map<string, MuscleWeek>();
   for (const r of rows) {
     const t = new Date(r.startedAt).getTime();

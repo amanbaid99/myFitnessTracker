@@ -68,6 +68,13 @@ export interface WhatsNewEntry {
 /** Newest first. Add an entry only once Aman has approved it. */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: "clearer-progress-and-set-list",
+    date: "2026-11-05",
+    title: "Clearer progress and workout sets",
+    body: "See every working set while logging. Progress puts your results first, with coverage goals in a sheet and consistent India-time weekly comparisons.",
+    href: "/progress",
+  },
+  {
     id: "flexible-workout-controls",
     date: "2026-11-04",
     title: "More flexible workouts",

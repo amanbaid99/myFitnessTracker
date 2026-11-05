@@ -1899,3 +1899,16 @@ keep the editor and inputs visible. Preserve the existing profile write,
 coverage prerequisites and recovery semantics. Put the device activity
 summary behind Training overview below muscle results. The shared native
 modal sheet traps focus, supports Escape and returns focus to its trigger.
+
+
+## 2026-11-05: One India-time week for directly comparable metrics (P2.10)
+
+Aman's Asia/Kolkata choice and approval to finish all phases authorize this
+alignment. Muscle comparisons, Today day markers and fallback weekly counts
+now share the SQL reports' Monday midnight India boundaries. Compare actual
+timestamps, including offset inputs, with an inclusive start and exclusive
+next Monday. Do not alter SQL totals, historical goal snapshots, imported
+work handling or historical date rendering. Device-local streaks and the
+activity calendar remain unchanged and labelled; they describe a different
+activity rhythm, not goal completion. Verify Sunday/Monday and DST in
+multiple host/browser timezones.

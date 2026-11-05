@@ -18,11 +18,11 @@ Last updated: 2026-11-05.
 | P2.3 Workout recap | Live | #35 (53ed6d4) | Session results first; map kept visible but smaller (Aman wanted it beside the analysis) |
 | P2.4 Weekly analysis | Live | #32 (c12326b) | Takeaway and Next focus first, four clear states |
 | P2.5 Progress: Strength | Live | #40 (d89c403) | Production version and public browser check passed |
-| P2.6 Progress: Muscles | Ready for review | `ui/review-phase-2-muscles` | Compact status, preferences sheet and results before activity summary |
+| P2.6 Progress: Muscles | Merged | #42 | Production release validation in progress |
 | P2.7 Progress: Consistency | Live | #39 (a0f7a83) | Production version and public browser check passed |
 | P2.8 Weekly volume reports | Live | #37 (94eeeab) | Plain counted wording, one rounded volume format |
 | P2.9 Exercise progress | Live | #36 (830471e) | Latest first, best secondary, Top sets collapsed |
-| P2.10 Week boundaries | Next | | India-time alignment approved by Aman on 5 Nov |
+| P2.10 Week boundaries | Ready for review | `ui/review-phase-2-weeks` | India-time comparisons, counts and day markers; local streak/calendar preserved |
 | P3.1 to P3.4, P3.8 | To do | | |
 | P3.5 to P3.7 Human coaching | Skipped | | Out of scope per Aman (4 Nov). Coaching UI is paused |
 | Phase 4 (P4.1 to P4.10) | To do | | |

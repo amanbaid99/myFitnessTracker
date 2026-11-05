@@ -16,8 +16,9 @@ Last updated: 2026-11-05.
 - 2026-11-05: P2.6 on `ui/review-phase-2-muscles` puts compact coverage status
   above muscle results and moves preferences into a modal sheet. Cancel,
   recovery pause, exclusions, online saves and failed/offline saves retain
-  their behavior. Evidence in `docs/ui-evidence/phase-2-muscles`. Next P2.10
-  aligns directly comparable weekly metrics to approved India-time weeks.
+  their behavior. Evidence in `docs/ui-evidence/phase-2-muscles`. PR #42 merged after all checks. P2.10 on `ui/review-phase-2-weeks`
+  aligns directly comparable weekly metrics to approved India-time weeks,
+  preserving and labelling device-local streak/calendar behavior.
 
 - 2026-11-04: `fix/settings-measurement-system` consolidates units into one
   Metric/Imperial section and removes Settings rest controls. Workouts gain
