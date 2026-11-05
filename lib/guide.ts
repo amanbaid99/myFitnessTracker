@@ -68,6 +68,13 @@ export interface WhatsNewEntry {
 /** Newest first. Add an entry only once Aman has approved it. */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: "compact-set-ticks",
+    date: "2026-11-05",
+    title: "Compact workout sets are back",
+    body: "See every set in a compact row and tap its circle to mark it done. Tap a set number for add-on weight or Skip set.",
+    href: "/routines",
+  },
+  {
     id: "optional-checkins-and-settings",
     date: "2026-11-05",
     title: "Easier check-ins and Settings",

@@ -1934,3 +1934,17 @@ buttons for wrapped labels while retaining 44 px targets, visible focus,
 icon sizes and reduced-motion press feedback. Shared page headings wrap
 inside the profile space. These shared fixes are required for Phase 3's
 long labels and will be rechecked in Phase 4.
+
+
+## 2026-11-05: Restore compact set rows and circular ticks (owner correction)
+
+Aman's screenshot feedback explicitly rejects the large Log set buttons and
+focused-set frame. Restore compact ordered rows and the original circular
+tick control. This supersedes the current-row highlight from Phase 1 and
+PR #41; every set remains visible, independently loggable and undoable.
+Secondary per-set actions open from the set number: add-on entry and Skip
+set, plus rep steppers on narrow phones. Keep editable prefills, held-time
+controls, per-hand information, precision, unit conversion, effort feedback,
+skip/restore and the existing logging/outbox handlers. No training or storage
+logic changes. Preserve the unfinished Phase 4 work separately while this
+owner correction is validated and released first.

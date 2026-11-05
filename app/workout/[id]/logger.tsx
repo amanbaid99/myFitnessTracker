@@ -1,6 +1,6 @@
 "use client";
 
-import { currentWorkingKey,workoutCompletion } from "@/lib/workout-focus";
+import { workoutCompletion } from "@/lib/workout-focus";
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
@@ -792,7 +792,6 @@ export function Logger(props: {
           const item = items[exIndex];
           const pr = props.prs[item.exercise.id];
           const workingDone = isExerciseDone(ex);
-          const currentKey=currentWorkingKey(ex);
           const showWarmups = ex.warmups.length > 0 && !skipped.includes(ex.exerciseId);
           const open = openId === ex.exerciseId;
           if (!open) {
@@ -1018,8 +1017,7 @@ export function Logger(props: {
                   <p className="text-xs tabular-nums text-muted-foreground">{ex.working.filter(row=>row.logged).length} of {ex.working.length} logged{ex.working.some(row=>row.skipped&&!row.logged)?` · ${ex.working.filter(row=>row.skipped&&!row.logged).length} skipped`:""}</p>
                 </div>
                 {ex.working.map((row) => (
-                  <div key={row.key} className={row.key===currentKey?"rounded-xl border-2 border-primary bg-primary/5 p-1":"border-t"}>
-                    {row.key===currentKey&&<p className="px-2 pt-2 text-sm font-medium">Set {row.setNo} of {ex.working.length} · {formatTarget(1,item.targetReps,item.exercise.tracking)}</p>}
+                  <div key={row.key} className="border-t">
                     {row.skipped && !row.logged ? (
                       <div className="flex min-h-11 items-center justify-between px-2 text-sm text-muted-foreground">
                         <span>Set {row.label} skipped</span>
@@ -1037,10 +1035,8 @@ export function Logger(props: {
                       onChange={(patch) => updateRow(exIndex, row.key, patch)}
                       onTick={() => tick(exIndex, row)}
                       onUntick={() => untick(exIndex, row)}
+                      onSkip={() => skipSet(exIndex, row, true)}
                     />}
-                    {!row.logged && !row.skipped && (
-                      <button type="button" className="min-h-11 px-3 text-sm text-muted-foreground" disabled={hold?.key === row.key} onClick={() => skipSet(exIndex, row, true)} aria-label={`Skip set ${row.label} of ${item.exercise.name}`}>Skip set</button>
-                    )}
                     {row.logged && (feelKey === row.key || row.logged.rpe !== null) && (
                       <FeelSlider
                         guide={feelKey === row.key ? "tip:feel" : undefined}
@@ -1076,21 +1072,21 @@ export function Logger(props: {
                       <button
                         type="button"
                         onClick={() => addSet(exIndex)}
-                        className="flex min-h-11 items-center justify-center gap-1 text-sm text-muted-foreground"
+                        className="flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 break-words text-sm text-muted-foreground"
                       >
                         <Plus className="size-4" /> Add set
                       </button>
                       <button
                         type="button"
                         onClick={() => addWarmup(exIndex)}
-                        className="flex min-h-11 items-center justify-center gap-1 text-sm text-muted-foreground"
+                        className="flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 break-words text-sm text-muted-foreground"
                       >
                         <Flame className="size-4" /> Warm-up
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingNote(ex.exerciseId)}
-                        className="flex min-h-11 items-center justify-center gap-1 text-sm text-muted-foreground"
+                        className="flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 break-words text-sm text-muted-foreground"
                       >
                         <StickyNote className="size-4" /> {notes[ex.exerciseId] ? "Edit note" : "Add note"}
                       </button>
@@ -1554,6 +1550,7 @@ function SetRow({
   onChange,
   onTick,
   onUntick,
+  onSkip,
 }: {
   row: Row;
   /** Marks the row for a first-time tip (data-guide). */
@@ -1571,115 +1568,37 @@ function SetRow({
   onChange: (patch: Partial<Row>) => void;
   onTick: () => void;
   onUntick: () => void;
+  onSkip?: () => void;
 }) {
   const done = row.logged !== null;
+  const [options, setOptions] = useState(row.addedKg > 0);
   const [showAddOn, setShowAddOn] = useState(row.addedKg > 0);
-  // Working sets not yet logged get − and + around the reps, so adjusting
-  // them is a tap instead of typing.
-  const stepper = !warmup && !done;
   const holding = holdLeft !== null;
+  const hasOptions = (!warmup && !done) || showAddOn;
 
-  return (
-    <div data-guide={guide} className={cn("flex min-h-14 flex-wrap items-center gap-y-2 px-2 py-2", stepper ? "gap-1" : "gap-2", warmup && "text-muted-foreground")}>
-      <span
-        className={cn(
-          "shrink-0 text-center text-sm tabular-nums",
-          "w-full text-left",
-          warmup ? "text-xs" : "font-semibold",
-        )}
-      >
-        {row.label}
-      </span>
-      <NumberField
-        label={`Set ${row.label} weight`}
-        value={row.weightKg === null ? null : fromKg(row.weightKg, units)}
-        onChange={(v) => onChange({ weightKg: v === null ? null : toKg(v, units), weightEdited: true })}
-        disabled={done}
-        suffix={units}
-        className="min-w-20 flex-1"
-      />
-      {showAddOn ? (
-        <NumberField
-          label={`Set ${row.label} add-on weight`}
-          value={row.addedKg ? fromKg(row.addedKg, units) : null}
-          onChange={(v) => onChange({ addedKg: v === null ? 0 : toKg(v, units), weightEdited: true })}
-          disabled={done}
-          prefix="Add-on"
-          suffix={units}
-          className="min-w-28 flex-1"
-        />
-      ) : (
-        !done &&
-        !warmup &&
-        !timed && (
-          <button
-            type="button"
-            onClick={() => setShowAddOn(true)}
-            className="flex min-h-11 min-w-11 items-center gap-1 rounded-lg border px-2 text-xs text-muted-foreground"
-            aria-label="Add pin add-on weight"
-          >
-            <Plus className="size-3.5" aria-hidden /> Add weight
-          </button>
-        )
-      )}
-      {timed ? (
-        <>
-          <span className="text-muted-foreground">×</span>
-          {holding ? (
-            <span className="min-w-16 text-center text-lg font-semibold tabular-nums text-primary" aria-live="polite">
-              {clock(holdLeft)}
-            </span>
-          ) : (
-            <DurationStepper
-              label={row.label}
-              value={row.durationSec ?? null}
-              disabled={done}
-              onChange={(durationSec) => onChange({ durationSec, repsEdited: true })}
-            />
-          )}
-          {!done && (holding || onHoldStart) && (
-            <button
-              type="button"
-              onClick={holding ? onHoldStop : onHoldStart}
-              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground active:bg-muted"
-              aria-label={holding ? `Stop the timer on set ${row.label}` : `Start a ${row.durationSec ?? 0} second timer for set ${row.label}`}
-            >
-              {holding ? <Square className="size-4" /> : <Play className="size-4" />}
-            </button>
-          )}
-        </>
-      ) : stepper ? (
-        <RepsStepper
-          label={row.label}
-          value={row.reps}
-          compact={showAddOn}
-          onChange={(reps) => onChange({ reps, repsEdited: true })}
-        />
-      ) : (
-        <>
-          <span className="text-muted-foreground">×</span>
-          <NumberField
-            label={`Set ${row.label} reps`}
-            value={row.reps}
-            onChange={(v) => onChange({ reps: v === null ? null : Math.round(v), repsEdited: true })}
-            disabled={done}
-            integer
-            className="w-12"
-          />
-          {perHand && !warmup && <span className="hidden text-[10px] text-muted-foreground min-[380px]:inline">/hand</span>}
-        </>
-      )}
-      <button
-        type="button"
-        onClick={done ? onUntick : onTick}
-        className={cn("flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-3 font-medium",done?"bg-muted text-muted-foreground":"bg-primary text-primary-foreground")}
-        aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`}
-        aria-pressed={done}
-      >
-        {done?<TickCircle on small={warmup}/>:<Check className="size-4" aria-hidden/>}{done?`Undo ${warmup?"warm-up":"set"} ${row.label}`:`Log ${warmup?"warm-up":"set"} ${row.label}`}
-      </button>
+  return <div data-guide={guide}>
+    <div className={cn("flex min-h-14 flex-wrap items-center gap-1 px-2 py-1", warmup && "text-muted-foreground")}>
+      {hasOptions ? <button type="button" className="flex size-11 shrink-0 items-center justify-center gap-0.5 text-sm font-medium tabular-nums" onClick={() => setOptions(!options)} aria-label={`Options for set ${row.label}`} aria-expanded={options}>
+        {row.label}<ChevronDown className="size-3 text-muted-foreground" aria-hidden />
+      </button> : <span className="flex size-11 shrink-0 items-center justify-center text-sm tabular-nums">{row.label}</span>}
+      <NumberField label={`Set ${row.label} weight`} value={row.weightKg === null ? null : fromKg(row.weightKg,units)} onChange={value => onChange({weightKg:value === null ? null : toKg(value,units),weightEdited:true})} disabled={done} suffix={units} className="min-w-12 flex-1" />
+      {timed ? <>
+        {holding ? <span className="min-w-16 text-center text-lg font-semibold tabular-nums text-primary" aria-live="polite">{clock(holdLeft)}</span> : <DurationStepper label={row.label} value={row.durationSec ?? null} disabled={done} onChange={durationSec => onChange({durationSec,repsEdited:true})} />}
+        {!done && (holding || onHoldStart) && <button type="button" onClick={holding ? onHoldStop : onHoldStart} className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary" aria-label={holding ? `Stop the timer on set ${row.label}` : `Start a ${row.durationSec ?? 0} second timer for set ${row.label}`}>{holding ? <Square className="size-4"/> : <Play className="size-4"/>}</button>}
+      </> : !warmup && !done ? <>
+        <div className="hidden min-w-0 max-w-full min-[380px]:block"><RepsStepper label={row.label} value={row.reps} compact={false} onChange={reps => onChange({reps,repsEdited:true})}/></div>
+        <NumberField label={`Set ${row.label} reps`} value={row.reps} onChange={value => onChange({reps:value === null ? null : Math.round(value),repsEdited:true})} integer suffix="reps" className="min-w-12 flex-1 min-[380px]:hidden" />
+      </> : <NumberField label={`Set ${row.label} reps`} value={row.reps} onChange={value => onChange({reps:value === null ? null : Math.round(value),repsEdited:true})} disabled={done} integer suffix="reps" className="min-w-12 flex-1" />}
+      <button type="button" onClick={done ? onUntick : onTick} className="ml-auto flex size-11 shrink-0 items-center justify-center" aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`} aria-pressed={done}><TickCircle on={done} small={warmup}/></button>
     </div>
-  );
+    {perHand && !warmup && <p className="px-3 text-[10px] text-muted-foreground">Weight per hand</p>}
+    {row.addedKg > 0 && !options && <p className="px-3 text-xs text-muted-foreground">+ {fromKg(row.addedKg,units)} {units} add-on</p>}
+    {options && hasOptions && <div className="mx-2 mb-2 space-y-2 rounded-xl bg-muted/40 p-2">
+      {showAddOn ? <NumberField label={`Set ${row.label} add-on weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="Add-on" suffix={units} className="w-full"/> : !done && !warmup && !timed && <Button variant="ghost" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
+      {!warmup && !done && !timed && <div className="min-[380px]:hidden"><RepsStepper label={row.label} value={row.reps} compact={false} onChange={reps => onChange({reps,repsEdited:true})}/></div>}
+      {!done && onSkip && <Button variant="ghost" disabled={holding} onClick={onSkip} aria-label={`Skip set ${row.label}`}>Skip set</Button>}
+    </div>}
+  </div>;
 }
 
 /** A collapsible checklist card: the warm-up before, the cool-down after. */
@@ -1894,7 +1813,7 @@ function DurationStepper({
   const step = (delta: number) => onChange(Math.min(MAX_HOLD_SEC, Math.max(5, (value ?? 0) + delta)));
   const button = "flex h-11 w-11 shrink-0 items-center justify-center text-foreground active:bg-secondary disabled:opacity-40";
   return (
-    <div className="flex h-11 shrink-0 items-center overflow-hidden rounded-lg border bg-background" role="group" aria-label={`Set ${label} time`}>
+    <div className="flex min-h-11 max-w-full min-w-0 flex-wrap items-center overflow-hidden rounded-lg border bg-background" role="group" aria-label={`Set ${label} time`}>
       <button type="button" className={button} onClick={() => step(-5)} disabled={value === null || value <= 5} aria-label={`5 seconds less on set ${label}`}>
         <Minus className="size-4" />
       </button>
@@ -1934,7 +1853,7 @@ function RepsStepper({
   return (
     // One bordered pill, so − 10 + reads as a unit next to the pin add-on +.
     <div
-      className="flex h-11 shrink-0 items-center overflow-hidden rounded-lg border bg-background"
+      className="flex min-h-11 max-w-full min-w-0 flex-wrap items-center overflow-hidden rounded-lg border bg-background"
       role="group"
       aria-label={`Set ${label} reps`}
     >
@@ -2056,8 +1975,8 @@ function FeelSlider({ rpe, onPick, guide }: { rpe: number | null; onPick: (rpe: 
 
   return (
     <div data-guide={guide} className="px-2 pb-2 pl-11 pr-3">
-      <div className="flex items-baseline justify-between gap-2 text-xs">
-        <span className="whitespace-nowrap text-muted-foreground">How did it feel?</span>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+        <span className="min-w-0 text-muted-foreground">How did it feel?</span>
         <span className="font-medium" style={pos === null ? undefined : { color: colorAt(pos, FEEL_COLOR) }}>
           {feel === null ? "Tap or slide" : FEEL_LABEL[feel]}
         </span>
@@ -2162,12 +2081,12 @@ function RestBar({
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-popover pb-[env(safe-area-inset-bottom)]">
       <div className="h-1 bg-primary transition-[width] duration-1000 ease-linear motion-reduce:transition-none" style={{ width: `${pct}%` }} />
-      <div className="mx-auto flex max-w-lg items-center gap-1.5 px-4 py-2">
+      <div className="mx-auto flex max-w-lg flex-wrap items-center gap-1.5 px-4 py-2">
         <Timer className="mr-1 size-5 shrink-0 text-primary" aria-hidden />
         <p className="flex-1 whitespace-nowrap text-lg font-semibold tabular-nums" aria-live="polite">
           Rest {clock(remaining)}
         </p>
-        <details className="relative"><summary className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center text-sm">More</summary><div className="absolute bottom-full right-0 flex rounded-xl border bg-popover p-2">        <Button
+        <details className="relative"><summary className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center text-sm">More</summary><div className="absolute bottom-full left-0 flex max-w-[calc(100vw-2rem)] flex-wrap rounded-xl border bg-popover p-2">        <Button
           variant="ghost"
           size="icon"
           onClick={toggleSound}

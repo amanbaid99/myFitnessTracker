@@ -8,6 +8,16 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Owner rejects the focused working-set frame and large Log set
+  buttons. `ui/review-compact-set-rows` restores compact ordered rows with
+  circular ticks, preserving independent logging/Undo and per-set options.
+  Phase 4 work is saved on the local Phase 4 branch's named stash while this
+  correction is validated first. No schema/outbox changes.
+- 2026-11-05: P2.10 (#43, 3871463) and Phase 3 (#44, 6776eec) are live.
+  Production CI, exact build versions and public mobile sample checks pass.
+  Human coaching stays paused. Hosted recovery testing needs a staging
+  account and test inbox; no production test records or emails created.
+
 - 2026-11-05: Phase 3 on `ui/review-phase-3-navigation` groups Settings,
   opens units and colours separately, offers a quick fresh weight entry,
   makes historical editing visible with focus/Cancel, and formats check-in
