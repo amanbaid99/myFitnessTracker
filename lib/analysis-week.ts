@@ -56,3 +56,23 @@ export function weeklyCardEmpty(o: { failed: boolean; hasWorkout: boolean }): st
   if (o.failed) return "Couldn't load your weekly analysis.";
   return o.hasWorkout ? "Your weekly analysis is on its way." : "Your weekly analysis appears after your first workout.";
 }
+
+
+/** India calendar day, independent of the browser's timezone. */
+export function analysisDay(iso: string): string {
+  return new Date(Date.parse(iso) + INDIA_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/** Current report-week activity, using the same inclusive/exclusive boundaries as SQL. */
+export function analysisActivity(workoutDates: string[], nowIso: string) {
+  const week = analysisWeek(nowIso);
+  // Compare timestamps, not ISO strings: callers may include non-UTC offsets.
+  const start = Date.parse(week.startAt), next = Date.parse(week.nextAt);
+  const included = workoutDates.filter(iso => Date.parse(iso) >= start && Date.parse(iso) < next);
+  const trained = new Set(included.map(analysisDay));
+  const today = analysisDay(nowIso);
+  return { count: included.length, days: Array.from({length:7}, (_, i) => {
+    const key = new Date(Date.parse(week.start + "T12:00:00Z") + i * 86_400_000).toISOString().slice(0,10);
+    return { key, trained: trained.has(key), today: key === today };
+  }) };
+}

@@ -76,7 +76,8 @@ describe("local weeks across daylight saving",()=>{
       const nextMonday=new Date(2026,2,9,0,30);
       const sameSunday=new Date(2026,2,8,23,30);
       expect(workoutsThisWeek([nextMonday,sameSunday],sunday)).toBe(1);
-      expect(muscleWeeks([{startedAt:nextMonday.toISOString(),muscle:"chest",sets:3},{startedAt:sameSunday.toISOString(),muscle:"chest",sets:2}],sunday)).toEqual([{muscle:"chest",thisWeek:2,lastWeek:0}]);
+      // Muscle comparisons deliberately use India time, where both sessions fall on Monday.
+      expect(muscleWeeks([{startedAt:nextMonday.toISOString(),muscle:"chest",sets:3},{startedAt:sameSunday.toISOString(),muscle:"chest",sets:2}],sunday)).toEqual([{muscle:"chest",thisWeek:5,lastWeek:0}]);
     } finally {if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}
   });
 });
@@ -96,4 +97,13 @@ describe("exercise headline", () => {
   it("labels volume like the weekly reports", () => {
     expect(volumeLabel(1240.4, "kg")).toBe("1,240 kg × reps");
   });
+});
+
+it.each(["UTC", "Asia/Kolkata", "America/New_York", "America/Los_Angeles"])("muscle comparisons use India boundaries in %s", zone => {
+  const previous=process.env.TZ;
+  try {
+    process.env.TZ=zone;
+    const rows=[{startedAt:"2026-11-01T18:29:59.999Z",muscle:"chest",sets:2},{startedAt:"2026-11-02T00:00:00+05:30",muscle:"chest",sets:3},{startedAt:"2026-11-08T18:30:00Z",muscle:"chest",sets:9}];
+    expect(muscleWeeks(rows,new Date("2026-11-01T18:30:00Z"))).toEqual([{muscle:"chest",thisWeek:3,lastWeek:2}]);
+  } finally {if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}
 });

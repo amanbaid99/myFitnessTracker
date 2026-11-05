@@ -221,7 +221,7 @@ with summary metrics. Strength filters stay in the parent across tab changes.
 progress-range.ts sorts and filters sessions for the selected 4/12-week or
 all-time period; latest, change and all-time best are labelled separately.
 Muscles uses existing weighted set contributions for the current and previous
-local week, preserving UnmappedExercises and on-demand anatomy. Consistency
+India-time report week, preserving UnmappedExercises and on-demand anatomy. Consistency
 uses a collapsed 12-week calendar while the streak uses full workout dates.
 progress-data.ts paginates minimal finished-workout metadata under owner RLS.
 getSessionBests and getMuscleSets paginate stable SQL-view ordering too.
@@ -298,3 +298,9 @@ Human coaching/client sharing is currently paused in the UI. Entry points
 and assessment reminders are removed, and all /coaching routes return not
 found. Existing tables, consent guards and private records remain; no data is
 deleted or access broadened. AI Coach remains available.
+
+
+Comparable weekly results use `analysisWeek` (Asia/Kolkata), shared with SQL
+reports. `analysisActivity` drives Today markers and fallback counts plus
+supporting Progress counts. Streak and 12-week calendar retain device-local
+weeks and say so. Historical dates and goal snapshots are unchanged.

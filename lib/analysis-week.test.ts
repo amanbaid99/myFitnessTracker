@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisWeek , weekRangeLabel, previousWeek, weekForPage, shortWeekRange, weekAnalysisState, weeklyCardEmpty } from "./analysis-week";
+import { analysisActivity, analysisDay, analysisWeek , weekRangeLabel, previousWeek, weekForPage, shortWeekRange, weekAnalysisState, weeklyCardEmpty } from "./analysis-week";
 
 describe("analysis weeks", () => {
   it("keeps Sunday in the old week and rolls over at Monday midnight", () => {
@@ -57,5 +57,27 @@ describe("weeklyCardEmpty", () => {
     expect(weeklyCardEmpty({ failed: true, hasWorkout: true })).toBe("Couldn't load your weekly analysis.");
     expect(weeklyCardEmpty({ failed: false, hasWorkout: true })).toBe("Your weekly analysis is on its way.");
     expect(weeklyCardEmpty({ failed: false, hasWorkout: false })).toBe("Your weekly analysis appears after your first workout.");
+  });
+});
+
+
+describe("comparable weekly activity", () => {
+  const sunday = "2026-11-01T18:29:59.999Z", monday = "2026-11-01T18:30:00.000Z";
+  it("changes the weekly count and day markers exactly at India midnight", () => {
+    expect(analysisDay(sunday)).toBe("2026-11-01");
+    expect(analysisDay(monday)).toBe("2026-11-02");
+    const result = analysisActivity([sunday, monday, "2026-11-02T00:01:00+05:30", "2026-11-08T18:30:00Z"], monday);
+    expect(result.count).toBe(2);
+    expect(result.days[0]).toEqual({key:"2026-11-02",trained:true,today:true});
+    expect(result.days.slice(1).every(day => !day.trained && !day.today)).toBe(true);
+    expect(analysisActivity([sunday,monday],sunday).count).toBe(1);
+  });
+  it.each(["UTC", "Asia/Kolkata", "America/New_York", "America/Los_Angeles"])("ignores host timezone %s", zone => {
+    const previous = process.env.TZ;
+    try {
+      process.env.TZ = zone;
+      expect(analysisActivity([monday],monday).days[0]).toEqual({key:"2026-11-02",trained:true,today:true});
+      expect(analysisWeek(monday).startAt).toBe(monday);
+    } finally { if(previous===undefined) delete process.env.TZ; else process.env.TZ=previous; }
   });
 });
