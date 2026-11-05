@@ -2007,3 +2007,9 @@ is saved (`showSettingChip`).
 Also at Aman's request, ramp-up sets are always shown when an exercise has
 them instead of folded behind a tap; exercises without them keep the
 Warm-up button to add them.
+
+Aman then flagged the expanded options as cluttered too (chips of different
+kinds wrapping over two lines and a separate record link). Suggested and an
+Options toggle now share one line; Options opens full width with history in
+small text and one even row of tiles: Swap, Rest, Muscles, Add record.
+Ready to increase and This workout only moved into the visible chip row.

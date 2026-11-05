@@ -856,10 +856,37 @@ export function Logger(props: {
                         lockedHint={lockHint === item.id ? `Sets are logged on ${item.exercise.name}. Untick them to switch.` : null}
                       />
                     )}
-                    <div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{formatTarget(item.targetSets,item.targetReps,item.exercise.tracking)}</Badge>{item.exercise.perHand&&<Badge variant="outline">per hand</Badge>}{(()=>{const setting=ex.exerciseId in settings?settings[ex.exerciseId]:item.exercise.machineSetting;return showSettingChip(setting,item.exercise.equipment)&&<SettingBadge value={setting} onSave={v=>saveSetting(ex.exerciseId,v)}/>;})()}</div>
-                    <p className="mt-1 text-xs text-muted-foreground">{ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</p>
-                    <details className="mt-1"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-primary">Options and history</summary>
-                    <div className="mb-1 space-y-0.5 text-xs">
+                    <div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{formatTarget(item.targetSets,item.targetReps,item.exercise.tracking)}</Badge>{item.exercise.perHand&&<Badge variant="outline">per hand</Badge>}{ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}{isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}{(()=>{const setting=ex.exerciseId in settings?settings[ex.exerciseId]:item.exercise.machineSetting;return showSettingChip(setting,item.exercise.equipment)&&<SettingBadge value={setting} onSave={v=>saveSetting(ex.exerciseId,v)}/>;})()}</div>
+                  </div>
+                  {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
+                  {editing && !isExtraItem(item) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="-mt-1 shrink-0 text-muted-foreground"
+                      onClick={() => setEditItemId(item.id)}
+                      aria-label={`Edit ${item.exercise.name}`}
+                    >
+                      <Pencil />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="-mr-2 -mt-1 shrink-0 text-muted-foreground"
+                    onClick={() => setOpenId(null)}
+                    aria-expanded
+                    aria-label={`Collapse ${item.exercise.name}`}
+                  >
+                    <ChevronUp />
+                  </Button>
+                </div>
+                    <details className="group -mt-1">
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                      <span className="min-w-0 text-xs text-muted-foreground">{ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</span>
+                      <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
+                    </summary>
+                    <div className="mb-2 space-y-0.5 text-xs">
                   {pr && (
                     <p className="flex items-center gap-1 text-muted-foreground">
                       <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
@@ -888,35 +915,18 @@ export function Logger(props: {
                     </p>
                   )}
                 </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
-                      <button type="button" onClick={()=>setSwapIndex(exIndex)} aria-label={`Swap exercise ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center"><span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><ArrowLeftRight className="size-3.5" aria-hidden/>Swap exercise</span></button>
-                      <button type="button" onClick={()=>setRestIndex(exIndex)} aria-label={`Rest timer for ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center">
-                        <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><Timer className="size-3.5" aria-hidden/>Rest timer · {clock(item.restSec ?? props.defaultRestSec)}</span>
-                      </button>
+                    <div className="mb-2 flex gap-1.5">
+                      <ActionTile icon={<ArrowLeftRight />} label="Swap" onClick={()=>setSwapIndex(exIndex)} ariaLabel={`Swap exercise ${item.exercise.name}`} />
+                      <ActionTile icon={<Timer />} label={`Rest ${clock(item.restSec ?? props.defaultRestSec)}`} onClick={()=>setRestIndex(exIndex)} ariaLabel={`Rest timer for ${item.exercise.name}, ${clock(item.restSec ?? props.defaultRestSec)}`} />
                       {item.exercise.muscleGroups.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setMusclesFor({ name: item.exercise.name, groups: item.exercise.muscleGroups })}
-                          className="-my-2 flex min-h-11 items-center"
-                          aria-label={`Muscles worked by ${item.exercise.name}`}
-                        >
-                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs capitalize text-muted-foreground">
-                            <PersonStanding className="size-3.5" aria-hidden />
-                            {item.exercise.muscleGroups[0]}
-                            {item.exercise.muscleGroups.length > 1 && ` +${item.exercise.muscleGroups.length - 1}`}
-                          </span>
-                        </button>
+                        <ActionTile icon={<PersonStanding />} label="Muscles" onClick={() => setMusclesFor({ name: item.exercise.name, groups: item.exercise.muscleGroups })} ariaLabel={`Muscles worked by ${item.exercise.name}`} />
                       )}
-                      {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
-                      {isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}
+                      {!demo && item.exercise.tracking !== "time" && (
+                        <ActionTile icon={<Trophy />} label="Add record" href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
+                          try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
+                        }} ariaLabel={`Add a previous record for ${item.exercise.name}`} />
+                      )}
                     </div>
-                    {!demo && item.exercise.tracking !== "time" && (
-                      <Link href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
-                        try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
-                      }} className="inline-flex min-h-11 items-center gap-1 text-sm text-primary">
-                        <Trophy className="size-4" aria-hidden /> Add previous record
-                      </Link>
-                    )}
                     {editing && isExtraItem(item) && (
                       <div className="-ml-2 mt-1 flex flex-wrap">
                         <Button
@@ -957,30 +967,6 @@ export function Logger(props: {
                       </div>
                     )}
                     </details>
-                  </div>
-                  {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
-                  {editing && !isExtraItem(item) && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="-mt-1 shrink-0 text-muted-foreground"
-                      onClick={() => setEditItemId(item.id)}
-                      aria-label={`Edit ${item.exercise.name}`}
-                    >
-                      <Pencil />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="-mr-2 -mt-1 shrink-0 text-muted-foreground"
-                    onClick={() => setOpenId(null)}
-                    aria-expanded
-                    aria-label={`Collapse ${item.exercise.name}`}
-                  >
-                    <ChevronUp />
-                  </Button>
-                </div>
               </div>
 
               {showWarmups && (
@@ -1542,6 +1528,15 @@ function OptionChips({
       )}
     </>
   );
+}
+
+/** One even tile in an exercise's Options row: an icon over a short label. */
+function ActionTile({ icon, label, ariaLabel, onClick, href }: { icon: React.ReactNode; label: string; ariaLabel: string; onClick?: () => void; href?: string }) {
+  const cls = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl bg-muted/50 px-1 text-[11px] font-medium text-foreground transition-colors active:bg-muted [&_svg]:size-4 [&_svg]:text-primary";
+  const body = <>{icon}<span className="max-w-full truncate">{label}</span></>;
+  return href
+    ? <Link href={href} onClick={onClick} aria-label={ariaLabel} className={cls}>{body}</Link>
+    : <button type="button" onClick={onClick} aria-label={ariaLabel} className={cls}>{body}</button>;
 }
 
 function SetRow({

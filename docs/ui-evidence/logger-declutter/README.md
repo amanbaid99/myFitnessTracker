@@ -21,8 +21,14 @@ card.
   is a tap or a mostly sideways drag (`feelGesture` in lib/feel.ts); up and
   down movement is a scroll and changes nothing.
 - "Weight per hand" shows once beside Working sets, not under every row.
-- "Exercise options and history" and "Previous sessions and records" are one
-  section, "Options and history", with the history first.
+- The header is name, chips (target, per hand, Ready to increase, seat) and
+  one line with Suggested on the left and an **Options** toggle on the
+  right. Before, "Exercise options and history" and "Previous sessions and
+  records" were two more rows with a gap. Options opens full width: PR,
+  last time and last note in small text, then one even row of tiles: Swap,
+  Rest 1:30, Muscles, Add record (`ActionTile`). Before, these were mixed
+  chips wrapping over two lines plus a separate link (Aman's screenshot).
+  `after-header-closed-*`, `after-options-*`.
 - Ramp-up sets are always shown when an exercise has them (Aman's request),
   with a "0 of 2 logged" count, instead of folded behind a tap. Exercises
   without them keep the Warm-up button to add them. `after-rampup-{320,390}.png`.
