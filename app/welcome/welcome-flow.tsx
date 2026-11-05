@@ -26,6 +26,7 @@ import type { Exercise } from "@/lib/data";
 import { exerciseCatalog, isEdited } from "@/lib/plan-draft";
 import { buildTemplate, SETUPS, type TemplateRoutine, type TrainingSetup } from "@/lib/templates";
 import { cmToFtIn, fromKg, ftInToCm, toKg, type Units } from "@/lib/units";
+import { MASK } from "@/lib/mask";
 import { cn } from "@/lib/utils";
 
 export interface WelcomeDetails {
@@ -195,13 +196,14 @@ export function WelcomeFlow({
   );
 
   return (
-    <div className="py-6">
+    <div className={`py-6 ${MASK}`}>
+      {detailsOnly && <Link href="/settings" className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm"><ArrowLeft className="size-4"/>Cancel and return to Settings</Link>}
       {step === 1 && (
         <>
           <p className="text-xs font-medium uppercase tracking-wider text-primary">
             {detailsOnly ? "Your details" : "Welcome · Step 1 of 3"}
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">A bit about you</h1>
+          <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight">A bit about you</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Everything here is optional. It helps suggest a plan and starting point.
           </p>
@@ -220,7 +222,7 @@ export function WelcomeFlow({
 
             {detailsOnly ? <Link href="/settings" className="flex min-h-11 items-center text-sm text-primary">{units === "lb" ? "Imperial units · change in Settings" : "Metric units · change in Settings"}</Link> : <MeasurementSystem value={units} onChange={switchSystem} />}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3">
               <Field label={`Weight (${units})`} htmlFor="w-weight">
                 <Input id="w-weight" inputMode="decimal" value={weight} onChange={(e) => {setWeightEdited(true);setWeight(e.target.value);}} placeholder={units === "kg" ? "e.g. 72" : "e.g. 160"} />
               </Field>
@@ -246,15 +248,8 @@ export function WelcomeFlow({
               onChange={(v) => setExperience(v as Experience | null)}
             />
 
-            {!detailsOnly && (
-              <section aria-labelledby="w-colours" className="border-t pt-6">
-                <h2 id="w-colours" className="text-base font-medium">
-                  Your colours
-                </h2>
-                <p className="mb-4 mt-1 text-sm text-muted-foreground">Pick a look. You can change it any time in Settings.</p>
-                <ThemePicker initial={theme} />
-              </section>
-            )}
+            {!detailsOnly && <details className="border-t pt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Optional: choose your colours</summary><p className="mb-3 text-xs text-muted-foreground">You can change these later in Settings.</p><ThemePicker initial={theme}/></details>}
+
           </div>
 
           {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}
@@ -275,7 +270,7 @@ export function WelcomeFlow({
         <>
           {back(1)}
           <p className="text-xs font-medium uppercase tracking-wider text-primary">Welcome · Step 2 of 3</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Where will you train?</h1>
+          <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight">Where will you train?</h1>
           <p className="mt-1 text-sm text-muted-foreground">Exercises are picked for the equipment you have.</p>
 
           <div className="mt-6 space-y-3">
@@ -306,7 +301,7 @@ export function WelcomeFlow({
 
           <div className="mt-6">
             <p className="text-sm font-medium">Days a week</p>
-            <div className="mt-2 grid grid-cols-5 gap-2">
+            <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,3rem),1fr))] gap-2">
               {DAY_CHOICES.map((d) => (
                 <button
                   key={d}
@@ -337,7 +332,7 @@ export function WelcomeFlow({
         <>
           {back(2)}
           <p className="text-xs font-medium uppercase tracking-wider text-primary">Welcome · Step 3 of 3</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Your suggested plan</h1>
+          <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight">Your suggested plan</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {rec.name}. Change the order of the days or the exercises now, or later in Plans.
           </p>

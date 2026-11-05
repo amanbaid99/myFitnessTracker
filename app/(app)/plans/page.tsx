@@ -35,9 +35,9 @@ export default async function PlansPage() {
               <li key={plan.id} className={`rounded-2xl border bg-card p-4 ${plan.isActive ? "border-primary/60" : ""}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-lg font-medium">{plan.name}</p>
+                    <p className="break-words text-lg font-medium">{plan.name}</p>
                     <p className="mt-0.5 text-sm text-muted-foreground">
-                      {plan.routineCount} days
+                      {plan.routineCount} {plan.routineCount === 1 ? "day" : "days"}
                       {template ? ` · ${template.name}` : ""}
                     </p>
                   </div>
@@ -50,11 +50,7 @@ export default async function PlansPage() {
                   <Button asChild variant="secondary">
                     <Link href={`/plans/${plan.id}`}>View and edit</Link>
                   </Button>
-                  {plan.isActive ? (
-                    <Button variant="outline" disabled>
-                      Active plan
-                    </Button>
-                  ) : (
+                  {!plan.isActive && (
                     <MakeActiveButton planId={plan.id} />
                   )}
                 </div>

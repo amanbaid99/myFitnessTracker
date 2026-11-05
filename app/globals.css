@@ -33,6 +33,7 @@
   --accent: color-mix(in srgb, var(--primary) 15%, var(--background));
   --accent-foreground: var(--primary);
   --destructive: #e5654f;
+  --destructive-foreground: #121212;
   --success: #5fbf7f;
   --border: #2b2b30;
   --input: #2b2b30;
@@ -61,6 +62,7 @@
   --muted-foreground: #66655f;
   --accent: color-mix(in srgb, var(--primary) 12%, var(--card));
   --destructive: #c4402c;
+  --destructive-foreground: #ffffff;
   --success: #1f7a45;
   --border: #e0dfdb;
   --input: #d6d5d0;
@@ -76,8 +78,9 @@
   --secondary: #e8e0d1;
   --muted: #ece4d6;
   --muted-foreground: #6e6456;
-  --accent: color-mix(in srgb, var(--primary) 12%, var(--card));
+  --accent: color-mix(in srgb, var(--primary) 8%, var(--card));
   --destructive: #b83c28;
+  --destructive-foreground: #ffffff;
   --success: #24703f;
   --border: #ddd2bf;
   --input: #d3c7b2;
@@ -99,6 +102,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -178,4 +182,9 @@
 @media (prefers-reduced-motion: no-preference) {
   button, a[role="button"] { transition: background-color 150ms, color 150ms, transform 150ms; }
   button:active:not(:disabled), a[role="button"]:active { transform: scale(0.98); }
+}
+
+/* Status remains readable when motion is reduced; timers still run in JS. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

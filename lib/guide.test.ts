@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INTRO_TOUR, nextTip, TIPS, unseenNews, WHATS_NEW, type WhatsNewEntry } from "./guide";
+import { releaseLinks, INTRO_TOUR, nextTip, TIPS, unseenNews, WHATS_NEW, type WhatsNewEntry } from "./guide";
 
 const entries: WhatsNewEntry[] = [
   { id: "b", date: "2026-11-02", title: "B", body: "Second" },
@@ -40,4 +40,11 @@ describe("guide copy", () => {
     expect(new Set(WHATS_NEW.map((e) => e.id)).size).toBe(WHATS_NEW.length);
     expect([...WHATS_NEW].sort((x, y) => y.date.localeCompare(x.date))).toEqual(WHATS_NEW);
   });
+});
+
+it("keeps legacy release destinations and supports precise multi-page links",()=>{
+  const entry={id:"sample",date:"2026-11-05",title:"Sample",body:"Sample"};
+  expect(releaseLinks(entry)).toEqual([]);
+  expect(releaseLinks({...entry,href:"/progress"})).toEqual([{label:"Show me",href:"/progress"}]);
+  expect(releaseLinks({...entry,href:"/progress",links:[{label:"Review plan",href:"/plans/new"}]})).toEqual([{label:"Review plan",href:"/plans/new"}]);
 });

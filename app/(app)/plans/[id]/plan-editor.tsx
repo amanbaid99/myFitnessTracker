@@ -1,5 +1,6 @@
 "use client";
 
+import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
 import { useState } from "react";
@@ -90,21 +91,24 @@ export function PlanEditor({
   const nextSort = routines.length ? Math.max(...routines.map((r) => r.sortOrder)) + 1 : 0;
 
   return (
-    <div className={busy ? "pointer-events-none opacity-70" : undefined}>
-      <header className="mb-6">
+    <div className={`${MASK} ${busy ? "pointer-events-none opacity-70" : ""}`}>
+      <header className="mb-6 pr-14">
         <div className="flex gap-1">
           {plan.isActive && <Badge variant="accent">Active</Badge>}
           {plan.isCustom && plan.template && <Badge variant="outline">Custom</Badge>}
         </div>
+        <h1>
         <InlineName
           label="Plan name"
           value={plan.name}
-          className="mt-1 text-2xl font-semibold tracking-tight"
+          className="mt-1 w-full text-2xl font-semibold tracking-tight"
           onSave={(name) => run(() => supabase.from("plans").update({ name }).eq("id", plan.id), false)}
         />
+        </h1>
         <p className="text-xs text-muted-foreground">
-          Tap a name to rename it. Tap an exercise to edit it. Days run in this order; use the arrows to change it.
+          Tap a name or exercise to edit it. Open Day options to reorder or remove a day.
         </p>
+        <details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Plan options</summary>
         <Button asChild variant="outline" className="mt-3 w-full">
           <Link href={`/starting-weights?plan=${plan.id}`}>Add previous records / starting weights</Link>
         </Button>
@@ -116,6 +120,7 @@ export function PlanEditor({
             </Button>
           </div>
         )}
+        </details>
       </header>
 
       {error && (
@@ -245,6 +250,8 @@ function RoutineEditor({
           className="min-w-0 flex-1 text-lg font-semibold"
           onSave={(name) => run(() => supabase.from("routines").update({ name }).eq("id", routine.id))}
         />
+      </div>
+      <details className="border-b px-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">Day options</summary><div className="flex flex-wrap gap-2 pb-2">
         <Button variant="ghost" size="icon" aria-label={`Move ${routine.name} earlier`} disabled={first} onClick={() => onMove(-1)}>
           <ArrowUp className="text-muted-foreground" />
         </Button>
@@ -254,7 +261,7 @@ function RoutineEditor({
         <Button variant="ghost" size="icon" aria-label={`Remove ${routine.name}`} onClick={deleteRoutine}>
           <Trash2 className="text-muted-foreground" />
         </Button>
-      </div>
+      </div></details>
 
       <ol className="divide-y">
         {items.map((item, i) => {
@@ -268,11 +275,11 @@ function RoutineEditor({
                 type="button"
                 onClick={() => setEditing(item.id)}
                 data-guide={item.id === guideItemId ? "tip:edit-exercise" : undefined}
-                className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left active:bg-muted"
+                className="flex min-h-16 w-full flex-wrap items-center gap-3 px-4 py-3 text-left active:bg-muted"
               >
                 <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">{item.exercise.name}</span>
+                <span className="min-w-[min(100%,8rem)] flex-1">
+                  <span className="block break-words font-medium">{item.exercise.name}</span>
                   {item.alternates && item.alternates.length > 0 && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <ArrowLeftRight className="size-3 shrink-0" aria-hidden />
@@ -318,7 +325,7 @@ function RoutineEditor({
         className="flex min-h-14 w-full items-center gap-3 border-t px-4 py-3 text-left active:bg-muted"
       >
         <Flame className="size-4 shrink-0 text-primary" aria-hidden />
-        <span className="min-w-0 flex-1">
+        <span className="min-w-[min(100%,8rem)] flex-1">
           <span className="block text-sm font-medium">Warm-up & cool-down</span>
           <span className="block truncate text-xs text-muted-foreground">
             {custom ? "Your own" : "Automatic, from this day's exercises"}
@@ -396,7 +403,7 @@ function InlineName({
         className={`flex min-h-11 items-center gap-2 text-left ${className ?? ""}`}
         aria-label={`${label}: ${value}. Tap to rename`}
       >
-        <span className="min-w-0 truncate">{value}</span>
+        <span className="min-w-0 break-words">{value}</span>
         <Pencil className="size-4 shrink-0 text-muted-foreground" aria-hidden />
       </button>
     );

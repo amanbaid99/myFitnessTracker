@@ -5,6 +5,7 @@
  * account. Weights are kg, like everywhere else.
  */
 
+import { analysisWeek } from "./analysis-week";
 import type { Exercise, LastSet, Plan, Profile, Routine } from "./data";
 import type { SessionSet } from "./session";
 import { defaultTracking } from "./tracking";
@@ -222,11 +223,18 @@ export function demoHistory(now = new Date()): import("./history").HistoryItem[]
 
 /** Progress samples include improving, steady, declining and single-session lifts. */
 export function demoProgress(now = new Date()) {
-  const ago = (days: number) => { const date = new Date(now); date.setDate(date.getDate() - days); date.setHours(7, 0, 0, 0); return date.toISOString(); };
+  const ago = (days: number) => { const date = new Date(now); date.setDate(date.getDate() - days); date.setHours(7, 0, 0, 0); return new Date(Math.min(date.getTime(), now.getTime())).toISOString(); };
   const names = ["Barbell Bench Press", "Single-Leg Romanian Deadlift", "Lat Pulldown", "Leg Press", "Cable Lateral Raise", "Dumbbell Curl"];
   const exercises = names.map((name, i) => ({id:`sample-${i}`,name,sessions:Array.from({length:i === 5 ? 1 : 10}, (_, j) => {
     const weightKg = 35 + i * 8 + (i === 2 ? -1 : i === 4 ? 0 : 1) * j;
     return {exerciseId:`sample-${i}`,workoutId:`demo-session-${i}-${j}`,startedAt:ago(i === 5 ? 1 : 67 - j * 7),weightKg,addedKg:0,reps:8,e1rmKg:weightKg * (1 + 8 / 30),workingSets:3,volumeKg:weightKg * 8 * 3};
   })}));
-  return { exercises, workoutDates:Array.from({length:32},(_,i)=>ago(i*7)),muscleRows:["quads","glutes","hamstrings","chest","lats","upper back","front delts","side delts","biceps","triceps","calves","core"].flatMap((muscle,i)=>[{startedAt:ago(0),muscle,sets:12-i/2},{startedAt:ago(8),muscle,sets:7+i/2}]) };
+  const workoutDates=Array.from({length:32},(_,i)=>ago(i*7));
+  const muscleRows=["quads","glutes","hamstrings","chest","lats","upper back","front delts","side delts","biceps","triceps","calves","core"].flatMap((muscle,i)=>[{startedAt:ago(0),muscle,sets:12-i/2},{startedAt:ago(8),muscle,sets:7+i/2}]);
+  const current=analysisWeek(now.toISOString());
+  const reports={available:true,rows:Array.from({length:12},(_,i)=>{
+    const week=analysisWeek(new Date(Date.parse(current.startAt)-i*7*86400000).toISOString());
+    return {week_start:week.start,workouts:workoutDates.filter(iso=>iso>=week.startAt&&iso<week.nextAt).length,target:3,volume_kg:4200+i*100,eligible_sets:18,excluded_sets:2};
+  }).reverse()};
+  return { exercises, workoutDates,muscleRows,reports,coverage:{workouts:8,unmapped_sets:0,planned:["chest","quads","glutes","lats","adductors"],covered:muscleRows.map(row=>row.muscle),goal:"plan" as const,exclusions:[],paused_until:null} };
 }

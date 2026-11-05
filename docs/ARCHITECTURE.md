@@ -304,3 +304,16 @@ Comparable weekly results use `analysisWeek` (Asia/Kolkata), shared with SQL
 reports. `analysisActivity` drives Today markers and fallback counts plus
 supporting Progress counts. Streak and 12-week calendar retain device-local
 weeks and say so. Historical dates and goal snapshots are unchanged.
+
+
+### Plan and shared UI refinement (2026-11-05)
+
+PlanDraftEditor expands day summaries and remains the shared editor for
+AI drafts, templates and onboarding. Existing plan writes are unchanged.
+ExerciseSheet groups routine and global settings and uses a native modal
+with a separate scrolling body and reachable Save. Plan/day options retain
+non-drag reordering and confirmation paths. DemoNav links the three public
+sample overviews; demo Progress includes local-only reports and coverage.
+`releaseLinks` supports specific release destinations with legacy href
+fallback. Theme changes retain all bases/accents and improve contrast;
+reduced motion leaves JS timers unchanged.

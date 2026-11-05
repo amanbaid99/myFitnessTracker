@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowLeftRight, ArrowUp, Minus, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Exercise, RoutineExercise } from "@/lib/data";
 import { AddExercise, type ExercisePick } from "./add-exercise";
 import { RestDuration } from "@/components/rest-duration";
+import { MASK } from "@/lib/mask";
 import { EQUIPMENT } from "@/lib/muscles";
 import { MAX_WEIGHT_STEP_KG, parseWeightStep, stepKg } from "@/lib/progression";
 import { formatDuration, type Tracking } from "@/lib/tracking";
@@ -72,6 +73,14 @@ export function ExerciseSheet({
   recordHref?: string;
   onRecords?: () => void;
 }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    const node = dialog.current!;
+    node.showModal(); document.body.style.overflow = "hidden";
+    return () => { node.close(); document.body.style.overflow = overflow; previous?.focus(); };
+  }, []);
   const e = item.exercise;
   const [name, setName] = useState(e.name);
   const [sets, setSets] = useState(item.targetSets);
@@ -140,17 +149,13 @@ export function ExerciseSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={onClose}>
+    <dialog ref={dialog} aria-labelledby="exercise-sheet-title" onCancel={event => { event.preventDefault(); if (!busy) onClose(); }} className="fixed inset-0 m-0 h-dvh max-h-dvh w-full max-w-none bg-transparent p-0 text-foreground backdrop:bg-black/60" onClick={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
       <div
-        role="dialog"
-        aria-labelledby="exercise-sheet-title"
-        className="mx-auto flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-3xl border bg-popover"
+        className="fixed inset-x-0 bottom-0 mx-auto flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-3xl border bg-popover"
         onClick={(ev) => ev.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 pt-4">
-          <h2 id="exercise-sheet-title" className="text-lg font-semibold">
-            Edit exercise
-          </h2>
+        <div className="flex items-start gap-3 px-5 pt-4">
+          <div className="min-w-0 flex-1"><h2 id="exercise-sheet-title" className="text-lg font-semibold">Edit exercise</h2><p className={`break-words text-sm text-muted-foreground ${MASK}`}>{e.name}</p></div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
             <X />
           </Button>
@@ -197,40 +202,9 @@ export function ExerciseSheet({
           </div>
         ) : (
           <>
-            <div className="space-y-5 overflow-y-auto px-5 pb-4 pt-2">
-              {e.tracking !== "time" && (
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={recordHref ?? `/starting-weights?exercise=${e.id}`} onClick={onRecords}>Add previous record / starting weight</Link>
-                </Button>
-              )}
-              <Field label="Name" htmlFor="ex-name" hint="Renames it everywhere, including your history.">
-                <Input id="ex-name" value={name} maxLength={60} onChange={(ev) => setName(ev.target.value)} />
-              </Field>
-
-              <div role="radiogroup" aria-labelledby="ex-tracking-label">
-                <p id="ex-tracking-label" className="text-sm font-medium">
-                  Track by
-                </p>
-                <div className="mt-1.5 grid grid-cols-2 gap-2">
-                  {(["reps", "time"] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      role="radio"
-                      aria-checked={tracking === t}
-                      onClick={() => switchTracking(t)}
-                      className={cn(
-                        "h-11 rounded-xl border text-sm",
-                        tracking === t ? "border-primary bg-accent text-accent-foreground" : "text-muted-foreground",
-                      )}
-                    >
-                      {t === "reps" ? "Reps" : "Time (planks, holds)"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            <div className={`min-h-0 space-y-4 overflow-y-auto px-5 pb-4 pt-2 ${MASK}`}>
+              <section><h3 className="font-semibold">Sets and rest</h3><p className="mb-3 text-xs text-muted-foreground">Targets and rest apply to this exercise slot in this day.</p>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3">
                 <Stepper label="Sets" value={sets} min={1} max={10} onChange={setSets} />
                 {tracking === "time" ? (
                   <Stepper label="Seconds" value={reps} min={5} max={600} step={5} format={formatDuration} onChange={setReps} />
@@ -241,44 +215,13 @@ export function ExerciseSheet({
 
               <RestDuration value={rest} defaultSec={defaultRestSec} onChange={setRest} onValidityChange={setRestValid} />
 
-              {library && onAddAlternate && onRemoveAlternate && (
-                <div>
-                  <p className="text-sm font-medium">Alternates</p>
-                  <p className="text-xs text-muted-foreground">
-                    {alternates.length
-                      ? "They take turns: each time, the next one comes up. You can switch during the workout."
-                      : "Rotate with another exercise, e.g. Pull-up one week, Lat Pulldown the next."}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {alternates.map((a) => (
-                      <span key={a.id} className="flex h-10 items-center rounded-full border bg-card pl-3 text-sm">
-                        <span className="max-w-48 truncate">{a.name}</span>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => runAlt(() => onRemoveAlternate(a.id))}
-                          className="flex size-10 items-center justify-center text-muted-foreground"
-                          aria-label={`Remove alternate ${a.name}`}
-                        >
-                          <X className="size-4" />
-                        </button>
-                      </span>
-                    ))}
-                    {alternates.length < MAX_ALTERNATES && (
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => setAddingAlt(true)}
-                        className="flex h-10 items-center gap-1 rounded-full border border-dashed px-3 text-sm text-muted-foreground"
-                      >
-                        <Plus className="size-4" /> {alternates.length ? "Add" : "Add alternate"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+              </section>
+              <details className="space-y-3 rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Exercise details</summary><p className="text-xs text-muted-foreground">Name, equipment and machine setting apply wherever this exercise is used, including history.</p>
+              <Field label="Name" htmlFor="ex-name" hint="Renames it everywhere, including your history.">
+                <Input id="ex-name" value={name} maxLength={60} onChange={(ev) => setName(ev.target.value)} />
+              </Field>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3">
                 <Field label="Seat setting" htmlFor="ex-seat">
                   <Input id="ex-seat" value={seat} maxLength={20} placeholder="e.g. 5" onChange={(ev) => setSeat(ev.target.value)} />
                 </Field>
@@ -298,6 +241,70 @@ export function ExerciseSheet({
                 </Field>
               </div>
 
+              </details>
+              <details className="rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Alternates</summary>
+              {library && onAddAlternate && onRemoveAlternate && (
+                <div>
+                  <p className="text-sm font-medium">Alternates</p>
+                  <p className="text-xs text-muted-foreground">
+                    {alternates.length
+                      ? "They take turns: each time, the next one comes up. You can switch during the workout."
+                      : "Rotate with another exercise, e.g. Pull-up one week, Lat Pulldown the next."}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {alternates.map((a) => (
+                      <span key={a.id} className="flex min-h-11 items-center rounded-full border bg-card pl-3 text-sm">
+                        <span className="max-w-48 truncate">{a.name}</span>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => runAlt(() => onRemoveAlternate(a.id))}
+                          className="flex size-11 items-center justify-center text-muted-foreground"
+                          aria-label={`Remove alternate ${a.name}`}
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </span>
+                    ))}
+                    {alternates.length < MAX_ALTERNATES && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setAddingAlt(true)}
+                        className="flex min-h-11 items-center gap-1 rounded-full border border-dashed px-3 text-sm text-muted-foreground"
+                      >
+                        <Plus className="size-4" /> {alternates.length ? "Add" : "Add alternate"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              </details>
+              <details className="space-y-4 rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Advanced tracking</summary><p className="text-xs text-muted-foreground">Exercise tracking, weight steps, per-hand load and muscles apply across plans. Changing reps/time uses a separate version so existing records keep their units.</p>
+              <div role="radiogroup" aria-labelledby="ex-tracking-label">
+                <p id="ex-tracking-label" className="text-sm font-medium">
+                  Track by
+                </p>
+                <div className="mt-1.5 grid grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-2">
+                  {(["reps", "time"] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      role="radio"
+                      aria-checked={tracking === t}
+                      onClick={() => switchTracking(t)}
+                      className={cn(
+                        "min-h-11 rounded-xl border p-2 text-sm",
+                        tracking === t ? "border-primary bg-accent text-accent-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {t === "reps" ? "Reps" : "Time (planks, holds)"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {stepKg(equipment) !== null && (
                 <div role="radiogroup" aria-labelledby="ex-step-label">
                   <p id="ex-step-label" className="text-sm font-medium">
@@ -306,7 +313,7 @@ export function ExerciseSheet({
                   <p className="text-xs text-muted-foreground">
                     The smallest plate or stack jump. Aims and warm-ups go up by this.
                   </p>
-                  <div className="mt-2 grid grid-cols-3 gap-2">
+                  <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,4rem),1fr))] gap-2">
                     {WEIGHT_STEPS.map((s) => {
                       const on = !customStep && weightStep === s;
                       return (
@@ -334,7 +341,7 @@ export function ExerciseSheet({
                       aria-checked={customStep}
                       onClick={() => setCustomStep(true)}
                       className={cn(
-                        "col-span-3 h-11 rounded-xl border text-sm",
+                        "col-span-full min-h-11 rounded-xl border text-sm",
                         customStep ? "border-primary bg-accent font-medium text-accent-foreground" : "text-muted-foreground",
                       )}
                     >
@@ -381,7 +388,14 @@ export function ExerciseSheet({
 
               <MusclePicker key={`${name}:${equipment}`} name={name} equipment={equipment} value={muscles} onChange={setMuscles} disabled={busy} />
 
-              <div className={cn("grid gap-2 border-t pt-4", onSwap ? "grid-cols-2" : "grid-cols-3")}>
+              {e.tracking !== "time" && (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={recordHref ?? `/starting-weights?exercise=${e.id}`} onClick={onRecords}>Add previous record / starting weight</Link>
+                </Button>
+              )}
+              </details>
+              <details className="rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Order, replace or remove</summary>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-2 border-t pt-4">
                 <Button variant="secondary" disabled={!canMoveUp} onClick={() => onMove(-1)}>
                   <ArrowUp /> Up
                 </Button>
@@ -397,6 +411,7 @@ export function ExerciseSheet({
                   <Trash2 /> Remove
                 </Button>
               </div>
+              </details>
             </div>
 
             <div className="border-t px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
@@ -412,7 +427,7 @@ export function ExerciseSheet({
           </>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }
 

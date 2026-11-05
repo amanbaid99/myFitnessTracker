@@ -1,3 +1,4 @@
+import { StartingWeightsIntro } from "@/components/starting-weights-intro";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, Plus } from "lucide-react";
@@ -31,16 +32,7 @@ export default async function StartingWeightsPage({ searchParams }: PageProps<"/
       <ChevronLeft className="size-4" aria-hidden /> {context.returnLabel}
     </Link>
   );
-  const header = (
-    <header className="mb-5">
-      {back}
-      <h1 className="text-2xl font-semibold tracking-tight">Previous records & starting weights</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {context.setup && "Your plan is ready. "}Already lifted these before? Enter a previous best set or a normal working set: weight and reps.
-        These count towards your records and guide your next workout. Use numbers you can still lift. Skip any you don&apos;t know.
-      </p>
-    </header>
-  );
+  const header = <StartingWeightsIntro setup={context.setup}>{back}</StartingWeightsIntro>;
 
   if (result.error !== null) {
     return (

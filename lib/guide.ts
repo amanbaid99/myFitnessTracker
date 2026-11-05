@@ -25,7 +25,7 @@ export const INTRO_TOUR: GuideStep[] = [
   },
   { target: "nav-history", title: "History", body: "Every workout you finish, with a short AI review of how it went." },
   { target: "nav-progress", title: "Progress", body: "Your records, weekly sets per muscle and how each lift is moving." },
-  { target: "nav-coach", title: "Coach", body: "Ask about your training. The coach knows your plan and your recent sessions." },
+  { target: "nav-coach", title: "AI Coach", body: "Ask about your training. The coach knows your plan and your recent sessions." },
   { target: "nav-routines", title: "Routines", body: "Your plan. Change days, exercises, sets and reps whenever you like." },
   {
     target: "profile",
@@ -63,10 +63,19 @@ export interface WhatsNewEntry {
   body: string;
   /** "Show me": where to go. */
   href?: string;
+  /** Specific destinations when an improvement spans more than one page. */
+  links?: { label: string; href: string }[];
 }
 
 /** Newest first. Add an entry only once Aman has approved it. */
 export const WHATS_NEW: WhatsNewEntry[] = [
+  {
+    id: "clearer-plan-review",
+    date: "2026-11-05",
+    title: "Easier plan review and editing",
+    body: "Review compact day summaries, find exercise settings by section, and keep plan actions out of the way. The sample app is easier to explore.",
+    links: [{label:"Review a new plan",href:"/plans/new"},{label:"Manage plans",href:"/plans"}],
+  },
   {
     id: "compact-set-ticks",
     date: "2026-11-05",
@@ -79,7 +88,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     date: "2026-11-05",
     title: "Easier check-ins and Settings",
     body: "Record a quick weight check-in or add optional readings. Edit past dates with a clear Cancel, and find preferences in grouped Settings.",
-    href: "/measurements",
+    links: [{label:"Log measurements",href:"/measurements"},{label:"Open Settings",href:"/settings"}],
   },
   {
     id: "clearer-progress-and-set-list",
@@ -136,4 +145,10 @@ export function unseenNews(entries: WhatsNewEntry[], seen: ReadonlySet<string>, 
 /** The first tip asked for on screen that has not been seen yet. Pure. */
 export function nextTip(requested: string[], seen: ReadonlySet<string>): string | null {
   return requested.find((k) => k in TIPS && !seen.has(k)) ?? null;
+}
+
+
+/** Keep existing Show me links while allowing precise destinations for multi-page releases. */
+export function releaseLinks(entry: WhatsNewEntry): {label:string;href:string}[] {
+  return entry.links ?? (entry.href ? [{label:"Show me",href:entry.href}] : []);
 }

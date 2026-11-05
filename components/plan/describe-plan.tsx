@@ -113,10 +113,10 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
   if (!days) {
     return (
       <>
-        <header className="mb-5">
+        <header className="mb-5 pr-14">
           {back}
           <p className="text-xs font-medium uppercase tracking-wider text-primary">New plan · With AI</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Describe your plan</h1>
+          <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight">Describe your plan</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Write it the way you would tell a friend: the days, the exercises, sets and reps if you know them. Or just your goal and how
             many days you train.
@@ -132,7 +132,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
           maxLength={3000}
           rows={9}
           placeholder={EXAMPLE}
-          className="w-full rounded-2xl border bg-card px-4 py-3 text-base leading-relaxed placeholder:text-muted-foreground/70"
+          className="w-full rounded-2xl border bg-card px-4 py-3 text-base leading-relaxed placeholder:text-muted-foreground"
         />
         <p className="mt-2 text-xs text-muted-foreground">
           Sent to an AI model to build the draft. Leave out names and contact details. Uses one of your 20 daily AI requests.
@@ -160,10 +160,10 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
 
   return (
     <>
-      <header className="mb-5">
+      <header className="mb-5 pr-14">
         {back}
         <p className="text-xs font-medium uppercase tracking-wider text-primary">New plan · With AI</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Check and approve</h1>
+        <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight">Check and approve</h1>
       </header>
 
       <div role="note" className="mb-5 flex gap-3 rounded-2xl border border-primary/40 bg-accent/30 p-4 text-sm">
@@ -207,8 +207,8 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
         <span>I have checked this plan. I understand it is not medical advice and I exercise at my own risk.</span>
       </label>
 
-      <Button size="lg" className="mt-4 w-full" onClick={create} disabled={busy || !understood || !name.trim() || Boolean(emptyDay)}>
-        <Check /> {busy ? "Creating…" : "Approve and create"}
+      <Button size="lg" className="sticky bottom-0 z-10 mt-4 w-full shadow-lg" onClick={create} disabled={busy || !understood || !name.trim() || Boolean(emptyDay)}>
+        <Check /> {busy ? "Creating…" : "Approve and make active"}
       </Button>
       {error && (
         <p role="alert" className="mt-3 text-sm text-destructive">

@@ -1948,3 +1948,42 @@ controls, per-hand information, precision, unit conversion, effort feedback,
 skip/restore and the existing logging/outbox handlers. No training or storage
 logic changes. Preserve the unfinished Phase 4 work separately while this
 owner correction is validated and released first.
+
+
+## 2026-11-05: Compact plan review and clear editing scope (UI Phase 4)
+
+Reserve profile space in both template and AI plan headers. Show compact
+expandable day summaries in the shared draft editor so template, AI and
+onboarding reviews stay consistent. Keep all draft ordering, editing and
+creation behavior; creating still activates the plan. Put infrequent day
+and plan actions behind options, retain non-drag arrows and destructive
+confirmations, and keep active status as a label rather than a disabled
+button. Starting weights stay available under Plan options for established
+users, with shorter target/PR guidance and explicit streak exclusion.
+
+Group exercise editing into Sets and rest, Exercise details, Alternates,
+Advanced tracking and order/replacement/removal. Explain routine versus
+shared exercise scope, preserve payloads and error paths, and keep Save
+outside the scrolling fields. Use native dialog focus trapping/Escape.
+Day warm-up/cool-down and all existing preparation settings remain.
+P4.5 already has the separate rest/swap flows from the owner's PR #30:
+retain routine-saved rest, session-only extra rest and session-only swaps;
+do not reintroduce the removed equipment/rest form or change those scopes.
+
+Provide an obvious Cancel from account details. First-run colours become
+an optional disclosure; fields, units and plan recommendations stay intact.
+Use clearer AI Coach naming without changing its guide target. Demo
+Today/History/Progress share navigation and clear sample labels. Sample
+reports/coverage never write data and today's sample cannot be in the
+future. Release notes support specific destinations while old Show me
+links remain supported.
+
+Contrast review covers 30 base/accent combinations and seven text/surface
+pairs. Keep accents and base identities; lighten the beige accent tint
+from 12% to 8% to meet text contrast, and use dark text on dark-theme
+destructive buttons. Inputs retain readable placeholders and minimum
+width rules; reduced motion disables CSS motion without changing timers.
+P4.8 requires a real hosted recovery check. No staging inbox is configured
+in repository docs or the connected project's branches, so request that
+missing test context and prepare auth copy separately. Do not send test
+emails or create synthetic records in production to bypass this requirement.

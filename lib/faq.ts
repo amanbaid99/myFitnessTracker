@@ -70,7 +70,7 @@ export const FAQ: FaqSection[] = [
         q: "How do I create a workout plan?",
         a: [
           "Go to Routines, then All plans, then Create a plan. Pick a template (Full Body, Upper Lower, Push Pull Legs or Bro Split), or describe your plan in your own words and let the AI build a draft.",
-          "Either way you can reorder days, rename them, add or remove exercises and change sets and reps before you create it.",
+          "Either way, review compact day summaries and expand a day to reorder, rename, add or remove exercises, or change sets and reps before creating it. Creating makes that plan active.",
         ],
       },
       {
@@ -202,7 +202,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I edit my plan?",
         a: [
-          "Routines, then Edit plan. Tap a name to rename it, tap an exercise to change its sets, reps, rest, seat setting or muscles, and use the arrows to reorder days. Changes save straight away.",
+          "Routines, then Edit plan. Tap a name to rename it, tap an exercise to change its sets, reps, rest, seat setting or muscles, and open Day options for arrows to reorder or remove days. Exercise editing groups Sets and rest, Exercise details, Alternates and Advanced tracking, and explains what affects other plans or history. Changes save straight away.",
           "You can keep several plans and switch the active one under All plans.",
         ],
       },
@@ -228,7 +228,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What does 'per hand' mean?",
         a: [
-          "For dumbbells and similar, you log the weight of one dumbbell. Turn on Weight is per hand for the exercise so totals like kg moved count both hands.",
+          "For dumbbells and similar, log the weight of one dumbbell. Weight is per hand makes that convention visible during logging. Weekly volume reports use the entered load.",
         ],
       },
       {

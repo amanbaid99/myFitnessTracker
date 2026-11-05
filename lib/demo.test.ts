@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEMO_LAST_DONE, DEMO_NEXT_ROUTINE_ID, DEMO_PREVIOUS, DEMO_PRS, DEMO_ROUTINES, demoRoutine } from "./demo";
+import { demoProgress, DEMO_LAST_DONE, DEMO_NEXT_ROUTINE_ID, DEMO_PREVIOUS, DEMO_PRS, DEMO_ROUTINES, demoRoutine } from "./demo";
 import { MUSCLE_GROUPS, EQUIPMENT } from "./muscles";
 import { suggestNextRoutineId } from "./rotation";
 import { buildSession } from "./session";
@@ -50,4 +50,13 @@ describe("demo data", () => {
     expect(demoRoutine(DEMO_NEXT_ROUTINE_ID)).not.toBeNull();
     expect(demoRoutine("nope")).toBeNull();
   });
+});
+
+it("keeps today's sample activity in the past, even before 7am",()=>{
+  const now=new Date("2026-11-05T00:01:00Z");
+  const data=demoProgress(now);
+  expect(data.workoutDates.every(iso=>Date.parse(iso)<=now.getTime())).toBe(true);
+  expect(data.muscleRows.every(row=>Date.parse(row.startedAt)<=now.getTime())).toBe(true);
+  expect(data.reports.rows.at(-1)?.target).toBe(3);
+  expect(data.reports.rows.every((row,i,rows)=>i===0||rows[i-1].week_start<row.week_start)).toBe(true);
 });
