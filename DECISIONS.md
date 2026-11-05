@@ -1987,3 +1987,19 @@ P4.8 requires a real hosted recovery check. No staging inbox is configured
 in repository docs or the connected project's branches, so request that
 missing test context and prepare auth copy separately. Do not send test
 emails or create synthetic records in production to bypass this requirement.
+
+## 2026-11-05: Lock a set's feel after picking; calmer exercise cards (Aman's report)
+
+Aman kept changing "How did it feel?" by accident after logging a set. The
+slider set a value on the first touch and blocked scrolling
+(`touch-action: none`), and every logged set kept its slider open. Because a
+new feel re-adjusts the next unlogged set, a stray touch could also change
+that set. Now the slider shows only for the set just logged, collapses to
+"Felt Hard · Change" after a pick, and lets the page scroll: only a tap or a
+sideways drag picks (`feelGesture`, `feelDisplay` in lib/feel.ts). The scale
+and adjustment rules are unchanged.
+
+Clutter: "Weight per hand" shows once beside Working sets; the two
+disclosures merge into "Options and history"; the empty "+ Seat / pin" chip
+is hidden for dumbbell, barbell and bodyweight exercises unless a setting
+is saved (`showSettingChip`).

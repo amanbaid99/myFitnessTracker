@@ -8,6 +8,11 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Branch `ui/review-logger-declutter`: feel is locked to a one-line
+  summary after picking (Change to edit), the slider no longer reacts to
+  scrolling, per-hand label shown once, one Options and history section,
+  empty seat chip hidden on free weights. Aman reported both problems.
+
 - 2026-11-05: Compact workout rows and circular ticks are live in #45
   (ff1c3c5). Production CI, exact version and 320/390/430 px browser checks
   passed. This supersedes the focused-set frame and large Log set buttons.

@@ -56,3 +56,8 @@ export function settingLabel(setting: string): string {
 export function formatE1rm(kg: number, units: Units): string {
   return `${Math.round(fromKg(kg, units) * 10) / 10} ${units}`;
 }
+
+/** Whether an exercise shows the seat or pin chip: always when one is saved, else not for free weights. Pure. */
+export function showSettingChip(setting: string | null, equipment: string): boolean {
+  return Boolean(setting) || !["dumbbell", "barbell", "bodyweight"].includes(equipment);
+}
