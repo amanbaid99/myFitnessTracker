@@ -12,7 +12,7 @@ Last updated: 2026-11-05.
 | Item | Status | PR | Notes |
 | --- | --- | --- | --- |
 | Phase 1 (P1.1 to P1.8) | Live | #31 (4301b56) | One PR for the whole phase. Evidence `ui-evidence/phase-1` |
-| P1.3 owner follow-up: full set list | Live | #41 (4decda3) | All working rows visible in stable order; next pending row highlighted |
+| P1.3 owner follow-up: full set list | Live | #41 (4decda3) | All working rows visible in stable order; highlighted frame superseded by owner correction below |
 | P2.1 Today | Live | #34 (50ce96e) | One-line card states, inline Try again, smaller Refresh, prompts below Start |
 | P2.2 History list | Live | #33 (7684faf) | One set of recap labels, active filter summary |
 | P2.3 Workout recap | Live | #35 (53ed6d4) | Session results first; map kept visible but smaller (Aman wanted it beside the analysis) |
@@ -22,10 +22,11 @@ Last updated: 2026-11-05.
 | P2.7 Progress: Consistency | Live | #39 (a0f7a83) | Production version and public browser check passed |
 | P2.8 Weekly volume reports | Live | #37 (94eeeab) | Plain counted wording, one rounded volume format |
 | P2.9 Exercise progress | Live | #36 (830471e) | Latest first, best secondary, Top sets collapsed |
-| P2.10 Week boundaries | Merged | #43 (3871463) | Production release validation in progress |
-| P3.1 to P3.4, P3.8 | Ready for review | `ui/review-phase-3-navigation` | Grouped Settings, optional entry, visible editing/history and AI Coach |
+| P2.10 Week boundaries | Live | #43 (3871463) | Production CI, exact version and public browser checks passed |
+| P3.1 to P3.4, P3.8 | Live | #44 (6776eec) | Grouped Settings, optional entry, visible editing/history and AI Coach |
 | P3.5 to P3.7 Human coaching | Skipped | | Out of scope per Aman (4 Nov). Coaching UI is paused |
-| Phase 4 (P4.1 to P4.10) | To do | | |
+| Owner correction: compact set rows | In validation | `ui/review-compact-set-rows` | Circular ticks, no focused frame or full-width logging buttons |
+| Phase 4 (P4.1 to P4.10) | In progress, preserved separately | `ui/review-phase-4-planning` | Browser-tested plan refinements; hosted recovery needs a test inbox |
 
 Shared helpers added so far (reuse them): `volumeLabel` and
 `exerciseHeadline` (lib/progress.ts), `reportSetsLine`

@@ -56,7 +56,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "Can I do fewer sets than planned?",
-        a: ["All working sets stay visible in set order, with the next unlogged set highlighted. Tap any Log set action with its prefilled values, or edit them first. You can log sets later or out of order, and completed rows stay available for Undo. Tap Skip set under any unlogged working set. Undo skip brings it back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
+        a: ["All working sets stay visible as compact rows in set order. Tap the circle at the right to mark a set done using its prefilled values, or edit the values first. Tap a checked circle to undo. You can log sets later or out of order. Tap a set number for options, including add-on weight and Skip set. Undo skip brings it back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
       },
       {
         q: "What does the weekly analysis cover?",
