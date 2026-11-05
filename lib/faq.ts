@@ -202,7 +202,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I edit my plan?",
         a: [
-          "Routines, then Edit plan. Tap a name to rename it, tap an exercise to change its sets, reps, rest, seat setting or muscles, and open Day options for arrows to reorder or remove days. Exercise editing groups Sets and rest, Exercise details, Alternates and Advanced tracking, and explains what affects other plans or history. Changes save straight away.",
+          "Routines, then Edit plan. Tap a name to rename it, tap an exercise to change its sets, reps, rest, seat setting or muscles, and open Day options for arrows to reorder or remove days. The exercise sheet shows everything in one scroll: Add previous record, sets and rest, exercise details, alternates, tracking, then move, swap or remove. Changes save straight away.",
           "You can keep several plans and switch the active one under All plans.",
         ],
       },
