@@ -2095,3 +2095,37 @@ The latest recap uses History's border, light primary tint and local date
 tile with its existing destination, routine and date. No new metrics or
 queries. This work is a focused review PR, not an automatic release or a
 resumption of the paused UI backlog.
+
+## 2026-11-05: Chart-first Progress overview (Aman's request)
+
+Aman finds the filter-first Progress screen too complicated and approved
+four overview charts: training volume, one named strength lift, dated body
+weight and weekly workout consistency. This supersedes the earlier
+Strength-first landing decision. Keep one 4/12-week overview period, with
+search, sorting and the existing Strength/Muscles/Consistency tabs in the
+detail views. Cards and explicit back navigation have URL state; native
+history integration keeps already loaded overview data usable offline.
+Lazy-load the existing detail controls rather than adding their charting
+bundle to the overview. Personal values and chart descriptions stay masked.
+
+Use the SQL report's existing India-time weeks for weekly bars. Mark the
+current week as in progress and compare the last two completed adjacent
+weeks in the overview, never treating missing volume as zero. No SQL or
+training calculation changes. The overview's period includes the current
+partial week; existing exercise detail period semantics are preserved.
+Show a single exercise's existing estimated 1RM, never sum unrelated lifts
+into a score. Prefer a repeated lift by recency, and remember an explicit
+choice per account on this device. A single session has no claimed trend.
+
+Read dated body weights through the existing owner-scoped loader, using
+its availability flag to separate an empty log from a failed read. Do not
+turn onboarding weight into a dated reading, carry old readings forward,
+fill missing days, or label weight changes good or bad. The detail view
+keeps readings and an optional check-in link. Reuse the existing measurement
+save flow, with a non-writing public sample. Streaks retain their existing
+device-time definition, labelled separately from India-time report weeks.
+
+AI is not needed to draw or compare these charts. Link the existing weekly
+analysis and retain AI Coach access within details. No new AI generation,
+provider, schema, outbox or logger changes. Only this focused improvement
+is resumed; unrelated paused work and release wording approval remain.

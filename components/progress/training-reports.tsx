@@ -27,6 +27,7 @@ import {
   type TrainingWeek,
 } from "@/lib/training-reports";
 import { volumeLabel } from "@/lib/progress";
+import { overviewWeeks, type OverviewRange } from "@/lib/progress-dashboard";
 import { MUSCLE_GROUPS } from "@/lib/muscles";
 import { MASK } from "@/lib/mask";
 export function TrainingReports({
@@ -38,6 +39,7 @@ export function TrainingReports({
   demo = false,
   consistency = false,
   connectionId,
+  period,
 }: {
   initial: TrainingWeek[];
   available: boolean;
@@ -47,6 +49,7 @@ export function TrainingReports({
   demo?: boolean;
   consistency?: boolean;
   connectionId?: string;
+  period?: OverviewRange;
 }) {
   const [rows, setRows] = useState(initial),
     [scope, setScope] = useState("all"),
@@ -141,7 +144,7 @@ export function TrainingReports({
         {consistency ? "Weekly targets are temporarily unavailable. Your streak and calendar are still available." : "Weekly reports are not available yet. Existing progress is still available."}
       </p>
     );
-  const chart = rows.map((w) => ({
+  const chart = (period ? overviewWeeks(rows, period) : rows).map((w) => ({
     label: new Intl.DateTimeFormat("en-GB", {
       day: "numeric",
       month: "short",

@@ -32,10 +32,11 @@ export interface ExerciseProgress {
   sessions: { startedAt: string; e1rmKg: number; weightKg: number | null; addedKg: number; reps: number }[];
 }
 const TABS = ["Strength", "Muscles", "Consistency"] as const;
-type Tab = typeof TABS[number];
+export type ProgressTab = typeof TABS[number];
+type Tab = ProgressTab;
 type StrengthFilters = { search: string; range: ProgressRange; sort: string };
 
-export function ProgressOverview({ workoutDates, muscleRows, exercises, units, unmapped = [], demo = false, reports,coverage,userId="" }: {
+export interface ProgressOverviewProps {
   workoutDates: string[];
   muscleRows: { startedAt: string; muscle: string; sets: number }[];
   exercises: ExerciseProgress[];
@@ -45,10 +46,17 @@ export function ProgressOverview({ workoutDates, muscleRows, exercises, units, u
   reports?: {rows:TrainingWeek[];available:boolean};
   coverage?: CoverageData|null;
   userId?:string;
-}) {
+  activeTab?: ProgressTab;
+  onTabChange?: (tab: ProgressTab) => void;
+  initialRange?: ProgressRange;
+}
+
+export function ProgressOverview({ workoutDates, muscleRows, exercises, units, unmapped = [], demo = false, reports,coverage,userId="",activeTab,onTabChange,initialRange="12" }: ProgressOverviewProps) {
   const mounted = useMounted();
-  const [tab, setTab] = useState<Tab>("Strength");
-  const [strength, setStrength] = useState<StrengthFilters>({search:"",range:"12",sort:"recent"});
+  const [localTab, setLocalTab] = useState<Tab>("Strength");
+  const tab = activeTab ?? localTab;
+  function setTab(value: Tab) { setLocalTab(value); onTabChange?.(value); }
+  const [strength, setStrength] = useState<StrengthFilters>({search:"",range:initialRange,sort:"recent"});
   const id = useId();
   function navigateTabs(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     let next = index;

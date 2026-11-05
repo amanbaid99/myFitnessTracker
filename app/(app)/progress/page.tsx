@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { DataError } from "@/components/data-error";
-import { ProgressOverview, type ExerciseProgress } from "@/components/progress/progress-overview";
+import type { ExerciseProgress } from "@/components/progress/progress-overview";
+import { ProgressDashboard } from "@/components/progress/progress-dashboard";
 import { ScreenHeader } from "@/components/screen-header";
 import { getWeeklyReports,getCoverage } from "@/lib/feedback-data";
 import { getProgressWorkouts } from "@/lib/progress-data";
 import { unmappedExercises } from "@/lib/anatomy";
-import { getExerciseLibrary, getExerciseNames, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
+import { getBodyWeights, getExerciseLibrary, getExerciseNames, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
 import { progressWindowStart } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,16 +22,17 @@ export default async function ProgressPage() {
   const [profile, result] = await Promise.all([
     getProfile(supabase),
     load(async () => {
-      const [bests, muscleRows, workouts, library,reports,coverage] = await Promise.all([
+      const [bests, muscleRows, workouts, library,reports,coverage,bodyWeights] = await Promise.all([
         getSessionBests(supabase),
         getMuscleSets(supabase, since),
         getProgressWorkouts(supabase),
         // Optional: a failed read only hides the "needs muscles" list.
         getExerciseLibrary(supabase).catch(() => []),
         getWeeklyReports(supabase),getCoverage(supabase),
+        getBodyWeights(supabase).catch(() => ({ entries: [], available: false })),
       ]);
       const names = await getExerciseNames(supabase, [...new Set(bests.map((b) => b.exerciseId))]);
-      return { bests, muscleRows, workouts, names, library,reports,coverage };
+      return { bests, muscleRows, workouts, names, library,reports,coverage,bodyWeights };
     }),
   ]);
 
@@ -42,7 +44,7 @@ export default async function ProgressPage() {
       </>
     );
   }
-  const { bests, muscleRows: allMuscleRows, workouts: finished, names, library,reports,coverage } = result.data;
+  const { bests, muscleRows: allMuscleRows, workouts: finished, names, library,reports,coverage,bodyWeights } = result.data;
   const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
   // Starting weights are numbers to build on, not training: they count for
   // the 1RM charts but not for the streak or sets per muscle.
@@ -59,14 +61,15 @@ export default async function ProgressPage() {
 
   return (
     <>
-      <ScreenHeader title="Progress" subtitle="Your strength, training and consistency." />
-      <ProgressOverview
+      <ScreenHeader title="Progress" subtitle="See what’s changing. Tap a chart to explore." />
+      <ProgressDashboard
         workoutDates={workouts.map((w) => w.startedAt)}
         muscleRows={muscleRows}
         exercises={[...byExercise.values()]}
         units={profile.units}
         unmapped={unmapped}
         reports={reports} coverage={coverage} userId={profile.id}
+        bodyWeights={bodyWeights}
       />
     </>
   );
