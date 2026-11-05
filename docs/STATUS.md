@@ -8,14 +8,25 @@ Last updated: 2026-11-05.
 
 ## In progress
 
-- 2026-11-05: Owner's focused home-page request on
-  `ui/review-home-card-refinement`, based on live 2edec61 (#51). Analysis
+- 2026-11-05: Focused Progress follow-up on `ui/review-progress-dashboard`.
+  Owner approved a four-chart overview with one period control and detail
+  navigation. Existing filters, reports, goals, muscle mapping and exercise
+  history remain in the detail views. Dated body weights use the existing
+  owner-scoped loader, with an explicit availability flag. No schema,
+  training-calculation, logger, outbox or AI-provider changes. Other paused
+  work remains paused. Lint, strict types, 451 tests and production build
+  pass. Browser assertions cover all views at 320/390/430, larger text,
+  themes, stored lift selection, retained filters and offline/error states.
+  Evidence: `docs/ui-evidence/progress-dashboard`. Preparing a review PR;
+  no merge/deployment or unapproved What's new wording in this task.
+
+- 2026-11-05: Home refinement is live in #52 (c3eb397), based on #51. Analysis
   keeps the same content with tighter hierarchy; Start and Resume share
   the card below it; latest recap uses History's contained surface/date
   tile. No query, workout, analysis-generation or outbox changes. Before/
   after screenshots and browser assertions in `docs/ui-evidence/home-refinement`.
-  Prepare for owner review only. The other UI backlog and unpublished auth
-  draft remain paused; no automatic merge or release is authorized here.
+  Production CI and exact live version passed, with public mobile checks.
+  The other UI backlog and unpublished auth draft remain paused.
 
 - 2026-11-05: Branch `ui/review-exercise-sheet`: the plan exercise sheet no
   longer hides sections in collapsed boxes (Aman could not tell they opened).

@@ -229,12 +229,13 @@ export function demoProgress(now = new Date()) {
     const weightKg = 35 + i * 8 + (i === 2 ? -1 : i === 4 ? 0 : 1) * j;
     return {exerciseId:`sample-${i}`,workoutId:`demo-session-${i}-${j}`,startedAt:ago(i === 5 ? 1 : 67 - j * 7),weightKg,addedKg:0,reps:8,e1rmKg:weightKg * (1 + 8 / 30),workingSets:3,volumeKg:weightKg * 8 * 3};
   })}));
-  const workoutDates=Array.from({length:32},(_,i)=>ago(i*7));
+  const workoutDates=Array.from({length:32},(_,i)=>[ago(i*7), ...(i>0&&i%3!==0?[ago(i*7+2)]:[]), ...(i>0&&i%3===1?[ago(i*7+4)]:[])]).flat();
   const muscleRows=["quads","glutes","hamstrings","chest","lats","upper back","front delts","side delts","biceps","triceps","calves","core"].flatMap((muscle,i)=>[{startedAt:ago(0),muscle,sets:12-i/2},{startedAt:ago(8),muscle,sets:7+i/2}]);
   const current=analysisWeek(now.toISOString());
   const reports={available:true,rows:Array.from({length:12},(_,i)=>{
     const week=analysisWeek(new Date(Date.parse(current.startAt)-i*7*86400000).toISOString());
     return {week_start:week.start,workouts:workoutDates.filter(iso=>iso>=week.startAt&&iso<week.nextAt).length,target:3,volume_kg:4200+i*100,eligible_sets:18,excluded_sets:2};
   }).reverse()};
-  return { exercises, workoutDates,muscleRows,reports,coverage:{workouts:8,unmapped_sets:0,planned:["chest","quads","glutes","lats","adductors"],covered:muscleRows.map(row=>row.muscle),goal:"plan" as const,exclusions:[],paused_until:null} };
+  const bodyWeights = { available: true, entries: Array.from({length: 8}, (_, i) => ({ day: ago(56 - i * 8).slice(0, 10), weightKg: Math.round((76 - i * 0.15 + (i % 2 ? 0.2 : 0)) * 10) / 10 })) };
+  return { exercises, workoutDates,muscleRows,reports,bodyWeights,coverage:{workouts:8,unmapped_sets:0,planned:["chest","quads","glutes","lats","adductors"],covered:muscleRows.map(row=>row.muscle),goal:"plan" as const,exclusions:[],paused_until:null} };
 }

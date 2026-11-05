@@ -685,14 +685,16 @@ export async function load<T>(fn: () => Promise<T>): Promise<{ data: T; error: n
 /**
  * The body weight log, oldest first, and the weight given in the welcome
  * flow (the starting point before anything is logged). Empty on error, so
- * screens keep working if the table is not there yet.
+ * screens keep working if the table is not there yet. The availability
+ * flag lets chart screens distinguish a failed read from an empty log.
  */
-export async function getBodyWeights(supabase: Supabase): Promise<{ entries: BodyWeight[]; profileKg: number | null }> {
+export async function getBodyWeights(supabase: Supabase): Promise<{ entries: BodyWeight[]; profileKg: number | null; available: boolean }> {
   const [log, profile] = await Promise.all([
     supabase.from("body_weights").select("measured_on, weight_kg").order("measured_on").limit(1000),
     supabase.from("profiles").select("body_weight_kg").limit(1).maybeSingle(),
   ]);
   return {
+    available: !log.error,
     entries: log.error ? [] : (log.data ?? []).map((r) => ({ day: r.measured_on as string, weightKg: Number(r.weight_kg) })),
     profileKg: profile.error || profile.data?.body_weight_kg == null ? null : Number(profile.data.body_weight_kg),
   };

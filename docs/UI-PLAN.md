@@ -33,8 +33,14 @@ Last updated: 2026-11-05.
 
 Owner update (5 Nov): Start and Resume must share the same home workout
 card below the weekly summary. This supersedes the earlier Resume-above-
-analysis requirement below. The focused home refinement is in review on
-`ui/review-home-card-refinement`; other pending work remains paused.
+analysis requirement below. The focused home refinement is live in #52
+(c3eb397); other pending work remains paused.
+
+Owner update (5 Nov, after #52): Progress should open with volume, strength,
+body-weight and consistency chart cards. Search, sorting and the existing
+Strength/Muscles/Consistency tabs remain in the detail views. This replaces
+the older Strength-first landing requirement. Only this focused follow-up
+is resumed on `ui/review-progress-dashboard`; the wider backlog stays paused.
 
 Shared helpers added so far (reuse them): `volumeLabel` and
 `exerciseHeadline` (lib/progress.ts), `reportSetsLine`
