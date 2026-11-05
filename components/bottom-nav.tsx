@@ -9,7 +9,7 @@ const TABS = [
   { href: "/", label: "Today", icon: Dumbbell },
   { href: "/history", label: "History", icon: History },
   { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/coach", label: "Coach", icon: MessageCircle },
+  { href: "/coach", label: "AI Coach", icon: MessageCircle },
   { href: "/routines", label: "Routines", icon: CalendarDays },
 ] as const;
 
@@ -33,7 +33,7 @@ export function BottomNav() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                data-guide={`nav-${label.toLowerCase()}`}
+                data-guide={href === "/coach" ? "nav-coach" : `nav-${label.toLowerCase()}`}
                 className={cn(
                   "group flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground",

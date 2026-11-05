@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, ChevronDown, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
 import { WorkoutRecap } from "@/components/workout-recap";
+import { DemoNav } from "@/components/demo-nav";
 import { HomeHero } from "@/components/home/home-hero";
 import { WeeklyReviewCard } from "@/components/home/weekly-review-card";
 import { PlanDays } from "@/components/plan-days";
@@ -46,6 +47,8 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </Button>
         </div>
 
+        <DemoNav current="today"/>
+
         {finished && (
           <div role="status" className="mt-4 rounded-2xl border border-success/50 bg-success/10 p-4">
             <p className="font-medium">Nice workout!</p>
@@ -73,7 +76,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </div>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight">{next.name}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {next.exercises.length} exercises · Warm-up included
+            {next.exercises.length} {next.exercises.length === 1 ? "exercise" : "exercises"} · Warm-up included
           </p>
           <Button asChild size="lg" className="mt-3 w-full">
             <Link href={`/demo/workout/${next.id}`}>
@@ -88,7 +91,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
                 <div className="min-w-0 flex-1 py-1">
                   <p className="font-medium">{routine.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {routine.exercises.length} exercises · {relativeDay(DEMO_LAST_DONE.get(routine.id))}
+                    {routine.exercises.length} {routine.exercises.length === 1 ? "exercise" : "exercises"} · {relativeDay(DEMO_LAST_DONE.get(routine.id))}
                   </p>
                 </div>
                 <Button asChild variant="secondary">

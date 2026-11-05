@@ -1,5 +1,6 @@
 "use client";
 
+import { releaseLinks } from "@/lib/guide";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
@@ -302,11 +303,7 @@ function WhatsNewSheet({ entries, onClose }: { entries: WhatsNewEntry[]; onClose
             <li key={e.id}>
               <p className="font-medium">{e.title}</p>
               <p className="mt-0.5 text-sm text-muted-foreground">{e.body}</p>
-              {e.href && (
-                <Button variant="secondary" className="mt-2" onClick={() => onClose(e.href)}>
-                  Show me
-                </Button>
-              )}
+              <div className="mt-2 flex flex-wrap gap-2">{releaseLinks(e).map(link => <Button key={link.href} variant="secondary" onClick={() => onClose(link.href)}>{link.label}</Button>)}</div>
             </li>
           ))}
         </ul>

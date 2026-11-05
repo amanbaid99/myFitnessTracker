@@ -8,6 +8,20 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Compact workout rows and circular ticks are live in #45
+  (ff1c3c5). Production CI, exact version and 320/390/430 px browser checks
+  passed. This supersedes the focused-set frame and large Log set buttons.
+- 2026-11-05: `ui/review-phase-4-completion` finishes P4.1 to P4.7, P4.9
+  and P4.10: profile-safe headers, compact day review, options for day/plan
+  management, grouped exercise editing with unchanged save semantics,
+  optional onboarding colours, account Cancel, clearer starting records,
+  readable theme contrast and better public demo/release-note destinations.
+  All 434 tests, lint, strict types and production build pass. Synthetic
+  browser evidence includes 320/390/430 and 200% text. No schema changes.
+  P4.8 remains separate until a staging account/test inbox is supplied for
+  the specifically required hosted password-recovery check. Human coaching
+  remains paused; production auth delivery is not claimed verified.
+
 - 2026-11-05: Owner rejects the focused working-set frame and large Log set
   buttons. `ui/review-compact-set-rows` restores compact ordered rows with
   circular ticks, preserving independent logging/Undo and per-set options.

@@ -25,8 +25,10 @@ Last updated: 2026-11-05.
 | P2.10 Week boundaries | Live | #43 (3871463) | Production CI, exact version and public browser checks passed |
 | P3.1 to P3.4, P3.8 | Live | #44 (6776eec) | Grouped Settings, optional entry, visible editing/history and AI Coach |
 | P3.5 to P3.7 Human coaching | Skipped | | Out of scope per Aman (4 Nov). Coaching UI is paused |
-| Owner correction: compact set rows | In validation | `ui/review-compact-set-rows` | Circular ticks, no focused frame or full-width logging buttons |
-| Phase 4 (P4.1 to P4.10) | In progress, preserved separately | `ui/review-phase-4-planning` | Browser-tested plan refinements; hosted recovery needs a test inbox |
+| Owner correction: compact set rows | Live | #45 (ff1c3c5) | Circular ticks, no focused frame or full-width logging buttons |
+| P4.1 to P4.7, P4.9, P4.10 | Ready for review | `ui/review-phase-4-completion` | Compact plan review/editing, clear account exit, responsive themes and sample navigation |
+| P4.5 workout adjustments | Rechecked | #30, final-phase evidence | Existing separate Rest timer/Swap exercise, owner-approved scopes and offline behavior retained |
+| P4.8 authentication copy | Pending hosted recovery test | Separate follow-up | Staging account/test inbox requested; no production test accounts or emails |
 
 Shared helpers added so far (reuse them): `volumeLabel` and
 `exerciseHeadline` (lib/progress.ts), `reportSetsLine`

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
-import { WHATS_NEW } from "@/lib/guide";
+import { calendarDateLabel } from "@/lib/dates";
+import { releaseLinks, WHATS_NEW } from "@/lib/guide";
 
 export const metadata: Metadata = { title: "What's new" };
 
@@ -19,15 +20,11 @@ export default function WhatsNewPage() {
         {WHATS_NEW.map((e) => (
           <li key={e.id} className="rounded-2xl border bg-card p-4">
             <p className="text-xs text-muted-foreground">
-              {new Date(`${e.date}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              {calendarDateLabel(e.date)}
             </p>
             <p className="mt-1 font-medium">{e.title}</p>
             <p className="mt-0.5 text-sm text-muted-foreground">{e.body}</p>
-            {e.href && (
-              <Button asChild variant="secondary" className="mt-3">
-                <Link href={e.href}>Show me</Link>
-              </Button>
-            )}
+            <div className="mt-3 flex flex-wrap gap-2">{releaseLinks(e).map(link => <Button key={link.href} asChild variant="secondary"><Link href={link.href}>{link.label}</Link></Button>)}</div>
           </li>
         ))}
       </ul>

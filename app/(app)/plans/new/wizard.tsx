@@ -100,7 +100,7 @@ export function NewPlanWizard({
 
   return (
     <>
-      <header className="mb-6">
+      <header className="mb-6 pr-14">
         {step > 1 && (
           <button
             type="button"
@@ -111,7 +111,7 @@ export function NewPlanWizard({
           </button>
         )}
         <p className="text-xs font-medium uppercase tracking-wider text-primary">New plan · Step {step} of 3</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+        <h1 className="mt-1 break-words text-2xl font-semibold tracking-tight">
           {step === 1 ? "How many days a week do you train?" : step === 2 ? "Pick a template" : "Make it yours"}
         </h1>
       </header>
@@ -132,7 +132,7 @@ export function NewPlanWizard({
           </button>
           <p className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">Or start from a template</p>
           <p className="mb-2 text-sm font-medium">Equipment</p>
-          <div className="mb-6 grid grid-cols-3 gap-2" role="group" aria-label="Equipment">
+          <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(min(100%,6rem),1fr))] gap-2" role="group" aria-label="Equipment">
             {SETUPS.map((s) => (
               <button
                 key={s.key}
@@ -149,7 +149,7 @@ export function NewPlanWizard({
             ))}
           </div>
           <p className="mb-2 text-sm font-medium">Days a week</p>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,3rem),1fr))] gap-2">
             {DAY_OPTIONS.map((d) => (
               <button
                 key={d}
@@ -211,7 +211,7 @@ export function NewPlanWizard({
             <p className="mt-3 text-sm text-destructive">Add an exercise to {emptyDay.name || "the empty day"}, or remove it.</p>
           )}
 
-          <Button size="lg" className="mt-6 w-full" onClick={create} disabled={busy || !name.trim() || Boolean(emptyDay)}>
+          <Button size="lg" className="sticky bottom-0 z-10 mt-6 w-full shadow-lg" onClick={create} disabled={busy || !name.trim() || Boolean(emptyDay)}>
             <Check /> {busy ? "Creating…" : "Create and make active"}
           </Button>
           {error && (

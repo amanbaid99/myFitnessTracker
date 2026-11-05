@@ -26,9 +26,9 @@ export function PlanDays({
     <div className="space-y-8">
       {routines.map((routine) => (
         <section key={routine.id} id={routine.id} className="scroll-mt-6">
-          <h2 className="mb-2 flex items-baseline justify-between">
+          <h2 className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
             <span className="text-lg font-semibold">{routine.name}</span>
-            <span className="text-xs text-muted-foreground">{routine.exercises.length} exercises</span>
+            <span className="text-xs text-muted-foreground">{routine.exercises.length} {routine.exercises.length === 1 ? "exercise" : "exercises"}</span>
           </h2>
           <ol className="divide-y rounded-xl border bg-card">
             {routine.exercises.map(({ id, exercise, targetSets, targetReps }) => {
@@ -38,7 +38,7 @@ export function PlanDays({
                 <li key={id} className="px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium leading-snug">{exercise.name}</p>
+                      <p className="break-words font-medium leading-snug">{exercise.name}</p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {exercise.machineSetting && <Badge variant="accent">{settingLabel(exercise.machineSetting)}</Badge>}
                         {exercise.perHand && <Badge variant="outline">per hand</Badge>}

@@ -131,13 +131,13 @@ export function StartingWeightsForm({ exercises, units, returnTo = "/routines" }
           const known = e.pr ?? e.last;
           return (
             <li key={e.id} className="px-4 py-3">
-              <p className="font-medium leading-snug">{e.name}</p>
+              <p className={`break-words font-medium leading-snug ${MASK}`}>{e.name}</p>
               <p className="text-xs text-muted-foreground">
                 {e.day}
                 {e.perHand && " · weight per hand"}
                 {known && ` · ${e.pr ? "PR" : "Last"} ${formatSet(known, units)}`}
               </p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
                 <label className="block">
                   <span className="sr-only">{e.name} weight in {units}</span>
                   <div className="relative">

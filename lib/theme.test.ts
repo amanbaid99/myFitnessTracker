@@ -52,3 +52,11 @@ describe("globals.css", () => {
     for (const a of rest) expect(css).toContain(`[data-accent="${a.key}"] { --accent-bright: ${a.dark}; --accent-deep: ${a.light}; }`);
   });
 });
+
+it("keeps destructive button text readable in all bases",async()=>{
+  const {readFileSync}=await import("node:fs");
+  const css=readFileSync(new URL("../app/globals.css",import.meta.url),"utf8");
+  const pairs=[...css.matchAll(/--destructive: (#[a-f0-9]+);\s*--destructive-foreground: (#[a-f0-9]+);/g)];
+  expect(pairs).toHaveLength(3);
+  for(const [,background,text] of pairs) expect(contrast(background,text)).toBeGreaterThanOrEqual(4.5);
+});

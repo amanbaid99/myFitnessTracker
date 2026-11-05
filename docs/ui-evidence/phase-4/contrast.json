@@ -1,0 +1,1022 @@
+[
+  {
+    "base": "dark",
+    "accent": "yellow",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 12.574469160293583
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 9.6305774533749
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "orange",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 8.866812033562928
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 7.344524660668086
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "coral",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 6.7054995085381455
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 5.838352171574576
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "pink",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 7.771163803419189
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 6.552752793686365
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "purple",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 7.1943118826288
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 6.114183742452895
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "blue",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 7.72352118044078
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 6.516130516140776
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "cyan",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 10.364067400353237
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 8.270413470744582
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "teal",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 10.220459970728934
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 8.256362965225694
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "green",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 10.326313600711972
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 8.294740017311257
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "dark",
+    "accent": "lime",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 17.31062067806195
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 15.83787015236081
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 6.191313699744712
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 12.309991988092175
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 13.862610178193709
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 9.488742463317367
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.625431564885052
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "yellow",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.730015042998701
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.851302974788393
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "orange",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.417914138092927
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.576556308254412
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "coral",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.438402422419904
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.5392094972122425
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "pink",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 6.037699049194929
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.931848798315094
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "purple",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 7.104892978519159
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 5.815542699605636
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "blue",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 6.701618401398807
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 5.568198900082161
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "cyan",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.741023251923261
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.848086147614122
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "teal",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.473250081210842
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.643130138839497
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "green",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.4198365290393475
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.585358187132776
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "light",
+    "accent": "lime",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 16.67735305311072
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 17.88899007514901
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.846857527921449
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.717155315115166
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 14.976496288145484
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.843993044031442
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.100949444753679
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "yellow",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.730015042998701
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.820737607055593
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "orange",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.417914138092927
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.565421990354401
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "coral",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.438402422419904
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.5417328291698045
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "pink",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 6.037699049194929
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.95855462027238
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "purple",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 7.104892978519159
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 5.839000005521781
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "blue",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 6.701618401398807
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 5.538377749683461
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "cyan",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.741023251923261
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.810042825646342
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "teal",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.473250081210842
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.609902201196803
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "green",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.4198365290393475
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.55928285717786
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  },
+  {
+    "base": "beige",
+    "accent": "lime",
+    "results": [
+      {
+        "pair": "foreground/background",
+        "ratio": 12.865895355496137
+      },
+      {
+        "pair": "foreground/card",
+        "ratio": 14.03777743384521
+      },
+      {
+        "pair": "muted-foreground/card",
+        "ratio": 5.431788596944293
+      },
+      {
+        "pair": "primary-foreground/primary",
+        "ratio": 5.717155315115166
+      },
+      {
+        "pair": "secondary-foreground/secondary",
+        "ratio": 11.43195235908348
+      },
+      {
+        "pair": "accent-foreground/accent",
+        "ratio": 4.806186878010481
+      },
+      {
+        "pair": "destructive-foreground/destructive",
+        "ratio": 5.65267823238103
+      }
+    ]
+  }
+]

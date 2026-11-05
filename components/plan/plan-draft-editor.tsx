@@ -1,5 +1,6 @@
 "use client";
 
+import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
 import { useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Minus, Plus, Trash2 } from "lucide-react";
@@ -43,13 +44,14 @@ export function PlanDraftEditor({
   const [adding, setAdding] = useState<number | null>(null);
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${MASK}`}>
       <p className="text-xs text-muted-foreground">
-        Days run in this order, then repeat. Use the arrows to change it. Tap an exercise to change it.
+        Days repeat in this order. Expand a day to review exercises or change its order.
       </p>
       {days.map((day, d) => (
-        <section key={d} className="overflow-hidden rounded-2xl border bg-card" aria-label={`Day ${d + 1}: ${day.name}`}>
-          <div className="flex items-center gap-1 border-b py-1 pl-3 pr-1">
+        <details key={d} className="group overflow-hidden rounded-2xl border bg-card" aria-label={`Day ${d + 1}: ${day.name}`}>
+          <summary className="flex min-h-14 cursor-pointer list-none flex-wrap items-center gap-2 px-4 py-3"><span className="min-w-0 flex-1 break-words font-medium">{d + 1}. {day.name}</span><span className="text-xs text-muted-foreground">{day.exercises.length} {day.exercises.length === 1 ? "exercise" : "exercises"}</span><ChevronDown className="size-4 shrink-0 group-open:rotate-180" aria-hidden /></summary>
+          <div className="flex flex-wrap items-center gap-1 border-y py-1 pl-3 pr-1">
             <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{d + 1}</span>
             <label className="sr-only" htmlFor={`day-name-${d}`}>
               Name of day {d + 1}
@@ -60,7 +62,7 @@ export function PlanDraftEditor({
               maxLength={40}
               onChange={(e) => onChange(renameDay(days, d, e.target.value))}
               onBlur={(e) => !e.target.value.trim() && onChange(renameDay(days, d, `Day ${d + 1}`))}
-              className="h-11 min-w-0 flex-1 rounded-lg bg-transparent px-1 text-lg font-semibold outline-none focus:bg-muted"
+              className="h-11 min-w-[min(100%,8rem)] flex-1 rounded-lg bg-transparent px-1 text-lg font-semibold outline-none focus:bg-muted"
             />
             <Button variant="ghost" size="icon" aria-label={`Move ${day.name} earlier`} disabled={d === 0} onClick={() => onChange(moveDay(days, d, -1))}>
               <ArrowUp />
@@ -104,9 +106,9 @@ export function PlanDraftEditor({
                     type="button"
                     onClick={() => setOpen(isOpen ? null : key)}
                     aria-expanded={isOpen}
-                    className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left active:bg-muted"
+                    className="flex min-h-12 w-full flex-wrap items-center gap-3 px-4 py-2 text-left active:bg-muted"
                   >
-                    <span className="min-w-0 flex-1 truncate">{e.name}</span>
+                    <span className="min-w-0 flex-1 break-words">{e.name}</span>
                     <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
                       {formatTarget(e.sets, e.reps, e.tracking ?? defaultTracking(e.name))}
                     </span>
@@ -172,7 +174,7 @@ export function PlanDraftEditor({
               <Plus className="size-4" /> Add exercise
             </button>
           )}
-        </section>
+        </details>
       ))}
 
       <Button variant="outline" className="w-full" onClick={() => onChange(addDay(days))}>
@@ -201,7 +203,7 @@ function ExerciseControls({
 }) {
   return (
     <div className="space-y-3 bg-muted/30 px-4 pb-3 pt-1">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3">
         <Stepper label="Sets" value={exercise.sets} max={MAX_SETS} onChange={(v) => onTargets(v, exercise.reps)} />
         <Stepper label={(exercise.tracking ?? defaultTracking(exercise.name)) === "time" ? "Seconds" : "Reps"} value={exercise.reps} max={(exercise.tracking ?? defaultTracking(exercise.name)) === "time" ? 3600 : MAX_REPS} onChange={(v) => onTargets(exercise.sets, v)} />
       </div>
@@ -209,7 +211,7 @@ function ExerciseControls({
         <summary className="flex min-h-11 cursor-pointer items-center text-sm">Review muscles worked</summary>
         <MusclePicker key={`${exercise.name}:${exercise.equipment}`} name={exercise.name} equipment={exercise.equipment} value={exercise.muscle_groups} onChange={onMuscles} />
       </details>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,6rem),1fr))] gap-2">
         <Button variant="secondary" disabled={first} onClick={() => onMove(-1)}>
           <ArrowUp /> Up
         </Button>
