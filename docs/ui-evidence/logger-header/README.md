@@ -27,6 +27,15 @@ Aman asked to streamline the alternates and chips under the exercise name.
   read Hard and Good; tapping one opens the slider; Done closes it.
   `after-rows-card-{320,390,430}.png`.
 
+## Short pause after a pick (third request)
+
+The feel is saved the moment it is picked, but the slider now stays open for
+1.2 s (`FEEL_SETTLE_MS`) before closing to a tag, and a second pick restarts
+that pause. On the last set, the card waits the same time before moving to
+the next exercise. No timer is shown. Checked: slider still open 0.5 s after a
+pick; still open 0.9 s after a second pick; closed to "Good" at 1.6 s; last
+set's card open at 0.4 s and closed by 1.6 s.
+
 ## Checks
 
 - Switching via "or Pull-up" changed the exercise to Pull-up and the line to

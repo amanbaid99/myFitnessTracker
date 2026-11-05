@@ -2026,3 +2026,9 @@ Aman then found logged sets too spread out. A logged set is now one line
 ("1 · 28 kg × 9 · Hard ✓"); the feel is a small tag that opens the slider
 when tapped, and "weight per hand" left the Working sets heading since the
 meta line already says per hand.
+
+Aman found the slider vanished too quickly after a pick. The pick is still
+saved at once (offline-safe), but the slider stays open for 1.2 s
+(`FEEL_SETTLE_MS`, lib/feel.ts) before closing to a tag, a new pick restarts
+the pause, and a finished exercise waits the same time before moving on. No
+timer is shown.

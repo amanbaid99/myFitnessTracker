@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { formatSet, formatSets, settingLabel, showSettingChip, exerciseMeta } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
-import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition, feelDisplay, feelGesture } from "@/lib/feel";
+import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition, feelDisplay, feelGesture, FEEL_SETTLE_MS } from "@/lib/feel";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, workoutOrder, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, pendingRestoreCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
@@ -170,6 +170,14 @@ export function Logger(props: {
   const [feelEdit, setFeelEdit] = useState<string | null>(null);
   // The exercise whose empty seat or pin setting is being added (from Options).
   const [seatEditFor, setSeatEditFor] = useState<string | null>(null);
+  // Closes the feel slider a moment after a pick, so the choice can be seen (and changed) first.
+  const feelSettle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function pickFeel(exIndex: number, row: Row, rpe: number) {
+    setFeelEdit(row.key);
+    void setFeel(exIndex, row, rpe);
+    if (feelSettle.current) clearTimeout(feelSettle.current);
+    feelSettle.current = setTimeout(() => setFeelEdit((cur) => (cur === row.key ? null : cur)), FEEL_SETTLE_MS);
+  }
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
   /** A timed set being held (plank): counts down, then logs the set. */
   const [hold, setHold] = useState<{ exIndex: number; key: string; startedAt: number; endsAt: number; total: number } | null>(null);
@@ -568,8 +576,10 @@ export function Logger(props: {
     // That was the last set: close this exercise and open the next one.
     if (isExerciseDone(ex)) {
       // The next unfinished one in the order shown, with this exercise moved up if it was done early.
+      // Waits as long as the feel slider does, so the pick is seen before the card closes.
       const next = workoutOrder(exercises.length, startedRef.current);
-      openExercise(nextOpenExercise(next.map((i) => exercises[i]), next.indexOf(exIndex)));
+      const target = nextOpenExercise(next.map((i) => exercises[i]), next.indexOf(exIndex));
+      setTimeout(() => openExercise(target), FEEL_SETTLE_MS);
     }
     if (next) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
@@ -1043,7 +1053,7 @@ export function Logger(props: {
                       <FeelSlider
                         guide={feelKey === row.key ? "tip:feel" : undefined}
                         rpe={row.logged.rpe}
-                        onPick={(rpe) => { setFeelEdit(null); setFeel(exIndex, row, rpe); }}
+                        onPick={(rpe) => pickFeel(exIndex, row, rpe)}
                         onDone={feelEdit === row.key ? () => setFeelEdit(null) : undefined}
                       />
                     )}
