@@ -9,3 +9,10 @@ export function sessionsInRange<T extends { startedAt: string }>(rows: T[], rang
 export function sessionChange(rows: { e1rmKg: number }[]) {
   return rows.length < 2 ? null : rows[rows.length - 1].e1rmKg - rows[0].e1rmKg;
 }
+
+/** The text and icon must agree, including values at the display threshold. */
+export function strengthTrend(rows: { e1rmKg: number }[]) {
+  const change = sessionChange(rows);
+  const direction = change === null ? "unavailable" : Math.abs(change) < 0.05 ? "steady" : change > 0 ? "up" : "down";
+  return { change, direction };
+}

@@ -17,7 +17,7 @@ Last updated: 2026-11-04.
 | P2.2 History list | Live | #33 (7684faf) | One set of recap labels, active filter summary |
 | P2.3 Workout recap | Live | #35 (53ed6d4) | Session results first; map kept visible but smaller (Aman wanted it beside the analysis) |
 | P2.4 Weekly analysis | Live | #32 (c12326b) | Takeaway and Next focus first, four clear states |
-| P2.5 Progress: Strength | In review | #40 | Latest/period changes first; evidence in PR #40 |
+| P2.5 Progress: Strength | Merged | #40 | Release validation in progress |
 | P2.6 Progress: Muscles | To do | | |
 | P2.7 Progress: Consistency | Merged | #39 | Release validation in progress |
 | P2.8 Weekly volume reports | Live | #37 (94eeeab) | Plain counted wording, one rounded volume format |

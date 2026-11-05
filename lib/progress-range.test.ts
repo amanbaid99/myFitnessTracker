@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sessionsInRange, sessionChange } from "./progress-range";
+import { sessionsInRange, sessionChange, strengthTrend } from "./progress-range";
 const now = new Date(2026,10,3,12);
 describe("Progress comparison periods",()=>{
   it("keeps session order, includes the boundary day and excludes future/invalid sessions",()=>{
@@ -10,5 +10,17 @@ describe("Progress comparison periods",()=>{
   });
   it("distinguishes a single session, steady and declining trends",()=>{
     expect(sessionChange([])).toBeNull();expect(sessionChange([{e1rmKg:20}])).toBeNull();expect(sessionChange([{e1rmKg:20},{e1rmKg:20}])).toBe(0);expect(sessionChange([{e1rmKg:30},{e1rmKg:25}])).toBe(-5);
+  });
+});
+
+describe("strength trend presentation",()=>{
+  it("distinguishes missing comparisons from steady performance",()=>{
+    expect(strengthTrend([{e1rmKg:100}])).toEqual({change:null,direction:"unavailable"});
+    expect(strengthTrend([{e1rmKg:100},{e1rmKg:100}])).toEqual({change:0,direction:"steady"});
+  });
+  it("keeps the arrow and displayed change consistent at either threshold",()=>{
+    expect(strengthTrend([{e1rmKg:0},{e1rmKg:0.05}]).direction).toBe("up");
+    expect(strengthTrend([{e1rmKg:0.05},{e1rmKg:0}]).direction).toBe("down");
+    expect(strengthTrend([{e1rmKg:0},{e1rmKg:0.04}]).direction).toBe("steady");
   });
 });

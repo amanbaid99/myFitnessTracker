@@ -1858,6 +1858,28 @@ weekly target reports use India time and the streak/calendar retain clearly
 labelled device time. The separate P2.10 review is still open. Coaching stays
 paused, and What's new wording remains subject to owner approval.
 
+## 2026-11-04: Strength results before supporting summaries (P2.5)
+
+Recheck the owner's new tracker merge at e3d8f24 and preserve Consistency
+in the still-open PR #39. Put the Strength exercise list directly after
+its filters; activity counts remain in Training overview below the results.
+Emphasize the latest set and selected-period change, with the all-time best
+secondary. Keep one-session trends unavailable and explain that missing
+load/rep estimates are not zero progress. Keep filtering, sort, periods,
+SQL metrics, kg storage and week boundaries unchanged. Align the trend arrow
+with the existing 0.05 display threshold, including exact boundary values.
+Mask complete performance rows for replay privacy. Tabs and summary cards
+reflow at larger text sizes without shrinking touch targets. Filters stack
+and sparklines stay with secondary record details so larger text retains
+space for readable exercise names and performance.
+
+A review-only handoff must not race automatic preview jobs. The existing
+workflow published previews during earlier branch updates before cancellation
+completed. Reserve `ui/review-*` branches for validation without deployment.
+Only the deploy job is skipped for this prefix; app/database checks still
+run, normal feature branches retain previews, and the existing production
+branch keeps its release behavior. No credentials or migration logic change.
+
 ## 2026-11-05: Finish and release the remaining UI phases (owner approval)
 
 Aman explicitly approved completing all remaining UI changes one by one and
