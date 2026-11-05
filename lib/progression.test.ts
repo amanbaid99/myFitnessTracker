@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustNextSet, aimForSession, feelFromRpe, FEEL_RPE, parseWeightStep, stepKg } from "./progression";
+import { adjustNextSet, aimForSession, feelFromRpe, FEEL_RPE, parseWeightStep, stepKg, stepUp } from "./progression";
 
 const set = (weightKg: number | null, reps: number | null, rpe: number | null = null, addedKg = 0) => ({ weightKg, addedKg, reps, rpe });
 
@@ -36,9 +36,22 @@ describe("aimForSession", () => {
       .toMatchObject({ weightKg: 82.5, reps: 6 });
   });
 
-  it("steps by the exercise's weight step (1.25 kg here) and keeps the add-on weight", () => {
+  it("takes the add-on off and moves the main weight up a full step (Aman, 5 Nov)", () => {
+    // 50 kg + 3.75 kg clip on a 7.5 kg stack: next is 57.5 kg, no clip.
+    const aim = aimForSession({ lastSets: [set(50, 10, 7.5, 3.75), set(50, 10, 7.5, 3.75), set(50, 10, 7.5, 3.75)], targetSets: 3, targetReps: 10, equipment: "machine", weightStepKg: 7.5 });
+    expect(aim).toMatchObject({ weightKg: 57.5, addedKg: 0, readyToIncrease: true });
+    expect(aim!.reason).toContain("add-on off");
+  });
+
+  it("an add-on of a full step or more still lands heavier than before", () => {
+    // 35 kg + 3.75 kg on a 1.25 kg step (38.75 total): next is 40 kg, no add-on.
     const aim = aimForSession({ lastSets: [set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75)], targetSets: 3, targetReps: 12, equipment: "cable", weightStepKg: 1.25 });
-    expect(aim).toMatchObject({ weightKg: 36.25, addedKg: 3.75, reps: 12 });
+    expect(aim).toMatchObject({ weightKg: 40, addedKg: 0, reps: 12 });
+  });
+
+  it("keeps the add-on when the weight does not go up", () => {
+    const aim = aimForSession({ lastSets: [set(50, 10, 9, 3.75), set(50, 9, 9, 3.75), set(50, 8, 9, 3.75)], targetSets: 3, targetReps: 10, equipment: "machine", weightStepKg: 7.5 });
+    expect(aim).toMatchObject({ weightKg: 50, addedKg: 3.75 });
   });
 
   it("hit targets but it felt hard or max: repeat the weight", () => {
@@ -72,9 +85,9 @@ describe("adjustNextSet", () => {
   const planned = { weightKg: 15, reps: 10 };
   const base = { planned, targetReps: 10, equipment: "machine" };
   it("easy at target reps: next set goes up a step, with reps that keep the volume", () => {
-    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "easy" })).toEqual({ weightKg: 17.5, reps: 9 });
+    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "easy" })).toEqual({ weightKg: 17.5, reps: 9, addedKg: 0 });
     expect(adjustNextSet({ ...base, planned: { weightKg: 12.5, reps: 10 }, done: { weightKg: 12.5, reps: 10 }, feel: "easy", equipment: "dumbbell" }))
-      .toEqual({ weightKg: 15, reps: 8 });
+      .toEqual({ weightKg: 15, reps: 8, addedKg: 0 });
   });
   it("easy below target reps: one more rep, same weight", () => {
     expect(adjustNextSet({ ...base, planned: { weightKg: 15, reps: 8 }, done: { weightKg: 15, reps: 8 }, feel: "easy" }))
@@ -140,5 +153,21 @@ describe("parseWeightStep", () => {
   });
   it("rejects empty, zero, negative, too large and non-numbers", () => {
     for (const bad of ["", " ", "0", "0.001", "-1", "20.5", "abc"]) expect(parseWeightStep(bad)).toBeNull();
+  });
+});
+
+describe("stepUp and Easy with an add-on", () => {
+  it("drops the add-on and steps the main weight", () => {
+    expect(stepUp(50, 3.75, 7.5)).toEqual({ weightKg: 57.5, addedKg: 0 });
+    expect(stepUp(50, 0, 7.5)).toEqual({ weightKg: 57.5, addedKg: 0 });
+    expect(stepUp(50, 7.5, 7.5)).toEqual({ weightKg: 65, addedKg: 0 });
+  });
+  it("Easy at target with a clip on: next set is a full step up without the clip", () => {
+    const next = adjustNextSet({ done: { weightKg: 50, reps: 10, addedKg: 3.75 }, planned: { weightKg: 50, reps: 10 }, targetReps: 10, feel: "easy", equipment: "machine", weightStepKg: 7.5 });
+    expect(next).toMatchObject({ weightKg: 57.5, addedKg: 0 });
+  });
+  it("Good and Hard leave the add-on alone", () => {
+    const next = adjustNextSet({ done: { weightKg: 50, reps: 10, addedKg: 3.75 }, planned: { weightKg: 50, reps: 10 }, targetReps: 10, feel: "hard", equipment: "machine", weightStepKg: 7.5 });
+    expect(next.addedKg).toBeUndefined();
   });
 });
