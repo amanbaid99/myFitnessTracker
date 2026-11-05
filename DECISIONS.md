@@ -1825,6 +1825,21 @@ in-progress week is labelled and drawn lighter. Loading and errors appear
 beside the breakdown menu that caused them. The SQL report, week
 boundaries and the Consistency panel are unchanged.
 
+## 2026-11-04: Show every working set in its original order (owner feedback)
+
+Aman logs some sets after performing them and needs the full set list to
+stay visible. Replace the single-set default and All sets toggle with an
+always-visible list for the open exercise. Keep the next unlogged, unskipped
+set highlighted without moving it ahead of earlier rows. The header shows
+logged and total counts, with skipped work identified separately.
+
+Keep editable prefilled values, one-tap logging on any row, effort feedback,
+Undo, skip/restore, added sets and all existing workout behavior. No save,
+outbox, metric, progression or week calculation changes. This supersedes the
+Phase 1 default of hiding other working rows, while retaining its visual
+current-set focus. Carry the review-only CI guard from PR #40 so validation
+of this independent fix does not publish a preview; production releases and
+other feature previews keep their existing behavior.
 ## 2026-11-04: One current goal in Consistency (P2.7)
 
 After reviewing the owner's merges through PR #37, continue with Consistency
@@ -1864,3 +1879,13 @@ completed. Reserve `ui/review-*` branches for validation without deployment.
 Only the deploy job is skipped for this prefix; app/database checks still
 run, normal feature branches retain previews, and the existing production
 branch keeps its release behavior. No credentials or migration logic change.
+
+## 2026-11-05: Finish and release the remaining UI phases (owner approval)
+
+Aman explicitly approved completing all remaining UI changes one by one and
+releasing them without another approval step. Continue using review branches,
+PRs, browser evidence and passing checks, then merge and verify production.
+This authorizes the remaining weekly-boundary alignment and concise release
+copy describing the delivered changes. Human coaching remains paused as
+previously requested. No schema changes are planned; preserve existing data,
+logging, privacy and training behavior.

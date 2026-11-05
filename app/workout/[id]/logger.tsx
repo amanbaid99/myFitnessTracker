@@ -162,7 +162,6 @@ export function Logger(props: {
   }, [exercises]);
   const [checked, setChecked] = useState<number[]>([]);
   const [skipped, setSkipped] = useState<string[]>([]);
-  const [allSetsOpen,setAllSetsOpen]=useState<Record<string,boolean>>({});
   const writing=useRef(new Set<string>());
   const [saveState,setSaveState]=useState<"idle"|"local"|"synced"|"error">("idle");
   const syncFailed=useRef(false);
@@ -1014,9 +1013,12 @@ export function Logger(props: {
               )}
 
               <div className="mt-1 border-t px-2 pt-1">
-                <div className="flex min-h-11 items-center justify-between gap-2 px-2"><p className="text-sm font-medium">{currentKey?"Current working set":"Working sets complete"}</p><Button variant="ghost" aria-expanded={Boolean(allSetsOpen[ex.exerciseId])} onClick={()=>setAllSetsOpen(p=>({...p,[ex.exerciseId]:!p[ex.exerciseId]}))}>All sets ({ex.working.length})</Button></div>
-                {[...ex.working].sort((a,b)=>Number(b.key===currentKey)-Number(a.key===currentKey)).map((row) => (
-                  <div key={row.key} hidden={row.key!==currentKey&&row.key!==feelKey&&!allSetsOpen[ex.exerciseId]} className={row.key===currentKey?"rounded-xl border-2 border-primary bg-primary/5 p-1":"border-t"}>
+                <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-2">
+                  <p className="text-sm font-medium">Working sets</p>
+                  <p className="text-xs tabular-nums text-muted-foreground">{ex.working.filter(row=>row.logged).length} of {ex.working.length} logged{ex.working.some(row=>row.skipped&&!row.logged)?` · ${ex.working.filter(row=>row.skipped&&!row.logged).length} skipped`:""}</p>
+                </div>
+                {ex.working.map((row) => (
+                  <div key={row.key} className={row.key===currentKey?"rounded-xl border-2 border-primary bg-primary/5 p-1":"border-t"}>
                     {row.key===currentKey&&<p className="px-2 pt-2 text-sm font-medium">Set {row.setNo} of {ex.working.length} · {formatTarget(1,item.targetReps,item.exercise.tracking)}</p>}
                     {row.skipped && !row.logged ? (
                       <div className="flex min-h-11 items-center justify-between px-2 text-sm text-muted-foreground">
