@@ -31,6 +31,11 @@ Last updated: 2026-11-05.
 | P4.5 workout adjustments | Rechecked | #30, final-phase evidence | Existing separate Rest timer/Swap exercise, owner-approved scopes and offline behavior retained |
 | P4.8 authentication copy | Pending hosted recovery test | Separate follow-up | Staging account/test inbox requested; no production test accounts or emails |
 
+Owner update (5 Nov): Start and Resume must share the same home workout
+card below the weekly summary. This supersedes the earlier Resume-above-
+analysis requirement below. The focused home refinement is in review on
+`ui/review-home-card-refinement`; other pending work remains paused.
+
 Shared helpers added so far (reuse them): `volumeLabel` and
 `exerciseHeadline` (lib/progress.ts), `reportSetsLine`
 (lib/training-reports.ts), `recapStatus`, `activeFilterSummary`,

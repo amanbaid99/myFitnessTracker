@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Check, ChevronDown, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
 import { WorkoutRecap } from "@/components/workout-recap";
 import { DemoNav } from "@/components/demo-nav";
+import { HomeWorkoutCard } from "@/components/home/workout-card";
+import { HomeWorkoutRecap } from "@/components/home/workout-recap-link";
 import { HomeHero } from "@/components/home/home-hero";
 import { WeeklyReviewCard } from "@/components/home/weekly-review-card";
 import { PlanDays } from "@/components/plan-days";
@@ -36,6 +38,8 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
   const { finished } = await searchParams;
   const next = DEMO_ROUTINES.find((r) => r.id === DEMO_NEXT_ROUTINE_ID)!;
   const others = DEMO_ROUTINES.filter((r) => r.id !== next.id);
+  const latestId = [...DEMO_LAST_DONE].sort((a,b) => b[1].localeCompare(a[1]))[0]?.[0];
+  const latest = DEMO_ROUTINES.find(r => r.id === latestId);
 
   return (
     <>
@@ -69,21 +73,10 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </HomeHero>
         </div>
 
-        <section className="mt-4 overflow-hidden rounded-2xl border bg-card p-4">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary">Next up</p>
-            <p className="text-xs text-muted-foreground">{relativeDay(DEMO_LAST_DONE.get(next.id))}</p>
-          </div>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight">{next.name}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {next.exercises.length} {next.exercises.length === 1 ? "exercise" : "exercises"} · Warm-up included
-          </p>
-          <Button asChild size="lg" className="mt-3 w-full">
-            <Link href={`/demo/workout/${next.id}`}>
-              <Play /> Try this workout
-            </Link>
-          </Button>
-        <details className="group mt-2 border-t border-border/60">
+        <HomeWorkoutCard name={next.name} exerciseCount={next.exercises.length} lastDone={relativeDay(DEMO_LAST_DONE.get(next.id))}
+          action={<Button asChild size="lg" className="w-full"><Link href={`/demo/workout/${next.id}`}><Play />Try this workout</Link></Button>}
+          footer={
+        <details className="group">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
           <ul className="divide-y border-t">
             {others.map((routine) => (
@@ -103,7 +96,10 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
             ))}
           </ul>
         </details>
-        </section>
+          }
+        />
+        {latest && <HomeWorkoutRecap href="/demo?finished=1" name={latest.name} startedAt={DEMO_LAST_DONE.get(latest.id)!} when={relativeDay(DEMO_LAST_DONE.get(latest.id))} />}
+
 
 
 

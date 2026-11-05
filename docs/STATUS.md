@@ -8,6 +8,15 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Owner's focused home-page request on
+  `ui/review-home-card-refinement`, based on live 2edec61 (#51). Analysis
+  keeps the same content with tighter hierarchy; Start and Resume share
+  the card below it; latest recap uses History's contained surface/date
+  tile. No query, workout, analysis-generation or outbox changes. Before/
+  after screenshots and browser assertions in `docs/ui-evidence/home-refinement`.
+  Prepare for owner review only. The other UI backlog and unpublished auth
+  draft remain paused; no automatic merge or release is authorized here.
+
 - 2026-11-05: Branch `ui/review-exercise-sheet`: the plan exercise sheet no
   longer hides sections in collapsed boxes (Aman could not tell they opened).
   Everything shows in one scroll under plain headings; Add previous record is

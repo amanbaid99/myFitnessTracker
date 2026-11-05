@@ -85,25 +85,27 @@ export function WeeklyReviewCard({ lastEndedAt, lastStartedAt, lastWorkoutId, de
   const preview = shown ? reviewPreview(shown.summary) : null;
   return (
     <section className="bg-gradient-to-br from-accent/30 via-card to-card px-4 pt-4 pb-1" aria-label="Current week analysis" aria-live="polite">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2 text-primary"><Sparkles className="size-4 shrink-0" aria-hidden /><h2 className="truncate text-sm font-semibold">{showLast ? "Last week" : "Your week so far"}</h2></div>
-        <p className="shrink-0 text-xs text-muted-foreground">{!showLast && <span className={shownWeek ? "hidden min-[360px]:inline" : ""}>This week{shownWeek ? " · " : ""}</span>}{shownWeek ? shortWeekRange(shownWeek) : ""}</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <div className="flex min-w-0 items-center gap-2"><Sparkles className="size-4 shrink-0 text-primary" aria-hidden /><h2 className="truncate text-sm font-semibold">{showLast ? "Last week" : "Your week so far"}</h2></div>
+        <p className="shrink-0 text-xs text-muted-foreground">{shownWeek ? shortWeekRange(shownWeek) : "This week"}</p>
       </div>
       {shown ? <div className={MASK}>
         <h3 className="sr-only">{shown.title}</h3>
-        <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{preview!.overview}</p>
-        {preview!.focus && <p className="mt-2 line-clamp-3 text-sm leading-relaxed"><span className="font-medium text-primary">Next focus: </span>{preview!.focus}</p>}
-        <Link href={showLast ? `${fullHref}?week=last` : fullHref} className="mt-1 flex min-h-11 items-center justify-between gap-2 text-sm font-medium text-foreground">
-          Read full analysis
-          <ChevronRight className="size-4" aria-hidden />
-        </Link>
+        <p className="mt-2 line-clamp-3 text-sm leading-5 text-foreground">{preview!.overview}</p>
+        {preview!.focus && <p className="mt-2 line-clamp-2 text-sm leading-5 text-muted-foreground"><span className="font-medium text-primary">Next focus: </span>{preview!.focus}</p>}
+        <div className="mt-1 flex items-center gap-1">
+          <Link href={showLast ? `${fullHref}?week=last` : fullHref} className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-2 text-sm font-medium text-foreground">
+            <span className="min-w-0 break-words">Read full analysis</span><ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          </Link>
+          {hasWorkout && (!review || stale) && !failed && <Button variant="ghost" size="icon" className="-mr-2 text-muted-foreground" onClick={retry} disabled={waiting} aria-busy={waiting} aria-label={waiting ? "Analysing your week…" : "Refresh analysis"} title={waiting ? "Analysing your week…" : "Refresh analysis"}><RotateCcw className={waiting ? "motion-safe:animate-spin" : ""} /></Button>}
+        </div>
         {stale && <p className="mt-1 text-xs text-muted-foreground">Updating after your latest workout analysis.</p>}
         {showLast && !hasWorkout && <p className="mb-2 text-xs text-muted-foreground">This week&apos;s analysis starts after your first workout.</p>}
       </div> : <div className="mt-2 flex min-h-11 items-center justify-between gap-2" role={failed ? "alert" : "status"}>
         <p className="min-w-0 text-sm text-muted-foreground">{weeklyCardEmpty({ failed, hasWorkout: Boolean(hasWorkout) })}</p>
         {failed && <Button variant="ghost" className="-mr-3 shrink-0 px-3" onClick={() => setReload((n) => n + 1)}><RotateCcw className="size-4" />Try again</Button>}
       </div>}
-      {hasWorkout && (!review || stale) && !failed && <Button variant="ghost" className="-ml-3 mb-1 px-3 text-muted-foreground" onClick={retry} disabled={waiting}><RotateCcw className={`size-4${waiting ? " motion-safe:animate-spin" : ""}`} />{waiting ? "Analysing your week…" : "Refresh analysis"}</Button>}
+      {!shown && hasWorkout && (!review || stale) && !failed && <Button variant="ghost" className="-ml-3 mb-1 px-3 text-muted-foreground" onClick={retry} disabled={waiting}><RotateCcw className={`size-4${waiting ? " motion-safe:animate-spin" : ""}`} />{waiting ? "Analysing your week…" : "Refresh analysis"}</Button>}
       {retryError && <p role="alert" className="mt-2 text-sm text-destructive">Could not start the analysis. Check your connection and try again.</p>}
 
     </section>
