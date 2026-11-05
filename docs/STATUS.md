@@ -8,11 +8,16 @@ Last updated: 2026-11-04.
 
 ## In progress
 
-- 2026-11-04: UI/UX improvement plan in progress. Tracker, full
-  requirements and how evidence is made: `docs/UI-PLAN.md`. Live: Phase 1
-  (PR #31) and P2.1 to P2.4, P2.8, P2.9 (PRs #32 to #37). Next: P2.7
-  Consistency, then P2.5, P2.6. P2.10 changes week counting, so ask Aman
-  first. P3.5 to P3.7 (human coaching) are skipped per Aman.
+- 2026-11-04: UI/UX improvement plan in progress. Tracker and requirements:
+  `docs/UI-PLAN.md`. Live: Phase 1 and P2.1 to P2.4, P2.8, P2.9
+  (PRs #31 to #37). P2.7 Consistency is ready in PR #39, not merged.
+  Evidence: `docs/ui-evidence/phase-2-consistency`. Next implementation:
+  P2.5 Strength, then P2.6 Muscles. P2.10 needs owner approval before
+  changing week calculations. Human coaching stays paused.
+  PR #39's branch CI published a preview before cancellation; no production
+  release occurred. Cancel push workflows immediately during this handoff;
+  pull-request CI performs app/database checks without deploying.
+
 
 - 2026-11-04: `fix/settings-measurement-system` consolidates units into one
   Metric/Imperial section and removes Settings rest controls. Workouts gain

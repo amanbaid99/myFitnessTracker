@@ -17,7 +17,7 @@ import { heatLink } from "@/lib/anatomy";
 import { track } from "@/lib/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatE1rm, formatSet } from "@/lib/format";
-import { dayKey, muscleWeeks, trainingCalendar, weekStreak, workoutsThisWeek } from "@/lib/progress";
+import { muscleWeeks, trainingCalendar, weekStreak, workoutsThisWeek } from "@/lib/progress";
 import { sessionsInRange, sessionChange, type ProgressRange } from "@/lib/progress-range";
 import type { Units } from "@/lib/units";
 import { cn } from "@/lib/utils";
@@ -62,14 +62,14 @@ export function ProgressOverview({ workoutDates, muscleRows, exercises, units, u
     (event.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus();
   }
   return <div>
-    {mounted ? <section aria-label="Progress summary" className="mb-4 grid grid-cols-3 divide-x rounded-2xl border bg-card py-4 text-center">
+    <div role="tablist" aria-label="Progress views" className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] gap-1 rounded-xl bg-muted/60 p-1">
+      {TABS.map((name, index) => <button key={name} type="button" role="tab" id={`${id}-${name}`} aria-controls={`${id}-panel`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onKeyDown={e => navigateTabs(e, index)} onClick={() => setTab(name)} className={cn("min-h-11 min-w-0 break-words rounded-lg px-1 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring", tab === name ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{name}</button>)}
+    </div>
+    {tab !== "Consistency" && (mounted ? <section aria-label="Progress summary" className="mb-4 grid grid-cols-3 divide-x rounded-2xl border bg-card py-4 text-center">
       <div><p className="text-2xl font-semibold tabular-nums">{weekStreak(dates, now)}</p><p className="mt-1 text-xs text-muted-foreground">Week streak</p></div>
       <div><p className="text-2xl font-semibold tabular-nums">{workoutsThisWeek(dates, now)}</p><p className="mt-1 text-xs text-muted-foreground">Workouts this week</p></div>
       <div><p className="text-2xl font-semibold tabular-nums">{exercises.filter(e => e.sessions.length).length}</p><p className="mt-1 text-xs text-muted-foreground">Exercises tracked</p></div>
-    </section> : <Skeleton className="mb-4 h-24 rounded-2xl" />}
-    <div role="tablist" aria-label="Progress views" className="mb-4 grid grid-cols-3 gap-1 rounded-xl bg-muted/60 p-1">
-      {TABS.map((name, index) => <button key={name} type="button" role="tab" id={`${id}-${name}`} aria-controls={`${id}-panel`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onKeyDown={e => navigateTabs(e, index)} onClick={() => setTab(name)} className={cn("min-h-11 rounded-lg px-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring", tab === name ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{name}</button>)}
-    </div>
+    </section> : <Skeleton className="mb-4 h-24 rounded-2xl" />)}
     <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`} tabIndex={0}>
       {!mounted ? <Skeleton className="h-56 rounded-2xl" /> : tab === "Strength" ? <><ExerciseList exercises={exercises} units={units} demo={demo} state={strength} onChange={setStrength} />{reports&&<details className="mt-4"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Weekly volume reports</summary><TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo}/></details>}</> : tab === "Muscles" ? <>{coverage&&<CoverageInsights initial={coverage} userId={userId} demo={demo}/>}<MuscleVolume rows={muscleRows} unmapped={unmapped} demo={demo}/></> : <>{reports&&<TrainingReports initial={reports.rows} available={reports.available} userId={userId} exercises={exercises} units={units} demo={demo} consistency/>}<div className="mt-4"><Consistency workoutDates={workoutDates}/></div></>}
     </div>
@@ -86,15 +86,10 @@ function Consistency({ workoutDates }: { workoutDates: string[] }) {
   const month = new Intl.DateTimeFormat("en-GB", { month: "short" });
   return <section className="rounded-2xl border bg-card p-4">
     <h2 className="font-semibold">Training rhythm</h2>
-    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">A streak counts weeks with at least one workout. An unfinished week does not break it.</p>
-    <h3 className="mt-4 text-sm font-medium">Recent weeks</h3>
-    <ul className="mt-1 divide-y">{calendar.slice(-4).reverse().map((week, index) => {
-      const start = week[0].key, end = week[6].key;
-      const count = dates.filter(d => dayKey(d) >= start && dayKey(d) <= end).length;
-      return <li key={start} className="flex min-h-11 items-center justify-between gap-2 text-sm"><span>{index === 0 ? "This week" : `${fmt.format(week[0].date)} to ${fmt.format(week[6].date)}`}</span><span className="tabular-nums text-muted-foreground">{count} {count === 1 ? "workout" : "workouts"}</span></li>;
-    })}</ul>
+    <p className="mt-2 text-2xl font-semibold tabular-nums">{weekStreak(dates,now)}-week streak</p>
+    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Weeks with at least one workout, in your device timezone. This week does not break your streak while it is still in progress.</p>
     <details className="group mt-2 border-t">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium">Training calendar<ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden /></summary>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium">12-week activity calendar<ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden /></summary>
       <div role="img" aria-label={`${days.filter(d => d.trained).length} training days over the last 12 weeks. One square per day.`} className="flex gap-2 pb-2">
         <div className="mt-5 grid shrink-0 grid-rows-7 gap-[3px] text-[10px] leading-[14px] text-muted-foreground" aria-hidden>{["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(d => <span key={d}>{d}</span>)}</div>
         <div className="min-w-0 flex-1"><div className="mb-1 grid h-4 grid-cols-12 gap-[3px] text-[9px] text-muted-foreground" aria-hidden>{calendar.map((week, i) => <span key={week[0].key}>{i === 0 || week[0].date.getMonth() !== calendar[i - 1][0].date.getMonth() ? month.format(week[0].date) : ""}</span>)}</div>

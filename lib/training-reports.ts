@@ -50,3 +50,16 @@ export function reportSetsLine(eligible: number, excluded: number): string {
   const counted = `${sets(eligible)} counted`;
   return excluded > 0 ? `${counted} · ${sets(excluded)} not counted (bodyweight, bands or timed)` : counted;
 }
+
+/** One explanation outside the list covers missing targets, without inventing old goals. */
+export function historicalGoalLine(week: Pick<TrainingWeek, "workouts" | "target">) {
+  const completion = goalCompletion(week.workouts, week.target);
+  if (!completion) return `${week.workouts} ${week.workouts === 1 ? "workout" : "workouts"}`;
+  const status = completion.extra ? `${completion.extra} above target` : completion.remaining ? `${completion.remaining} below target` : "Goal met";
+  return `${week.workouts} / ${week.target} · ${completion.percent}% · ${status}`;
+}
+
+/** A report date is an India-time week key, not a device-local timestamp. */
+export function targetWeekLabel(start: string) {
+  return `Week of ${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${start}T12:00:00Z`))}`;
+}
