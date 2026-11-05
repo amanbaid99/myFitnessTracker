@@ -19,12 +19,13 @@ export const FAQ: FaqSection[] = [
     id: "training-feedback",
     title: "Training reports and workout options",
     items: [
-      { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Units and measurements, choose Metric (kg, cm) or Imperial (lb, ft/in), then Save units. This single preference controls workout weights, body weight, height and body measurements. Your recorded values stay unchanged."] },
+      { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Training preferences, Measurement system, choose Metric (kg, cm) or Imperial (lb, ft/in), then Save units. This single preference controls workout weights, body weight, height and body measurements. Your recorded values stay unchanged."] },
       { q: "What if the equipment I need is busy?", a: ["Open Exercise options and history, then tap Swap exercise. Choose a quick alternative, search, or use Suggest with AI and filter available equipment. Choosing swaps this session only; your plan stays unchanged. Logged sets must be unticked before swapping. Check the replacement weight; it uses its own history. Existing library swaps work offline. AI and new exercises need a connection."] },
       { q: "Can AI make today a dumbbell workout?", a: ["Tap Dumbbell workout with AI during a workout, then Create with AI. Review the proposed exercises, muscles, sets and reps, then choose Use this workout today. Only remaining planned exercises change; logged exercises and added extras stay intact. The regular plan is unchanged. Check each exercise's weight before logging. This supports up to 15 remaining exercises and uses the shared daily AI allowance."] },
       { q: "How is weekly training volume calculated?", a: ["Progress, Strength, Weekly volume reports adds load times reps for eligible working sets in completed app workouts. Weeks run Monday to Sunday in India time. Filter by exercise or muscle. Warm-ups, deleted sets, cancelled sessions, imports, starting records, bodyweight, bands and timed work are excluded. Per-hand weights use the entered load without doubling. Muscle breakdowns credit the primary muscle fully and supporting muscles by half, so muscle totals overlap. This week is unfinished; more volume does not always mean better training."] },
       { q: "What does goal completion mean?", a: ["Progress, Consistency opens with this week's completed workouts, target and completion percentage. You can change the current target under Set this week's target. Expand Recent weeks and targets for earlier weeks. Closed weeks keep their recorded targets; older weeks without a snapshot show completed workouts only, with one explanation. We do not guess which days were missed. The streak and expandable 12-week calendar use your device timezone, while weekly targets and reports use India time."] },
       { q: "How do monthly measurement reminders work?", a: ["Open Measurements from Settings to record optional weight, waist, chest, hips, arm circumference or a body fat estimate and its method. Weight also updates your daily weight log. A reminder appears on Today in a new month after at least 28 days without a measurement or weight log. Snooze for seven days or turn reminders off. Circumferences support cm and inches; body fat readings are estimates that depend on the method."] },
+      { q: "How do I record or edit measurements?", a: ["Open Measurements from Settings. Start with a fresh weight reading or choose Add more measurements. All readings are optional; previous entries are never assumed to be new readings. Edit beside a past date brings you to its form. Save changes replaces that date's measurement entry; Cancel starts a blank check-in. Body-fat estimates show their measurement method. Monthly reminder preferences are below history."] },
       { q: "Why does Progress mention muscle coverage?", a: ["Weekly muscle comparisons use Monday to Sunday in India time, matching weekly reports and Today activity markers. Streaks and the activity calendar use your device timezone. The Muscles tab reviews the last 28 days after at least three completed sessions. It flags selected muscle groups with no logged sets, using your active plan or an explicit balanced-coverage goal. Open Coverage details and goals to inspect missing groups, choose your goal, exclude intentionally omitted groups or pause for recovery. Cancel leaves your saved preferences unchanged. Unmapped exercises prevent conclusions. This describes logged coverage, not a diagnosis or a judgement about your programme."] },
     ],
   },
@@ -245,7 +246,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What does the AI do?",
         a: [
-          "After each workout it writes a short review that compares today with last time. Coach answers questions about your training. It can also build a plan from your description and write a day's warm-up and cool-down.",
+          "After each workout it writes a short review that compares today with last time. AI Coach answers questions about your training and keeps the selected scope and conversation when you navigate within the app. It can also build a plan from your description and write a day's warm-up and cool-down.",
         ],
       },
       {
@@ -276,13 +277,13 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I switch between kg and lb?",
         a: [
-          "Settings, then Your details, then Weight in. Everything is stored in kg and shown in the unit you pick, so switching never changes your history.",
+          "Settings, then Training preferences, then Measurement system. Everything is stored in kg and shown in the unit you pick, so switching never changes your history.",
         ],
       },
       {
         q: "Can I change the colours?",
         a: [
-          "Yes: Settings, then Appearance. Pick a Dark, Light or Beige background and one of 10 accent colours. It's saved on that device. On iPhone, close and reopen the installed app to update the status bar colour.",
+          "Yes: Settings, then Appearance, then Customize colours. Pick a Dark, Light or Beige background and one of 10 accent colours. It's saved on that device. On iPhone, close and reopen the installed app to update the status bar colour.",
         ],
       },
       {

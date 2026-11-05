@@ -68,6 +68,13 @@ export interface WhatsNewEntry {
 /** Newest first. Add an entry only once Aman has approved it. */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: "optional-checkins-and-settings",
+    date: "2026-11-05",
+    title: "Easier check-ins and Settings",
+    body: "Record a quick weight check-in or add optional readings. Edit past dates with a clear Cancel, and find preferences in grouped Settings.",
+    href: "/measurements",
+  },
+  {
     id: "clearer-progress-and-set-list",
     date: "2026-11-05",
     title: "Clearer progress and workout sets",

@@ -1912,3 +1912,25 @@ work handling or historical date rendering. Device-local streaks and the
 activity calendar remain unchanged and labelled; they describe a different
 activity rhythm, not goal completion. Verify Sunday/Monday and DST in
 multiple host/browser timezones.
+
+
+## 2026-11-05: Optional measurements and grouped Settings (UI Phase 3)
+
+Keep Settings as grouped destinations, with units and colours opened only
+when needed. Rest stays in workouts/plans. Human-coaching items remain
+paused as Aman requested. Measurement entry starts with a blank weight;
+additional readings are an explicit action and remain optional. Hiding
+fields retains unsaved inputs. Editing fills the chosen entry, scrolls to
+its form and focuses the date, with clear replacement copy and Cancel.
+Cancel or success returns to a blank fresh check-in. Preserve the atomic
+save RPC, ranges, conversions and method labels. Put reminder preferences
+below history, with their own feedback. Calendar dates render in UTC so
+stored dates do not shift on western devices.
+
+Name the existing assistant AI Coach without adding a human-coaching link.
+Keep scoped chat history and restore it before persistence, avoiding an
+initial empty write. Retain failed questions for retry. Grow shared text
+buttons for wrapped labels while retaining 44 px targets, visible focus,
+icon sizes and reduced-motion press feedback. Shared page headings wrap
+inside the profile space. These shared fixes are required for Phase 3's
+long labels and will be rechecked in Phase 4.

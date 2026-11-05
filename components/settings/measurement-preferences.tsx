@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { MeasurementSystem } from "@/components/measurement-system";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +16,8 @@ export function MeasurementPreferences({
   demo?: boolean;
 }) {
   const router = useRouter();
+  const [savedUnits,setSavedUnits] = useState(initial);
+  const [editing, setEditing] = useState(false);
   const [units, setUnits] = useState(initial),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -33,6 +36,8 @@ export function MeasurementPreferences({
         if (error) throw error;
       }
       setMessage("Measurement system saved.");
+      setSavedUnits(units);
+      setEditing(false);
       if (!demo) router.refresh();
     } catch {
       setMessage("Could not save. Check your connection and try again.");
@@ -41,17 +46,18 @@ export function MeasurementPreferences({
     }
   }
   return (
-    <section className="mt-4 space-y-4 rounded-2xl border bg-card p-4">
-      <h2 className="font-semibold">Units and measurements</h2>
-      <MeasurementSystem value={units} onChange={setUnits} />
-      <Button className="w-full" disabled={busy} onClick={save}>
-        {busy ? "Saving…" : "Save units"}
+    <section>
+      <Button variant="outline" className="h-auto min-h-11 w-full flex-wrap justify-between whitespace-normal py-3 text-left" onClick={() => { setUnits(savedUnits); setMessage(""); setEditing(true); }}>
+        <span className="min-w-0 break-words">Measurement system</span><span className="min-w-0 break-words text-muted-foreground">{savedUnits === "lb" ? "Imperial · lb, in" : "Metric · kg, cm"}</span>
       </Button>
-      {message && (
-        <p role="status" className="text-xs text-muted-foreground">
-          {message}
-        </p>
-      )}
+      {message && !editing && <p role="status" className="mt-2 text-sm text-muted-foreground">{message}</p>}
+      {editing && <Sheet title="Measurement system" onClose={() => { if (!busy) setEditing(false); }}>
+        <div className="space-y-4"><MeasurementSystem value={units} onChange={setUnits} />
+          <Button className="w-full" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save units"}</Button>
+          {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
+          <Button variant="ghost" className="w-full" disabled={busy} onClick={() => setEditing(false)}>Cancel</Button>
+        </div>
+      </Sheet>}
     </section>
   );
 }

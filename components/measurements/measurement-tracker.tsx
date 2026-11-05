@@ -1,6 +1,6 @@
 "use client";
 import { useMounted } from "@/components/progress/use-mounted";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { fromKg, toKg, fromCm, toCm, type Units } from "@/lib/units";
+import { calendarDateLabel } from "@/lib/dates";
 import { localDay } from "@/lib/body-weight";
 import type { Measurement } from "@/lib/feedback-data";
 import { MASK } from "@/lib/mask";
@@ -41,6 +42,10 @@ export function MeasurementTracker({
   demo?: boolean;
 }) {
   const mounted = useMounted();
+  const form = useRef<HTMLFormElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [more, setMore] = useState(false);
+  const [reminderMessage,setReminderMessage] = useState("");
   const router = useRouter();
   const [date, setDate] = useState(localDay()),
     [values, setValues] = useState<Partial<Record<Metric, string>>>({}),
@@ -59,6 +64,12 @@ export function MeasurementTracker({
   const unit = (key: Metric) =>
     key === "weight_kg" ? units : key === "body_fat_pct" ? "%" : lengthUnit;
   function edit(row: Measurement) {
+    setEditing(true);
+    setMore(true);
+    requestAnimationFrame(() => {
+      form.current?.closest("section")?.scrollIntoView({block:"start",behavior:"instant"});
+      form.current?.querySelector<HTMLInputElement>('input[type="date"]')?.focus({preventScroll:true});
+    });
     setDate(row.measured_on);
     setValues(
       Object.fromEntries(
@@ -69,9 +80,7 @@ export function MeasurementTracker({
       ),
     );
     setMethod(row.body_fat_method ?? "smart_scale");
-    setMessage(
-      "Editing an existing date. Saving replaces only this measurement entry.",
-    );
+    setMessage("");
   }
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -136,12 +145,14 @@ export function MeasurementTracker({
         });
         if (error) throw error;
       }
+      setEditing(false);
+      setMore(false);
       setValues({});
       setDate(localDay());
       setMessage(
         demo
           ? "Sample saved. Nothing is stored."
-          : "Check-in saved. Entered weight also updates your body-weight log.",
+          : "Check-in saved.",
       );
       if (!demo) router.refresh();
     } catch {
@@ -168,11 +179,11 @@ export function MeasurementTracker({
         if (error) throw error;
       }
       setEnabled(!enabled);
-      setMessage(
+      setReminderMessage(
         !enabled ? "Monthly reminders enabled." : "Monthly reminders disabled.",
       );
     } catch {
-      setMessage("Could not change reminders. Try again online.");
+      setReminderMessage("Could not change reminders. Try again online.");
     } finally {
       setBusy(false);
     }
@@ -188,12 +199,11 @@ export function MeasurementTracker({
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border bg-card p-4">
-        <h2 className="font-semibold">Record a check-in</h2>
+        <h2 className={`font-semibold ${editing ? MASK : ""}`}>{editing ? `Edit check-in · ${calendarDateLabel(date)}` : "Quick weight check-in"}</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Every field is optional. Enter fresh measurements; previous values are
-          never assumed.
+          {editing ? "Saving replaces the measurement entry for the selected date. Blank fields stay empty." : "Enter a fresh reading. All measurements are optional."}
         </p>
-        <form onSubmit={save} className={`mt-4 space-y-3 ${MASK}`}>
+        <form ref={form} onSubmit={save} className={`mt-4 scroll-mt-4 space-y-3 ${MASK}`}>
           <label className="block text-sm">
             Measurement date
             <Input
@@ -212,8 +222,8 @@ export function MeasurementTracker({
               ? "Imperial units · change in Settings"
               : "Metric units · change in Settings"}
           </Link>
-          <div className="grid grid-cols-2 gap-3">
-            {METRICS.map(([key, label]) => (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3">
+            {METRICS.filter(([key]) => key === "weight_kg" || more).map(([key, label]) => (
               <label key={key} className="min-w-0 text-sm">
                 {label} ({unit(key)})
                 <Input
@@ -226,7 +236,8 @@ export function MeasurementTracker({
               </label>
             ))}
           </div>
-          {values.body_fat_pct?.trim() && (
+          <Button type="button" variant="ghost" className="h-auto min-h-11 w-full whitespace-normal py-2" aria-expanded={more} onClick={() => setMore(!more)}>{more ? "Hide additional measurements" : "Add more measurements"}</Button>
+          {more && values.body_fat_pct?.trim() && (
             <label className="block text-sm">
               Body fat estimate method
               <select
@@ -245,8 +256,10 @@ export function MeasurementTracker({
             </label>
           )}
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Saving…" : "Save check-in"}
+            {busy ? "Saving…" : editing ? "Save changes" : "Save check-in"}
           </Button>
+          {editing && <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={() => { setEditing(false); setMore(false); setDate(localDay()); setValues({}); setMethod("smart_scale"); setMessage(""); }}>Cancel</Button>}
+          {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
         </form>
       </section>
       <section className="rounded-2xl border bg-card p-4">
@@ -283,7 +296,7 @@ export function MeasurementTracker({
               >
                 <XAxis
                   dataKey="day"
-                  tickFormatter={(d) => d.slice(5)}
+                  tickFormatter={(d) => calendarDateLabel(d).replace(/ \d{4}$/, "")}
                   minTickGap={24}
                   tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                 />
@@ -321,22 +334,14 @@ export function MeasurementTracker({
             {records.map((row) => (
               <li key={row.id} className="py-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">{row.measured_on}</p>
-                  <Button variant="ghost" onClick={() => edit(row)}>
+                  <p className="text-sm font-medium">{calendarDateLabel(row.measured_on)}</p>
+                  <Button variant="ghost" disabled={busy} aria-label={`Edit check-in ${calendarDateLabel(row.measured_on)}`} onClick={() => edit(row)}>
                     Edit
                   </Button>
                 </div>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {METRICS.filter(([key]) => row[key] !== null)
-                    .map(
-                      ([key, label]) =>
-                        `${label}: ${convert(key, Number(row[key]))} ${unit(key)}`,
-                    )
-                    .join(" · ")}
-                  {row.body_fat_pct !== null
-                    ? ` · method: ${row.body_fat_method?.replace("_", " ")}`
-                    : ""}
-                </p>
+                <dl className="mt-2 grid gap-2 text-sm">
+                  {METRICS.filter(([key]) => row[key] !== null).map(([key,label]) => <div key={key} className="flex flex-wrap justify-between gap-1"><dt className="text-muted-foreground">{label}{key === "body_fat_pct" && <span className="block text-xs">{row.body_fat_method === "smart_scale" ? "Smart scale" : row.body_fat_method === "calipers" ? "Calipers" : "Other estimate"}</span>}</dt><dd className="font-medium tabular-nums">{convert(key,Number(row[key]))} {unit(key)}</dd></div>)}
+                </dl>
               </li>
             ))}
           </ul>
@@ -347,17 +352,11 @@ export function MeasurementTracker({
           </p>
         )}
       </section>
-      <Button
-        variant="secondary"
-        className="w-full"
-        disabled={busy}
-        onClick={toggle}
-      >
-        {enabled ? "Turn off monthly reminders" : "Enable monthly reminders"}
-      </Button>
-      <p role="status" className="text-sm text-muted-foreground">
-        {message}
-      </p>
+      <details id="reminders" className="rounded-2xl border bg-card p-4"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Monthly reminder preferences</summary>
+        <p className="my-2 text-sm text-muted-foreground">Optional prompts for a fresh check-in at the start of a new month.</p>
+        <Button variant="secondary" className="h-auto min-h-11 w-full whitespace-normal py-2" disabled={busy} onClick={toggle}>{enabled ? "Turn off monthly reminders" : "Enable monthly reminders"}</Button>
+        {reminderMessage && <p role="status" className="mt-2 text-sm text-muted-foreground">{reminderMessage}</p>}
+      </details>
     </div>
   );
 }
