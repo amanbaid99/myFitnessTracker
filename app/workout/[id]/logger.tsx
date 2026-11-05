@@ -1013,7 +1013,7 @@ export function Logger(props: {
 
               <div className="mt-1 border-t px-2 pt-1">
                 <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-2">
-                  <p className="text-sm font-medium">Working sets{item.exercise.perHand && <span className="font-normal text-muted-foreground"> · weight per hand</span>}</p>
+                  <p className="text-sm font-medium">Working sets</p>
                   <p className="text-xs tabular-nums text-muted-foreground">{ex.working.filter(row=>row.logged).length} of {ex.working.length} logged{ex.working.some(row=>row.skipped&&!row.logged)?` · ${ex.working.filter(row=>row.skipped&&!row.logged).length} skipped`:""}</p>
                 </div>
                 {ex.working.map((row) => (
@@ -1036,6 +1036,8 @@ export function Logger(props: {
                       onTick={() => tick(exIndex, row)}
                       onUntick={() => untick(exIndex, row)}
                       onSkip={() => skipSet(exIndex, row, true)}
+                      feel={row.logged && row.logged.rpe !== null && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "summary"
+                        ? <FeelChip rpe={row.logged.rpe} onChange={() => setFeelEdit(row.key)} /> : undefined}
                     />}
                     {row.logged && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "slider" && (
                       <FeelSlider
@@ -1045,9 +1047,7 @@ export function Logger(props: {
                         onDone={feelEdit === row.key ? () => setFeelEdit(null) : undefined}
                       />
                     )}
-                    {row.logged && row.logged.rpe !== null && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "summary" && (
-                      <FeelSummary rpe={row.logged.rpe} onChange={() => setFeelEdit(row.key)} />
-                    )}
+
                   </div>
                 ))}
                 {editingNote === ex.exerciseId ? (
@@ -1550,6 +1550,7 @@ function SetRow({
   onTick,
   onUntick,
   onSkip,
+  feel,
 }: {
   row: Row;
   /** Marks the row for a first-time tip (data-guide). */
@@ -1568,12 +1569,21 @@ function SetRow({
   onTick: () => void;
   onUntick: () => void;
   onSkip?: () => void;
+  /** The locked feel chip, shown inside a logged row. */
+  feel?: React.ReactNode;
 }) {
   const done = row.logged !== null;
   const [options, setOptions] = useState(row.addedKg > 0);
   const [showAddOn, setShowAddOn] = useState(row.addedKg > 0);
   const holding = holdLeft !== null;
   const hasOptions = (!warmup && !done) || showAddOn;
+  // A logged set is one compact line: what was done, its feel, and the tick to undo.
+  if (row.logged) return <div data-guide={guide} className={cn("flex min-h-12 items-center gap-1 px-2", warmup && "text-muted-foreground")}>
+    <span className="flex w-11 shrink-0 justify-center text-sm tabular-nums">{row.label}</span>
+    <span className="min-w-0 flex-1 truncate font-medium tabular-nums">{formatSet(row.logged, units)}</span>
+    {feel}
+    <button type="button" onClick={onUntick} className="flex size-11 shrink-0 items-center justify-center" aria-label={`Undo set ${row.label}`} aria-pressed><TickCircle on small={warmup}/></button>
+  </div>;
 
   return <div data-guide={guide}>
     <div className={cn("flex min-h-14 flex-wrap items-center gap-1 px-2 py-1", warmup && "text-muted-foreground")}>
@@ -1960,15 +1970,14 @@ const FEEL_COLOR = ["var(--success)", "var(--primary)", "color-mix(in oklab, var
 /** Half the thumb's width: the track's ends sit under the thumb's centre at Easy and Max. */
 const FEEL_INSET = 14;
 
-/** A logged set's feel once chosen: one locked line, opened again only with Change. */
-function FeelSummary({ rpe, onChange }: { rpe: number; onChange: () => void }) {
+/** A logged set's feel once chosen, inside its row: locked, tap to change. */
+function FeelChip({ rpe, onChange }: { rpe: number; onChange: () => void }) {
   const feel = feelFromRpe(rpe);
-  const color = colorAt(positionOf(rpe), FEEL_COLOR);
+  const label = feel === null ? `RPE ${rpe}` : FEEL_LABEL[feel];
   return (
-    <div className="flex min-h-11 items-center justify-between gap-2 pb-1 pl-11 pr-3 text-xs">
-      <span className="text-muted-foreground">Felt <span className="font-medium" style={{ color }}>{feel === null ? `effort ${rpe}` : FEEL_LABEL[feel]}</span></span>
-      <button type="button" onClick={onChange} className="-mr-2 min-h-11 px-2 font-medium text-primary" aria-label={`Change how this set felt, now ${feel === null ? `effort ${rpe}` : FEEL_LABEL[feel]}`}>Change</button>
-    </div>
+    <button type="button" onClick={onChange} className="flex min-h-11 shrink-0 items-center px-1" aria-label={`Felt ${label}. Change how this set felt`}>
+      <span className="rounded-full bg-muted/60 px-2.5 py-1 text-xs font-medium" style={{ color: colorAt(positionOf(rpe), FEEL_COLOR) }}>{label}</span>
+    </button>
   );
 }
 

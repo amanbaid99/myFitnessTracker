@@ -2021,3 +2021,8 @@ row of chips. They are now one quiet line, for example "4 × 10 · Seat 3 · ⇆
 or Pull-up": only the other alternates are named (one tap switches, as
 before), a saved seat is tappable text, and adding a seat moved to an
 Options tile. Ready to increase stays visible in that line.
+
+Aman then found logged sets too spread out. A logged set is now one line
+("1 · 28 kg × 9 · Hard ✓"); the feel is a small tag that opens the slider
+when tapped, and "weight per hand" left the Working sets heading since the
+meta line already says per hand.

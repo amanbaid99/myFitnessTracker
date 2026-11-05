@@ -15,6 +15,18 @@ Aman asked to streamline the alternates and chips under the exercise name.
 - The empty "+ Seat / pin" chip is gone from the header; adding one is a
   Seat tile in Options (machines and cables only, as before for the chip).
 
+## Logged sets (second request)
+
+- A logged set is one line: "1 · 28 kg × 9 · Hard ✓". Before, each took
+  three lines (values spread across disabled fields, then "Felt Hard" and
+  "Change" on their own line). The feel is a small tag; tapping it opens the
+  slider with Done, as Change did. The tick still undoes the set.
+- "Working sets" no longer repeats "· weight per hand"; per hand is in the
+  meta line under the name.
+- Checked: a vertical swipe over the open slider leaves it "Not set"; tags
+  read Hard and Good; tapping one opens the slider; Done closes it.
+  `after-rows-card-{320,390,430}.png`.
+
 ## Checks
 
 - Switching via "or Pull-up" changed the exercise to Pull-up and the line to
