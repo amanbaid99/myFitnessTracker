@@ -1889,3 +1889,13 @@ This authorizes the remaining weekly-boundary alignment and concise release
 copy describing the delivered changes. Human coaching remains paused as
 previously requested. No schema changes are planned; preserve existing data,
 logging, privacy and training behavior.
+
+## 2026-11-05: Muscle results before coverage editing (P2.6)
+
+Keep the 28-day coverage status short and move the full explanation, goal,
+exclusions and recovery pause into a sheet. Opening it starts from saved
+preferences, so cancelled edits cannot leak into later saves. Failed saves
+keep the editor and inputs visible. Preserve the existing profile write,
+coverage prerequisites and recovery semantics. Put the device activity
+summary behind Training overview below muscle results. The shared native
+modal sheet traps focus, supports Escape and returns focus to its trigger.
