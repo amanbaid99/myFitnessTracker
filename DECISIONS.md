@@ -2073,3 +2073,25 @@ moves enough steps to stay heavier than before. This applies to the next
 session's aim and to Easy raising the next set mid-workout; Good, Hard,
 Max and repeats keep the add-on. Replaces the earlier behaviour that kept
 the add-on on a step up.
+
+
+## 2026-11-05: Stable home workout action and compact analysis (Aman's request)
+
+Aman asked to improve the analysis without adding size or content, keep
+Start and Resume in the same central location, and ground the floating
+latest-workout link using History's surface. This specifically supersedes
+the older rule that moved Resume above analysis. An active workout still
+replaces Start, but both use the same HomeWorkoutCard below the weekly
+summary, with the same heading, metadata, button dimensions and footer.
+Keep existing start, resume, cancellation and alternate-workout operations.
+
+Refine the existing analysis text hierarchy, remove the repeated This week
+label beside its dates, and bound the Next focus preview to two lines.
+Full analysis remains accessible; refresh for a stale populated review is a
+secondary icon in the existing footer, rather than another row. Preserve
+all polling, retries, week boundaries and analysis content. Browser checks
+compare before/after heights rather than assuming the card stays compact.
+The latest recap uses History's border, light primary tint and local date
+tile with its existing destination, routine and date. No new metrics or
+queries. This work is a focused review PR, not an automatic release or a
+resumption of the paused UI backlog.

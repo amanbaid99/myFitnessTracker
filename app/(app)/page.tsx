@@ -3,7 +3,6 @@ import { analysisWeek } from "@/lib/analysis-week";
 import { effectiveWeeklyGoal } from "@/lib/training-reports";
 import { getWeeklyReports } from "@/lib/feedback-data";
 import { getMeasurementReminder } from "@/lib/feedback-data";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { MASK } from "@/lib/mask";
 import { redirect } from "next/navigation";
@@ -16,6 +15,8 @@ import { WeeklyReviewCard } from "@/components/home/weekly-review-card";
 import { BodyWeightCard } from "@/components/home/body-weight-card";
 import { MuscleFixCard } from "@/components/home/muscle-fix-card";
 import { unmappedExercises } from "@/lib/anatomy";
+import { HomeWorkoutCard } from "@/components/home/workout-card";
+import { HomeWorkoutRecap } from "@/components/home/workout-recap-link";
 import { HomeHero } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
@@ -47,8 +48,8 @@ export default async function TodayPage() {
   // starting weights are not a workout.
   const finishedAll = workouts.filter((w) => w.endedAt && w.source !== "baseline");
   const lastFinished = finishedAll.find((w) => w.source === "app");
-  const hero = (priority?: ReactNode) => (
-    <HomeHero priority={priority} name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
+  const hero = () => (
+    <HomeHero name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
       <WeeklyReviewCard lastEndedAt={lastFinished?.endedAt ?? null} lastStartedAt={lastFinished?.startedAt ?? null} lastWorkoutId={lastFinished?.id ?? null} />
     </HomeHero>
   );
@@ -96,46 +97,21 @@ export default async function TodayPage() {
   const next = routines.find((r) => r.id === nextId);
   const others = routines.filter((r) => r.id !== nextId);
   // Not while a workout is open: that is not the moment to ask.
+  const workoutRoutine = open ? routines.find((r) => r.id === open.routineId) : next;
   const askFeedback = !open && shouldPromptFeedback(trained, profile.feedbackPrompted);
 
   return (
     <>
       {askFeedback && <FeedbackPrompt userId={profile.id} />}
-      {hero(open ? (
-        <div className="mt-5 rounded-2xl border border-primary/50 bg-accent/40 p-4">
-          <div className="flex items-center gap-3">
-            <RotateCcw className="size-5 shrink-0 text-primary" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="font-medium">Workout in progress</p>
-              <p className="text-sm text-muted-foreground">
-                {routines.find((r) => r.id === open.routineId)?.name}
-              </p>
-            </div>
-          </div>
-          <Button asChild size="lg" className="mt-4 w-full" data-guide="start-workout">
-            <Link href={`/workout/${open.id}`}>Resume workout</Link>
-          </Button>
-          <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="mt-2 w-full text-muted-foreground" />
-        </div>
-      ) : undefined)}
+      {hero()}
 
-      {next && !open && (
-        <section className="mt-4 overflow-hidden rounded-2xl border bg-card p-4">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary">Next up</p>
-            <p className="text-xs text-muted-foreground">{relativeDay(lastDone.get(next.id))}</p>
-          </div>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight">{next.name}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {next.exercises.length} {next.exercises.length === 1 ? "exercise" : "exercises"} · Warm-up included
-          </p>
-          <form action={startWorkout.bind(null, next.id)} className="mt-3" data-guide="start-workout">
-            <SubmitButton size="lg" className="w-full" pendingLabel="Starting…">
-              <Play /> Start workout
-            </SubmitButton>
-          </form>
-          {others.length > 0 && (
-        <details className="group mt-2 border-t border-border/60">
+      {workoutRoutine && <HomeWorkoutCard
+          name={workoutRoutine.name}
+          exerciseCount={workoutRoutine.exercises.length}
+          lastDone={relativeDay(lastDone.get(workoutRoutine.id))}
+          action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form>}
+          footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" /> : others.length > 0 ? (
+        <details className="group">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden /></summary>
           <p className={`pb-2 text-xs text-muted-foreground ${MASK}`}>{plan.name}</p>
           <ul className="divide-y border-t">
@@ -156,9 +132,8 @@ export default async function TodayPage() {
             ))}
           </ul>
         </details>
-      )}
-        </section>
-      )}
+          ) : undefined}
+        />}
 
       {/* Nothing logged yet: offer starting weights so the first workout is not empty boxes. */}
       {!open && finished.length === 0 && !workouts.some((w) => w.source === "baseline") && (
@@ -175,9 +150,7 @@ export default async function TodayPage() {
         </Link>
       )}
 
-      {lastFinished && <Link href={`/history/${lastFinished.id}`} className="mt-3 flex min-h-14 items-center justify-between gap-3 rounded-xl px-1 text-sm transition-colors hover:bg-muted/40 active:bg-muted/60">
-        <span className="min-w-0"><span className="block font-medium">Latest workout recap</span><span className={`block truncate text-xs text-muted-foreground ${MASK}`}>{active.routines.find((r) => r.id === lastFinished.routineId)?.name ?? "Workout"} · {relativeDay(lastFinished.endedAt!)}</span></span><ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      </Link>}
+      {lastFinished && <HomeWorkoutRecap href={`/history/${lastFinished.id}`} name={active.routines.find((r) => r.id === lastFinished.routineId)?.name ?? "Workout"} startedAt={lastFinished.startedAt} when={relativeDay(lastFinished.endedAt!)} />}
 
       {unmapped.length > 0 && <MuscleFixCard exercises={unmapped} />}
 

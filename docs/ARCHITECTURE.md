@@ -184,13 +184,14 @@ needs a separate deployment with JWT verification enabled after merge.
 
 ### Today layout
 
-HomeHero groups WeeklyReviewCard and the local training calendar into one
+HomeHero groups WeeklyReviewCard and India-time activity markers into one
 surface. WeeklyReviewCard retains its dedicated /week link and polling.
-Today prioritizes an open session's Resume action; otherwise a compact
-next-workout card contains Start and the alternate-day disclosure. Latest
-workout recap links directly to History. BodyWeightCard keeps its existing
-save and chart behavior in a quieter row. Public /demo mirrors the main
-weekly/workout hierarchy and links to /demo/week.
+Start and Resume share HomeWorkoutCard below that summary. An open session
+replaces Start with Resume in the same slot; alternate-workout selection
+and cancellation keep their existing operations. HomeWorkoutRecap links
+directly to History using its bordered, lightly tinted surface and a
+local date tile. BodyWeightCard keeps its existing save and chart behavior.
+Public /demo mirrors the weekly/workout hierarchy and links to /demo/week.
 
 ### History timeline
 
