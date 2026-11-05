@@ -8,6 +8,11 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Branch `ui/review-exercise-sheet`: the plan exercise sheet no
+  longer hides sections in collapsed boxes (Aman could not tell they opened).
+  Everything shows in one scroll under plain headings; Add previous record is
+  back at the top.
+
 - 2026-11-05: PR #47 (feel lock, logger declutter) is live. Branch
   `ui/review-logger-header`: one quiet meta line under the exercise name
   (target, per hand, seat, "or <alternate>"), seat adding moved to Options.

@@ -2032,3 +2032,15 @@ saved at once (offline-safe), but the slider stays open for 1.2 s
 (`FEEL_SETTLE_MS`, lib/feel.ts) before closing to a tag, a new pick restarts
 the pause, and a finished exercise waits the same time before moving on. No
 timer is shown.
+
+## 2026-11-05: Exercise sheet shows every section again (Aman's correction)
+
+P4.4 put Exercise details, Alternates, Advanced tracking and Order, replace
+or remove in collapsed boxes. Aman found it confusing: the boxes had no
+arrow, so he did not know they opened, and options he used were hidden
+(Add previous record sat at the bottom of Advanced tracking). The sheet now
+shows everything in one scroll, as before P4.4, but keeps the grouping as
+plain headings with a divider: Sets and rest, Exercise details, Alternates,
+Tracking, then the move, swap and remove buttons. Add previous record is
+back at the top. Save stays pinned below the scroll and the scope notes
+(this day versus every plan) are kept, shorter.

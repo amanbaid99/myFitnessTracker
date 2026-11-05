@@ -202,8 +202,13 @@ export function ExerciseSheet({
           </div>
         ) : (
           <>
-            <div className={`min-h-0 space-y-4 overflow-y-auto px-5 pb-4 pt-2 ${MASK}`}>
-              <section><h3 className="font-semibold">Sets and rest</h3><p className="mb-3 text-xs text-muted-foreground">Targets and rest apply to this exercise slot in this day.</p>
+            <div className={`min-h-0 space-y-6 overflow-y-auto px-5 pb-4 pt-2 ${MASK}`}>
+              {e.tracking !== "time" && (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={recordHref ?? `/starting-weights?exercise=${e.id}`} onClick={onRecords}>Add previous record / starting weight</Link>
+                </Button>
+              )}
+              <section className="space-y-4"><div><h3 className="font-semibold">Sets and rest</h3><p className="text-xs text-muted-foreground">For this exercise on this day.</p></div>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-3">
                 <Stepper label="Sets" value={sets} min={1} max={10} onChange={setSets} />
                 {tracking === "time" ? (
@@ -216,7 +221,7 @@ export function ExerciseSheet({
               <RestDuration value={rest} defaultSec={defaultRestSec} onChange={setRest} onValidityChange={setRestValid} />
 
               </section>
-              <details className="space-y-3 rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Exercise details</summary><p className="text-xs text-muted-foreground">Name, equipment and machine setting apply wherever this exercise is used, including history.</p>
+              <section className="space-y-4 border-t pt-5"><div><h3 className="font-semibold">Exercise details</h3><p className="text-xs text-muted-foreground">Apply wherever this exercise is used, including history.</p></div>
               <Field label="Name" htmlFor="ex-name" hint="Renames it everywhere, including your history.">
                 <Input id="ex-name" value={name} maxLength={60} onChange={(ev) => setName(ev.target.value)} />
               </Field>
@@ -241,11 +246,10 @@ export function ExerciseSheet({
                 </Field>
               </div>
 
-              </details>
-              <details className="rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Alternates</summary>
+              </section>
               {library && onAddAlternate && onRemoveAlternate && (
-                <div>
-                  <p className="text-sm font-medium">Alternates</p>
+                <section className="border-t pt-5">
+                  <h3 className="font-semibold">Alternates</h3>
                   <p className="text-xs text-muted-foreground">
                     {alternates.length
                       ? "They take turns: each time, the next one comes up. You can switch during the workout."
@@ -277,11 +281,10 @@ export function ExerciseSheet({
                       </button>
                     )}
                   </div>
-                </div>
+                </section>
               )}
 
-              </details>
-              <details className="space-y-4 rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Advanced tracking</summary><p className="text-xs text-muted-foreground">Exercise tracking, weight steps, per-hand load and muscles apply across plans. Changing reps/time uses a separate version so existing records keep their units.</p>
+              <section className="space-y-4 border-t pt-5"><div><h3 className="font-semibold">Tracking</h3><p className="text-xs text-muted-foreground">Apply in every plan. Switching between reps and time keeps your old records as they are.</p></div>
               <div role="radiogroup" aria-labelledby="ex-tracking-label">
                 <p id="ex-tracking-label" className="text-sm font-medium">
                   Track by
@@ -387,15 +390,8 @@ export function ExerciseSheet({
               </label>
 
               <MusclePicker key={`${name}:${equipment}`} name={name} equipment={equipment} value={muscles} onChange={setMuscles} disabled={busy} />
-
-              {e.tracking !== "time" && (
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={recordHref ?? `/starting-weights?exercise=${e.id}`} onClick={onRecords}>Add previous record / starting weight</Link>
-                </Button>
-              )}
-              </details>
-              <details className="rounded-xl border p-3"><summary className="flex min-h-11 cursor-pointer items-center font-medium">Order, replace or remove</summary>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-2 border-t pt-4">
+              </section>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,7rem),1fr))] gap-2 border-t pt-5">
                 <Button variant="secondary" disabled={!canMoveUp} onClick={() => onMove(-1)}>
                   <ArrowUp /> Up
                 </Button>
@@ -411,7 +407,6 @@ export function ExerciseSheet({
                   <Trash2 /> Remove
                 </Button>
               </div>
-              </details>
             </div>
 
             <div className="border-t px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
