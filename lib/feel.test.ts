@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { colorAt, positionOf, rpeAt, stepRpe } from "./feel";
+import { colorAt, positionOf, rpeAt, stepRpe, feelDisplay, feelGesture } from "./feel";
 import { feelFromRpe } from "./progression";
 
 describe("feel slider", () => {
@@ -32,5 +32,20 @@ describe("feel slider", () => {
     expect(colorAt(0, c)).toBe("a");
     expect(colorAt(1, c)).toBe("d");
     expect(colorAt(0.5, c)).toBe("color-mix(in oklab, b 50%, c)");
+  });
+});
+
+describe("feel slider touches", () => {
+  it("treats up and down movement as scrolling, never a change", () => {
+    expect(feelGesture(2, 12)).toBe("scroll");
+    expect(feelGesture(9, 9)).toBe("scroll");
+    expect(feelGesture(14, 3)).toBe("drag");
+    expect(feelGesture(3, 4)).toBe("pending");
+  });
+  it("shows the slider only for the set just logged or when editing", () => {
+    expect(feelDisplay({ rowKey: "a", justLogged: "a", editing: null, rpe: null })).toBe("slider");
+    expect(feelDisplay({ rowKey: "a", justLogged: null, editing: "a", rpe: 8 })).toBe("slider");
+    expect(feelDisplay({ rowKey: "a", justLogged: "b", editing: null, rpe: 8 })).toBe("summary");
+    expect(feelDisplay({ rowKey: "a", justLogged: null, editing: null, rpe: null })).toBe("none");
   });
 });

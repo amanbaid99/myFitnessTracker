@@ -1987,3 +1987,29 @@ P4.8 requires a real hosted recovery check. No staging inbox is configured
 in repository docs or the connected project's branches, so request that
 missing test context and prepare auth copy separately. Do not send test
 emails or create synthetic records in production to bypass this requirement.
+
+## 2026-11-05: Lock a set's feel after picking; calmer exercise cards (Aman's report)
+
+Aman kept changing "How did it feel?" by accident after logging a set. The
+slider set a value on the first touch and blocked scrolling
+(`touch-action: none`), and every logged set kept its slider open. Because a
+new feel re-adjusts the next unlogged set, a stray touch could also change
+that set. Now the slider shows only for the set just logged, collapses to
+"Felt Hard · Change" after a pick, and lets the page scroll: only a tap or a
+sideways drag picks (`feelGesture`, `feelDisplay` in lib/feel.ts). The scale
+and adjustment rules are unchanged.
+
+Clutter: "Weight per hand" shows once beside Working sets; the two
+disclosures merge into "Options and history"; the empty "+ Seat / pin" chip
+is hidden for dumbbell, barbell and bodyweight exercises unless a setting
+is saved (`showSettingChip`).
+
+Also at Aman's request, ramp-up sets are always shown when an exercise has
+them instead of folded behind a tap; exercises without them keep the
+Warm-up button to add them.
+
+Aman then flagged the expanded options as cluttered too (chips of different
+kinds wrapping over two lines and a separate record link). Suggested and an
+Options toggle now share one line; Options opens full width with history in
+small text and one even row of tiles: Swap, Rest, Muscles, Add record.
+Ready to increase and This workout only moved into the visible chip row.

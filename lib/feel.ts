@@ -47,3 +47,26 @@ export function colorAt(position: number, colors: string[]): string {
   if (t === 100) return colors[i + 1];
   return `color-mix(in oklab, ${colors[i]} ${100 - t}%, ${colors[i + 1]})`;
 }
+
+/**
+ * What a touch on the feel slider means so far. A drag that moves mostly
+ * sideways sets the feel; one that moves up or down is a scroll and never
+ * changes it. Under the threshold it is still undecided (a tap if it ends
+ * there). Pure.
+ */
+export function feelGesture(dx: number, dy: number, threshold = 8): "pending" | "drag" | "scroll" {
+  const ax = Math.abs(dx), ay = Math.abs(dy);
+  if (ay >= threshold && ay >= ax) return "scroll";
+  if (ax >= threshold) return "drag";
+  return "pending";
+}
+
+/**
+ * How a logged set shows its feel: the slider only for the set just logged
+ * (until a feel is picked) or when the person taps Change; otherwise a
+ * one-line summary, or nothing if no feel was given. Pure.
+ */
+export function feelDisplay(o: { rowKey: string; justLogged: string | null; editing: string | null; rpe: number | null }): "slider" | "summary" | "none" {
+  if (o.rowKey === o.justLogged || o.rowKey === o.editing) return "slider";
+  return o.rpe === null ? "none" : "summary";
+}

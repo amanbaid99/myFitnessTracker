@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatLoad, formatSet, formatSets, settingLabel } from "./format";
+import { formatLoad, formatSet, formatSets, settingLabel, showSettingChip } from "./format";
 
 describe("formatSet", () => {
   it.each([
@@ -41,5 +41,15 @@ describe("settingLabel", () => {
     expect(settingLabel(" 4.5 ")).toBe("Seat 4.5");
     expect(settingLabel("pin 7")).toBe("pin 7");
     expect(settingLabel("seat 3, handles 2")).toBe("seat 3, handles 2");
+  });
+});
+
+describe("showSettingChip", () => {
+  it("hides the empty seat chip on free weights only", () => {
+    expect(showSettingChip(null, "dumbbell")).toBe(false);
+    expect(showSettingChip(null, "barbell")).toBe(false);
+    expect(showSettingChip("3", "dumbbell")).toBe(true);
+    expect(showSettingChip(null, "machine")).toBe(true);
+    expect(showSettingChip(null, "cable")).toBe(true);
   });
 });

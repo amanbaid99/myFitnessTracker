@@ -11,10 +11,10 @@ import { ArrowLeftRight, Check, PersonStanding, ChevronDown, CloudOff, ChevronLe
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatSet, formatSets, settingLabel } from "@/lib/format";
+import { formatSet, formatSets, settingLabel, showSettingChip } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
-import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition } from "@/lib/feel";
+import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition, feelDisplay, feelGesture } from "@/lib/feel";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, workoutOrder, type Row, type SessionExercise } from "@/lib/session";
 import { enqueue, flush, onOutboxFailure, pendingCount, pendingRestoreCount, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
@@ -166,6 +166,8 @@ export function Logger(props: {
   const [saveState,setSaveState]=useState<"idle"|"local"|"synced"|"error">("idle");
   const syncFailed=useRef(false);
   const [feelKey, setFeelKey] = useState<string | null>(null);
+  // A logged set whose feel the person chose to change; others stay locked.
+  const [feelEdit, setFeelEdit] = useState<string | null>(null);
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
   /** A timed set being held (plank): counts down, then logs the set. */
   const [hold, setHold] = useState<{ exIndex: number; key: string; startedAt: number; endsAt: number; total: number } | null>(null);
@@ -854,38 +856,77 @@ export function Logger(props: {
                         lockedHint={lockHint === item.id ? `Sets are logged on ${item.exercise.name}. Untick them to switch.` : null}
                       />
                     )}
-                    <div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{formatTarget(item.targetSets,item.targetReps,item.exercise.tracking)}</Badge>{item.exercise.perHand&&<Badge variant="outline">per hand</Badge>}<SettingBadge value={ex.exerciseId in settings?settings[ex.exerciseId]:item.exercise.machineSetting} onSave={v=>saveSetting(ex.exerciseId,v)}/></div>
-                    <p className="mt-1 text-xs text-muted-foreground">{ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</p>
-                    <details className="mt-1"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-primary">Exercise options and history</summary>
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
-                      <button type="button" onClick={()=>setSwapIndex(exIndex)} aria-label={`Swap exercise ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center"><span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><ArrowLeftRight className="size-3.5" aria-hidden/>Swap exercise</span></button>
-                      <button type="button" onClick={()=>setRestIndex(exIndex)} aria-label={`Rest timer for ${item.exercise.name}`} className="-my-2 inline-flex min-h-11 items-center">
-                        <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-primary"><Timer className="size-3.5" aria-hidden/>Rest timer · {clock(item.restSec ?? props.defaultRestSec)}</span>
-                      </button>
-                      {item.exercise.muscleGroups.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setMusclesFor({ name: item.exercise.name, groups: item.exercise.muscleGroups })}
-                          className="-my-2 flex min-h-11 items-center"
-                          aria-label={`Muscles worked by ${item.exercise.name}`}
-                        >
-                          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs capitalize text-muted-foreground">
-                            <PersonStanding className="size-3.5" aria-hidden />
-                            {item.exercise.muscleGroups[0]}
-                            {item.exercise.muscleGroups.length > 1 && ` +${item.exercise.muscleGroups.length - 1}`}
-                          </span>
-                        </button>
+                    <div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{formatTarget(item.targetSets,item.targetReps,item.exercise.tracking)}</Badge>{item.exercise.perHand&&<Badge variant="outline">per hand</Badge>}{ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}{isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}{(()=>{const setting=ex.exerciseId in settings?settings[ex.exerciseId]:item.exercise.machineSetting;return showSettingChip(setting,item.exercise.equipment)&&<SettingBadge value={setting} onSave={v=>saveSetting(ex.exerciseId,v)}/>;})()}</div>
+                  </div>
+                  {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
+                  {editing && !isExtraItem(item) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="-mt-1 shrink-0 text-muted-foreground"
+                      onClick={() => setEditItemId(item.id)}
+                      aria-label={`Edit ${item.exercise.name}`}
+                    >
+                      <Pencil />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="-mr-2 -mt-1 shrink-0 text-muted-foreground"
+                    onClick={() => setOpenId(null)}
+                    aria-expanded
+                    aria-label={`Collapse ${item.exercise.name}`}
+                  >
+                    <ChevronUp />
+                  </Button>
+                </div>
+                    <details className="group -mt-1">
+                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                      <span className="min-w-0 text-xs text-muted-foreground">{ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</span>
+                      <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
+                    </summary>
+                    <div className="mb-2 space-y-0.5 text-xs">
+                  {pr && (
+                    <p className="flex items-center gap-1 text-muted-foreground">
+                      <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
+                    </p>
+                  )}
+                  {item.exercise.equipment === "bodyweight" && item.exercise.tracking !== "time" && (
+                    <p className="text-muted-foreground">
+                      {props.bodyWeightKg ? (
+                        <>
+                          Lifting your body weight, <span className={MASK}>{formatWeight(props.bodyWeightKg, units)}</span>, plus any
+                          add-on
+                        </>
+                      ) : (
+                        "Log your body weight on Today to count it as this exercise's load"
                       )}
-                      {ex.aim?.readyToIncrease && <Badge variant="accent">Ready to increase</Badge>}
-                      {isExtraItem(item) && <Badge variant="outline">This workout only</Badge>}
+                    </p>
+                  )}
+                  {/* No "Aim" line: the set rows are already filled in with it. */}
+                  {ex.last.length > 0 && (
+                    <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
+                  )}
+                  {props.lastNotes?.[ex.exerciseId] && (
+                    <p className="flex gap-1.5 text-muted-foreground">
+                      <StickyNote className="mt-0.5 size-3 shrink-0" aria-hidden />
+                      <span className={MASK}>Last note: {props.lastNotes[ex.exerciseId]}</span>
+                    </p>
+                  )}
+                </div>
+                    <div className="mb-2 flex gap-1.5">
+                      <ActionTile icon={<ArrowLeftRight />} label="Swap" onClick={()=>setSwapIndex(exIndex)} ariaLabel={`Swap exercise ${item.exercise.name}`} />
+                      <ActionTile icon={<Timer />} label={`Rest ${clock(item.restSec ?? props.defaultRestSec)}`} onClick={()=>setRestIndex(exIndex)} ariaLabel={`Rest timer for ${item.exercise.name}, ${clock(item.restSec ?? props.defaultRestSec)}`} />
+                      {item.exercise.muscleGroups.length > 0 && (
+                        <ActionTile icon={<PersonStanding />} label="Muscles" onClick={() => setMusclesFor({ name: item.exercise.name, groups: item.exercise.muscleGroups })} ariaLabel={`Muscles worked by ${item.exercise.name}`} />
+                      )}
+                      {!demo && item.exercise.tracking !== "time" && (
+                        <ActionTile icon={<Trophy />} label="Add record" href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
+                          try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
+                        }} ariaLabel={`Add a previous record for ${item.exercise.name}`} />
+                      )}
                     </div>
-                    {!demo && item.exercise.tracking !== "time" && (
-                      <Link href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
-                        try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
-                      }} className="inline-flex min-h-11 items-center gap-1 text-sm text-primary">
-                        <Trophy className="size-4" aria-hidden /> Add previous record
-                      </Link>
-                    )}
                     {editing && isExtraItem(item) && (
                       <div className="-ml-2 mt-1 flex flex-wrap">
                         <Button
@@ -926,63 +967,11 @@ export function Logger(props: {
                       </div>
                     )}
                     </details>
-                  </div>
-                  {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
-                  {editing && !isExtraItem(item) && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="-mt-1 shrink-0 text-muted-foreground"
-                      onClick={() => setEditItemId(item.id)}
-                      aria-label={`Edit ${item.exercise.name}`}
-                    >
-                      <Pencil />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="-mr-2 -mt-1 shrink-0 text-muted-foreground"
-                    onClick={() => setOpenId(null)}
-                    aria-expanded
-                    aria-label={`Collapse ${item.exercise.name}`}
-                  >
-                    <ChevronUp />
-                  </Button>
-                </div>
-                <details className="text-xs"><summary className="flex min-h-11 cursor-pointer items-center text-muted-foreground">Previous sessions and records</summary><div className="space-y-0.5">
-                  {pr && (
-                    <p className="flex items-center gap-1 text-muted-foreground">
-                      <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
-                    </p>
-                  )}
-                  {item.exercise.equipment === "bodyweight" && item.exercise.tracking !== "time" && (
-                    <p className="text-muted-foreground">
-                      {props.bodyWeightKg ? (
-                        <>
-                          Lifting your body weight, <span className={MASK}>{formatWeight(props.bodyWeightKg, units)}</span>, plus any
-                          add-on
-                        </>
-                      ) : (
-                        "Log your body weight on Today to count it as this exercise's load"
-                      )}
-                    </p>
-                  )}
-                  {/* No "Aim" line: the set rows are already filled in with it. */}
-                  {ex.last.length > 0 && (
-                    <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
-                  )}
-                  {props.lastNotes?.[ex.exerciseId] && (
-                    <p className="flex gap-1.5 text-muted-foreground">
-                      <StickyNote className="mt-0.5 size-3 shrink-0" aria-hidden />
-                      <span className={MASK}>Last note: {props.lastNotes[ex.exerciseId]}</span>
-                    </p>
-                  )}
-                </div></details>
               </div>
 
               {showWarmups && (
-                <details className="mt-2 border-t border-dashed px-2"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">Ramp-up sets · {ex.warmups.filter(r=>r.logged).length}/{ex.warmups.length}</summary>
+                <div className="mt-2 border-t border-dashed px-2" role="group" aria-label="Ramp-up sets">
+                  <div className="flex min-h-11 items-center justify-between gap-2 px-2"><p className="text-sm text-muted-foreground">Ramp-up sets</p><p className="text-xs tabular-nums text-muted-foreground">{ex.warmups.filter(r=>r.logged).length} of {ex.warmups.length} logged</p></div>
                   {ex.warmups.map((row) => (
                     <SetRow
                       key={row.key}
@@ -1008,12 +997,12 @@ export function Logger(props: {
                       Skip warm-up
                     </button>
                   )}
-                </details>
+                </div>
               )}
 
               <div className="mt-1 border-t px-2 pt-1">
                 <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 px-2">
-                  <p className="text-sm font-medium">Working sets</p>
+                  <p className="text-sm font-medium">Working sets{item.exercise.perHand && <span className="font-normal text-muted-foreground"> · weight per hand</span>}</p>
                   <p className="text-xs tabular-nums text-muted-foreground">{ex.working.filter(row=>row.logged).length} of {ex.working.length} logged{ex.working.some(row=>row.skipped&&!row.logged)?` · ${ex.working.filter(row=>row.skipped&&!row.logged).length} skipped`:""}</p>
                 </div>
                 {ex.working.map((row) => (
@@ -1037,12 +1026,16 @@ export function Logger(props: {
                       onUntick={() => untick(exIndex, row)}
                       onSkip={() => skipSet(exIndex, row, true)}
                     />}
-                    {row.logged && (feelKey === row.key || row.logged.rpe !== null) && (
+                    {row.logged && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "slider" && (
                       <FeelSlider
                         guide={feelKey === row.key ? "tip:feel" : undefined}
                         rpe={row.logged.rpe}
-                        onPick={(rpe) => setFeel(exIndex, row, rpe)}
+                        onPick={(rpe) => { setFeelEdit(null); setFeel(exIndex, row, rpe); }}
+                        onDone={feelEdit === row.key ? () => setFeelEdit(null) : undefined}
                       />
+                    )}
+                    {row.logged && row.logged.rpe !== null && feelDisplay({ rowKey: row.key, justLogged: feelKey, editing: feelEdit, rpe: row.logged.rpe }) === "summary" && (
+                      <FeelSummary rpe={row.logged.rpe} onChange={() => setFeelEdit(row.key)} />
                     )}
                   </div>
                 ))}
@@ -1537,11 +1530,19 @@ function OptionChips({
   );
 }
 
+/** One even tile in an exercise's Options row: an icon over a short label. */
+function ActionTile({ icon, label, ariaLabel, onClick, href }: { icon: React.ReactNode; label: string; ariaLabel: string; onClick?: () => void; href?: string }) {
+  const cls = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl bg-muted/50 px-1 text-[11px] font-medium text-foreground transition-colors active:bg-muted [&_svg]:size-4 [&_svg]:text-primary";
+  const body = <>{icon}<span className="max-w-full truncate">{label}</span></>;
+  return href
+    ? <Link href={href} onClick={onClick} aria-label={ariaLabel} className={cls}>{body}</Link>
+    : <button type="button" onClick={onClick} aria-label={ariaLabel} className={cls}>{body}</button>;
+}
+
 function SetRow({
   row,
   guide,
   units,
-  perHand,
   warmup = false,
   timed = false,
   holdLeft = null,
@@ -1591,7 +1592,6 @@ function SetRow({
       </> : <NumberField label={`Set ${row.label} reps`} value={row.reps} onChange={value => onChange({reps:value === null ? null : Math.round(value),repsEdited:true})} disabled={done} integer suffix="reps" className="min-w-12 flex-1" />}
       <button type="button" onClick={done ? onUntick : onTick} className="ml-auto flex size-11 shrink-0 items-center justify-center" aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`} aria-pressed={done}><TickCircle on={done} small={warmup}/></button>
     </div>
-    {perHand && !warmup && <p className="px-3 text-[10px] text-muted-foreground">Weight per hand</p>}
     {row.addedKg > 0 && !options && <p className="px-3 text-xs text-muted-foreground">+ {fromKg(row.addedKg,units)} {units} add-on</p>}
     {options && hasOptions && <div className="mx-2 mb-2 space-y-2 rounded-xl bg-muted/40 p-2">
       {showAddOn ? <NumberField label={`Set ${row.label} add-on weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="Add-on" suffix={units} className="w-full"/> : !done && !warmup && !timed && <Button variant="ghost" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
@@ -1951,15 +1951,29 @@ const FEEL_COLOR = ["var(--success)", "var(--primary)", "color-mix(in oklab, var
 /** Half the thumb's width: the track's ends sit under the thumb's centre at Easy and Max. */
 const FEEL_INSET = 14;
 
+/** A logged set's feel once chosen: one locked line, opened again only with Change. */
+function FeelSummary({ rpe, onChange }: { rpe: number; onChange: () => void }) {
+  const feel = feelFromRpe(rpe);
+  const color = colorAt(positionOf(rpe), FEEL_COLOR);
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-2 pb-1 pl-11 pr-3 text-xs">
+      <span className="text-muted-foreground">Felt <span className="font-medium" style={{ color }}>{feel === null ? `effort ${rpe}` : FEEL_LABEL[feel]}</span></span>
+      <button type="button" onClick={onChange} className="-mr-2 min-h-11 px-2 font-medium text-primary" aria-label={`Change how this set felt, now ${feel === null ? `effort ${rpe}` : FEEL_LABEL[feel]}`}>Change</button>
+    </div>
+  );
+}
+
 /**
  * How the set felt, as a slider from Easy to Max (lib/feel.ts). Stop
  * anywhere, between Good and Hard too: it is saved as an RPE in half steps
  * when the finger lifts. Arrow keys move half a step. No thumb until it is
  * set, since it is optional.
  */
-function FeelSlider({ rpe, onPick, guide }: { rpe: number | null; onPick: (rpe: number) => void; guide?: string }) {
+function FeelSlider({ rpe, onPick, onDone, guide }: { rpe: number | null; onPick: (rpe: number) => void; onDone?: () => void; guide?: string }) {
   const track = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<number | null>(null);
+  // Where a touch started; it only becomes a pick once it is clearly a tap or a sideways drag.
+  const start = useRef<{ x: number; y: number } | null>(null);
   const shown = drag ?? rpe;
   const pos = shown === null ? null : positionOf(shown);
   const left = (p: number) => `calc(${FEEL_INSET}px + (100% - ${FEEL_INSET * 2}px) * ${p})`;
@@ -1977,8 +1991,11 @@ function FeelSlider({ rpe, onPick, guide }: { rpe: number | null; onPick: (rpe: 
     <div data-guide={guide} className="px-2 pb-2 pl-11 pr-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
         <span className="min-w-0 text-muted-foreground">How did it feel?</span>
-        <span className="font-medium" style={pos === null ? undefined : { color: colorAt(pos, FEEL_COLOR) }}>
-          {feel === null ? "Tap or slide" : FEEL_LABEL[feel]}
+        <span className="flex items-baseline gap-3">
+          <span className="font-medium" style={pos === null ? undefined : { color: colorAt(pos, FEEL_COLOR) }}>
+            {feel === null ? "Tap or slide" : FEEL_LABEL[feel]}
+          </span>
+          {onDone && <button type="button" onClick={onDone} className="-my-3 min-h-11 font-medium text-primary">Done</button>}
         </span>
       </div>
       <div
@@ -1990,21 +2007,29 @@ function FeelSlider({ rpe, onPick, guide }: { rpe: number | null; onPick: (rpe: 
         aria-valuemax={MAX_RPE}
         aria-valuenow={shown ?? undefined}
         aria-valuetext={feel === null ? "Not set" : `${FEEL_LABEL[feel]}, effort ${shown} of 10`}
-        className="relative h-11 cursor-pointer touch-none select-none outline-none focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
+        className="relative h-11 cursor-pointer touch-pan-y select-none outline-none focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
         onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          setDrag(rpeFrom(e.clientX));
+          start.current = { x: e.clientX, y: e.clientY };
         }}
         onPointerMove={(e) => {
-          if (drag !== null) setDrag(rpeFrom(e.clientX));
+          if (drag !== null) { setDrag(rpeFrom(e.clientX)); return; }
+          if (!start.current) return;
+          const intent = feelGesture(e.clientX - start.current.x, e.clientY - start.current.y);
+          if (intent === "scroll") start.current = null;
+          else if (intent === "drag") {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            setDrag(rpeFrom(e.clientX));
+          }
         }}
         onPointerUp={(e) => {
-          if (drag === null) return;
+          const tapped = start.current !== null;
+          start.current = null;
+          if (drag === null && !tapped) return;
           const next = rpeFrom(e.clientX);
           setDrag(null);
           commit(next);
         }}
-        onPointerCancel={() => setDrag(null)}
+        onPointerCancel={() => { start.current = null; setDrag(null); }}
         onKeyDown={(e) => {
           const from = rpe ?? FEEL_RPE.good;
           const next = e.key === "ArrowRight" || e.key === "ArrowUp" ? stepRpe(from, 1)
