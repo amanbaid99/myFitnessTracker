@@ -1,8 +1,8 @@
 export function ScreenHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <header className="mb-6 pr-14">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+      <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">{title}</h1>
+      {subtitle && <p className="mt-1 break-words text-sm text-muted-foreground">{subtitle}</p>}
     </header>
   );
 }

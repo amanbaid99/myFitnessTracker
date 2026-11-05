@@ -22,7 +22,7 @@ export function ThemePicker({ initial }: { initial: Theme }) {
         <p className="mb-2 text-sm font-medium" id="base-label">
           Background
         </p>
-        <div role="radiogroup" aria-labelledby="base-label" className="grid grid-cols-3 gap-2">
+        <div role="radiogroup" aria-labelledby="base-label" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] gap-2">
           {BASES.map((b) => {
             const on = theme.base === b.key;
             return (
@@ -49,7 +49,7 @@ export function ThemePicker({ initial }: { initial: Theme }) {
         <p className="mb-2 text-sm font-medium" id="accent-label">
           Accent colour
         </p>
-        <div role="radiogroup" aria-labelledby="accent-label" className="grid grid-cols-5 gap-3">
+        <div role="radiogroup" aria-labelledby="accent-label" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,3rem),1fr))] gap-3">
           {ACCENTS.map((a) => {
             const on = theme.accent === a.key;
             const shade = isLightBase(theme.base) ? a.light : a.dark;

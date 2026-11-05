@@ -8,6 +8,14 @@ Last updated: 2026-11-05.
 
 ## In progress
 
+- 2026-11-05: Phase 3 on `ui/review-phase-3-navigation` groups Settings,
+  opens units and colours separately, offers a quick fresh weight entry,
+  makes historical editing visible with focus/Cancel, and formats check-in
+  history with labels and method-labelled estimates. AI Coach retains chat
+  and scope across navigation; its composer wraps safely. Shared buttons
+  grow for long text and headers wrap. Human coaching remains paused.
+  Phase 2 PR #42 is live and #43 merged with production validation running.
+
 - 2026-11-05: Owner approved completion and release of all remaining UI phases
   without another approval step. Human coaching stays paused. Phase 1 and
   P2.1 to P2.5, P2.7 to P2.9 are live. PRs #39, #40 and #41 passed CI,

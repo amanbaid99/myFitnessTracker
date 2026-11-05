@@ -16,7 +16,7 @@ const WORKOUT_STARTERS: Starter[] = [
  * analysis with that workout as the focus. Closing the sheet ends the chat.
  * The full chat lives on the Coach tab.
  */
-export function AskCoach({ workoutId, label = "Ask coach", className }: { workoutId: string; label?: string; className?: string }) {
+export function AskCoach({ workoutId, label = "Ask AI Coach", className }: { workoutId: string; label?: string; className?: string }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   return (
@@ -35,7 +35,7 @@ export function AskCoach({ workoutId, label = "Ask coach", className }: { workou
             <div className="flex items-center justify-between px-5 pt-4">
               <div>
                 <h2 id="coach-title" className="text-lg font-semibold">
-                  Ask about this workout
+                  AI Coach · this workout
                 </h2>
                 <p className="text-xs text-muted-foreground">AI that reads your logged training. Not medical advice.</p>
               </div>

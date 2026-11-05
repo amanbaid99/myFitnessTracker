@@ -23,6 +23,7 @@ const STORE = "wt-coach-chat";
 
 /** The Coach tab: a chat about your own training, answered by free AI. */
 export function CoachScreen() {
+  const [restored,setRestored] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [scope, setScope] = useState<Scope>("weeks");
 
@@ -32,23 +33,26 @@ export function CoachScreen() {
       /* eslint-disable react-hooks/set-state-in-effect -- restoring browser-only state after mount */
       if (saved?.messages?.length) setMessages(saved.messages);
       if (saved?.scope === "recent" || saved?.scope === "weeks") setScope(saved.scope);
+      setRestored(true);
       /* eslint-enable react-hooks/set-state-in-effect */
     } catch {
       // Nothing saved or storage unavailable.
+      setRestored(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!restored) return;
     try {
       sessionStorage.setItem(STORE, JSON.stringify({ messages, scope }));
     } catch {}
-  }, [messages, scope]);
+  }, [messages, scope, restored]);
 
   return (
     <>
       <header className="mb-4 flex items-start justify-between gap-3 pr-14">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Coach</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">AI Coach</h1>
           <p className="mt-1 text-sm text-muted-foreground">AI that reads your logged training. Not medical advice.</p>
         </div>
         {messages.length > 0 && (
@@ -58,7 +62,7 @@ export function CoachScreen() {
         )}
       </header>
 
-      <div role="radiogroup" aria-label="Talk about" className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+      <div role="radiogroup" aria-busy={!restored} aria-label="Talk about" className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-1 rounded-xl bg-muted p-1">
         {SCOPES.map((s) => (
           <button
             key={s.value}

@@ -66,7 +66,7 @@ export function CoachChat({
   const end = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (messages.length || busy) end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (messages.length || busy) end.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "end" });
   }, [messages, busy]);
 
   async function send(text: string, useScope: Scope = scope) {
@@ -98,8 +98,8 @@ export function CoachChat({
   const page = layout === "page";
 
   return (
-    <div className={cn(page ? "flex flex-col" : "flex min-h-0 flex-1 flex-col")}>
-      <div className={cn("space-y-3", page ? "pb-4" : "flex-1 overflow-y-auto px-5 py-4")} aria-live="polite">
+    <div className={cn(page ? "flex min-h-[calc(100dvh-17rem)] flex-col" : "flex min-h-0 flex-1 flex-col")}>
+      <div className={cn("space-y-3", page ? "flex-1 pb-4" : "flex-1 overflow-y-auto px-5 py-4")} aria-live="polite">
         {messages.length === 0 && (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">Try one of these, or ask your own.</p>
@@ -178,8 +178,8 @@ export function CoachChat({
                 send(draft);
               }
             }}
-            placeholder={remaining === 0 ? "No questions left today" : "Ask or tell the coach anything"}
-            className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border bg-card px-3 py-2.5 text-base"
+            placeholder={remaining === 0 ? "No questions left today" : "Ask AI Coach about your training"}
+            className={`max-h-32 min-h-11 min-w-0 flex-1 resize-none rounded-xl border bg-card px-3 py-2.5 text-base ${MASK}`}
           />
           <Button type="submit" size="icon" disabled={busy || !draft.trim() || remaining === 0} aria-label="Send">
             <SendHorizontal />
