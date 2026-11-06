@@ -9,8 +9,8 @@ import { MASK } from "@/lib/mask";
 import { cn } from "@/lib/utils";
 
 /** AI drafts are separate from selected values until the person accepts them. */
-export function MusclePicker({ name, equipment, value, onChange, disabled = false }: {
-  name: string; equipment: string; value: string[]; onChange: (groups: string[]) => void; disabled?: boolean;
+export function MusclePicker({ name, equipment, value, onChange, disabled = false, allowAi = true }: {
+  name: string; equipment: string; value: string[]; onChange: (groups: string[]) => void; disabled?: boolean; allowAi?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [proposal, setProposal] = useState<{ groups: string[]; explanation: string } | null>(null);
@@ -32,9 +32,9 @@ export function MusclePicker({ name, equipment, value, onChange, disabled = fals
     <fieldset aria-label="Muscles worked" disabled={disabled} className={`min-w-0 space-y-3 ${MASK}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium">Muscles worked</p>
-        <Button type="button" variant="secondary" onClick={suggest} disabled={busy || name.trim().length < 2}><Sparkles />{busy ? "Suggesting…" : "Suggest muscles"}</Button>
+        {allowAi&&<Button type="button" variant="secondary" onClick={suggest} disabled={busy || name.trim().length < 2}><Sparkles />{busy ? "Suggesting…" : "Suggest muscles"}</Button>}
       </div>
-      <p className="text-xs text-muted-foreground">Pick the main muscle first, then supporting muscles. AI suggestions need your confirmation and use your daily AI allowance.</p>
+      <p className="text-xs text-muted-foreground">Pick the main muscle first, then supporting muscles. {allowAi ? "AI suggestions need your confirmation and use your daily AI allowance." : "Choose the muscles for this sample exercise."}</p>
       {proposal && <div role="status" className="rounded-xl border bg-accent/40 p-3 text-sm">
         <p className="font-medium">Are these the muscles worked?</p>
         <p className="mt-1 capitalize">{proposal.groups.length ? proposal.groups.join(", ") : "No confident match"}</p>

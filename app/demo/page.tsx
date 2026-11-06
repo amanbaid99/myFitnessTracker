@@ -74,7 +74,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
         </div>
 
         <HomeWorkoutCard name={next.name} exerciseCount={next.exercises.length} lastDone={relativeDay(DEMO_LAST_DONE.get(next.id))}
-          action={<Button asChild size="lg" className="w-full"><Link href={`/demo/workout/${next.id}`}><Play />Try this workout</Link></Button>}
+          action={<><Button asChild size="lg" className="w-full"><Link href={`/demo/workout/${next.id}`}><Play />Try this workout</Link></Button><Button asChild variant="ghost" className="mt-1 min-h-11 w-full"><Link href="/demo/custom-workout">Custom workout today</Link></Button></>}
           footer={
         <details className="group">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>

@@ -38,12 +38,14 @@ import {
 } from "@/lib/routine-edits";
 import { addExtra, isExtraItem, removeExtra } from "@/lib/workout-extras";
 import { QuickSwapSheet } from "@/components/quick-swap-sheet";
-import { DumbbellDaySheet } from "@/components/dumbbell-day-sheet";
-import type { Alternative, DayAlternative } from "@/lib/exercise-alternatives";
+import dynamic from "next/dynamic";
+import { customExercise, customPayload, retainCustomInputs, type CustomSource } from "@/lib/custom-workout";
+const CustomWorkoutSheet = dynamic(()=>import("@/components/custom-workout-sheet").then(m=>m.CustomWorkoutSheet));
+import type { Alternative } from "@/lib/exercise-alternatives";
 import { getPreviousSessions } from "@/lib/previous-sessions";
 import { buildSession } from "@/lib/session";
 import { RestTimerSheet } from "@/components/rest-timer-sheet";
-import { saveAdjustment, saveAdjustments } from "@/lib/workout-adjustments";
+import { saveAdjustment } from "@/lib/workout-adjustments";
 import { saveChoice } from "@/lib/alternates";
 import { MusclesSheet } from "@/components/anatomy/muscles-sheet";
 import { useTip } from "@/components/guide/guide-provider";
@@ -57,6 +59,7 @@ type Item = RoutineExercise;
 /** What the logger needs to edit the day's exercises (absent in the demo). */
 export interface WorkoutEditing {
   routineId: string;
+  sessionOnly?: boolean;
   plan: Pick<Plan, "id" | "template" | "isCustom">;
   library: Exercise[];
   /** Every exercise in the plan with its targets, for adding one with matching sets and reps. */
@@ -75,6 +78,7 @@ export interface SlotOption {
 interface SavedUi {
   rest: { endsAt: number; total: number } | null;
   openId: string | null;
+  retained?: SessionExercise[];
 }
 
 interface PR {
@@ -109,12 +113,18 @@ export function Logger(props: {
   options?: Record<string, SlotOption[]>;
   /** Edit the day's exercises mid-workout: in the plan, or for this workout only. */
   editing?: WorkoutEditing;
+  library?: Exercise[];
+  customSession?:{revision:number;slotIds:string[]};
+  customization?: {source:CustomSource;library:Exercise[];revision:number};
 }) {
   const { workoutId, units, demo = false, editing } = props;
   // Alternates switched to on this screen, by slot id.
   const [swapped,setSwapped]=useState<Record<string,SlotOption & {targetSets?:number;targetReps?:number}>>({});
   const [swapIndex,setSwapIndex]=useState<number|null>(null);
   const [adaptOpen,setAdaptOpen]=useState(false);
+  const customRequest=useRef<string|null>(null);
+  const customRevision=useRef(props.customSession?.revision??props.customization?.revision??0);
+  useEffect(()=>{customRevision.current=props.customSession?.revision??props.customization?.revision??0;},[props.customSession?.revision,props.customization?.revision]);
   const [restChoices,setRestChoices] = useState<Record<string,number>>({});
   const [restIndex,setRestIndex] = useState<number|null>(null);
   const [choice, setChoice] = useState<Record<string, string>>({});
@@ -124,7 +134,8 @@ export function Logger(props: {
     const o = replacement ?? (choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined);
     return { ...i, ...(o?{exercise:o.exercise}:{}),targetSets:replacement?.targetSets??i.targetSets,targetReps:replacement?.targetReps??i.targetReps,restSec:restChoices[i.id]??i.restSec };
   });
-  const swapLibrary=[...new Map([...(editing?.library??props.items.map(i=>i.exercise)),...Object.values(swapped).map(o=>o.exercise)].map(e=>[e.id,e])).values()];
+  const swapLibrary=[...new Map([...(editing?.library??props.library??props.customization?.library??props.items.map(i=>i.exercise)),...Object.values(swapped).map(o=>o.exercise)].map(e=>[e.id,e])).values()];
+  const isCustomSlot=(item:Item)=>props.customSession?.slotIds.includes(item.id)??false;
   async function prepareReplacement(pick:Alternative):Promise<Exercise>{
     const known=swapLibrary.find(e=>e.id===pick.id||(e.name.toLowerCase()===pick.name.toLowerCase()&&e.equipment===pick.equipment&&e.tracking===pick.tracking));
     if(known)return known;
@@ -244,7 +255,7 @@ export function Logger(props: {
     op: (supabase: ReturnType<typeof createClient>) => PromiseLike<DbResult & { slotChanged?: boolean }>,
     structural = true,
   ): Promise<string | null> {
-    if (!editing) return null;
+    if (!editing && !props.customSession) return null;
     if (editLock.current || refreshing) return "An exercise change is already in progress.";
     if (!navigator.onLine) return "You're offline. Changing exercises needs a connection.";
     editLock.current = true;
@@ -257,9 +268,9 @@ export function Logger(props: {
       setEditBusy("Saving exercise changes…");
       const res = await op(supabase);
       if (res.error) return friendlyError(res.error);
-      if (structural || res.slotChanged) await markCustom(supabase, editing.plan);
+      if (editing && !editing.sessionOnly && (structural || res.slotChanged)) await markCustom(supabase, editing.plan);
       try {
-        sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi));
+        sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId, ...(!structural?{retained:exercises}: {}) } satisfies SavedUi));
       } catch {}
       setEditItemId(null);
       setAddingExercise(false);
@@ -322,11 +333,13 @@ export function Logger(props: {
       const ui = JSON.parse(saved) as SavedUi;
       /* eslint-disable react-hooks/set-state-in-effect -- restoring browser-only state after a remount */
       if (ui.rest && isFuture(ui.rest.endsAt)) setRest(ui.rest);
-      if (ui.openId) setOpenId(ui.openId);
+      if (ui.openId && props.session.some(e=>e.exerciseId===ui.openId)) setOpenId(ui.openId);
+      if (ui.retained) setExercises(prev=>retainCustomInputs(prev,ui.retained!));
       /* eslint-enable react-hooks/set-state-in-effect */
     } catch {
       // Nothing saved or storage unavailable.
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time restore after structural remount
   }, [uiKey]);
   const scrollTo = useRef<string | null>(null);
 
@@ -772,7 +785,7 @@ export function Logger(props: {
       </header>
 
       <main inert={Boolean(editBusy)||refreshing} aria-busy={Boolean(editBusy)||refreshing} className="mx-auto max-w-lg space-y-4 px-4 pt-4">
-        {!demo&&editing&&<Button variant="secondary" className="h-auto min-h-11 w-full whitespace-normal py-3" onClick={()=>setAdaptOpen(true)}><Sparkles className="size-4 shrink-0" aria-hidden /><span className="min-w-0 text-left"><span className="block">Use dumbbells for remaining exercises</span><span className="mt-0.5 block text-xs font-normal text-muted-foreground">AI suggestions · Review first · Today only</span></span></Button>}
+        {!demo&&props.customization&&<Button variant="secondary" className="h-auto min-h-11 w-full whitespace-normal py-3" aria-label="Customize workout" onClick={()=>{customRequest.current=null;setAdaptOpen(true);}}><Sparkles className="size-4 shrink-0" aria-hidden /><span className="min-w-0 text-left"><span className="block">Customize workout</span><span className="mt-0.5 block text-xs font-normal text-muted-foreground">Different equipment, focus or time · Review first</span></span></Button>}
         {demo && (
           <p className="rounded-xl border border-primary/40 bg-accent/40 p-3 text-sm">
             Demo workout with sample numbers. Tick sets, pick how they felt and watch the next set adjust.
@@ -867,7 +880,7 @@ export function Logger(props: {
                       <span>{exerciseMeta({ target: formatTarget(item.targetSets, item.targetReps, item.exercise.tracking), perHand: item.exercise.perHand, extra: isExtraItem(item) }).join(" · ")}</span>
                       {setting && <><span aria-hidden>·</span><SettingBadge plain value={setting} onSave={v=>saveSetting(ex.exerciseId,v)}/></>}
                       {ex.aim?.readyToIncrease && <><span aria-hidden>·</span><span className="font-medium text-primary">Ready to increase</span></>}
-                      {props.options?.[item.id] && <><span aria-hidden>·</span>
+                      {!swapped[item.id] && props.options?.[item.id] && <><span aria-hidden>·</span>
                         <OptionChips
                         options={props.options[item.id]}
                         activeId={item.exercise.id}
@@ -879,7 +892,7 @@ export function Logger(props: {
                     {!setting && seatEditFor === ex.exerciseId && <SettingBadge value={null} startEditing onClose={() => setSeatEditFor(null)} onSave={async (v) => { const ok = await saveSetting(ex.exerciseId, v); if (ok) setSeatEditFor(null); return ok; }}/>}
                   </div>
                   {workingDone && <Check className="mt-2.5 size-6 text-success" aria-label="Exercise done" />}
-                  {editing && !isExtraItem(item) && (
+                  {editing && !editing.sessionOnly && !isExtraItem(item) && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -951,9 +964,9 @@ export function Logger(props: {
                         }} ariaLabel={`Add a previous record for ${item.exercise.name}`} />
                       )}
                     </div>
-                    {editing && isExtraItem(item) && (
+                    {(editing || props.customSession) && isExtraItem(item) && (
                       <div className="-ml-2 mt-1 flex flex-wrap">
-                        <Button
+                        {editing && !editing.sessionOnly && <Button
                           variant="ghost"
                           className="px-2 text-primary"
                           onClick={async () => {
@@ -972,14 +985,15 @@ export function Logger(props: {
                           }}
                         >
                           <Plus /> Add to {props.routineName}
-                        </Button>
+                        </Button>}
                         {![...ex.warmups, ...ex.working].some((r) => r.logged) && (
                           <Button
                             variant="ghost"
                             className="px-2 text-muted-foreground"
                             onClick={async () => {
-                              const err = await applyEdit(async () => {
+                              const err = await applyEdit(async (s) => {
                                 removeExtra(workoutId, item.exercise.id);
+                                if(isCustomSlot(item))return s.rpc("remove_custom_workout_exercise",{p_workout:workoutId,p_slot:item.id});
                                 return { error: null };
                               }, false);
                               if (err) setError(err);
@@ -1119,7 +1133,7 @@ export function Logger(props: {
           (addingExercise ? (
             <fieldset disabled={Boolean(editBusy) || refreshing} aria-busy={Boolean(editBusy) || refreshing} className="min-w-0 rounded-2xl border bg-card p-2">
               <p className="px-2 pt-2 text-sm font-medium">Add an exercise</p>
-              <div role="radiogroup" aria-label="Add it to" className="mx-2 mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+              {!editing.sessionOnly&&<div role="radiogroup" aria-label="Add it to" className="mx-2 mt-2 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
                 {[
                   { plan: false, label: "This workout only" },
                   { plan: true, label: `Also add to ${props.routineName}` },
@@ -1138,9 +1152,9 @@ export function Logger(props: {
                     {o.label}
                   </button>
                 ))}
-              </div>
+              </div>}
               <p className="px-2 pt-1.5 text-xs text-muted-foreground">
-                {addToPlan
+                {editing.sessionOnly ? "Just for this workout. Use Customize workout to save a version for later." : addToPlan
                   ? `It stays in ${props.routineName} for next time.`
                   : `Just for today. ${props.routineName} in your plan stays as it is.`}
               </p>
@@ -1151,7 +1165,7 @@ export function Logger(props: {
                 onCancel={() => setAddingExercise(false)}
                 onAdd={async (pick) => {
                   const err = await applyEdit(
-                    addToPlan
+                    addToPlan && !editing.sessionOnly
                       ? (s) =>
                           addExercise(s, editing.routineId, dayItems, pick, defaultTargets(pick.exerciseId, slots(dayItems), editing.planSlots))
                       : async (s) => {
@@ -1159,7 +1173,7 @@ export function Logger(props: {
                           if (id) addExtra(workoutId, id, pick.targets);
                           return { error };
                         },
-                    addToPlan,
+                    addToPlan && !editing.sessionOnly,
                   );
                   if (err) setError(err);
                 }}
@@ -1259,19 +1273,20 @@ export function Logger(props: {
                     workoutId,
                   ).catch(() => new Map())
                 : new Map();
+            const replacementTarget=isCustomSlot(item)&&replacement.tracking!==item.exercise.tracking?(replacement.tracking==="time"?30:10):item.targetReps;
             const session = buildSession(
-              [{ ...item, exercise: replacement }],
+              [{ ...item, exercise: replacement, targetReps:replacementTarget }],
               previous,
               [],
             )[0];
             if (!demo) {
-              if (isExtraItem(item)) {
+              if (isCustomSlot(item)) {
+                if(isExtraItem(item))removeExtra(workoutId,item.exercise.id);
+                await enqueue(workoutId,{kind:"setCustomExercise",workoutId,slotId:item.id,previousId:item.exercise.id,exerciseId:replacement.id});
+                saveAdjustment(workoutId,item.id,{exerciseId:replacement.id,targetReps:replacementTarget});
+              } else if (isExtraItem(item)) {
                 removeExtra(workoutId, item.exercise.id);
-                addExtra(workoutId, replacement.id, {
-                  sets: item.targetSets,
-                  reps: item.targetReps,
-                  restSec: item.restSec,
-                });
+                addExtra(workoutId, replacement.id, {sets:item.targetSets,reps:item.targetReps,restSec:item.restSec});
               } else
                 saveAdjustment(workoutId, item.id, {
                   exerciseId: replacement.id,
@@ -1279,7 +1294,7 @@ export function Logger(props: {
             }
             setSwapped((prev) => ({
               ...prev,
-              [item.id]: { exercise: replacement, session },
+              [item.id]: { exercise: replacement, session, targetReps:replacementTarget },
             }));
             setExercises((prev) =>
               prev.map((e, i) => (i === swapIndex ? session : e)),
@@ -1290,7 +1305,7 @@ export function Logger(props: {
               try {
                 sessionStorage.setItem(
                   uiKey,
-                  JSON.stringify({ rest, openId: replacement.id }),
+                  JSON.stringify({ rest, openId: replacement.id, retained:exercises.filter((_,i)=>i!==swapIndex) } satisfies SavedUi),
                 );
               } catch {}
               await flush();
@@ -1299,99 +1314,37 @@ export function Logger(props: {
           }}
         />
       )}
-      {adaptOpen && (
-        <DumbbellDaySheet
-          items={items.filter(
-            (item, i) =>
-              !isExtraItem(item) &&
-              ![...exercises[i].warmups, ...exercises[i].working].some(
-                (r) => r.logged,
-              ),
-          )}
+      {adaptOpen && props.customization && (
+        <CustomWorkoutSheet
+          source={props.customization.source}
           library={swapLibrary}
-          excludedIds={items
-            .filter(
-              (item, i) =>
-                isExtraItem(item) ||
-                [...exercises[i].warmups, ...exercises[i].working].some(
-                  (r) => r.logged,
-                ),
-            )
-            .map((i) => i.exercise.id)}
-          onClose={() => setAdaptOpen(false)}
-          onApply={async (choices: DayAlternative[]) => {
-            const remaining = items
-              .map((item, i) => ({ item, index: i }))
-              .filter(
-                ({ item, index }) =>
-                  !isExtraItem(item) &&
-                  ![
-                    ...exercises[index].warmups,
-                    ...exercises[index].working,
-                  ].some((r) => r.logged),
-              );
-            if (choices.length !== remaining.length)
-              throw new Error("The workout changed. Generate a fresh version.");
-            const replacements: Exercise[] = [];
-            for (const pick of choices)
-              replacements.push(await prepareReplacement(pick));
-            const lockedIds = items
-              .filter((_, i) => !remaining.some((r) => r.index === i))
-              .map((i) => i.exercise.id);
-            if (
-              new Set(replacements.map((e) => e.id)).size !==
-                replacements.length ||
-              replacements.some((e) => lockedIds.includes(e.id))
-            )
-              throw new Error(
-                "Suggestions repeated an exercise already in this workout. Try another version.",
-              );
-            const previous = await getPreviousSessions(
-              createClient(),
-              replacements.map((e) => e.id),
-              workoutId,
-            ).catch(() => new Map());
-            const changes = Object.fromEntries(
-              remaining.map(({ item }, i) => [
-                item.id,
-                {
-                  exerciseId: replacements[i].id,
-                  targetSets: choices[i].targetSets,
-                  targetReps: choices[i].targetReps,
-                },
-              ]),
-            );
-            saveAdjustments(workoutId, changes);
-            const next = { ...swapped };
-            const sessions = [...exercises];
-            remaining.forEach(({ item, index }, i) => {
-              const updated = {
-                ...item,
-                exercise: replacements[i],
-                targetSets: choices[i].targetSets,
-                targetReps: choices[i].targetReps,
-              };
-              const session = buildSession([updated], previous, [])[0];
-              next[item.id] = {
-                exercise: replacements[i],
-                session,
-                targetSets: updated.targetSets,
-                targetReps: updated.targetReps,
-              };
-              sessions[index] = session;
-            });
-            setSwapped(next);
-            setExercises(sessions);
-            setOpenId(replacements[0]?.id ?? null);
-            setHold(null);
+          workoutId={workoutId}
+          current={items.map(customExercise)}
+          kept={items.filter((item,i)=>isExtraItem(item)||[...exercises[i].warmups,...exercises[i].working].some(r=>r.logged||r.skipped)).map(customExercise)}
+          onClose={()=>setAdaptOpen(false)}
+          beforeGenerate={async()=>{
+            await flush();if(syncFailed.current)throw new Error("A change could not sync. Check the sync error before customizing.");
+            if(await pendingCount(workoutId)>0)throw new Error("Your sets are still syncing. Try creating the draft once they have synced.");
+            const {data,error}=await createClient().from("workout_customizations").select("revision").eq("workout_id",workoutId).maybeSingle();
+            if(error)throw new Error("Could not check your current workout. Try again once connected.");
+            customRevision.current=data?.revision??0;
+          }}
+          beforeSave={async()=>{await flush();if(await pendingCount(workoutId)>0)throw new Error("Your sets are still syncing. Try saving once they have synced.");}}
+          onSaved={revision=>{if(revision!==null)customRevision.current=revision;startRefresh(()=>router.refresh());}}
+          onUse={async (day,sourceRoutineId)=>{
+            if (!navigator.onLine) throw new Error("Connect to apply this workout. Your existing workout stays available offline.");
             await flush();
-            try {
-              sessionStorage.setItem(
-                uiKey,
-                JSON.stringify({ rest, openId: replacements[0]?.id ?? null }),
-              );
-            } catch {}
-            startRefresh(() => router.refresh());
+            if (syncFailed.current) throw new Error("A change could not sync. Check the sync error before customizing.");
+            if (await pendingCount(workoutId)>0) throw new Error("Your sets are still syncing. Try again once they have synced.");
+            const locked=items.filter((_,i)=>[...exercises[i].warmups,...exercises[i].working].some(r=>r.logged));
+            const {error}=await createClient().rpc("use_custom_workout",{p_workout:workoutId,p_start:false,
+              p_revision:customRevision.current,p_request:customRequest.current??(customRequest.current=crypto.randomUUID()),p_name:day.name,p_items:customPayload(day),p_source_routine:sourceRoutineId,
+              p_locked:locked.map(i=>i.exercise.id)});
+            if(error) throw new Error(error.message.includes("changed")||error.message.includes("New sets")?"The workout changed. Close this review and try again.":error.message.includes("different equipment")?error.message:"Could not apply the workout. Your review is still here. Try again.");
+            const protectedIds=new Set(locked.map(i=>i.exercise.id));
+            try { sessionStorage.setItem(uiKey,JSON.stringify({rest,openId,retained:exercises.filter(e=>protectedIds.has(e.exerciseId))} satisfies SavedUi)); } catch {}
+            setHold(null);
+            startRefresh(()=>router.refresh());
           }}
         />
       )}
@@ -1404,7 +1357,7 @@ export function Logger(props: {
           description={
             demo
               ? "Try a duration in this sample workout."
-              : isExtraItem(items[restIndex])
+              : isCustomSlot(items[restIndex]) || isExtraItem(items[restIndex])
                 ? "Saved for this exercise in this session."
                 : `Saved for this exercise in ${props.routineName}. Offline changes sync when you reconnect.`
           }
@@ -1412,7 +1365,8 @@ export function Logger(props: {
           onSave={async (seconds) => {
             const item = items[restIndex];
             if (!demo) {
-              if (editing && !isExtraItem(item))
+              if (isCustomSlot(item)) await enqueue(workoutId,{kind:"setCustomRest",workoutId,slotId:item.id,restSec:seconds});
+              else if (editing && !editing.sessionOnly && !isExtraItem(item))
                 await enqueue(workoutId, {
                   kind: "setRest",
                   routineExerciseId: item.id,

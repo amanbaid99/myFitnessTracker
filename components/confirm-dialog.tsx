@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { MappingDialog } from "@/components/anatomy/mapping-dialog";
+import { MASK } from "@/lib/mask";
 import { Button } from "@/components/ui/button";
 
 export interface ConfirmOptions {
@@ -28,7 +30,12 @@ const emit = () => listeners.forEach((l) => l());
  */
 export function confirmDialog(options: ConfirmOptions): Promise<boolean> {
   // No host on this page (should not happen): fall back to the browser's.
-  if (mounted === 0) return Promise.resolve(window.confirm([options.title, options.message].filter(Boolean).join("\n\n")));
+  if (mounted === 0)
+    return Promise.resolve(
+      window.confirm(
+        [options.title, options.message].filter(Boolean).join("\n\n"),
+      ),
+    );
   current?.resolve(false);
   return new Promise((resolve) => {
     current = { ...options, resolve };
@@ -50,7 +57,11 @@ function subscribe(listener: () => void) {
 
 /** Renders the open confirm sheet. Mounted once, in the root layout. */
 export function ConfirmHost() {
-  const req = useSyncExternalStore(subscribe, () => current, () => null);
+  const req = useSyncExternalStore(
+    subscribe,
+    () => current,
+    () => null,
+  );
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -74,32 +85,55 @@ export function ConfirmHost() {
   if (!req) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end bg-black/60 animate-in fade-in" onClick={() => settle(false)}>
+    <MappingDialog
+      title={req.title}
+      disabled={false}
+      onDismiss={() => settle(false)}
+    >
       <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-title"
-        aria-describedby={req.message ? "confirm-message" : undefined}
-        className="mx-auto w-full max-w-lg rounded-t-3xl border bg-popover p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-popover-foreground animate-in slide-in-from-bottom-4"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[60] flex items-end bg-black/60 animate-in fade-in"
+        onClick={() => settle(false)}
       >
-        <h2 id="confirm-title" className="text-xl font-semibold">
-          {req.title}
-        </h2>
-        {req.message && (
-          <p id="confirm-message" className="mt-2 text-sm text-muted-foreground">
-            {req.message}
-          </p>
-        )}
-        <div className="mt-6 space-y-2">
-          <Button size="lg" variant={req.destructive ? "destructive" : "default"} className="w-full" onClick={() => settle(true)}>
-            {req.confirmLabel}
-          </Button>
-          <Button ref={cancelRef} size="lg" variant="ghost" className="w-full" onClick={() => settle(false)}>
-            {req.cancelLabel ?? "Cancel"}
-          </Button>
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="confirm-title"
+          aria-describedby={req.message ? "confirm-message" : undefined}
+          className={`mx-auto w-full max-w-lg max-h-[94dvh] overflow-y-auto overscroll-contain rounded-t-3xl border bg-popover p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-popover-foreground animate-in slide-in-from-bottom-4 motion-reduce:animate-none ${MASK}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 id="confirm-title" className="break-words text-xl font-semibold">
+            {req.title}
+          </h2>
+          {req.message && (
+            <p
+              id="confirm-message"
+              className="mt-2 break-words text-sm text-muted-foreground"
+            >
+              {req.message}
+            </p>
+          )}
+          <div className="mt-6 space-y-2">
+            <Button
+              size="lg"
+              variant={req.destructive ? "destructive" : "default"}
+              className="w-full"
+              onClick={() => settle(true)}
+            >
+              {req.confirmLabel}
+            </Button>
+            <Button
+              ref={cancelRef}
+              size="lg"
+              variant="ghost"
+              className="w-full"
+              onClick={() => settle(false)}
+            >
+              {req.cancelLabel ?? "Cancel"}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </MappingDialog>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyzeWorkout, analyzeWeek, WEEK_PROMPT, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
+import { analyzeWorkout, loadWorkout, analyzeWeek, WEEK_PROMPT, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
 
 const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service-123", OPENROUTER_API_KEY: "or-key-123" };
 
@@ -302,4 +302,39 @@ describe("weekly analysis", () => {
     expect(await analyzeWorkout(ENV, fetchFn, "w1", log)).toBe("saved");
     expect(log).toHaveBeenCalledWith("analyze-workout: weekly review failed");
   });
+});
+
+it("analyses an ad hoc custom session against its reviewed prescription, with actual exercise history",async()=>{
+  const base=fakeFetch([modelOk('{"title":"Custom session complete","summary":"Pressing work logged."}')]);
+  const json=(x:unknown)=>new Response(JSON.stringify(x));
+  const fetchFn=vi.fn<typeof fetch>(async(input,init)=>{
+    const url=String(input);
+    if(url.includes('/workout_customizations?'))return json([{name:'Upper today',items:[{exerciseId:'e1'},{exerciseId:'e2'}]}]);
+    if(url.includes('/exercises?user_id='))return json([{id:'e1',name:'Bench Press'},{id:'e2',name:'Plank'}]);
+    if(url.includes('/workouts?id='))return json([{user_id:'u1',routine_id:null,started_at:DATA.startedAt,ended_at:DATA.endedAt,routines:null}]);
+    return base(input,init);
+  });
+  expect(await analyzeWorkout(ENV,fetchFn,'w1',()=>{})).toBe('saved');
+  const call=base.mock.calls.find(([url])=>String(url).startsWith('https://openrouter.ai'))!;
+  const summary=JSON.parse(String(call[1]?.body)).messages[1].content;
+  expect(summary).toContain('Upper today');expect(summary).toContain('Plank');
+  expect(fetchFn.mock.calls.some(([url])=>String(url).includes('/routine_exercises?'))).toBe(false);
+  expect(fetchFn.mock.calls.find(([url])=>String(url).includes('/workout_customizations?'))?.[0]).toContain('user_id=eq.u1');
+});
+
+it("keeps frozen alternate choices available to the recap comparison",async()=>{
+ const base=fakeFetch([]),json=(v:unknown)=>new Response(JSON.stringify(v));
+ const f=vi.fn<typeof fetch>(async(input,init)=>{
+  const url=String(input);
+  if(url.includes("/workout_customizations?"))return json([{name:"Original Upper",items:[{exerciseId:"e1",alternateIds:["e2"]}]}]);
+  if(url.includes("/exercises?user_id="))return json([{id:"e1",name:"Bench Press"},{id:"e2",name:"Push-up"}]);
+  return base(input,init);
+ });
+ expect((await loadWorkout(ENV,f,"w1"))?.plan).toEqual([["Bench Press","Push-up"]]);
+});
+
+it("does not invent a plan comparison for an older session without a recorded prescription",async()=>{
+ const base=fakeFetch([]),json=(v:unknown)=>new Response(JSON.stringify(v));
+ const f=vi.fn<typeof fetch>(async(input,init)=>String(input).includes('/workout_customizations?')?json([{name:'Previous Upper',has_prescription:false,items:[]}]):base(input,init));
+ const result=await loadWorkout(ENV,f,'w1');expect(result?.dayName).toBe('Previous Upper');expect(result?.plan).toBeNull();
 });

@@ -2209,3 +2209,55 @@ the buttons could fall below the screen.
 Aman approved turning the rebuilt November tour on and asked that everyone
 see it again, including people who saw the first version. It has a new id,
 `nov-3-5-2026-v2`, so the old seen marker does not hide it.
+
+## 2026-11-06: Reviewed custom workouts connected to the current plan
+
+Aman requested a Custom workout today action beside Start on Today, and a
+broader Customize workout action in training instead of a dumbbell-only
+command. Both use choose changes, editable review, then explicit use/save.
+Keep the source plan and day visible. Offer usual equipment, dumbbells,
+bodyweight or bands, a focus and approximate duration, plus optional text.
+The Edge Function authenticates and reads the owner's real plan through
+RLS. It never writes a plan or workout. Reject incomplete or mismatched
+structured output rather than truncating it. Reuse the paid-first model,
+backup race, redaction and shared daily quota; budget output for all days.
+
+The review supports adding, replacing, removing, reordering, sets, reps or
+seconds and rest. Existing exercise tracking, muscle mapping, machine
+settings, per-hand conventions and history stay canonical in the library.
+Do not silently edit global metadata from an AI draft. Manually adding a
+new exercise still supports tracking and muscle entry. Logged or skipped
+exercises and extras are kept during today-only adaptation. Input remains
+untouched when opening or dismissing the sheet, and kept rows retain
+unlogged input and manually added sets across an accepted refresh.
+
+Aman clarified that future saves must also support replacing existing
+plan days. Use distinct destinations: add a day, replace the selected day
+(or update the existing days for a whole-plan draft), and save an inactive
+new plan. Show the affected day names and confirm replacements. Detect
+source edits made since generation and fail without partial changes. Keep
+existing day IDs, order, weekly targets and active-plan selection. Save
+accepted requests atomically with a retry ID and exact payload comparison.
+Never treat retrying a failed response as creating another plan or day.
+
+A today-only Home session has no routine_id, so it counts for training but
+does not advance the regular rotation. Persist its reviewed prescription
+separately so even unlogged exercises survive refresh/resume. Applying
+changes in an existing workout keeps its original rotation behavior. Before
+replacing future days, snapshot the current prescription, preparation and
+alternates for open workouts. Preserve already recorded custom prescriptions.
+For older finished sessions, retain the displayed name only and mark the
+prescription unknown rather than inventing historical targets. Keep set rows append-only
+and metrics SQL-derived. RLS stays owner-only, all new functions use invoker
+rights, and no service key is added to the client. Rest and known exercise
+replacement use the existing offline outbox. A queued rest edit for a
+retired plan slot targets its preserved workout, not the new future day.
+
+Confirmation sheets use the existing confirmation service inside a native
+modal, allowing them to appear above the customization sheet with focus
+and Escape behavior. The example at /demo/custom-workout uses local samples,
+hides provider muscle suggestions and starts only a demo logger. It has no
+AI requests or account writes. No new release tour is activated; batches
+still need owner selection and wording approval. The schema needs the
+repository's exact-SQL approval before merge and the two changed Edge
+Functions must be deployed separately before the new UI is released.

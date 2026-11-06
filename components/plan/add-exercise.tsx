@@ -27,7 +27,11 @@ export function AddExercise({
   onAdd,
   onCancel,
   targetsFor,
+  allowAi = true,
+  preserveLibraryDetails = false,
 }: {
+  allowAi?: boolean;
+  preserveLibraryDetails?: boolean;
   library: Exercise[];
   existingIds: string[];
   onAdd: (pick: ExercisePick) => void | Promise<void>;
@@ -77,26 +81,27 @@ export function AddExercise({
   const exact = library.find((e) => e.name.toLowerCase() === q);
 
   if (selected) {
+    const readOnlyDetails = preserveLibraryDetails && library.some(e=>e.id===selected.exerciseId);
     const existing = selected.exerciseId && !selected.exerciseId.startsWith("template:");
     const valid = Number.isInteger(Number(sets)) && Number(sets) >= 1 && Number(sets) <= 10 &&
       Number.isInteger(Number(reps)) && Number(reps) >= 1 && Number(reps) <= (tracking === "time" ? 3600 : 50);
     return (
       <fieldset disabled={busy} aria-busy={busy} className="min-w-0 space-y-3 p-2">
         <p className="font-medium">{selected.name}</p>
-        {targetsFor && <><label className="block text-sm">Track by
+        {targetsFor && <>{readOnlyDetails ? <p className="text-xs text-muted-foreground">Tracked in {tracking==="time"?"seconds":"reps"} using your saved exercise details.</p> : <label className="block text-sm">Track by
           <select aria-label="Track by" value={tracking}
             className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-base"
             onChange={(e) => { const t = e.target.value as Tracking; setTracking(t); setReps(t === "time" ? "30" : "10"); }}>
             <option value="reps">Reps</option><option value="time">Time (seconds)</option>
           </select>
-        </label>
-        {existing && <p className="text-xs text-muted-foreground">Changing tracking adds a separate version of this exercise, keeping your previous records and other plan days unchanged.</p>}
+        </label>}
+        {existing && !readOnlyDetails && <p className="text-xs text-muted-foreground">Changing tracking adds a separate version of this exercise, keeping your previous records and other plan days unchanged.</p>}
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">Sets<Input type="number" min={1} max={10} inputMode="numeric" value={sets} onChange={(e) => setSets(e.target.value)} /></label>
           <label className="text-sm">{tracking === "time" ? "Seconds per set" : "Reps per set"}<Input type="number" min={1} max={tracking === "time" ? 3600 : 50} inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} /></label>
         </div>
         </>}
-        <MusclePicker key={`${selected.name}:${selected.equipment}`} name={selected.name} equipment={selected.equipment} value={muscles} onChange={(groups) => { setMuscles(groups); setMuscleEdited(true); }} />
+        {readOnlyDetails ? <p className="text-xs text-muted-foreground">{muscles.length?`Muscles: ${muscles.join(", ")}. Your library mapping stays the same.`:"Muscles are not mapped yet. You can map them after your workout."}</p> : <MusclePicker allowAi={allowAi} key={`${selected.name}:${selected.equipment}`} name={selected.name} equipment={selected.equipment} value={muscles} onChange={(groups) => { setMuscles(groups); setMuscleEdited(true); }} />}
         {!valid && <p className="text-sm text-destructive">Enter 1 to 10 sets and {tracking === "time" ? "1 to 3600 seconds" : "1 to 50 reps"} per set.</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...pickForTracking(selected, tracking, library), ...(muscleEdited || muscles.length ? { muscleGroups: muscles } : {}), ...(targetsFor ? { targets: { ...targetsFor(selected.exerciseId), sets: Number(sets), reps: Number(reps) } } : {}) })}>
@@ -110,7 +115,7 @@ export function AddExercise({
   }
   return (
     <fieldset disabled={busy} aria-busy={busy} className="min-w-0 space-y-2 p-2">
-      <Input autoFocus placeholder="Search or type a new exercise" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <Input autoFocus aria-label="Search or type a new exercise" placeholder="Search or type a new exercise" value={query} onChange={(e) => setQuery(e.target.value)} />
       <ul className="divide-y rounded-xl border">
         {matches.map((e) => (
           <li key={e.id}>

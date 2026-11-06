@@ -8,6 +8,25 @@ Last updated: 2026-11-06.
 
 ## In progress
 
+- 2026-11-06: `ui/review-custom-workouts` implements owner-requested
+  plan-connected AI customization before and during training. Home adds
+  Custom workout today; the logger uses Customize workout. Setup, editable
+  review and explicit today/future actions cover equipment, focus, time,
+  adding days, replacing existing days and saving an inactive plan copy.
+  Owner explicitly requested replacing existing days in the clarification.
+  New owner-only prescription snapshots preserve open workouts before
+  future edits; older finished sessions keep their names without inferred
+  historical targets; the existing sets and SQL metrics stay
+  intact. A migration needs exact-SQL approval before merge. Both
+  `draft-plan` and `analyze-workout` need separate Edge deployment.
+  Public non-writing example: `/demo/custom-workout`. Validation and
+  screenshots: `docs/ui-evidence/custom-workout`. Rebased on owner merges
+  through #57 (46ffee3); six-step published v2 tour preserved unchanged.
+  Lint, strict types, 482 tests, build, database/RLS/race checks and mobile
+  browser suites pass. No merge, production
+  migration, provider request, deployment or new tour activation.
+
+
 - 2026-11-06: The rebuilt 3 to 5 November update tour (#56, spotlight style,
   six steps) is live as `nov-3-5-2026-v2`, so everyone sees it again (Aman).
 

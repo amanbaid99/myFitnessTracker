@@ -1,4 +1,5 @@
 import "server-only";
+import type { CustomSnapshotItem } from "./custom-workout";
 import { describeDbError } from "./db-error";
 import type { WarmupStep } from "./warmup";
 import { DEFAULT_WEIGHT_STEP_KG } from "./progression";
@@ -288,7 +289,7 @@ async function queryRoutines(
         restSec: re.rest_sec,
         exercise: toExercise(re.exercises!),
         alternates: [...(re.routine_exercise_alternates ?? [])]
-          .sort((a, b) => a.sort_order - b.sort_order)
+          .sort((a, b) => a.sort_order - b.sort_order || (a.exercises?.id??"").localeCompare(b.exercises?.id??""))
           .map((a) => a.exercises)
           .filter((e) => e !== null && !e.archived_at && e.id !== re.exercises!.id)
           .map((e) => toExercise(e!)),
@@ -326,6 +327,24 @@ export async function getWorkout(supabase: Supabase, workoutId: string): Promise
   return data && { id: data.id, routineId: data.routine_id, startedAt: data.started_at, endedAt: data.ended_at };
 }
 
+export interface WorkoutCustomization {
+  workoutId: string; name: string; sourceRoutineId: string | null; revision: number; items: CustomSnapshotItem[]; warmup:string[]|null; cooldown:string[]|null;
+}
+/** Missing migration is a compatibility state, not an empty successful read. */
+export async function getWorkoutCustomizations(supabase: Supabase, ids: string[]) {
+  const query = supabase.from("workout_customizations").select("workout_id,name,source_routine_id,revision,items,warmup,cooldown");
+  const {data,error} = await (ids.length ? query.in("workout_id",ids) : query.limit(0));
+  if (error && ["42P01","PGRST205","PGRST200"].includes(error.code)) return {available:false,rows:new Map<string,WorkoutCustomization>()};
+  if (error) throw new Error(error.message);
+  return {available:true,rows:new Map((data??[]).map(x=>[x.workout_id,{workoutId:x.workout_id,name:x.name,sourceRoutineId:x.source_routine_id,revision:x.revision,items:x.items as CustomSnapshotItem[],warmup:x.warmup,cooldown:x.cooldown}]))};
+}
+export async function getExercisesById(supabase: Supabase, ids: string[]): Promise<Exercise[]> {
+  if (!ids.length) return [];
+  const {data,error}=await supabase.from("exercises").select(EXERCISE_COLS).in("id",ids);
+  if(error)throw new Error(error.message);
+  return ((data??[]) as unknown as ExerciseRow[]).map(toExercise);
+}
+
 // History ----------------------------------------------------------------------
 
 export interface HistoryWorkout {
@@ -342,9 +361,10 @@ const HISTORY_COLS = "id, started_at, ended_at, source, energy, notes, routines(
 
 function toHistoryWorkout(w: Record<string, unknown>): HistoryWorkout {
   const routine = w.routines as { name: string } | null;
+  const custom = w.workout_customizations as {name:string}|null;
   return {
     id: w.id as string,
-    routineName: routine?.name ?? null,
+    routineName: custom?.name ?? routine?.name ?? null,
     startedAt: w.started_at as string,
     endedAt: w.ended_at as string,
     source: toSource(w.source),
@@ -355,27 +375,31 @@ function toHistoryWorkout(w: Record<string, unknown>): HistoryWorkout {
 
 /** Finished, not cancelled workouts, newest first. */
 export async function getFinishedWorkouts(supabase: Supabase, limit = 100): Promise<HistoryWorkout[]> {
-  const { data, error } = await supabase
+  const run = (custom: boolean) => supabase
     .from("workouts")
-    .select(HISTORY_COLS)
+    .select(custom ? `${HISTORY_COLS}, workout_customizations(name)` : HISTORY_COLS)
     .not("ended_at", "is", null)
     .is("cancelled_at", null)
     .order("started_at", { ascending: false })
     .limit(limit);
+  let {data,error}=await run(true);
+  if(error && ["PGRST200","PGRST205","42P01"].includes(error.code)) ({data,error}=await run(false));
   if (error) throw new Error(error.message);
-  return (data ?? []).map(toHistoryWorkout);
+  return ((data ?? []) as unknown as Record<string,unknown>[]).map(toHistoryWorkout);
 }
 
 export async function getFinishedWorkout(supabase: Supabase, workoutId: string): Promise<HistoryWorkout | null> {
-  const { data, error } = await supabase
+  const run = (custom: boolean) => supabase
     .from("workouts")
-    .select(HISTORY_COLS)
+    .select(custom ? `${HISTORY_COLS}, workout_customizations(name)` : HISTORY_COLS)
     .eq("id", workoutId)
     .not("ended_at", "is", null)
     .is("cancelled_at", null)
     .maybeSingle();
+  let {data,error}=await run(true);
+  if(error && ["PGRST200","PGRST205","42P01"].includes(error.code)) ({data,error}=await run(false));
   if (error) throw new Error(error.message);
-  return data && toHistoryWorkout(data);
+  return data && toHistoryWorkout(data as unknown as Record<string,unknown>);
 }
 
 /** Exercise names by id, for labelling a workout's sets. */
