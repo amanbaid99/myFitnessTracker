@@ -165,7 +165,8 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
 };
 
 /** Owner-controlled batches only. Individual merges never create a tour automatically. */
-export const UPDATE_TOURS: UpdateTour[] = [NOVEMBER_UPDATE_PREVIEW];
+/** Paused 6 Nov 2026 (Aman): the November tour is being rebuilt in the intro tour style. */
+export const UPDATE_TOURS: UpdateTour[] = [];
 export const updateTourKey = (id: string) => `tour:update:${id}`;
 
 export function safeTourHref(href: string) {
