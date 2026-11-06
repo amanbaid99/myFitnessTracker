@@ -1,6 +1,8 @@
 # Approved update tour: 3–5 November 2026
 
-Owner approved the wording and release on 6 November 2026. The batch covering 3–5 November is now enabled with a 6 November release date.
+**Rebuilt 6 November 2026 (Aman): paused and not live.** The tour now uses the intro tour's spotlight: the sample page stays full screen, one element is highlighted and a small bubble carries the approved title and text with Previous, Next and Skip tour. It is cut to six steps (1, 4, 5, 6, 8 and 11 below, with step 6 pointing at Options in the logger). Steps 2, 3, 7, 9, 10 and 12 are dropped from the tour but kept here for reference. Turning it back on needs Aman's approval (add it to `UPDATE_TOURS`).
+
+Originally: owner approved the wording and release on 6 November 2026.
 
 The scope comes from user-facing merges #13–#53 within 3–5 November in India time. Superseded intermediate layouts, paused human coaching, unreleased recovery work and internal tracker #38 are excluded. The refined replacement flows ship with this batch in PR #54.
 

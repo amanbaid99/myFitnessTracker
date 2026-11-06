@@ -20,6 +20,7 @@ const batch = (id: string, date = "2026-11-05"): UpdateTour => ({
       title: "Sample",
       body: "Sample",
       href: "/demo/progress?view=muscles",
+      target: "main",
       changes: [],
       prs: [],
     },
@@ -104,15 +105,14 @@ describe("owner-controlled update tours", () => {
       expect(tourIndex(value, 3)).toBe(0);
     expect(tourIndex("2", 3)).toBe(2);
   });
-  it("covers every user-facing merge in the requested three-day window", () => {
-    const covered = new Set(
-      NOVEMBER_UPDATE_PREVIEW.steps.flatMap((step) => step.prs),
-    );
-    for (let pr = 13; pr <= 53; pr++)
-      if (pr !== 38) expect(covered.has(pr), `PR #${pr}`).toBe(true);
+  it("keeps the rebuilt tour short, pointed and free of em dashes", () => {
+    // Aman (6 Nov): a short spotlight tour, not one step per merge.
+    expect(NOVEMBER_UPDATE_PREVIEW.steps.length).toBeLessThanOrEqual(6);
     for (const step of NOVEMBER_UPDATE_PREVIEW.steps) {
+      expect(step.target.trim()).not.toBe("");
       expect(step.title + step.body + step.changes.join(" ")).not.toMatch(/—/);
       expect(step.body.length).toBeLessThan(160);
     }
+    expect(validUpdateTour({ ...NOVEMBER_UPDATE_PREVIEW, steps: [{ ...NOVEMBER_UPDATE_PREVIEW.steps[0], target: " " }] })).toBe(false);
   });
 });

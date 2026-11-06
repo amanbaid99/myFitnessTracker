@@ -4,6 +4,8 @@ export interface UpdateTourStep {
   title: string;
   body: string;
   href: string;
+  /** CSS selector of the element the bubble points at on the sample page. */
+  target: string;
   changes: string[];
   prs: number[];
 }
@@ -14,7 +16,7 @@ export interface UpdateTour {
   steps: UpdateTourStep[];
 }
 
-/** Owner approved the wording and activation on 6 November 2026. Preview links remain available for review. */
+/** Wording approved by the owner on 6 November 2026. Rebuilt 6 November as six spotlight steps on sample pages; needs approval before it is turned back on. */
 export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
   id: "nov-3-5-2026",
   date: "2026-11-06",
@@ -24,6 +26,7 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
       title: "Today keeps the important things together",
       body: "Weekly insight comes first. Start and Resume share one place, and your latest workout has a clear recap card.",
       href: "/demo",
+      target: `section[aria-label="Current week analysis"]`,
       prs: [20, 22, 27, 34, 52],
       changes: [
         "Compact weekly insight, next focus, streak and activity markers.",
@@ -33,31 +36,10 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
       ],
     },
     {
-      title: "Understand the week",
-      body: "See the main takeaway and next focus, then explore the body map and muscle breakdown. Switch between this week and last week.",
-      href: "/demo/week",
-      prs: [19, 26, 32, 43],
-      changes: [
-        "A dedicated weekly analysis page with clear ready, pending, empty and error states.",
-        "Monday to Sunday weeks in India time for comparable weekly reports and muscle totals.",
-        "Detailed anatomy and explanations follow the main interpretation.",
-      ],
-    },
-    {
-      title: "Find a past workout faster",
-      body: "History groups your workouts and keeps search, filters, set counts and recap status easy to scan.",
-      href: "/demo/history",
-      prs: [21, 33],
-      changes: [
-        "Week/month grouping, readable dates, compact rows and workout source labels.",
-        "Active filters and Clear remain visible.",
-        "Workouts stay accessible when optional analysis metadata is unavailable.",
-      ],
-    },
-    {
       title: "See what your workout worked",
       body: "The recap combines session results, analysis and a lightweight muscle map. Full anatomy opens when you want more detail.",
       href: "/demo?finished=1",
+      target: `section[aria-label="Workout body map"]`,
       prs: [13, 14, 15, 16, 17, 24, 25, 35, 50],
       changes: [
         "Results remain available while AI analysis is pending.",
@@ -70,6 +52,7 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
       title: "Log sets in a familiar order",
       body: "Every set stays visible. Tap its circle to log it, and choose how it felt after logging. Warm-up sets stay visible too.",
       href: "/demo/workout/push",
+      target: `[data-guide="tip:log-set"]`,
       prs: [31, 41, 45, 47, 48, 49, 50],
       changes: [
         "Editable prefills, independent set logging, undo, corrections, skipping and added sets remain.",
@@ -82,7 +65,8 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
     {
       title: "Replace one exercise",
       body: "Equipment busy? Pick equipment you can use, review an alternative and accept it for today. The regular plan stays unchanged.",
-      href: "/demo/workout-changes?kind=one",
+      href: "/demo/workout/push",
+      target: `details:has(button[aria-label^="Replace exercise"]) > summary`,
       prs: [29, 30],
       changes: [
         "Known exercise choices work offline; new exercises and AI suggestions need a connection.",
@@ -91,21 +75,10 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
       ],
     },
     {
-      title: "Use dumbbells for the remaining workout",
-      body: "Review a dumbbell version of untouched planned exercises. Logged exercises and extras you added stay as they are.",
-      href: "/demo/workout-changes?kind=dumbbells",
-      prs: [30],
-      changes: [
-        "AI suggests alternatives based on the current day's muscles.",
-        "Review each original exercise, new exercise, target and muscles before accepting.",
-        "Changes apply to today only, for up to 15 remaining planned exercises.",
-        "This sample makes no AI requests.",
-      ],
-    },
-    {
       title: "Progress starts with charts",
       body: "See volume, one named strength lift, body weight and consistency. Tap a chart for the detailed tools.",
       href: "/demo/progress",
+      target: `a[aria-label="Explore training volume"]`,
       prs: [28, 36, 37, 39, 40, 53],
       changes: [
         "One overview period, with search and sorting kept inside details.",
@@ -115,31 +88,10 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
       ],
     },
     {
-      title: "Review muscle balance",
-      body: "Compare weekly sets, see coverage and open anatomy. Coverage preferences stay available without crowding the results.",
-      href: "/demo/progress?view=muscles",
-      prs: [24, 25, 42, 43],
-      changes: [
-        "Plan or balanced coverage goals, exclusions and recovery pause remain available.",
-        "Incomplete muscle mapping and limited history are explained before drawing conclusions.",
-        "Main and supporting muscle contributions use the existing calculation.",
-      ],
-    },
-    {
-      title: "Measurements stay optional",
-      body: "Record a fresh weight check-in or add other measurements. Past entries have a clear editing state and Cancel.",
-      href: "/demo/measurements",
-      prs: [29, 44],
-      changes: [
-        "Optional weight, circumferences and method-labelled body-fat estimates.",
-        "Readable history, date selection, unit conversion and measurement trends.",
-        "Monthly reminders can be snoozed or turned off. Previous readings are not new check-ins.",
-      ],
-    },
-    {
       title: "Review and edit a plan clearly",
       body: "Expand a day to review exercises. Exercise settings stay together, with previous records near the top and Save easy to reach.",
       href: "/demo/update-example?kind=plans",
+      target: `details[aria-label^="Day 1"]`,
       prs: [46, 51],
       changes: [
         "Profile-safe headings and compact day summaries for template and AI-drafted plans.",
@@ -148,24 +100,10 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
         "Plan actions keep ordering, confirmations and the active-plan status.",
       ],
     },
-    {
-      title: "Preferences and updates are easier to find",
-      body: "Settings groups account, training, measurements and appearance. Update controls show when the app is updating.",
-      href: "/demo/update-example?kind=settings",
-      prs: [18, 23, 26, 30, 44, 46],
-      changes: [
-        "Metric/imperial preferences live in one place. Rest is edited on each exercise.",
-        "Account editing has Cancel, and appearance choices are optional during onboarding.",
-        "AI Coach naming is clearer; its selected scope and conversations are retained.",
-        "Themes, contrast, longer buttons and reduced motion are preserved. FAQ and sample navigation are updated.",
-        "Version and update timing remain visible, with loading feedback during an update.",
-      ],
-    },
   ],
 };
 
-/** Owner-controlled batches only. Individual merges never create a tour automatically. */
-/** Paused 6 Nov 2026 (Aman): the November tour is being rebuilt in the intro tour style. */
+/** Owner-controlled batches only; merges never turn one on. Paused 6 Nov 2026 (Aman): the November tour is being rebuilt in the intro tour style. */
 export const UPDATE_TOURS: UpdateTour[] = [];
 export const updateTourKey = (id: string) => `tour:update:${id}`;
 
@@ -189,7 +127,7 @@ export function validUpdateTour(tour: UpdateTour) {
     Number.isFinite(timestamp) &&
     new Date(timestamp).toISOString().slice(0, 10) === tour.date &&
     tour.steps.length > 0 &&
-    tour.steps.every((step) => safeTourHref(step.href))
+    tour.steps.every((step) => safeTourHref(step.href) && step.target.trim().length > 0)
   );
 }
 export function nextUpdateTour(
