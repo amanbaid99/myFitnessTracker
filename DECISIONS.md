@@ -2203,3 +2203,9 @@ missing, the bubble points at the page heading rather than skipping.
 The bubble now measures itself and always stays on screen, and Next is
 always on the right; this also fixes the intro tour on 320 px screens where
 the buttons could fall below the screen.
+
+## 2026-11-06: Rebuilt update tour turned on for everyone (Aman)
+
+Aman approved turning the rebuilt November tour on and asked that everyone
+see it again, including people who saw the first version. It has a new id,
+`nov-3-5-2026-v2`, so the old seen marker does not hide it.

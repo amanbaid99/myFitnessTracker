@@ -1,12 +1,12 @@
 # Approved update tour: 3–5 November 2026
 
-**Rebuilt 6 November 2026 (Aman): paused and not live.** The tour now uses the intro tour's spotlight: the sample page stays full screen, one element is highlighted and a small bubble carries the approved title and text with Previous, Next and Skip tour. It is cut to six steps (1, 4, 5, 6, 8 and 11 below, with step 6 pointing at Options in the logger). Steps 2, 3, 7, 9, 10 and 12 are dropped from the tour but kept here for reference. Turning it back on needs Aman's approval (add it to `UPDATE_TOURS`).
+**Rebuilt and live again 6 November 2026 (Aman), as `nov-3-5-2026-v2` so everyone sees it, including people who saw the first version.** The tour now uses the intro tour's spotlight: the sample page stays full screen, one element is highlighted and a small bubble carries the approved title and text with Previous, Next and Skip tour. It is cut to six steps (1, 4, 5, 6, 8 and 11 below, with step 6 pointing at Options in the logger). Steps 2, 3, 7, 9, 10 and 12 are dropped from the tour but kept here for reference.
 
 Originally: owner approved the wording and release on 6 November 2026.
 
 The scope comes from user-facing merges #13–#53 within 3–5 November in India time. Superseded intermediate layouts, paused human coaching, unreleased recovery work and internal tracker #38 are excluded. The refined replacement flows ship with this batch in PR #54.
 
-Preview route: `/demo?updateTour=nov-3-5-2026&tourStep=0&tourPreview=1`.
+Preview route: `/demo?updateTour=nov-3-5-2026-v2&tourStep=0&tourPreview=1`.
 
 ## 1. Today keeps the important things together
 
