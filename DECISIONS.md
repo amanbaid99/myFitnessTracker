@@ -2179,3 +2179,12 @@ and stable seen key. Remove the review-only status notes from the two
 replacement stops. Preview URLs remain available, while the invitation and
 Settings replay use the published tour without the draft flag. Future
 merges do not activate batches automatically; owner approval still applies.
+
+## 2026-11-06: November update tour paused (Aman)
+
+Aman found the 3 to 5 November update tour unlike the intro tour: a text
+block and large buttons around a whole sample page, with nothing
+highlighted. It is switched off (`UPDATE_TOURS` is empty) while it is
+rebuilt with the intro tour's spotlight and bubble. The preview link
+(`tourPreview=1`) still works for review. Accounts that already saw it keep
+it marked seen.
