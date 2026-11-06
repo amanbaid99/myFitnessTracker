@@ -16,9 +16,9 @@ export interface UpdateTour {
   steps: UpdateTourStep[];
 }
 
-/** Wording approved by the owner on 6 November 2026. Rebuilt 6 November as six spotlight steps on sample pages; needs approval before it is turned back on. */
+/** Wording approved by the owner on 6 November 2026. Rebuilt 6 November as six spotlight steps on sample pages and turned on again the same day. */
 export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
-  id: "nov-3-5-2026",
+  id: "nov-3-5-2026-v2",
   date: "2026-11-06",
   title: "Your 3–5 November update tour",
   steps: [
@@ -103,8 +103,8 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
   ],
 };
 
-/** Owner-controlled batches only; merges never turn one on. Paused 6 Nov 2026 (Aman): the November tour is being rebuilt in the intro tour style. */
-export const UPDATE_TOURS: UpdateTour[] = [];
+/** Owner-controlled batches only; merges never turn one on. Aman turned the rebuilt tour on 6 Nov 2026 under a new id so everyone sees it again. */
+export const UPDATE_TOURS: UpdateTour[] = [NOVEMBER_UPDATE_PREVIEW];
 export const updateTourKey = (id: string) => `tour:update:${id}`;
 
 export function safeTourHref(href: string) {
