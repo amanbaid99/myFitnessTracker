@@ -9,7 +9,6 @@ import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/analytics";
 import { INTRO_TOUR, INTRO_TOUR_KEY, nextTip, TIPS, type GuideStep } from "@/lib/guide";
 import { UPDATE_TOURS, nextUpdateTour, updateTourHref, updateTourKey, type UpdateTour } from "@/lib/update-tours";
-import { MappingDialog } from "@/components/anatomy/mapping-dialog";
 
 interface GuideContext {
   /** A tour, tip or What's new is on screen: other pop-ups should wait. */
@@ -158,7 +157,7 @@ const PAD = 6;
  * it. With index and total it is a tour step (Next, Skip); without, a tip
  * (Got it; a tap anywhere also closes it).
  */
-function Spotlight({
+export function Spotlight({
   step,
   index,
   total,
@@ -166,6 +165,9 @@ function Spotlight({
   onPrevious,
   onSkip,
   onMissing,
+  selector,
+  label,
+  busy = false,
 }: {
   step: GuideStep;
   index?: number;
@@ -174,10 +176,18 @@ function Spotlight({
   onPrevious?: () => void;
   onSkip?: () => void;
   onMissing?: () => void;
+  /** A CSS selector to point at instead of data-guide={step.target}. */
+  selector?: string;
+  /** A small line above the title, e.g. "What's new". */
+  label?: string;
+  /** Disables the buttons while the next step loads. */
+  busy?: boolean;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [vh, setVh] = useState(0);
   const button = useRef<HTMLButtonElement>(null);
+  const bubble = useRef<HTMLDivElement>(null);
+  const [bubbleH, setBubbleH] = useState(200);
   const isTour = total !== undefined;
   // Read inside the effect, so a parent re-render does not restart the search.
   const next = useRef(onNext);
@@ -193,8 +203,14 @@ function Spotlight({
     let frame = 0;
     let el: Element | null = null;
     const started = performance.now();
-    const find = () =>
-      [...document.querySelectorAll(`[data-guide="${step.target}"]`)].find((e) => e.getClientRects().length > 0) ?? null;
+    const query = selector ?? `[data-guide="${step.target}"]`;
+    const find = () => {
+      try {
+        return [...document.querySelectorAll(query)].find((e) => e.getClientRects().length > 0) ?? null;
+      } catch {
+        return null;
+      }
+    };
     const loop = () => {
       if (!el) {
         el = find();
@@ -217,14 +233,24 @@ function Spotlight({
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [step.target]);
+  }, [step.target, selector]);
 
   useEffect(() => {
     if (rect) button.current?.focus({ preventScroll: true });
   }, [rect]);
 
+  // Measure the bubble so it always fits on screen, even on small phones.
+  useEffect(() => {
+    const node = bubble.current;
+    if (!node) return;
+    const observer = new ResizeObserver(() => setBubbleH(Math.ceil(node.getBoundingClientRect().height)));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rect !== null]); // eslint-disable-line react-hooks/exhaustive-deps -- once the bubble exists
+
   if (!rect) return null;
-  const below = rect.bottom + 180 < vh || rect.top < vh / 2;
+  const below = rect.bottom + bubbleH + 24 < vh || rect.top < vh / 2;
+  const maxEdge = Math.max(12, vh - bubbleH - 12);
   const titleId = `guide-${step.target}`;
 
   return createPortal(
@@ -241,13 +267,15 @@ function Spotlight({
         }}
       />
       <div
+        ref={bubble}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
         className="absolute inset-x-4 mx-auto max-w-sm rounded-2xl border bg-popover p-4 shadow-xl animate-in fade-in"
-        style={below ? { top: Math.min(rect.bottom + PAD + 12, vh - 200) } : { bottom: vh - rect.top + PAD + 12 }}
+        style={below ? { top: Math.min(rect.bottom + PAD + 12, maxEdge) } : { bottom: Math.min(vh - rect.top + PAD + 12, maxEdge) }}
       >
+        {label && <p className="mb-1 text-xs font-medium text-primary">{label}</p>}
         <p id={titleId} className="font-semibold">
           {step.title}
         </p>
@@ -258,13 +286,13 @@ function Spotlight({
               {index! + 1} of {total}
             </span>
           )}
-          {isTour && <Button variant="secondary" disabled={index === 0} onClick={onPrevious}>Previous</Button>}
+          {isTour && <Button variant="secondary" disabled={index === 0 || busy} onClick={onPrevious}>Previous</Button>}
           {isTour && (
-            <Button variant="ghost" className="ml-auto text-muted-foreground" onClick={onSkip}>
+            <Button variant="ghost" className="text-muted-foreground" disabled={busy} onClick={onSkip}>
               Skip tour
             </Button>
           )}
-          <Button ref={button} className={isTour && index! + 1 < total! ? "" : "ml-auto"} onClick={onNext}>
+          <Button ref={button} className="ml-auto" disabled={busy} onClick={onNext}>
             {!isTour ? "Got it" : index! + 1 < total! ? "Next" : "Done"}
           </Button>
         </div>
@@ -274,16 +302,27 @@ function Spotlight({
   );
 }
 
-/** One invitation per owner-approved batch, after the intro tour, on Today only. */
+/** One invitation per owner-approved batch, after the intro tour, on Today only. Same look as the tour bubbles. */
 export function UpdateTourInvite({ tour, onStart, onDismiss }: { tour: UpdateTour; onStart: () => void; onDismiss: () => void }) {
-  return <MappingDialog title="Take a tour of the updates" disabled={false} onDismiss={onDismiss}>
-    <section onClick={event => event.stopPropagation()} className="mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border bg-popover p-4">
-      <Sparkles className="size-5 text-primary" aria-hidden />
-      <h2 className="mt-2 text-xl font-semibold">See what’s changed</h2>
-      <p className="mt-2 text-sm leading-relaxed">{tour.title}</p>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">A short walkthrough with sample screens. Use Next, Previous or Skip. Your workouts and plan stay as they are.</p>
-      <Button className="mt-4 h-auto min-h-11 w-full whitespace-normal py-2" onClick={onStart}>Start update tour</Button>
-      <Button variant="ghost" className="mt-1 h-auto min-h-11 w-full whitespace-normal py-2" onClick={onDismiss}>Skip this tour</Button>
-    </section>
-  </MappingDialog>;
+  const start = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    start.current?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onDismiss(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onDismiss]);
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 px-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="update-tour-invite" className="w-full max-w-sm rounded-2xl border bg-popover p-4 shadow-xl animate-in fade-in">
+        <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Sparkles className="size-3.5" aria-hidden />What&apos;s new</p>
+        <p id="update-tour-invite" className="font-semibold">See what&apos;s changed</p>
+        <p className="mt-1 text-sm text-muted-foreground">{tour.title}. A short walkthrough with sample screens. Your workouts and plan stay as they are.</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button variant="ghost" className="text-muted-foreground" onClick={onDismiss}>Skip</Button>
+          <Button ref={start} className="ml-auto" onClick={onStart}>Start tour</Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
 }

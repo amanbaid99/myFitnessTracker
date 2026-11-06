@@ -8,6 +8,11 @@ Last updated: 2026-11-06.
 
 ## In progress
 
+- 2026-11-06: The 3 to 5 November update tour is switched off (#55). Branch
+  `ui/review-update-tour-spotlight` rebuilds it in the intro tour style:
+  spotlight and bubble on the sample pages, six steps, guide-style invite.
+  Stays off until Aman approves turning it on.
+
 - 2026-11-06: Owner approved the wording, activation and release of #54.
   The 3–5 Nov tour batch is enabled with a 6 Nov release date; review-only
   status notes are removed from its copy. Validating the activation commit

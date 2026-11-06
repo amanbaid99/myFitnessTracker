@@ -2188,3 +2188,18 @@ highlighted. It is switched off (`UPDATE_TOURS` is empty) while it is
 rebuilt with the intro tour's spotlight and bubble. The preview link
 (`tourPreview=1`) still works for review. Accounts that already saw it keep
 it marked seen.
+
+## 2026-11-06: Update tours use the intro tour's spotlight (Aman)
+
+Aman found the update tour unlike the intro tour. It now reuses the same
+`Spotlight`: the sample page stays full screen, one element per step is
+highlighted (each step has a CSS `target` on its sample page, so no page
+files needed new markers) and a small bubble carries the approved title and
+text with Previous, Next and Skip tour. The November batch is six steps
+instead of twelve, using approved wording only. The invitation is a small
+centred bubble in the same style instead of a bottom sheet. If a target is
+missing, the bubble points at the page heading rather than skipping.
+
+The bubble now measures itself and always stays on screen, and Next is
+always on the right; this also fixes the intro tour on 320 px screens where
+the buttons could fall below the screen.
