@@ -4,9 +4,14 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-05.
+Last updated: 2026-11-06.
 
 ## In progress
+
+- 2026-11-06: Owner approved the wording, activation and release of #54.
+  The 3–5 Nov tour batch is enabled with a 6 Nov release date; review-only
+  status notes are removed from its copy. Validating the activation commit
+  before merging and verifying production. Future batches still need approval.
 
 - 2026-11-05: `ui/review-workout-changes-tour` addresses both workout
   replacement flows and owner-requested guided release batches. Exercise
@@ -15,7 +20,7 @@ Last updated: 2026-11-05.
   Both preserve session-only scope, logged-set protection and existing
   handlers. A 12-stop draft tour groups all available user-facing merges
   from 3 to 5 Nov in India time, with safe examples and Previous/Next/Skip.
-  `UPDATE_TOURS` stays empty until owner wording/activation approval. No
+  `UPDATE_TOURS` was held empty for review; owner approved activation on 6 Nov. No
   automatic per-feature text popups, new schema or AI-provider deployment.
   Lint, strict types, 457 tests and production build pass. Both replacement
   browser suites and all 12 tour stops pass at 320/390/430, including safe

@@ -26,9 +26,12 @@ const batch = (id: string, date = "2026-11-05"): UpdateTour => ({
   ],
 });
 describe("owner-controlled update tours", () => {
-  it("keeps drafts out of automatic announcements", () => {
-    expect(UPDATE_TOURS).toEqual([]);
+  it("announces only the approved batch on its release day, once per account", () => {
+    expect(UPDATE_TOURS.map(tour => tour.id)).toEqual(["nov-3-5-2026"]);
     expect(nextUpdateTour(UPDATE_TOURS, new Set(), null, now)).toBeNull();
+    const released = new Date("2026-11-05T18:30:00Z");
+    expect(nextUpdateTour(UPDATE_TOURS, new Set(), null, released)?.id).toBe("nov-3-5-2026");
+    expect(nextUpdateTour(UPDATE_TOURS, new Set([updateTourKey("nov-3-5-2026")]), null, released)).toBeNull();
     expect(validUpdateTour(NOVEMBER_UPDATE_PREVIEW)).toBe(true);
   });
   it("shows only unseen, released batches and uses the India joining day", () => {

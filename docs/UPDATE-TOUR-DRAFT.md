@@ -1,8 +1,8 @@
-# Draft update tour: 3–5 November 2026
+# Approved update tour: 3–5 November 2026
 
-Owner review only. This batch is not automatically announced. Published batches remain empty pending wording and activation approval.
+Owner approved the wording and release on 6 November 2026. The batch covering 3–5 November is now enabled with a 6 November release date.
 
-The scope comes from user-facing merges #13–#53 within 3–5 November in India time. Superseded intermediate layouts, paused human coaching, unreleased recovery work and internal tracker #38 are excluded. The newly refined replacement flows remain in review.
+The scope comes from user-facing merges #13–#53 within 3–5 November in India time. Superseded intermediate layouts, paused human coaching, unreleased recovery work and internal tracker #38 are excluded. The refined replacement flows ship with this batch in PR #54.
 
 Preview route: `/demo?updateTour=nov-3-5-2026&tourStep=0&tourPreview=1`.
 
@@ -87,7 +87,6 @@ Equipment busy? Pick equipment you can use, review an alternative and accept it 
 - Known exercise choices work offline; new exercises and AI suggestions need a connection.
 - Review the current exercise, replacement and muscles before accepting.
 - Exercises with logged sets are protected. Check the replacement's weight and own history.
-- This clearer review flow is part of the current preview, awaiting release.
 
 Source PRs: #29, #30.
 
@@ -102,7 +101,7 @@ Review a dumbbell version of untouched planned exercises. Logged exercises and e
 - AI suggests alternatives based on the current day's muscles.
 - Review each original exercise, new exercise, target and muscles before accepting.
 - Changes apply to today only, for up to 15 remaining planned exercises.
-- This sample makes no AI requests. The clearer review flow is awaiting release.
+- This sample makes no AI requests.
 
 Source PRs: #30.
 
@@ -186,4 +185,4 @@ Example: `/demo/update-example?kind=settings`.
 
 ## Activation
 
-Approve the wording and first batch, confirm the included pending flows have shipped, then update the date/release-state notes and add the approved tour to `UPDATE_TOURS`. Use a new stable ID for a future batch. The draft preview flag does not announce anything to users.
+The owner approved this batch and its wording on 6 November; it is included in `UPDATE_TOURS`. Use a new stable ID for a future batch. The draft preview flag does not announce anything to users.

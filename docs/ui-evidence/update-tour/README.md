@@ -23,10 +23,10 @@ The newly refined replacement UIs are identified as awaiting release.
 
 ## Owner activation
 
-`UPDATE_TOURS` is deliberately empty. The draft is only visible through its
-explicit preview URL. After the owner approves wording and activation,
-update its release date/scope as necessary and add the approved batch to
-`UPDATE_TOURS`. A merge or a new `WHATS_NEW` entry does not create a tour.
+The owner approved wording and release on 6 November 2026. This batch is
+now enabled in `UPDATE_TOURS`, with a 6 November release date. The original
+preview URL remains available for review. Future batches still require
+owner approval before being added to the published list. A merge or a new `WHATS_NEW` entry does not create a tour.
 Starting or skipping the one invitation acknowledges its existing
 owner-scoped `mark_seen` key. Settings can replay published tours; old text
 notes remain in an expandable archive. Acknowledging the newest batch does
@@ -58,10 +58,10 @@ measurements use the existing non-writing demo mode. There is no new SQL,
 auth method, dependency or AI function deployment.
 
 Unit tests cover batch eligibility, India joining day, future/seen batches,
-the closed activation gate, safe destinations, retained URL parameters,
+approved activation and release-day gating, safe destinations, retained URL parameters,
 invalid step recovery, short copy and source-PR coverage. Lint, strict
 typecheck, 457 tests and production build pass.
 
 The signed-in invitation/seen RPC is the existing owner-scoped mechanism;
 hosted multi-device persistence and physical iOS/VoiceOver were not
-reverified. The published batch list remains closed pending owner approval.
+reverified. This first batch was approved on 6 November; further batches remain owner-controlled.

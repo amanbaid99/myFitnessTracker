@@ -2170,3 +2170,12 @@ Only validated /demo destinations can be used by a release batch. Tour
 navigation uses URL state and restores focus; its measured footer reserves
 space for large text and moves the sample rest bar above it. Ordinary
 logging, outbox, progression and privacy controls are preserved.
+
+## 2026-11-06: Activate the approved 3–5 November tour batch
+
+Aman approved the wording and release of PR #54. Enable only that batch,
+with a 6 November release date, retaining its 3–5 November content window
+and stable seen key. Remove the review-only status notes from the two
+replacement stops. Preview URLs remain available, while the invitation and
+Settings replay use the published tour without the draft flag. Future
+merges do not activate batches automatically; owner approval still applies.

@@ -138,7 +138,7 @@ tool. Ask Aman before deploying.
 ## Guide, analytics and updates
 
 - `lib/update-tours.ts`: owner-approved release batches. `UPDATE_TOURS`
-  alone controls automatic invitations; the November draft is preview-only.
+  alone controls automatic invitations; the November batch was approved for release on 6 Nov.
   The intro runs first; approved update invitations appear only on Today.
   One existing `mark_seen` key per batch records starting or skipping it.
   Legacy text release notes remain an archive, not automatic popups.

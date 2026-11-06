@@ -14,10 +14,10 @@ export interface UpdateTour {
   steps: UpdateTourStep[];
 }
 
-/** Draft only. Move into UPDATE_TOURS only after owner wording/activation approval. */
+/** Owner approved the wording and activation on 6 November 2026. Preview links remain available for review. */
 export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
   id: "nov-3-5-2026",
-  date: "2026-11-05",
+  date: "2026-11-06",
   title: "Your 3–5 November update tour",
   steps: [
     {
@@ -88,7 +88,6 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
         "Known exercise choices work offline; new exercises and AI suggestions need a connection.",
         "Review the current exercise, replacement and muscles before accepting.",
         "Exercises with logged sets are protected. Check the replacement's weight and own history.",
-        "This clearer review flow is part of the current preview, awaiting release.",
       ],
     },
     {
@@ -100,7 +99,7 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
         "AI suggests alternatives based on the current day's muscles.",
         "Review each original exercise, new exercise, target and muscles before accepting.",
         "Changes apply to today only, for up to 15 remaining planned exercises.",
-        "This sample makes no AI requests. The clearer review flow is awaiting release.",
+        "This sample makes no AI requests.",
       ],
     },
     {
@@ -166,7 +165,7 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
 };
 
 /** Owner-controlled batches only. Individual merges never create a tour automatically. */
-export const UPDATE_TOURS: UpdateTour[] = [];
+export const UPDATE_TOURS: UpdateTour[] = [NOVEMBER_UPDATE_PREVIEW];
 export const updateTourKey = (id: string) => `tour:update:${id}`;
 
 export function safeTourHref(href: string) {
