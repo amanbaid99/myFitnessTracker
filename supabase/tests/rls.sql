@@ -605,5 +605,6 @@ reset role;
 
 \i supabase/tests/feedback.sql
 \i supabase/tests/custom-workouts.sql
+\i supabase/tests/imports.sql
 \o
 \echo 'All RLS checks passed.'

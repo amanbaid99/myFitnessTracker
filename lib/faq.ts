@@ -83,6 +83,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Can I bring my workouts from Strong or Hevy?",
+        a: [
+          "Yes. Export your data from Strong or Hevy as a CSV file, then go to Settings, Import workouts from Strong or Hevy, and choose the file. For anything else, download the Repd template there and copy your sets into it.",
+          "Before anything is saved you review it: each exercise is matched to one of yours, added as new or left out, and days you already logged in Repd are skipped. Imported workouts show in History and count towards your records and volume, not your streaks or weekly goals. You can undo an import from the same screen.",
+        ],
+      },
+      {
         q: "How do I put Repd on my home screen?",
         a: [
           "On iPhone, open the app in Safari, tap Share, then Add to Home Screen. On Android, open the browser menu and tap Install app or Add to Home screen.",

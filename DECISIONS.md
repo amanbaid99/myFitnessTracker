@@ -2292,3 +2292,29 @@ root layout counts in-app screens per tab in sessionStorage (rules in
 lib/nav-depth.ts). Covers workout recap, exercise progress, plan, weekly
 analysis, What's new, starting weights, FAQ and the legal pages. Sheets,
 the plan wizard steps and Progress's own "Progress overview" are unchanged.
+
+## 2026-11-06: Import workout history from Strong and Hevy (Aman)
+
+Aman asked for users (new and existing) to bring their history from other
+apps, starting with Strong and Hevy, and agreed imports count towards
+History, records and volume but not streaks or weekly goals.
+
+- Settings, then Import workouts. CSV from Strong or Hevy, or the Repd
+  template for anything else. The file is read on the device and never
+  stored; only the reviewed sets are saved.
+- Review before saving: weight unit (Strong does not say), days that
+  already have a workout in Repd (skipped by default), workouts left
+  running (saved as 1 hour), assisted exercises (weight is help, not load),
+  rows left out (cardio by distance, unreadable values), and every exercise
+  matched to the user's own (exact, "check" for close names, new or left
+  out). Matching handles "Bicep Curl (Dumbbell)" vs "Dumbbell Biceps Curl".
+- Imported workouts reuse the `sheet_import` source, which History already
+  labels and the rotation and AI reviews already skip. Weekly volume now
+  includes them; the streak and week markers on Today and Progress now
+  count only workouts done in Repd. This also applies to the original Sheet
+  import.
+- Each upload is a row in `imports`; `undo_import` cancels its workouts
+  (sets are never touched). `import_workouts` takes up to 200 workouts per
+  call and checks every exercise belongs to the caller.
+- Plans and PRs from files, Excel and AI-assisted mapping are the next
+  steps (Aman approved the order).

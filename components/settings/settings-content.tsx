@@ -28,6 +28,10 @@ export function SettingsContent({email,userId,units,theme}: {email:string|null;u
         <MeasurementPreferences key={units} userId={userId} units={units} />
       </section>
       <section className="mt-6 space-y-3">
+        <h2 className="text-sm font-medium">Your workout history</h2>
+        <Button asChild variant="outline" className="h-auto min-h-11 w-full whitespace-normal py-3"><Link href="/import">Import workouts from Strong or Hevy</Link></Button>
+      </section>
+      <section className="mt-6 space-y-3">
         <h2 className="text-sm font-medium">Measurements and reminders</h2>
         <Button asChild variant="outline" className="h-auto min-h-11 w-full whitespace-normal py-3"><Link href="/measurements">Check-ins, trends and monthly reminders</Link></Button>
       </section>

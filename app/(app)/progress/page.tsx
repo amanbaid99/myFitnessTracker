@@ -47,9 +47,10 @@ export default async function ProgressPage() {
   const { bests, muscleRows: allMuscleRows, workouts: finished, names, library,reports,coverage,bodyWeights } = result.data;
   const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
   // Starting weights are numbers to build on, not training: they count for
-  // the 1RM charts but not for the streak or sets per muscle.
+  // the 1RM charts but not for the streak or sets per muscle. Imported
+  // workouts count for records and sets per muscle, not the streak (Aman).
   const baselineIds = new Set(finished.filter((w) => w.source === "baseline").map((w) => w.id));
-  const workouts = finished.filter((w) => w.source !== "baseline");
+  const workouts = finished.filter((w) => w.source === "app");
   const muscleRows = allMuscleRows.filter((r) => !r.workoutId || !baselineIds.has(r.workoutId));
 
   const byExercise = new Map<string, ExerciseProgress>();
