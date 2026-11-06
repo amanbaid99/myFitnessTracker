@@ -14,14 +14,17 @@ Last updated: 2026-11-06.
   review and explicit today/future actions cover equipment, focus, time,
   adding days, replacing existing days and saving an inactive plan copy.
   Owner explicitly requested replacing existing days in the clarification.
-  New owner-only prescription snapshots preserve open and historical
-  workouts before future edits; the existing sets and SQL metrics stay
+  New owner-only prescription snapshots preserve open workouts before
+  future edits; older finished sessions keep their names without inferred
+  historical targets; the existing sets and SQL metrics stay
   intact. A migration needs exact-SQL approval before merge. Both
   `draft-plan` and `analyze-workout` need separate Edge deployment.
   Public non-writing example: `/demo/custom-workout`. Validation and
-  screenshots: `docs/ui-evidence/custom-workout`. No merge, production
+  screenshots: `docs/ui-evidence/custom-workout`. Rebased on owner merges
+  through #57 (46ffee3); six-step published v2 tour preserved unchanged.
+  Lint, strict types, 482 tests, build, database/RLS/race checks and mobile
+  browser suites pass. No merge, production
   migration, provider request, deployment or new tour activation.
-
 
 
 - 2026-11-06: The rebuilt 3 to 5 November update tour (#56, spotlight style,

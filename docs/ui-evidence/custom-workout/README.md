@@ -1,6 +1,8 @@
 # Reviewed custom workouts
 
-Synthetic validation on 6 November 2026 against production base b78e75d.
+Synthetic validation on 6 November 2026. Initial captures used b78e75d;
+final integration rebases on 46ffee3, including owner releases #55 to #57.
+The six-step spotlight tour and its published v2 seen key are preserved.
 No production accounts, workouts, measurements, invitations or AI calls.
 
 ## User flow
@@ -71,7 +73,8 @@ runs existing RLS/feedback/seed checks and `custom-workouts.sql`. It covers
 retry safety, no rotation/day creation for today-only use, locked and stale
 reviews, atomic rollback, existing exercise metadata, time tracking, owner
 isolation, private source/exercise rejection, future-day replacement,
-original preparation/alternate preservation and queued old rest edits.
+original preparation/alternate preservation, unknown historical targets,
+and queued old rest edits.
 All new functions use invoker privileges; anonymous execution is revoked.
 
 Existing one-tap ordered set rows, warm-ups, kg storage/conversion,
@@ -97,3 +100,38 @@ review instead of an unnecessary AI request.
 The exact migration needs owner approval before merge. Deploy `draft-plan`
 and `analyze-workout` separately before releasing the new app. Old modes
 and missing-schema reads remain compatible. No new update tour is enabled.
+
+
+## Integration with the owner's latest releases
+
+The branch was rebased on 46ffee3 (#57), preserving #55 to #57 and all six
+spotlight steps, approved copy, published v2 ID, new seen marker and replay
+behavior. Only DECISIONS and STATUS conflicted; both sets of notes were
+retained. No guide source or tour-data file differs from production.
+
+`custom-workout-tour-regression.cjs` checks the new invitation and all six
+spotlight targets at 320/390/430, Previous/Next/Done, the published label,
+and no account/provider requests. `tour-v2-*.png` records that integration.
+The old twelve-step harness is not used to validate the six-step release.
+
+The production-build smoke script is
+`scripts/feedback-browser/custom-workout-production.cjs`, default port 3005.
+It checks Home entry, choices, review, a local-only future save and real
+demo logging at all three widths, with external traffic blocked. The tour
+script supports `REVIEW_URL=http://localhost:3005 SKIP_INVITE=1` for the
+production build. Its invitation fixture is a temporary public page with
+local callbacks, removed before final checks.
+
+## Final integrated checks
+
+Against production base `46ffee3`, lint, strict typecheck, all 482 unit tests,
+and the production build passed. The exact `pnpm test:db` command passed
+migrations, owner/RLS checks, seed checks and concurrent custom/planned starts.
+Local security advisors found only the pre-existing pgcrypto-in-public warning.
+The integrated production build passed both committed smoke scripts at
+320/390/430. The full synthetic interaction/outbox suite also passed after
+rebasing; the owner's guide source and tour data have no diff from production.
+
+Final migration SHA-256:
+`b4aba78e9bc18963e1d16a96be0e48b5a0fd96e8ae959f937762c9ca8bcd08c5`.
+No production schema or feature deployment was performed.

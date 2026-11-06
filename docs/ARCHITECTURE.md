@@ -351,15 +351,16 @@ The `custom_workouts` migration adds two owner-only tables:
 
 - `workout_customizations`: named session prescriptions, stable slot IDs,
   targets/rest, optional preparation and alternate IDs, source day and
-  revision. Home-only sessions leave workouts.routine_id null; regular
+  revision. `has_prescription=false` marks names-only legacy history;
+  historical targets are not inferred. Home-only sessions leave workouts.routine_id null; regular
   session adaptations keep their original rotation. Missing-table reads
   hide the new controls while existing screens keep working.
 - `customization_saves`: append-only accepted save requests and exact
   payload/results for retry safety. It does not store discarded AI drafts
   or instructions. New copied plans are inactive; appending a day leaves
   the goal alone. Replacing existing days keeps IDs and rotation position,
-  validates the source fingerprint, snapshots past/open prescriptions and
-  updates only future routine slots in one transaction.
+  validates the source fingerprint, preserves open/known prescriptions and historical display names, without
+  inferring unknown historical targets, and updates only future routine slots in one transaction.
 
 All RPCs use invoker privileges and the caller's JWT/RLS. Snapshot rest and
 known replacement operations use the existing ordered Dexie outbox. Old
@@ -369,3 +370,9 @@ inserts, correction, undo, soft-delete, finish and calculated metrics are
 unchanged. History and analyze-workout prefer the session prescription's
 name and alternate-aware plan comparison. Both changed Edge Functions need
 explicit deployment; CI only deploys the app and approved migrations.
+
+Planned and custom starts share an owner-scoped transaction lock and resume
+an existing open session. Home reads prescription details only for open
+sessions and the latest recap; optional metadata failure still leaves a
+Resume action. Persisted extras keep the same replace/remove/rest behavior,
+including when the source plan is no longer available.

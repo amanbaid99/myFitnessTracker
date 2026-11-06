@@ -2244,8 +2244,10 @@ A today-only Home session has no routine_id, so it counts for training but
 does not advance the regular rotation. Persist its reviewed prescription
 separately so even unlogged exercises survive refresh/resume. Applying
 changes in an existing workout keeps its original rotation behavior. Before
-replacing future days, snapshot original prescriptions, preparation and
-alternates for their current and past workouts. Keep set rows append-only
+replacing future days, snapshot the current prescription, preparation and
+alternates for open workouts. Preserve already recorded custom prescriptions.
+For older finished sessions, retain the displayed name only and mark the
+prescription unknown rather than inventing historical targets. Keep set rows append-only
 and metrics SQL-derived. RLS stays owner-only, all new functions use invoker
 rights, and no service key is added to the client. Rest and known exercise
 replacement use the existing offline outbox. A queued rest edit for a
