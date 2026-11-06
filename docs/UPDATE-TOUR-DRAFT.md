@@ -1,4 +1,4 @@
-# Approved update tour: 3–5 November 2026
+# Approved update tour: 3–5 November 2026 (shown to users as "What's new in Repd")
 
 **Rebuilt and live again 6 November 2026 (Aman), as `nov-3-5-2026-v2` so everyone sees it, including people who saw the first version.** The tour now uses the intro tour's spotlight: the sample page stays full screen, one element is highlighted and a small bubble carries the approved title and text with Previous, Next and Skip tour. It is cut to six steps (1, 4, 5, 6, 8 and 11 below, with step 6 pointing at Options in the logger). Steps 2, 3, 7, 9, 10 and 12 are dropped from the tour but kept here for reference.
 

@@ -59,6 +59,7 @@ export function UpdateTourFrame({ children }: { children: ReactNode }) {
           index={index}
           total={tour.steps.length}
           busy={pending}
+          waitMs={8000}
           onNext={() => (index + 1 < tour.steps.length ? go(index + 1) : finish(true))}
           onPrevious={() => go(Math.max(0, index - 1))}
           onSkip={() => finish(false)}
