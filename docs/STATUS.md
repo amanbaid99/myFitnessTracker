@@ -8,6 +8,10 @@ Last updated: 2026-11-06.
 
 ## In progress
 
+- 2026-11-06: Branch `feat/import-history`: import workout history from
+  Strong, Hevy or the Repd template (Settings). Needs the `imports`
+  migration approved. Next: plan and PR import, then Excel and AI mapping.
+
 - 2026-11-06: Branch `fix/back-goes-one-step`: Back on detail screens goes
   one step back when you came from inside the app (`BackLink`).
 

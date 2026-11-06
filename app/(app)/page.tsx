@@ -47,7 +47,8 @@ export default async function TodayPage() {
   const workouts = result.error === null ? result.data[1] : [];
   // Every finished workout counts for the streak, imported ones included;
   // starting weights are not a workout.
-  const finishedAll = workouts.filter((w) => w.endedAt && w.source !== "baseline");
+  // Streak and week markers count workouts done in Repd, not starting weights or imports.
+  const finishedAll = workouts.filter((w) => w.endedAt && w.source === "app");
   const lastFinished = finishedAll.find((w) => w.source === "app");
   const customizations = await getWorkoutCustomizations(supabase,workouts.filter(w=>w.source==="app"&&(!w.endedAt||w.id===lastFinished?.id)).map(w=>w.id)).catch(()=>({available:false,rows:new Map()}));
   const hero = () => (
