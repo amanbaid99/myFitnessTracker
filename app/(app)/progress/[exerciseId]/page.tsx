@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { ExerciseProgressView } from "@/components/progress/exercise-progress";
 import { getExerciseNames, getProfile, getSessionBests, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Exercise progress" };
 
@@ -21,9 +20,7 @@ export default async function ExerciseProgressPage({ params }: PageProps<"/progr
   const units = profile.units;
 
   const back = (
-    <Link href="/progress" className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-      <ChevronLeft className="size-4" aria-hidden /> Progress
-    </Link>
+    <BackLink fallback="/progress" label="Progress" />
   );
 
   if (result.error !== null) {

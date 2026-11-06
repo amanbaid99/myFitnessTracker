@@ -1,14 +1,12 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { CONTACT_EMAIL, LEGAL_UPDATED } from "@/lib/legal";
+import { BackLink } from "@/components/back-link";
 
 /** Layout for the public Privacy Policy and Terms pages. */
 export function LegalPage({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <main className="mx-auto w-full max-w-lg px-5 pb-safe pt-safe">
-      <Link href="/" className="-ml-2 mt-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-        <ArrowLeft className="size-4" aria-hidden /> Back
-      </Link>
+      <BackLink fallback="/" label="Back" className="mb-0 mt-2" />
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-1 text-sm text-muted-foreground">Last updated {LEGAL_UPDATED}</p>
       <div className="mt-6 space-y-6 pb-10 text-sm leading-relaxed [&_h2]:mb-2 [&_h2]:text-base [&_h2]:font-medium [&_li]:ml-5 [&_li]:list-disc [&_p+p]:mt-2 [&_ul+p]:mt-3 [&_ul]:mt-2 [&_ul]:space-y-1">

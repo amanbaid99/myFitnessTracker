@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { ScreenHeader } from "@/components/screen-header";
 import { Button } from "@/components/ui/button";
 import { calendarDateLabel } from "@/lib/dates";
 import { releaseLinks, WHATS_NEW } from "@/lib/guide";
 import { UPDATE_TOURS, updateTourHref } from "@/lib/update-tours";
 import { ReplayUpdateTourButton } from "@/components/guide/replay-tour-button";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "What's new" };
 
@@ -14,9 +14,7 @@ export const metadata: Metadata = { title: "What's new" };
 export default function WhatsNewPage() {
   return (
     <>
-      <Link href="/settings" className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-        <ArrowLeft className="size-4" /> Settings
-      </Link>
+      <BackLink fallback="/settings" label="Settings" />
       <ScreenHeader title="What's new" />
       <p className="mb-4 text-sm leading-relaxed text-muted-foreground">New updates are introduced through guided sample tours, grouped into approved release batches.</p>
       {UPDATE_TOURS.length ? <ul className="mb-4 space-y-3">{UPDATE_TOURS.map(tour => <li key={tour.id} className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">{calendarDateLabel(tour.date)}</p><h2 className="mt-1 font-semibold">{tour.title}</h2><ReplayUpdateTourButton tourId={tour.id} href={updateTourHref(tour)} /></li>)}</ul> : <p className="mb-4 rounded-xl border bg-card p-3 text-sm text-muted-foreground">No update tour has been released yet. New tours will appear here.</p>}

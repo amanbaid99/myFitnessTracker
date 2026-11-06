@@ -2279,3 +2279,16 @@ found the update tour slow, and asked why users see "3 to 5 November".
   pointing at the heading instead.
 - The tour title is "What's new in Repd" and the invitation no longer
   mentions dates. The id is unchanged, so nobody is shown it twice.
+
+## 2026-11-06: Back goes one step back (Aman)
+
+Aman went Progress, an exercise, then one of its workouts, and Back took
+him to History instead of the exercise. Detail screens had fixed back
+links. They now use `BackLink` (components/back-link.tsx): when you got
+there from another screen in the app it says "Back" and goes one step back;
+when the screen was opened directly (a fresh app open or a shared link) it
+keeps its old label and goes to the parent page. `NavDepthTracker` in the
+root layout counts in-app screens per tab in sessionStorage (rules in
+lib/nav-depth.ts). Covers workout recap, exercise progress, plan, weekly
+analysis, What's new, starting weights, FAQ and the legal pages. Sheets,
+the plan wizard steps and Progress's own "Progress overview" are unchanged.

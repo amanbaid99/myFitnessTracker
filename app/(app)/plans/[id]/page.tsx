@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { getActivePlan, getExerciseLibrary, getPlan, getProfile, getRoutines, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { PlanEditor } from "./plan-editor";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Edit plan" };
 
@@ -27,9 +26,7 @@ export default async function PlanPage({ params }: PageProps<"/plans/[id]">) {
 
   return (
     <>
-      <Link href="/plans" className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-        <ArrowLeft className="size-4" /> All plans
-      </Link>
+      <BackLink fallback="/plans" label="All plans" />
       <PlanEditor plan={plan} routines={routines} library={library} defaultRestSec={profile.defaultRestSec} />
     </>
   );

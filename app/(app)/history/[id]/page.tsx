@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { MASK } from "@/lib/mask";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, StickyNote } from "lucide-react";
+import { StickyNote } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { LocalDate } from "@/components/local-date";
 import { WorkoutRecap } from "@/components/workout-recap";
@@ -21,6 +20,7 @@ import {
 } from "@/lib/data";
 import { fetchWorkoutReview } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/server";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Workout" };
 
@@ -46,9 +46,7 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
   ]);
 
   const back = (
-    <Link href="/history" className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-      <ChevronLeft className="size-4" aria-hidden /> History
-    </Link>
+    <BackLink fallback="/history" label="History" />
   );
 
   if (result.error !== null) {

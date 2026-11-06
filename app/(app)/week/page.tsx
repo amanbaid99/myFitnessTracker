@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { WeekAnalysis } from "@/components/home/week-analysis";
 import { weekAnalysisState, weekForPage, weekRangeLabel } from "@/lib/analysis-week";
@@ -8,6 +6,7 @@ import { workoutMuscles } from "@/lib/anatomy";
 import { getFinishedWorkouts, getMuscleSets, load } from "@/lib/data";
 import { fetchWeeklyReview } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/server";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Your week" };
 
@@ -23,9 +22,7 @@ export default async function WeekPage({ searchParams }: PageProps<"/week">) {
     getFinishedWorkouts(supabase, 40).then((ws) => ws.filter((w) => w.source === "app" && w.startedAt >= week.startAt && w.startedAt < week.nextAt).length, () => null),
   ]);
   const back = (
-    <Link href="/" className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-      <ChevronLeft className="size-4" aria-hidden /> Today
-    </Link>
+    <BackLink fallback="/" label="Today" />
   );
   if (result.error !== null && review.failed) return <>{back}<DataError message={result.error} /></>;
   const workload = result.error === null ? Object.fromEntries(workoutMuscles(result.data).map((m) => [m.muscle, m.sets])) : null;
