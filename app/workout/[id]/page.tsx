@@ -15,10 +15,13 @@ import {
   getRoutine,
   getRoutines,
   getWorkout,
+  getWorkoutCustomizations,
+  getExercisesById,
   getWorkoutNotes,
   getWorkoutSets,
   load,
 } from "@/lib/data";
+import { snapshotItems } from "@/lib/custom-workout";
 import { dayPrep } from "@/lib/routine-prep";
 import { buildSession, startedIndexes } from "@/lib/session";
 import { chooseForDay, choicesCookieName, dayOptionIds, optionSessions, parseChoices } from "@/lib/alternates";
@@ -46,26 +49,29 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   const result = await load(async () => {
     const workout = await getWorkout(supabase, id);
     if (!workout) return null;
-    const [routine, logged, library, guide] = await Promise.all([
+    const [routine, logged, initialLibrary, guide, customizations] = await Promise.all([
       workout.routineId ? getRoutine(supabase, workout.routineId) : Promise.resolve(null),
       getWorkoutSets(supabase, id),
       getExerciseLibrary(supabase),
       getGuideState(supabase),
+      getWorkoutCustomizations(supabase,[id]),
     ]);
-    const slotsOfDay = routine?.exercises ?? [];
+    const custom = customizations.rows.get(id);
+    const missingIds = custom?.items.flatMap(i=>[i.exerciseId,...i.alternateIds??[]]).filter(id=>!initialLibrary.some(e=>e.id===id))??[];
+    const library = [...initialLibrary,...await getExercisesById(supabase,missingIds)];
+    const sourceRoutine = custom?.sourceRoutineId ? await getRoutine(supabase,custom.sourceRoutineId) : routine;
+    const slotsOfDay = custom ? snapshotItems(custom.items,library) : routine?.exercises ?? [];
     const optionIds = dayOptionIds(slotsOfDay);
     // These reads are independent. Fetch together when rebuilding after an edit.
     const [planRoutines, recent] = await Promise.all([
-      routine ? getRoutines(supabase, routine.planId) : Promise.resolve([]),
+      sourceRoutine ? getRoutines(supabase, sourceRoutine.planId) : Promise.resolve([]),
       routine && optionIds.length ? getRecentOptionSets(supabase, optionIds, id) : Promise.resolve([]),
     ]);
     const planSlots = slots(planRoutines.flatMap((r) => r.exercises));
     const daySlots = slots(slotsOfDay);
     // A slot with alternates is done as one of them: the one with sets
     // today, the one switched to, else the one after last time's.
-    const selectedDayItems = routine
-      ? chooseForDay(slotsOfDay, { routineId: routine.id, loggedIds: new Set(logged.map((s) => s.exerciseId)), picked, recent })
-      : [];
+    const selectedDayItems = chooseForDay(slotsOfDay, {routineId:sourceRoutine?.id??id,loggedIds:new Set(logged.map(s=>s.exerciseId)),picked,recent});
     const dayItems = applyAdjustments(selectedDayItems, adjustments, library, new Set(logged.map(s=>s.exerciseId)));
     // Exercises added to this workout only, after the day's own.
     const dayIds = dayItems.map((e) => e.exercise.id);
@@ -81,11 +87,11 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       getPersonalRecords(supabase),
       getWorkoutNotes(supabase, id),
       getLastNotes(supabase, exerciseIds, id),
-      routine ? getPlan(supabase, routine.planId) : Promise.resolve(null),
+      sourceRoutine ? getPlan(supabase, sourceRoutine.planId) : Promise.resolve(null),
       getBodyWeights(supabase),
     ]);
     const bodyWeightKg = bodyWeights.entries[bodyWeights.entries.length - 1]?.weightKg ?? bodyWeights.profileKg;
-    return { guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
+    return { custom, sourceRoutine, planRoutines, customAvailable:customizations.available, guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
   });
 
   if (result.error !== null) {
@@ -96,16 +102,16 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
+  const { custom, sourceRoutine, planRoutines, customAvailable, guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
   if (workout.endedAt) redirect("/");
-  if (!routine) notFound();
+  if (!routine && !custom) notFound();
 
   const session = buildSession(items, previous, logged);
   // Each option of a slot with alternates, ready to switch to (offline too).
   const options = optionSessions(items, slotsOfDay, session, previous, logged);
   const warmupInput = items.map((e) => ({ name: e.exercise.name, muscleGroups: e.exercise.muscleGroups }));
   // The day's own warm-up and cool-down, or automatic ones from its exercises.
-  const prep = dayPrep(warmupInput, routine.warmup, routine.cooldown);
+  const prep = dayPrep(warmupInput, custom ? custom.warmup : routine?.warmup??null, custom ? custom.cooldown : routine?.cooldown??null);
 
   // Editing the day during the workout changes this, which remounts the
   // logger with the new exercises (logged sets come back from the server).
@@ -119,7 +125,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       key={structure}
       workoutId={workout.id}
       startedAt={workout.startedAt}
-      routineName={routine.name}
+      routineName={custom?.name ?? routine!.name}
       items={items}
       session={session}
       checklist={prep.warmup}
@@ -133,7 +139,10 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       notes={Object.fromEntries(notes)}
       lastNotes={Object.fromEntries(lastNotes)}
       options={options}
-      editing={plan ? { routineId: routine.id, plan, library, planSlots, slots: slotsOfDay } : undefined}
+      library={library}
+      customSession={custom?{revision:custom.revision,slotIds:custom.items.map(i=>i.id)}:undefined}
+      editing={plan && sourceRoutine ? { routineId: sourceRoutine.id, plan, library, planSlots, slots: custom ? [] : slotsOfDay, sessionOnly:!!custom } : undefined}
+      customization={customAvailable && plan && sourceRoutine ? { source:{planId:plan.id,planName:plan.name,routineId:sourceRoutine.id,routines:planRoutines}, library, revision:custom?.revision??0 } : undefined}
     />
     </GuideProvider>
   );

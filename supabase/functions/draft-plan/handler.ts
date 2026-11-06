@@ -19,6 +19,7 @@
  * under Node.
  */
 
+import { CUSTOMIZE_PROMPT, customizationContext, toCustomRequest, toCustomizedDraft, type ContextPlan, type ContextExercise } from "./customize.ts";
 import { redact } from "./redact.ts";
 
 export interface Env {
@@ -390,6 +391,7 @@ async function askModel<T>(
   parse: (text: string | null | undefined) => T | null,
   log: Log,
   signal: AbortSignal,
+  maxTokens?: number,
 ): Promise<T | null> {
   try {
     const res = await fetchFn(OPENROUTER_URL, {
@@ -401,7 +403,7 @@ async function askModel<T>(
           { role: "system", content: system },
           { role: "user", content: message },
         ],
-        max_tokens: isPaid(model) ? 2500 : 3000,
+        max_tokens: maxTokens ?? (isPaid(model) ? 2500 : 3000),
         temperature: 0.3,
         // Turning a description into a list needs no long thinking, and
         // thinking is what made the free models take over 40 seconds.
@@ -434,9 +436,10 @@ function askModels<T>(
   message: string,
   parse: (text: string | null | undefined) => T | null,
   log: Log,
+  maxTokens?: number,
 ): Promise<T | null> {
   return race(
-    models.map((model) => (signal: AbortSignal) => askModel(env, fetchFn, model, system, message, parse, log, signal)),
+    models.map((model) => (signal: AbortSignal) => askModel(env, fetchFn, model, system, message, parse, log, signal, maxTokens)),
     STAGGER_MS,
     DEADLINE_MS,
   );
@@ -488,13 +491,16 @@ export async function handle(
   const token = req.headers.get("authorization");
   if (!token?.startsWith("Bearer ")) return json(401, { error: "sign in first" });
 
-  let body: { description?: unknown; setup?: unknown; mode?: unknown; day?: unknown; exercise?: { name?: unknown; equipment?: unknown; muscles?: unknown }; exercises?: unknown; availableEquipment?: unknown };
+  let body: { description?: unknown; setup?: unknown; mode?: unknown; customization?: unknown; day?: unknown; exercise?: { name?: unknown; equipment?: unknown; muscles?: unknown }; exercises?: unknown; availableEquipment?: unknown };
   try {
     body = await req.json();
   } catch {
     return json(400, { error: "invalid json" });
   }
   if (!body || typeof body !== "object") return json(400, { error: "invalid json" });
+  const customMode = body.mode === "customize";
+  const custom = customMode ? toCustomRequest(body.customization) : null;
+  if (customMode && !custom) return json(400, { error: "invalid customization" });
   const batch = body.mode === "muscles_batch" ? toMuscleBatch(body.exercises) : null;
   if (body.mode === "muscles_batch" && !batch) return json(400, { error: "invalid exercises" });
   const muscleMode = body.mode === "muscles" || batch !== null;
@@ -507,7 +513,7 @@ export async function handle(
     const sets=Number(raw?.sets),reps=Number(raw?.reps),tracking=raw?.tracking==="time"?"time":"reps";
     return {...e,sets:Number.isInteger(sets)&&sets>=1&&sets<=10?sets:3,reps:Number.isInteger(reps)&&reps>=1&&reps<=(tracking==="time"?3600:50)?reps:10,tracking};
   })}:null;
-  const safeMode = muscleMode || alternativeMode || adaptMode;
+  const safeMode = muscleMode || alternativeMode || adaptMode || customMode;
   const availableEquipment = Array.isArray(body.availableEquipment) ? [...new Set(body.availableEquipment.filter((v):v is string=>typeof v==="string"&&EQUIPMENT.includes(v)))] : EQUIPMENT;
   const sourceMuscles = Array.isArray(body.exercise?.muscles) ? body.exercise.muscles.filter((v):v is string=>typeof v==="string"&&MUSCLES.includes(v)).slice(0,3) : [];
   if(alternativeMode&&!availableEquipment.length)return json(400,{error:"invalid equipment"});
@@ -536,6 +542,30 @@ export async function handle(
     const asked = usage[0]?.questions ?? 0;
     if (asked >= DAILY_LIMIT) return json(429, { error: "limit", remaining: 0 });
 
+    if (custom) {
+      const [plans, owned, logged] = await Promise.all([
+        read<ContextPlan[]>(cfg, token, fetchFn, `plans?id=eq.${custom.sourcePlanId}&select=id,name,routines(id,name,sort_order,routine_exercises(sort_order,target_sets,target_reps,rest_sec,exercises(id,name,equipment,muscle_groups,tracking,per_hand)))`),
+        read<ContextExercise[]>(cfg, token, fetchFn, "exercises?select=id,name,equipment,muscle_groups,tracking,per_hand&archived_at=is.null&limit=1000"),
+        custom.workoutId ? read<{id:string; routine_id:string|null; sets:{exercise_id:string}[]}[]>(cfg,token,fetchFn,`workouts?id=eq.${custom.workoutId}&ended_at=is.null&cancelled_at=is.null&select=id,routine_id,sets(exercise_id)&sets.deleted_at=is.null`) : Promise.resolve(null),
+      ]);
+      if (!plans[0] || (custom.workoutId && !logged?.[0])) return json(404,{error:"source unavailable"});
+      // For a custom session the source is kept in its owner-only snapshot.
+      if (logged?.[0] && logged[0].routine_id !== custom.sourceRoutineId) {
+        const snapshots = await read<{source_routine_id:string|null}[]>(cfg,token,fetchFn,`workout_customizations?workout_id=eq.${custom.workoutId}&select=source_routine_id`);
+        if (snapshots[0]?.source_routine_id !== custom.sourceRoutineId) return json(400,{error:"source mismatch"});
+      }
+      const loggedIds = logged?.[0]?.sets.map(s=>s.exercise_id)??[];
+      const context = customizationContext(plans[0],custom,owned,loggedIds);
+      if (!context) return json(400,{error:"source changed"});
+      const sourceEquipment = plans[0].routines.flatMap(r=>r.routine_exercises.flatMap(i=>i.exercises?[i.exercises.equipment]:[]));
+      const draft = await askModels(DRAFT_MODELS,cfg,fetchFn,CUSTOMIZE_PROMPT,
+        redact(JSON.stringify({...context,library:owned.slice(0,150).map(e=>({name:e.name,equipment:e.equipment,tracking:e.tracking}))})),
+        t=>toCustomizedDraft(lastJson(t),{...custom,lockedIds:[...new Set([...custom.lockedIds,...loggedIds])]},sourceEquipment,owned,context.days.length),log,Math.min(16000,1500+context.days.length*2000));
+      if (!draft) return json(503,{error:"busy",remaining:DAILY_LIMIT-asked});
+      const counted = await db(cfg,token,fetchFn,"rpc/count_coach_question",{method:"POST",body:"{}"});
+      const total = counted.ok ? Number(await counted.json()) : asked+1;
+      return json(200,{customized:draft,remaining:Math.max(0,DAILY_LIMIT-total)});
+    }
     const names = library.map((l) => l.name);
     // A whole batch is one AI request and counts once.
     const result: { draft: Draft } | { prep: Prep } | { muscles: { groups: string[]; explanation: string } } | { suggestions: { groups: string[] }[] } | {alternatives: DraftExercise[]} | {adapted:DraftExercise[]} | null = adaptDay

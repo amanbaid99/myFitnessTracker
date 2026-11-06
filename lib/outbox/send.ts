@@ -9,6 +9,7 @@ import { ALREADY_SAVED, toResult, type Op, type SendResult } from "./ops";
 export async function sendOp(
   supabase: SupabaseClient,
   op: Op,
+  workoutId?: string,
 ): Promise<SendResult> {
   switch (op.kind) {
     case "insertSet":
@@ -54,15 +55,16 @@ export async function sendOp(
       return toResult(
         await supabase.from("exercise_notes").delete().eq("id", op.id),
       );
-    case "setRest":
-      return toResult(
-        await supabase
-          .from("routine_exercises")
-          .update({ rest_sec: op.restSec })
-          .eq("id", op.routineExerciseId)
-          .select("id")
-          .single(),
-      );
+    case "setCustomExercise":
+      return toResult(await supabase.rpc("replace_custom_workout_exercise",{p_workout:op.workoutId,p_slot:op.slotId,p_previous:op.previousId,p_exercise:op.exerciseId}));
+    case "setCustomRest":
+      return toResult(await supabase.rpc("set_custom_workout_rest",{p_workout:op.workoutId,p_slot:op.slotId,p_seconds:op.restSec}));
+    case "setRest": {
+      const result=await supabase.from("routine_exercises").update({rest_sec:op.restSec}).eq("id",op.routineExerciseId).select("id").single();
+      if(result.error?.code==="PGRST116"&&workoutId)
+        return toResult(await supabase.rpc("set_custom_workout_rest",{p_workout:workoutId,p_slot:op.routineExerciseId,p_seconds:op.restSec}));
+      return toResult(result);
+    }
     case "setSetting":
       return toResult(
         await supabase

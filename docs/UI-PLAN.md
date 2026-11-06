@@ -7,10 +7,11 @@ PR that finishes an item.
 
 ## Tracker
 
-Last updated: 2026-11-05.
+Last updated: 2026-11-06.
 
 | Item | Status | PR | Notes |
 | --- | --- | --- | --- |
+| Owner feature: reviewed custom workouts | Ready for review | `ui/review-custom-workouts` | Home and in-workout flows; today-only use, add/replace days, inactive copy; exact-SQL approval and separate Edge deployment pending |
 | Phase 1 (P1.1 to P1.8) | Live | #31 (4301b56) | One PR for the whole phase. Evidence `ui-evidence/phase-1` |
 | P1.3 owner follow-up: full set list | Live | #41 (4decda3) | All working rows visible in stable order; highlighted frame superseded by owner correction below |
 | P2.1 Today | Live | #34 (50ce96e) | One-line card states, inline Try again, smaller Refresh, prompts below Start |

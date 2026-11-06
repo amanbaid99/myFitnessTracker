@@ -6,22 +6,32 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Starts a workout for a routine and opens the logger. If a workout for the
- * same routine is still open (not finished), it is resumed instead.
+ * account is still open (not finished), it is resumed instead.
  */
 export async function startWorkout(routineId: string) {
   const supabase = await createClient();
 
+  const { data: started, error: rpcError } = await supabase.rpc(
+    "start_planned_workout",
+    { p_routine: routineId },
+  );
+  if (!rpcError) {
+    revalidatePath("/");
+    redirect(`/workout/${started}`);
+  }
+  if (!["PGRST202", "42883"].includes(rpcError.code))
+    throw new Error(rpcError.message);
+  // Compatibility before the customization migration. No custom starts exist yet.
   const { data: open } = await supabase
     .from("workouts")
     .select("id")
-    .eq("routine_id", routineId)
     .eq("source", "app")
     .is("ended_at", null)
+    .is("cancelled_at", null)
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (open) redirect(`/workout/${open.id}`);
-
   const { data, error } = await supabase
     .from("workouts")
     .insert({ routine_id: routineId })

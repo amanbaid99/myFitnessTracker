@@ -66,7 +66,7 @@ async function sendQueued(): Promise<number> {
     const items = await outbox().ops.orderBy("seq").toArray();
     if (items.length === 0) return 0;
     const supabase = createClient();
-    const { sent } = await runQueue(items, (op) => sendOp(supabase, op), {
+    const { sent } = await runQueue(items, (op,workoutId) => sendOp(supabase, op,workoutId), {
       onSent: (item) => outbox().ops.delete(item.seq!),
       onFailed: async (item, message) => {
         await outbox().ops.delete(item.seq!);

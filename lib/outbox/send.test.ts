@@ -45,3 +45,35 @@ describe("workout rest sync", () => {
     ).toMatchObject({ ok: false, transient: false });
   });
 });
+
+describe("custom workout rest sync",()=>{
+  it("queues an owner-checked, idempotent rest update without writing a routine slot",async()=>{
+    const rpc=vi.fn().mockResolvedValue({error:null});
+    const client={rpc} as unknown as SupabaseClient;
+    const op={kind:"setCustomRest" as const,workoutId:"workout",slotId:"custom-slot",restSec:125};
+    expect(await sendOp(client,op)).toEqual({ok:true});
+    expect(await sendOp(client,op)).toEqual({ok:true});
+    expect(rpc).toHaveBeenCalledWith("set_custom_workout_rest",{p_workout:"workout",p_slot:"custom-slot",p_seconds:125});
+  });
+  it("keeps connection failures pending and reports permanent access errors",async()=>{
+    const rpc=vi.fn().mockResolvedValueOnce({error:{message:"network",code:""},status:503}).mockResolvedValueOnce({error:{message:"Custom exercise unavailable",code:"P0001"},status:400});
+    const client={rpc} as unknown as SupabaseClient;
+    const op={kind:"setCustomRest" as const,workoutId:"workout",slotId:"custom-slot",restSec:90};
+    expect(await sendOp(client,op)).toMatchObject({ok:false,transient:true});
+    expect(await sendOp(client,op)).toMatchObject({ok:false,transient:false});
+  });
+});
+
+it("sends a custom replacement with its expected previous exercise before later queued sets",async()=>{
+ const rpc=vi.fn().mockResolvedValue({error:null});
+ const client={rpc} as unknown as SupabaseClient;
+ expect(await sendOp(client,{kind:'setCustomExercise',workoutId:'w',slotId:'s',previousId:'old',exerciseId:'new'})).toEqual({ok:true});
+ expect(rpc).toHaveBeenCalledWith('replace_custom_workout_exercise',{p_workout:'w',p_slot:'s',p_previous:'old',p_exercise:'new'});
+});
+
+it("routes an old queued rest edit to its preserved workout after the future plan slot was replaced",async()=>{
+ const rpc=vi.fn().mockResolvedValue({error:null});
+ const client={from:()=>({update:()=>({eq:()=>({select:()=>({single:async()=>({error:{code:'PGRST116',message:'No row'},status:406})})})})}),rpc} as unknown as SupabaseClient;
+ expect(await sendOp(client,{kind:'setRest',routineExerciseId:'retired-slot',restSec:135},'open-workout')).toEqual({ok:true});
+ expect(rpc).toHaveBeenCalledWith('set_custom_workout_rest',{p_workout:'open-workout',p_slot:'retired-slot',p_seconds:135});
+});

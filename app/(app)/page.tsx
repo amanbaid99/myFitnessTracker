@@ -1,3 +1,4 @@
+import { CustomWorkoutButton } from "@/components/home/custom-workout-button";
 import { MonthlyCheckIn } from "@/components/measurements/monthly-check-in";
 import { analysisWeek } from "@/lib/analysis-week";
 import { effectiveWeeklyGoal } from "@/lib/training-reports";
@@ -20,7 +21,7 @@ import { HomeWorkoutRecap } from "@/components/home/workout-recap-link";
 import { HomeHero } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
-import { getActivePlan, getBodyWeights, getExerciseLibrary, getProfile, getRecentWorkouts, load } from "@/lib/data";
+import { getActivePlan, getBodyWeights, getExerciseLibrary, getProfile, getRecentWorkouts, getWorkoutCustomizations, load } from "@/lib/data";
 import { shouldPromptFeedback } from "@/lib/feedback";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
 import { createClient } from "@/lib/supabase/server";
@@ -42,12 +43,13 @@ export default async function TodayPage() {
   const bodyWeight = <BodyWeightCard entries={bodyWeights.entries} profileKg={bodyWeights.profileKg} units={profile.units} />;
   const greeting = profile.name ? `Hi, ${profile.name}` : "Today";
 
-  if (result.error === null && !result.data[0] && !profile.onboarded) redirect("/welcome");
+  if (result.error === null && !result.data[0] && !profile.onboarded && !result.data[1].some(w=>w.source==="app"&&!w.endedAt)) redirect("/welcome");
   const workouts = result.error === null ? result.data[1] : [];
   // Every finished workout counts for the streak, imported ones included;
   // starting weights are not a workout.
   const finishedAll = workouts.filter((w) => w.endedAt && w.source !== "baseline");
   const lastFinished = finishedAll.find((w) => w.source === "app");
+  const customizations = await getWorkoutCustomizations(supabase,workouts.filter(w=>w.source==="app"&&(!w.endedAt||w.id===lastFinished?.id)).map(w=>w.id)).catch(()=>({available:false,rows:new Map()}));
   const hero = () => (
     <HomeHero name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
       <WeeklyReviewCard lastEndedAt={lastFinished?.endedAt ?? null} lastStartedAt={lastFinished?.startedAt ?? null} lastWorkoutId={lastFinished?.id ?? null} />
@@ -66,9 +68,14 @@ export default async function TodayPage() {
   const [active] = result.data;
 
   if (!active) {
+    const openCustom=workouts.find(w=>!w.endedAt&&w.source==="app");
+    const openSnapshot=openCustom?customizations.rows.get(openCustom.id):null;
     return (
       <>
         {hero()}
+        {openCustom&&<HomeWorkoutCard name={openSnapshot?.name??"Workout in progress"} exerciseCount={openSnapshot?.items.length??null}
+          action={<Button asChild size="lg" className="w-full"><Link href={`/workout/${openCustom.id}`}><RotateCcw/>Resume workout</Link></Button>}
+          footer={<CancelWorkoutButton workoutId={openCustom.id} loggedSets={null} className="w-full text-muted-foreground"/>}/>}
         <div className="mt-6 rounded-2xl border border-dashed p-6 text-center">
           <p className="text-lg font-medium">No active workout plan</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -91,13 +98,14 @@ export default async function TodayPage() {
   // move the rotation.
   const trained = workouts.filter((w) => w.source === "app");
   const finished = trained.filter((w) => w.endedAt);
-  const open = trained.find((w) => !w.endedAt && routines.some((r) => r.id === w.routineId));
+  const open = trained.find((w) => !w.endedAt);
   const nextId = suggestNextRoutineId(routines, finished);
   const lastDone = lastDoneByRoutine(finished);
   const next = routines.find((r) => r.id === nextId);
   const others = routines.filter((r) => r.id !== nextId);
   // Not while a workout is open: that is not the moment to ask.
-  const workoutRoutine = open ? routines.find((r) => r.id === open.routineId) : next;
+  const customOpen = open ? customizations.rows.get(open.id) : null;
+  const workoutRoutine = open ? customOpen ? {id: "custom",name: customOpen.name,exercises: customOpen.items} : routines.find((r) => r.id === open.routineId)??{id:"open",name:"Workout in progress",exercises:[]} : next;
   const askFeedback = !open && shouldPromptFeedback(trained, profile.feedbackPrompted);
 
   return (
@@ -107,9 +115,9 @@ export default async function TodayPage() {
 
       {workoutRoutine && <HomeWorkoutCard
           name={workoutRoutine.name}
-          exerciseCount={workoutRoutine.exercises.length}
+          exerciseCount={open&&!customOpen&&!routines.some(r=>r.id===open.routineId)?null:workoutRoutine.exercises.length}
           lastDone={relativeDay(lastDone.get(workoutRoutine.id))}
-          action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form>}
+          action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <><form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form>{customizations.available&&<CustomWorkoutButton source={{planId:plan.id,planName:plan.name,routineId:workoutRoutine.id,routines}} library={library}/>}</>}
           footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" /> : others.length > 0 ? (
         <details className="group">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden /></summary>
@@ -150,7 +158,7 @@ export default async function TodayPage() {
         </Link>
       )}
 
-      {lastFinished && <HomeWorkoutRecap href={`/history/${lastFinished.id}`} name={active.routines.find((r) => r.id === lastFinished.routineId)?.name ?? "Workout"} startedAt={lastFinished.startedAt} when={relativeDay(lastFinished.endedAt!)} />}
+      {lastFinished && <HomeWorkoutRecap href={`/history/${lastFinished.id}`} name={customizations.rows.get(lastFinished.id)?.name ?? active.routines.find((r) => r.id === lastFinished.routineId)?.name ?? "Workout"} startedAt={lastFinished.startedAt} when={relativeDay(lastFinished.endedAt!)} />}
 
       {unmapped.length > 0 && <MuscleFixCard exercises={unmapped} />}
 

@@ -320,6 +320,9 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     { user_id: string; routine_id: string | null; started_at: string; ended_at: string | null; routines: { name: string } | null }[]
   >(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,routines(name)`);
   if (!workout?.ended_at) return null;
+  // Custom prescriptions are separate from the regular plan and can have no routine_id.
+  const custom = await getJson<{name:string;has_prescription?:boolean;items:{exerciseId:string;alternateIds?:string[]}[]}[]>(env,fetchFn,
+    `workout_customizations?workout_id=eq.${id}&user_id=eq.${encodeURIComponent(workout.user_id)}&select=name,items,has_prescription`).then(rows=>rows[0]??null).catch(()=>null);
   const bodyWeightKg = await loadBodyWeight(env, fetchFn, workout.user_id, workout.started_at.slice(0, 10));
 
   const todayRows = await getJson<SetRow[]>(
@@ -396,9 +399,15 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     }
   }
 
+  if (custom) {
+    const ids=custom.items.flatMap(i=>[i.exerciseId,...i.alternateIds??[]]).map(encodeURIComponent).join(",");
+    const prescribed=ids?await getJson<{id:string;name:string}[]>(env,fetchFn,`exercises?user_id=eq.${encodeURIComponent(workout.user_id)}&id=in.(${ids})&select=id,name`).catch(()=>[]):[];
+    const namesById=new Map(prescribed.map(e=>[e.id,e.name]));
+    plan=custom.has_prescription===false?null:custom.items.map(i=>[i.exerciseId,...i.alternateIds??[]].flatMap(id=>namesById.has(id)?[namesById.get(id)!]:[])).filter(names=>names.length).map(names=>names.length===1?names[0]:names);
+  }
   return {
     userId: workout.user_id,
-    dayName: workout.routines?.name ?? null,
+    dayName: custom?.name ?? workout.routines?.name ?? null,
     startedAt: workout.started_at,
     endedAt: workout.ended_at,
     today: todayRows.map(toSet),
@@ -621,16 +630,16 @@ export const WEEK_PROMPT = [
 export async function analyzeWeek(env: AnalyzeEnv, fetchFn: typeof fetch, workoutId: string, data: WorkoutData, log: Log): Promise<void> {
   try {
     const week = analysisWeek(data.startedAt);
-    const rows = await getJson<{ id: string; started_at: string; ended_at: string; routines: { name: string } | null; sets: (SetRow & { set_type: string; deleted_at: string | null })[] }[]>(
-      env, fetchFn,
-      `workouts?user_id=eq.${encodeURIComponent(data.userId)}&source=eq.app&cancelled_at=is.null&ended_at=not.is.null` +
-      `&started_at=gte.${encodeURIComponent(week.startAt)}&started_at=lt.${encodeURIComponent(week.nextAt)}` +
-      `&select=id,started_at,ended_at,routines(name),sets(${SET_SELECT},set_type,deleted_at)&order=started_at&limit=1000`,
-    );
+    const query = `workouts?user_id=eq.${encodeURIComponent(data.userId)}&source=eq.app&cancelled_at=is.null&ended_at=not.is.null` +
+      `&started_at=gte.${encodeURIComponent(week.startAt)}&started_at=lt.${encodeURIComponent(week.nextAt)}`;
+    type WeekRow = {id:string;started_at:string;ended_at:string;routines:{name:string}|null;workout_customizations?:{name:string}|null;sets:(SetRow&{set_type:string;deleted_at:string|null})[]};
+    const readWeek=(custom:boolean)=>getJson<WeekRow[]>(env,fetchFn,query+
+      `&select=id,started_at,ended_at,routines(name),sets(${SET_SELECT},set_type,deleted_at)${custom?",workout_customizations(name)":""}&order=started_at&limit=1000`);
+    const rows = await readWeek(true).catch(()=>readWeek(false));
     if (!rows.length) return;
     const summary = [
       `Week: ${week.start} to ${week.end} (Monday to Sunday, India time). Completed sessions so far: ${rows.length}.`,
-      ...rows.map((w) => `${w.started_at}: ${redact(w.routines?.name ?? "Workout")}. Working sets: ` +
+      ...rows.map((w) => `${w.started_at}: ${redact(w.workout_customizations?.name ?? w.routines?.name ?? "Workout")}. Working sets: ` +
         w.sets.filter((r) => r.set_type === "working" && !r.deleted_at).map((r) => {
           const s = toSet(r);
           return `${redact(s.exercise)} (${s.equipment}${s.perHand ? ", per hand" : ""}) ${setText(s)}${s.rpe == null ? "" : `, felt ${FEEL(s.rpe)}`}`;

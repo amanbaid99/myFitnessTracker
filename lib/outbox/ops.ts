@@ -28,6 +28,8 @@ export type Op =
   | { kind: "insertNote"; row: { id: string; workout_id: string; exercise_id: string; note: string } }
   | { kind: "updateNote"; id: string; note: string }
   | { kind: "deleteNote"; id: string }
+  | { kind: "setCustomExercise"; workoutId: string; slotId: string; previousId: string; exerciseId: string }
+  | { kind: "setCustomRest"; workoutId: string; slotId: string; restSec: number }
   | { kind: "setRest"; routineExerciseId: string; restSec: number }
   | { kind: "setSetting"; exerciseId: string; setting: string | null };
 
@@ -72,7 +74,7 @@ export const ALREADY_SAVED = "23505";
  */
 export async function runQueue(
   items: QueuedOp[],
-  send: (op: Op) => Promise<SendResult>,
+  send: (op: Op, workoutId: string) => Promise<SendResult>,
   handlers: { onSent: (item: QueuedOp) => Promise<void> | void; onFailed: (item: QueuedOp, message: string) => Promise<void> | void },
 ): Promise<{ sent: number; failed: number; stopped: boolean }> {
   let sent = 0;
@@ -80,7 +82,7 @@ export async function runQueue(
   for (const item of items) {
     let result: SendResult;
     try {
-      result = await send(item.op);
+      result = await send(item.op,item.workoutId);
     } catch (e) {
       result = { ok: false, transient: true, message: e instanceof Error ? e.message : String(e) };
     }
@@ -99,5 +101,5 @@ export async function runQueue(
 
 /** New edits must not be mistaken for changes waiting when this screen opened. */
 export function needsWorkoutReload(item:QueuedOp,openedAt:number):boolean {
-  return item.op.kind!=="setRest"&&Date.parse(item.createdAt)<openedAt;
+  return item.op.kind!=="setRest"&&item.op.kind!=="setCustomRest"&&Date.parse(item.createdAt)<openedAt;
 }

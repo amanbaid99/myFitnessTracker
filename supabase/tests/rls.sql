@@ -604,5 +604,6 @@ select pg_temp.expect_error($$select public.mark_seen(array['x'])$$, 'anon canno
 reset role;
 
 \i supabase/tests/feedback.sql
+\i supabase/tests/custom-workouts.sql
 \o
 \echo 'All RLS checks passed.'
