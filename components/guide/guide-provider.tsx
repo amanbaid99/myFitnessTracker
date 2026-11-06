@@ -168,6 +168,7 @@ export function Spotlight({
   selector,
   label,
   busy = false,
+  waitMs = 1500,
 }: {
   step: GuideStep;
   index?: number;
@@ -182,6 +183,8 @@ export function Spotlight({
   label?: string;
   /** Disables the buttons while the next step loads. */
   busy?: boolean;
+  /** How long to look for the element before giving up. */
+  waitMs?: number;
 }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [vh, setVh] = useState(0);
@@ -215,7 +218,7 @@ export function Spotlight({
       if (!el) {
         el = find();
         if (el) el.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
-        else if (performance.now() - started > 1500) {
+        else if (performance.now() - started > waitMs) {
           if (missing.current) missing.current();
           else next.current();
           return;
@@ -233,7 +236,7 @@ export function Spotlight({
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
-  }, [step.target, selector]);
+  }, [step.target, selector, waitMs]);
 
   useEffect(() => {
     if (rect) button.current?.focus({ preventScroll: true });
@@ -303,7 +306,7 @@ export function Spotlight({
 }
 
 /** One invitation per owner-approved batch, after the intro tour, on Today only. Same look as the tour bubbles. */
-export function UpdateTourInvite({ tour, onStart, onDismiss }: { tour: UpdateTour; onStart: () => void; onDismiss: () => void }) {
+export function UpdateTourInvite({ onStart, onDismiss }: { tour: UpdateTour; onStart: () => void; onDismiss: () => void }) {
   const start = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     start.current?.focus({ preventScroll: true });
@@ -316,7 +319,7 @@ export function UpdateTourInvite({ tour, onStart, onDismiss }: { tour: UpdateTou
       <div role="dialog" aria-modal="true" aria-labelledby="update-tour-invite" className="w-full max-w-sm rounded-2xl border bg-popover p-4 shadow-xl animate-in fade-in">
         <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Sparkles className="size-3.5" aria-hidden />What&apos;s new</p>
         <p id="update-tour-invite" className="font-semibold">See what&apos;s changed</p>
-        <p className="mt-1 text-sm text-muted-foreground">{tour.title}. A short walkthrough with sample screens. Your workouts and plan stay as they are.</p>
+        <p className="mt-1 text-sm text-muted-foreground">A quick look at the latest changes, on sample screens. Your workouts and plan stay as they are.</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button variant="ghost" className="text-muted-foreground" onClick={onDismiss}>Skip</Button>
           <Button ref={start} className="ml-auto" onClick={onStart}>Start tour</Button>

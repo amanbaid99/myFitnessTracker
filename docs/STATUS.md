@@ -8,6 +8,10 @@ Last updated: 2026-11-06.
 
 ## In progress
 
+- 2026-11-06: Branch `ui/review-tour-speed-launch`: app shell paints a
+  skeleton at once, server region set to Tokyo next to the database, demo
+  loading skeleton, tour copy without dates.
+
 - 2026-11-06: `ui/review-custom-workouts` implements owner-requested
   plan-connected AI customization before and during training. Home adds
   Custom workout today; the logger uses Customize workout. Setup, editable

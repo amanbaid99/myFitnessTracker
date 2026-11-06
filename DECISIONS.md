@@ -2261,3 +2261,21 @@ AI requests or account writes. No new release tour is activated; batches
 still need owner selection and wording approval. The schema needs the
 repository's exact-SQL approval before merge and the two changed Edge
 Functions must be deployed separately before the new UI is released.
+
+## 2026-11-06: Faster app start and tour, no dates in tour copy (Aman)
+
+Aman saw a black screen and a slow load when opening the home screen app,
+found the update tour slow, and asked why users see "3 to 5 November".
+
+- The tabbed screens' layout waited for profile and guide data before
+  drawing anything, so the existing loading skeletons could not show. The
+  layout now paints the shell (skeleton, profile circle, tab bar) at once
+  and streams the data in (Suspense in `app/(app)/layout.tsx`).
+- Server functions run in Tokyo (`vercel.json` regions `hnd1`), next to the
+  Supabase database (ap-northeast-1). Before, no region was set, so Vercel's
+  default (Washington DC) put an ocean between every page and its data.
+- Sample pages have a loading skeleton, so each tour step and demo tap
+  responds at once. The spotlight waits up to 8 s for a slow page before
+  pointing at the heading instead.
+- The tour title is "What's new in Repd" and the invitation no longer
+  mentions dates. The id is unchanged, so nobody is shown it twice.

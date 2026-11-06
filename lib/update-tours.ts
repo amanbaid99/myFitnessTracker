@@ -20,7 +20,7 @@ export interface UpdateTour {
 export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
   id: "nov-3-5-2026-v2",
   date: "2026-11-06",
-  title: "Your 3–5 November update tour",
+  title: "What's new in Repd",
   steps: [
     {
       title: "Today keeps the important things together",
