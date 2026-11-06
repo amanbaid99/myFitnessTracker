@@ -772,7 +772,7 @@ export function Logger(props: {
       </header>
 
       <main inert={Boolean(editBusy)||refreshing} aria-busy={Boolean(editBusy)||refreshing} className="mx-auto max-w-lg space-y-4 px-4 pt-4">
-        {!demo&&editing&&<Button variant="secondary" className="w-full" onClick={()=>setAdaptOpen(true)}><Sparkles className="size-4"/>Dumbbell workout with AI</Button>}
+        {!demo&&editing&&<Button variant="secondary" className="h-auto min-h-11 w-full whitespace-normal py-3" onClick={()=>setAdaptOpen(true)}><Sparkles className="size-4 shrink-0" aria-hidden /><span className="min-w-0 text-left"><span className="block">Use dumbbells for remaining exercises</span><span className="mt-0.5 block text-xs font-normal text-muted-foreground">AI suggestions · Review first · Today only</span></span></Button>}
         {demo && (
           <p className="rounded-xl border border-primary/40 bg-accent/40 p-3 text-sm">
             Demo workout with sample numbers. Tick sets, pick how they felt and watch the next set adjust.
@@ -936,7 +936,7 @@ export function Logger(props: {
                   )}
                 </div>
                     <div className="mb-2 flex gap-1.5">
-                      <ActionTile icon={<ArrowLeftRight />} label="Swap" onClick={()=>setSwapIndex(exIndex)} ariaLabel={`Swap exercise ${item.exercise.name}`} />
+                      <ActionTile icon={<ArrowLeftRight />} label="Replace" onClick={()=>setSwapIndex(exIndex)} ariaLabel={`Replace exercise ${item.exercise.name}`} />
                       <ActionTile icon={<Timer />} label={`Rest ${clock(item.restSec ?? props.defaultRestSec)}`} onClick={()=>setRestIndex(exIndex)} ariaLabel={`Rest timer for ${item.exercise.name}, ${clock(item.restSec ?? props.defaultRestSec)}`} />
                       {!setting && showSettingChip(null, item.exercise.equipment) && (
                         <ActionTile icon={<Armchair />} label="Seat" onClick={() => setSeatEditFor(ex.exerciseId)} ariaLabel={`Add a seat or pin setting for ${item.exercise.name}`} />
@@ -1221,6 +1221,7 @@ export function Logger(props: {
 
       {swapIndex !== null && items[swapIndex] && (
         <QuickSwapSheet
+          key={items[swapIndex].exercise.id}
           original={items[swapIndex].exercise}
           library={swapLibrary}
           excludedIds={items
@@ -2138,7 +2139,7 @@ function RestBar({
     setSound(!sound);
   };
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-popover pb-[env(safe-area-inset-bottom)]">
+    <div className="fixed inset-x-0 bottom-[var(--update-tour-footer,0px)] z-40 border-t bg-popover pb-[env(safe-area-inset-bottom)]">
       <div className="h-1 bg-primary transition-[width] duration-1000 ease-linear motion-reduce:transition-none" style={{ width: `${pct}%` }} />
       <div className="mx-auto flex max-w-lg flex-wrap items-center gap-1.5 px-4 py-2">
         <Timer className="mr-1 size-5 shrink-0 text-primary" aria-hidden />

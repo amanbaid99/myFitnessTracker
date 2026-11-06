@@ -137,6 +137,19 @@ tool. Ask Aman before deploying.
 
 ## Guide, analytics and updates
 
+- `lib/update-tours.ts`: owner-approved release batches. `UPDATE_TOURS`
+  alone controls automatic invitations; the November batch was approved for release on 6 Nov.
+  The intro runs first; approved update invitations appear only on Today.
+  One existing `mark_seen` key per batch records starting or skipping it.
+  Legacy text release notes remain an archive, not automatic popups.
+- `app/demo/layout.tsx` and `UpdateTourFrame`: safe sample walkthroughs with
+  Previous, Next, Skip and Finish. URL state preserves the step across reload
+  and browser Back. All destinations are restricted to `/demo` routes.
+  Example workout changes use local data and never call AI or save records;
+  plan/preferences examples are read-only. A measured footer reserves its
+  space, including under larger text. The sample logger's rest panel uses
+  that offset while a tour is present; ordinary logger layout is unchanged.
+
 - `lib/guide.ts` and `components/guide/guide-provider.tsx`: intro tour
   (once, on Today), first-time tips (`useTip` plus `data-guide`), What's
   new entries (Aman-approved only). Seen keys are stored per account via

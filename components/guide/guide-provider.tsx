@@ -1,14 +1,15 @@
 "use client";
 
-import { releaseLinks } from "@/lib/guide";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles, X } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { track } from "@/lib/analytics";
-import { INTRO_TOUR, INTRO_TOUR_KEY, newsKey, nextTip, TIPS, unseenNews, WHATS_NEW, type GuideStep, type WhatsNewEntry } from "@/lib/guide";
+import { INTRO_TOUR, INTRO_TOUR_KEY, nextTip, TIPS, type GuideStep } from "@/lib/guide";
+import { UPDATE_TOURS, nextUpdateTour, updateTourHref, updateTourKey, type UpdateTour } from "@/lib/update-tours";
+import { MappingDialog } from "@/components/anatomy/mapping-dialog";
 
 interface GuideContext {
   /** A tour, tip or What's new is on screen: other pop-ups should wait. */
@@ -47,7 +48,7 @@ const START_DELAY_MS = 700;
 
 /**
  * Runs the guide for the signed-in user: the intro tour on Today (once),
- * then any unseen What's new entries, and first-time tips asked for by the
+ * then an owner-approved update-tour invitation, and first-time tips asked for by the
  * page (useTip). One thing at a time. `seen` null means the list cannot be
  * read or saved, so nothing is shown. `full` is false on the workout
  * screen: tips only.
@@ -103,8 +104,8 @@ export function GuideProvider({
     if (tourDue && ready && onToday && tourStep === null) setTourStep(0); // eslint-disable-line react-hooks/set-state-in-effect -- starts after the page settles
   }, [tourDue, ready, onToday, tourStep]);
 
-  const news = useMemo(() => (full && enabled ? unseenNews(WHATS_NEW, seen, joinedAt) : []), [full, enabled, seen, joinedAt]);
-  const showNews = ready && !tourDue && tourStep === null && news.length > 0;
+  const update = useMemo(() => full && enabled ? nextUpdateTour(UPDATE_TOURS, seen, joinedAt) : null, [full, enabled, seen, joinedAt]);
+  const showNews = ready && onToday && !tourDue && tourStep === null && update !== null;
   const tip = enabled && ready && tourStep === null && !showNews ? nextTip(requested, seen) : null;
   const busy = tourStep !== null || showNews || tip !== null || (tourDue && onToday);
 
@@ -132,19 +133,11 @@ export function GuideProvider({
           index={tourStep}
           total={INTRO_TOUR.length}
           onNext={() => (tourStep + 1 < INTRO_TOUR.length ? setTourStep(tourStep + 1) : endTour(true))}
+          onPrevious={() => setTourStep(Math.max(0, tourStep - 1))}
           onSkip={() => endTour(false)}
         />
       )}
-      {showNews && (
-        <WhatsNewSheet
-          entries={news}
-          onClose={(go) => {
-            markSeen(news.map((e) => newsKey(e.id)));
-            track("whats_new_closed", { entries: news.length, opened: Boolean(go) });
-            if (go) router.push(go);
-          }}
-        />
-      )}
+      {showNews && update && <UpdateTourInvite tour={update} onDismiss={() => markSeen([updateTourKey(update.id)])} onStart={() => { markSeen([updateTourKey(update.id)]); router.push(updateTourHref(update)); }} />}
       {tip && (
         <Spotlight
           key={tip}
@@ -170,6 +163,7 @@ function Spotlight({
   index,
   total,
   onNext,
+  onPrevious,
   onSkip,
   onMissing,
 }: {
@@ -177,6 +171,7 @@ function Spotlight({
   index?: number;
   total?: number;
   onNext: () => void;
+  onPrevious?: () => void;
   onSkip?: () => void;
   onMissing?: () => void;
 }) {
@@ -203,7 +198,7 @@ function Spotlight({
     const loop = () => {
       if (!el) {
         el = find();
-        if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+        if (el) el.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
         else if (performance.now() - started > 1500) {
           if (missing.current) missing.current();
           else next.current();
@@ -257,13 +252,14 @@ function Spotlight({
           {step.title}
         </p>
         <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {isTour && (
             <span className="text-xs tabular-nums text-muted-foreground">
               {index! + 1} of {total}
             </span>
           )}
-          {isTour && index! + 1 < total! && (
+          {isTour && <Button variant="secondary" disabled={index === 0} onClick={onPrevious}>Previous</Button>}
+          {isTour && (
             <Button variant="ghost" className="ml-auto text-muted-foreground" onClick={onSkip}>
               Skip tour
             </Button>
@@ -278,41 +274,16 @@ function Spotlight({
   );
 }
 
-/** What's new since last time: a bottom sheet, once per entry. */
-function WhatsNewSheet({ entries, onClose }: { entries: WhatsNewEntry[]; onClose: (go?: string) => void }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end bg-black/60" onClick={() => onClose()}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="whats-new-title"
-        className="mx-auto flex max-h-[85dvh] w-full max-w-lg flex-col rounded-t-3xl border bg-popover animate-in slide-in-from-bottom-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-2 px-5 pt-4">
-          <Sparkles className="size-5 text-primary" aria-hidden />
-          <h2 id="whats-new-title" className="flex-1 text-lg font-semibold">
-            What&apos;s new
-          </h2>
-          <Button variant="ghost" size="icon" onClick={() => onClose()} aria-label="Close">
-            <X />
-          </Button>
-        </div>
-        <ul className="space-y-4 overflow-y-auto px-5 pb-2 pt-3">
-          {entries.map((e) => (
-            <li key={e.id}>
-              <p className="font-medium">{e.title}</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">{e.body}</p>
-              <div className="mt-2 flex flex-wrap gap-2">{releaseLinks(e).map(link => <Button key={link.href} variant="secondary" onClick={() => onClose(link.href)}>{link.label}</Button>)}</div>
-            </li>
-          ))}
-        </ul>
-        <div className="px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
-          <Button size="lg" className="w-full" onClick={() => onClose()}>
-            Got it
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+/** One invitation per owner-approved batch, after the intro tour, on Today only. */
+export function UpdateTourInvite({ tour, onStart, onDismiss }: { tour: UpdateTour; onStart: () => void; onDismiss: () => void }) {
+  return <MappingDialog title="Take a tour of the updates" disabled={false} onDismiss={onDismiss}>
+    <section onClick={event => event.stopPropagation()} className="mx-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border bg-popover p-4">
+      <Sparkles className="size-5 text-primary" aria-hidden />
+      <h2 className="mt-2 text-xl font-semibold">See what’s changed</h2>
+      <p className="mt-2 text-sm leading-relaxed">{tour.title}</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">A short walkthrough with sample screens. Use Next, Previous or Skip. Your workouts and plan stay as they are.</p>
+      <Button className="mt-4 h-auto min-h-11 w-full whitespace-normal py-2" onClick={onStart}>Start update tour</Button>
+      <Button variant="ghost" className="mt-1 h-auto min-h-11 w-full whitespace-normal py-2" onClick={onDismiss}>Skip this tour</Button>
+    </section>
+  </MappingDialog>;
 }
