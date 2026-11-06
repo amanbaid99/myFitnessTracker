@@ -7,6 +7,7 @@ import { OutboxSync } from "@/components/outbox-sync";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { isLightBase, parseTheme, THEME_COOKIE, themeColor } from "@/lib/theme";
 import "./globals.css";
+import { NavDepthTracker } from "@/components/back-link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -71,6 +72,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <InstallPrompt />
         <ConfirmHost />
         <ServiceWorkerRegister />
+        <NavDepthTracker />
         <OutboxSync />
       </body>
     </html>

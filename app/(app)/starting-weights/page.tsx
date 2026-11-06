@@ -1,13 +1,14 @@
 import { StartingWeightsIntro } from "@/components/starting-weights-intro";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DataError } from "@/components/data-error";
 import { StartingWeightsForm, type StartingExercise } from "@/components/starting-weights-form";
 import { Button } from "@/components/ui/button";
 import { getActivePlan, getExerciseLibrary, getRoutines, getLastWorkingSets, getPersonalRecords, getProfile, load } from "@/lib/data";
 import { recordContext } from "@/lib/record-context";
 import { createClient } from "@/lib/supabase/server";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Starting weights" };
 
@@ -28,9 +29,7 @@ export default async function StartingWeightsPage({ searchParams }: PageProps<"/
   ]);
 
   const back = (
-    <Link href={context.returnTo} className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-      <ChevronLeft className="size-4" aria-hidden /> {context.returnLabel}
-    </Link>
+    <BackLink fallback={context.returnTo} label={context.returnLabel} />
   );
   const header = <StartingWeightsIntro setup={context.setup}>{back}</StartingWeightsIntro>;
 

@@ -8,6 +8,9 @@ Last updated: 2026-11-06.
 
 ## In progress
 
+- 2026-11-06: Branch `fix/back-goes-one-step`: Back on detail screens goes
+  one step back when you came from inside the app (`BackLink`).
+
 - 2026-11-06: Branch `ui/review-tour-speed-launch`: app shell paints a
   skeleton at once, server region set to Tokyo next to the database, demo
   loading skeleton, tour copy without dates.

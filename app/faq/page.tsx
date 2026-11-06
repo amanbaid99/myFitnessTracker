@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { FaqList } from "@/components/faq-list";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "Help & FAQ" };
 
@@ -9,9 +9,7 @@ export const metadata: Metadata = { title: "Help & FAQ" };
 export default function FaqPage() {
   return (
     <main className="mx-auto w-full max-w-lg px-5 pb-safe pt-safe">
-      <Link href="/settings" className="-ml-2 mt-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-        <ArrowLeft className="size-4" aria-hidden /> Back
-      </Link>
+      <BackLink fallback="/settings" label="Back" className="mb-0 mt-2" />
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">Help & FAQ</h1>
       <p className="mb-5 mt-1 text-sm text-muted-foreground">How Repd works, in short answers.</p>
       <FaqList />

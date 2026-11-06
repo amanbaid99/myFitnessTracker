@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, ChevronLeft, Trophy } from "lucide-react";
+import { ChevronDown, Trophy } from "lucide-react";
 import { LocalDate } from "@/components/local-date";
 import { E1rmChart } from "./e1rm-chart";
 import type { SessionBest } from "@/lib/data";
@@ -7,13 +7,12 @@ import { formatE1rm, formatSet } from "@/lib/format";
 import { exerciseHeadline, volumeLabel } from "@/lib/progress";
 import { fromKg, type Units } from "@/lib/units";
 import { MASK } from "@/lib/mask";
+import { BackLink } from "@/components/back-link";
 
 /** One exercise: latest performance first, then the chart with session details, every session, and top sets on demand. */
 export function ExerciseProgressView({ name, sessions, units, demo = false }: { name: string; sessions: SessionBest[]; units: Units; demo?: boolean }) {
   const back = (
-    <Link href={demo ? "/demo/progress" : "/progress"} className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground">
-      <ChevronLeft className="size-4" aria-hidden /> Progress
-    </Link>
+    <BackLink fallback={demo ? "/demo/progress" : "/progress"} label="Progress" />
   );
   const workoutHref = (id: string) => (demo ? "/demo?finished=1" : `/history/${id}`);
   // Top sets: the best set of the five best sessions, so one great day does not fill the list.
