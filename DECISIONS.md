@@ -2340,6 +2340,21 @@ the whole day into account.
 - History names show the quick log's title; reads fall back when the column
   is not there yet (`lib/history-cols.ts`).
 
+## 2026-11-08: Rename and delete a finished workout (Aman)
+
+Aman asked to delete a whole workout and edit its name. On a workout's page
+in History, a pencil renames it (`workouts.title`, written directly under
+row-level security; empty goes back to the custom or plan day name) and a
+bin deletes it after a confirm. `delete_workout` soft-deletes the sets and
+marks the workout cancelled, like discarding an open workout, so it leaves
+History, records, volume, prefill and streaks without erasing anything.
+Starting weights can be deleted but not renamed. The weekly AI review is
+not rewritten after a delete; it updates with the next finished workout.
+
+While checking, undo_import was found to leave the sets of undone imports
+live, so they still counted for records and prefill. It now soft-deletes
+them too. No import had been undone yet.
+
 ## 2026-11-08: Webhook secret moved to Supabase Vault (Aman)
 
 The analyze-workout webhook was protected by a short, guessable shared

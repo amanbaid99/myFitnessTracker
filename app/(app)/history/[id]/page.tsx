@@ -21,6 +21,7 @@ import {
 import { fetchWorkoutReview } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/back-link";
+import { WorkoutActions } from "@/components/history/workout-actions";
 
 export const metadata: Metadata = { title: "Workout" };
 
@@ -70,9 +71,13 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
     <>
       {back}
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {workout.source === "baseline" ? "Starting weights" : (workout.routineName ?? "Workout")}
-        </h1>
+        <WorkoutActions
+          workoutId={workout.id}
+          name={workout.source === "baseline" ? "Starting weights" : (workout.routineName ?? "Workout")}
+          title={workout.title ?? null}
+          defaultName={workout.defaultName ?? null}
+          canRename={workout.source !== "baseline"}
+        />
         <p className="mt-1 text-sm text-muted-foreground">
           <LocalDate iso={workout.startedAt} withTime />{workout.source !== "app" && ` · ${workingCount} ${workingCount === 1 ? "working set" : "working sets"}`}
         </p>
