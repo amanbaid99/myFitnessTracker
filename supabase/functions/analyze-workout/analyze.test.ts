@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyzeWorkout, loadWorkout, analyzeWeek, WEEK_PROMPT, buildSummary, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
+import { analyzeWorkout, loadWorkout, analyzeWeek, WEEK_PROMPT, buildSummary, sameDayLines, SYSTEM_PROMPT, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
 
 const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service-123", OPENROUTER_API_KEY: "or-key-123" };
 
@@ -101,6 +101,7 @@ function fakeFetch(modelReplies: (Response | Error)[]) {
       return next;
     }
     const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
+    if (url.includes("/workouts?user_id=") && url.includes("source=eq.app")) return json([]); // no other sessions that day
     if (url.includes("/workouts?user_id=")) {
       return json([{ id: "w0", started_at: "2026-10-07T09:00:00Z", ended_at: "2026-10-07T09:50:00Z" }]);
     }
@@ -337,4 +338,24 @@ it("does not invent a plan comparison for an older session without a recorded pr
  const base=fakeFetch([]),json=(v:unknown)=>new Response(JSON.stringify(v));
  const f=vi.fn<typeof fetch>(async(input,init)=>String(input).includes('/workout_customizations?')?json([{name:'Previous Upper',has_prescription:false,items:[]}]):base(input,init));
  const result=await loadWorkout(ENV,f,'w1');expect(result?.dayName).toBe('Previous Upper');expect(result?.plan).toBeNull();
+});
+
+describe("other sessions the same day", () => {
+  const day: WorkoutData = {
+    ...DATA,
+    dayName: "Pull-ups",
+    today: [set("Pull Up", null, 8, 9, 1), set("Pull Up", null, 7, 9, 2)],
+    last: {},
+    bestBefore: {},
+    notes: {},
+    sameDay: [{ startedAt: "2026-10-14T02:30:00Z", name: "Morning push-ups", sets: [set("Push Up", null, 20, 9.5, 1), set("Push Up", null, 18, 9.5, 2)] }],
+  };
+  it("lists the day's other sessions with their time in India and how they felt", () => {
+    expect(sameDayLines(day)).toEqual(["Other sessions the same day:", "- 08:00 Morning push-ups: Push Up bodyweightx20, bodyweightx18 (felt hard)."]);
+    expect(buildSummary(day)).toContain("Other sessions the same day:");
+    expect(sameDayLines(DATA)).toEqual([]);
+  });
+  it("asks for a review of the whole day", () => {
+    expect(SYSTEM_PROMPT).toContain("review the day as a whole");
+  });
 });

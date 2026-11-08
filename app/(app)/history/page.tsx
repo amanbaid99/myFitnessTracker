@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DataError } from "@/components/data-error";
 import { HistoryTimeline } from "@/components/history/history-timeline";
 import { getHistoryDetails } from "@/lib/history-data";
@@ -19,6 +22,7 @@ export default async function HistoryPage() {
   return (
     <>
       <ScreenHeader title="History" subtitle="Your training, one session at a time." />
+      <Button asChild variant="outline" className="mb-4 w-full"><Link href="/log"><Plus /> Log a workout</Link></Button>
       {result.error !== null ? (
         <DataError message={result.error} />
       ) : <HistoryTimeline workouts={result.data.workouts} metadataUnavailable={result.data.unavailable} />}

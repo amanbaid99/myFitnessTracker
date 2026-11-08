@@ -83,6 +83,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Can I log a workout I did outside the app?",
+        a: [
+          "Yes. On Today, tap Did something else? Log a workout, or use Log a workout in History. Add each exercise with sets, reps (or seconds) and an optional weight, say how it felt, and when you did it. You can give it a name, like Evening pull-ups.",
+          "It counts towards your streak and records, and towards your weekly goal when it has 6 or more working sets. It does not move your plan on. The AI review looks at everything you did that day, so morning push-ups and evening pull-ups are reviewed together.",
+        ],
+      },
+      {
         q: "Can I bring my workouts from Strong or Hevy?",
         a: [
           "Yes. Export your data from Strong or Hevy as a CSV file, then go to Settings, Import workouts from Strong or Hevy, and choose the file. For anything else, download the Repd template there and copy your sets into it.",
