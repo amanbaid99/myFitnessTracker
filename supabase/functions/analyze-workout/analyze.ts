@@ -12,7 +12,7 @@
  * Node.
  */
 
-import { analysisWeek, ANALYSIS_TIMEZONE } from "../../../lib/analysis-week.ts";
+import { analysisDay, analysisWeek, ANALYSIS_TIMEZONE } from "../../../lib/analysis-week.ts";
 import { redact } from "./redact.ts";
 
 export interface AnalyzeEnv {
@@ -78,6 +78,8 @@ export interface WorkoutData {
   plan?: (string | string[])[] | null;
   /** Body weight on the day (latest logged, else the welcome answer): the load of bodyweight exercises. */
   bodyWeightKg?: number | null;
+  /** Other finished sessions on the same India-time day, e.g. a quick log of push-ups in the morning. */
+  sameDay?: { startedAt: string; name: string | null; sets: SetData[] }[];
 }
 
 export interface Review {
@@ -189,6 +191,7 @@ export function buildSummary(d: WorkoutData): string {
       : []),
     ...compareWithPlan(d),
     ...compareWithPrevious(d),
+    ...sameDayLines(d),
   ];
   const byExercise = new Map<string, SetData[]>();
   for (const s of d.today) byExercise.set(s.exercise, [...(byExercise.get(s.exercise) ?? []), s]);
@@ -211,11 +214,30 @@ export function buildSummary(d: WorkoutData): string {
   return redact(lines.join("\n"));
 }
 
+/** The day's other sessions, so a review can treat the day as a whole. Pure. */
+export function sameDayLines(d: WorkoutData): string[] {
+  if (!d.sameDay?.length) return [];
+  const time = (iso: string) => new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: ANALYSIS_TIMEZONE }).format(new Date(iso));
+  return [
+    "Other sessions the same day:",
+    ...d.sameDay.map((w) => {
+      const byExercise = new Map<string, SetData[]>();
+      for (const s of w.sets) byExercise.set(s.exercise, [...(byExercise.get(s.exercise) ?? []), s]);
+      const parts = [...byExercise].map(([name, sets]) => {
+        const feels = sets.map((s) => s.rpe).filter((r): r is number => r !== null).map(FEEL);
+        return `${name} ${sets.map(setText).join(", ")}${feels.length ? ` (felt ${[...new Set(feels)].join("/")})` : ""}`;
+      });
+      return `- ${time(w.startedAt)}${w.name ? ` ${w.name}` : ""}: ${parts.join("; ") || "no working sets"}.`;
+    }),
+  ];
+}
+
 export const SYSTEM_PROMPT = [
   "You are a concise strength coach reviewing one gym session from the data given.",
   "Use only that data. Weights are kg. A set like '45s hold' is a timed exercise such as a plank: compare the seconds held. Easy/good/hard/max is how the set felt. 'kg moved' is load times reps, summed; for bodyweight exercises the load is the body weight given plus any add-on.",
   "When the last session of the same day is given, compare today with it: more or less work overall and which lifts went up or dropped.",
   "Only call an exercise skipped if the data lists it as in the plan but not done today; every exercise with sets today was done.",
+  "When other sessions the same day are listed, review the day as a whole: say what the sessions covered together. Exercises done in another session that day were not skipped.",
   'Reply with JSON only, no other text: {"title": "...", "summary": "..."}.',
   "title: at most 6 words.",
   "summary: 3 short sentences, at most 75 words in total: how today compared with last time, one thing to watch, and what to aim for next time.",
@@ -316,9 +338,10 @@ function toSet(r: SetRow): SetData {
 
 export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workoutId: string): Promise<WorkoutData | null> {
   const id = encodeURIComponent(workoutId);
-  const [workout] = await getJson<
-    { user_id: string; routine_id: string | null; started_at: string; ended_at: string | null; routines: { name: string } | null }[]
-  >(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,routines(name)`);
+  type Row = { user_id: string; routine_id: string | null; started_at: string; ended_at: string | null; title?: string | null; routines: { name: string } | null };
+  // title arrives with the quick-log migration; read without it if it is not there yet.
+  const [workout] = await getJson<Row[]>(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,title,routines(name)`)
+    .catch(() => getJson<Row[]>(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,routines(name)`));
   if (!workout?.ended_at) return null;
   // Custom prescriptions are separate from the regular plan and can have no routine_id.
   const custom = await getJson<{name:string;has_prescription?:boolean;items:{exerciseId:string;alternateIds?:string[]}[]}[]>(env,fetchFn,
@@ -405,9 +428,27 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     const namesById=new Map(prescribed.map(e=>[e.id,e.name]));
     plan=custom.has_prescription===false?null:custom.items.map(i=>[i.exerciseId,...i.alternateIds??[]].flatMap(id=>namesById.has(id)?[namesById.get(id)!]:[])).filter(names=>names.length).map(names=>names.length===1?names[0]:names);
   }
+  // Every other finished session on the same India-time day; a review still works without them.
+  const day = analysisDay(workout.started_at);
+  const sameDay = await getJson<{ id: string; started_at: string; title?: string | null; routines: { name: string } | null }[]>(
+    env,
+    fetchFn,
+    `workouts?user_id=eq.${encodeURIComponent(workout.user_id)}&id=neq.${id}&source=eq.app&ended_at=not.is.null&cancelled_at=is.null` +
+      `&started_at=gte.${encodeURIComponent(`${day}T00:00:00+05:30`)}&started_at=lt.${encodeURIComponent(new Date(Date.parse(`${day}T00:00:00+05:30`) + 86_400_000).toISOString())}` +
+      `&select=id,started_at,title,routines(name)&order=started_at&limit=5`,
+  )
+    .then(async (rows) =>
+      Promise.all(rows.map(async (w) => ({
+        startedAt: w.started_at,
+        name: w.title ?? w.routines?.name ?? null,
+        sets: (await getJson<SetRow[]>(env, fetchFn, `sets?workout_id=eq.${encodeURIComponent(w.id)}&set_type=eq.working&deleted_at=is.null&select=${SET_SELECT}&order=logged_at`)).map(toSet),
+      }))),
+    )
+    .catch(() => []);
   return {
     userId: workout.user_id,
-    dayName: custom?.name ?? workout.routines?.name ?? null,
+    dayName: custom?.name ?? workout.title ?? workout.routines?.name ?? null,
+    sameDay,
     startedAt: workout.started_at,
     endedAt: workout.ended_at,
     today: todayRows.map(toSet),

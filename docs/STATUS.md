@@ -8,6 +8,10 @@ Last updated: 2026-11-06.
 
 ## In progress
 
+- 2026-11-08: Branch `feat/quick-log`: Log a workout (Today and History),
+  migration `quick_log` (needs SQL approval), analyze-workout reviews the
+  whole day (needs manual Edge deploy after merge).
+
 - 2026-11-06: Branch `feat/import-history`: import workout history from
   Strong, Hevy or the Repd template (Settings). Needs the `imports`
   migration approved. Next: plan and PR import, then Excel and AI mapping.

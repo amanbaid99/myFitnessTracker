@@ -42,7 +42,8 @@ export type AnalyticsEvent =
   | "muscles_approved"
   | "muscle_card_dismissed"
   | "history_imported"
-  | "import_undone";
+  | "import_undone"
+  | "quick_log_saved";
 
 type Props = Record<string, string | number | boolean | null>;
 

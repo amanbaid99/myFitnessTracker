@@ -2318,3 +2318,24 @@ History, records and volume but not streaks or weekly goals.
   call and checks every exercise belongs to the caller.
 - Plans and PRs from files, Excel and AI-assisted mapping are the next
   steps (Aman approved the order).
+
+## 2026-11-08: Log a workout (quick log) (Aman)
+
+Aman wanted to log something done outside a planned workout (push-ups at
+home, pull-ups in the evening) with how it felt, and have the analysis take
+the whole day into account.
+
+- Today ("Did something else? Log a workout") and History open `/log`:
+  exercises with sets, reps or seconds, optional weight, how it felt, when
+  (just now or earlier) and how long, plus an optional name (Aman: yes).
+- Saved by `log_quick_workout` as a finished `app` workout with `title` and
+  `quick_log`. The id comes from the device, so a retried save never logs
+  twice. It is added open and then finished, so the existing review webhook
+  runs.
+- Counts for the streak, records, volume and muscle map. Counts towards the
+  weekly goal only with 6 or more working sets (Aman: yes), in
+  `training_weekly_report`. It has no plan day, so the rotation ignores it.
+- `analyze-workout` now lists the day's other sessions (India time) and asks
+  the model to review the day as a whole. Needs a manual Edge deploy.
+- History names show the quick log's title; reads fall back when the column
+  is not there yet (`lib/history-cols.ts`).

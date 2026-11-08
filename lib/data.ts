@@ -7,6 +7,7 @@ import type { Units } from "./units";
 import type { BodyWeight } from "./body-weight";
 import type { Tracking } from "./tracking";
 import { createClient } from "./supabase/server";
+import { withOptionalHistoryCols } from "./history-cols";
 
 /**
  * Server-side reads shared by the screens. RLS limits every query to the
@@ -364,7 +365,8 @@ function toHistoryWorkout(w: Record<string, unknown>): HistoryWorkout {
   const custom = w.workout_customizations as {name:string}|null;
   return {
     id: w.id as string,
-    routineName: custom?.name ?? routine?.name ?? null,
+    // A quick log's own name, else a custom workout's, else the plan day's.
+    routineName: (w.title as string | null | undefined) ?? custom?.name ?? routine?.name ?? null,
     startedAt: w.started_at as string,
     endedAt: w.ended_at as string,
     source: toSource(w.source),
@@ -375,29 +377,25 @@ function toHistoryWorkout(w: Record<string, unknown>): HistoryWorkout {
 
 /** Finished, not cancelled workouts, newest first. */
 export async function getFinishedWorkouts(supabase: Supabase, limit = 100): Promise<HistoryWorkout[]> {
-  const run = (custom: boolean) => supabase
+  const { data, error } = await withOptionalHistoryCols(HISTORY_COLS, (cols) => supabase
     .from("workouts")
-    .select(custom ? `${HISTORY_COLS}, workout_customizations(name)` : HISTORY_COLS)
+    .select(cols)
     .not("ended_at", "is", null)
     .is("cancelled_at", null)
     .order("started_at", { ascending: false })
-    .limit(limit);
-  let {data,error}=await run(true);
-  if(error && ["PGRST200","PGRST205","42P01"].includes(error.code)) ({data,error}=await run(false));
+    .limit(limit));
   if (error) throw new Error(error.message);
   return ((data ?? []) as unknown as Record<string,unknown>[]).map(toHistoryWorkout);
 }
 
 export async function getFinishedWorkout(supabase: Supabase, workoutId: string): Promise<HistoryWorkout | null> {
-  const run = (custom: boolean) => supabase
+  const { data, error } = await withOptionalHistoryCols(HISTORY_COLS, (cols) => supabase
     .from("workouts")
-    .select(custom ? `${HISTORY_COLS}, workout_customizations(name)` : HISTORY_COLS)
+    .select(cols)
     .eq("id", workoutId)
     .not("ended_at", "is", null)
     .is("cancelled_at", null)
-    .maybeSingle();
-  let {data,error}=await run(true);
-  if(error && ["PGRST200","PGRST205","42P01"].includes(error.code)) ({data,error}=await run(false));
+    .maybeSingle());
   if (error) throw new Error(error.message);
   return data && toHistoryWorkout(data as unknown as Record<string,unknown>);
 }
