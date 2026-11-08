@@ -2339,3 +2339,16 @@ the whole day into account.
   the model to review the day as a whole. Needs a manual Edge deploy.
 - History names show the quick log's title; reads fall back when the column
   is not there yet (`lib/history-cols.ts`).
+
+## 2026-11-08: Webhook secret moved to Supabase Vault (Aman)
+
+The analyze-workout webhook was protected by a short, guessable shared
+secret written into the dashboard trigger, so anyone who learned it could
+make the AI reviews run and cost money. A migration now generates a random
+secret inside the database and keeps it in Vault. The `analyze_workout`
+trigger is recreated in code (`notify_analyze_workout`, pg_net) and sends
+the secret from Vault; the function reads it back with
+`analyze_webhook_secret()` (service role only, cached for 5 minutes) and no
+longer accepts the old value. Nobody types or sees the secret, and it no
+longer appears in the trigger definition. Local test databases have no
+Vault or pg_net, so the migration skips that part there.

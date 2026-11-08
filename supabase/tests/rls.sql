@@ -607,5 +607,6 @@ reset role;
 \i supabase/tests/custom-workouts.sql
 \i supabase/tests/imports.sql
 \i supabase/tests/quick-log.sql
+\i supabase/tests/webhook-secret.sql
 \o
 \echo 'All RLS checks passed.'

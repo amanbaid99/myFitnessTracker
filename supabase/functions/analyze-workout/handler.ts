@@ -1,6 +1,6 @@
 /**
- * analyze-workout: called by a Database Webhook on UPDATE of
- * public.workouts. When a workout has just been finished (not cancelled,
+ * analyze-workout: called by the analyze_workout trigger on UPDATE of
+ * public.workouts (with the secret from Vault). When a workout has just been finished (not cancelled,
  * logged in the app), it asks a model on OpenRouter for a short review
  * and saves it as a workout_review insight (analyze.ts).
  *
@@ -16,7 +16,6 @@
 import { analyzeWorkout, analyzeWeek, loadWorkout, readRows } from "./analyze.ts";
 
 export interface Env {
-  WEBHOOK_SECRET?: string;
   OPENROUTER_API_KEY?: string;
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
@@ -62,6 +61,30 @@ export function skipReason(p: WebhookPayload): string | null {
   return null;
 }
 
+/**
+ * The webhook secret: a random value kept in Supabase Vault, read with the
+ * service role (analyze_webhook_secret, migration 20261108120000). Cached
+ * for a few minutes per instance; null when it cannot be read.
+ */
+let cachedSecret: { value: string; until: number } | null = null;
+export async function webhookSecret(
+  env: { SUPABASE_URL: string; SUPABASE_SERVICE_ROLE_KEY: string; OPENROUTER_API_KEY: string },
+  fetchFn: typeof fetch,
+  now = Date.now(),
+): Promise<string | null> {
+  if (cachedSecret && cachedSecret.until > now) return cachedSecret.value;
+  try {
+    const value = await readRows<string | null>(env, fetchFn, "rpc/analyze_webhook_secret");
+    if (typeof value !== "string" || value.length < 32) return null;
+    cachedSecret = { value, until: now + 5 * 60_000 };
+    return value;
+  } catch {
+    return null;
+  }
+}
+/** For tests: forget the cached secret. */
+export const forgetWebhookSecret = () => { cachedSecret = null; };
+
 /** Compares secrets without leaking where they differ (hash, then XOR). */
 export async function secretsMatch(given: string, expected: string): Promise<boolean> {
   const enc = new TextEncoder();
@@ -87,10 +110,9 @@ export async function handle(
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
-  const { WEBHOOK_SECRET, OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = env;
-  if (!WEBHOOK_SECRET || !OPENROUTER_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  const { OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = env;
+  if (!OPENROUTER_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     log("analyze-workout: missing secrets", {
-      WEBHOOK_SECRET: Boolean(WEBHOOK_SECRET),
       OPENROUTER_API_KEY: Boolean(OPENROUTER_API_KEY),
       SUPABASE_URL: Boolean(SUPABASE_URL),
       SUPABASE_SERVICE_ROLE_KEY: Boolean(SUPABASE_SERVICE_ROLE_KEY),
@@ -103,7 +125,12 @@ export async function handle(
   if (!given && bearer?.startsWith("Bearer ")) {
     return retry(req, bearer, { OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY }, fetchFn, log, defer);
   }
-  if (!given || !(await secretsMatch(given, WEBHOOK_SECRET))) {
+  const expected = given ? await webhookSecret({ OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY }, fetchFn) : null;
+  if (given && !expected) {
+    log("analyze-workout: webhook secret unavailable");
+    return json(500, { error: "not configured" });
+  }
+  if (!given || !expected || !(await secretsMatch(given, expected))) {
     log("analyze-workout: rejected request with a missing or wrong secret");
     return json(401, { error: "unauthorized" });
   }
