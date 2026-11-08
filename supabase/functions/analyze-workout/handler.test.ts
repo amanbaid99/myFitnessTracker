@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { handle, secretsMatch, SECRET_HEADER, skipReason } from "./handler";
+import { forgetWebhookSecret, handle, secretsMatch, SECRET_HEADER, skipReason, webhookSecret } from "./handler";
+
+// The secret the fake database keeps in Vault.
+const HOOK = "hook-secret-0123456789abcdef0123456789abcdef";
 
 const ENV = {
-  WEBHOOK_SECRET: "hook-secret",
   OPENROUTER_API_KEY: "or-key-123",
   SUPABASE_URL: "https://db.example",
   SUPABASE_SERVICE_ROLE_KEY: "service-123",
@@ -16,7 +18,7 @@ const finished = {
   old_record: { id: "w1", ended_at: null, cancelled_at: null, source: "app" },
 };
 
-function request(body: unknown, secret: string | null = ENV.WEBHOOK_SECRET, method = "POST") {
+function request(body: unknown, secret: string | null = HOOK, method = "POST") {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (secret !== null) headers[SECRET_HEADER] = secret;
   return new Request("https://fn.example/analyze-workout", {
@@ -26,7 +28,9 @@ function request(body: unknown, secret: string | null = ENV.WEBHOOK_SECRET, meth
   });
 }
 
-const okFetch = () => vi.fn<typeof fetch>(async () => new Response("ok", { status: 200 }));
+const okFetch = () =>
+  vi.fn<typeof fetch>(async (input) =>
+    String(input).includes("/rpc/analyze_webhook_secret") ? new Response(JSON.stringify(HOOK), { status: 200 }) : new Response("ok", { status: 200 }));
 
 describe("skipReason", () => {
   it("proceeds only when an app workout goes from open to finished", () => {
@@ -58,8 +62,8 @@ describe("handle", () => {
     expect(await res.json()).toEqual({ analyzing: "w1" });
     expect(deferred).toHaveLength(1);
     await deferred[0];
-    // The first call loads the workout with the service role.
-    const [url, init] = fetchFn.mock.calls[0];
+    // After reading the secret, it loads the workout with the service role.
+    const [url, init] = fetchFn.mock.calls.find(([u]) => !String(u).includes("/rpc/"))!;
     expect(String(url)).toMatch(/^https:\/\/db\.example\/rest\/v1\/workouts\?id=eq\.w1/);
     expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer service-123");
   });
@@ -69,7 +73,8 @@ describe("handle", () => {
     const defer = vi.fn();
     expect((await handle(request(finished, null), ENV, fetchFn, () => {}, defer)).status).toBe(401);
     expect((await handle(request(finished, "nope"), ENV, fetchFn, () => {}, defer)).status).toBe(401);
-    expect(fetchFn).not.toHaveBeenCalled();
+    // At most the secret is read; no workout is loaded.
+    expect(fetchFn.mock.calls.every(([u]) => String(u).includes("/rpc/analyze_webhook_secret"))).toBe(true);
     expect(defer).not.toHaveBeenCalled();
   });
 
@@ -82,8 +87,8 @@ describe("handle", () => {
   });
 
   it("refuses non-POST, bad JSON and missing configuration", async () => {
-    expect((await handle(request(null, ENV.WEBHOOK_SECRET, "GET"), ENV, okFetch(), () => {})).status).toBe(405);
-    const bad = new Request("https://fn.example", { method: "POST", headers: { [SECRET_HEADER]: "hook-secret" }, body: "{" });
+    expect((await handle(request(null, HOOK, "GET"), ENV, okFetch(), () => {})).status).toBe(405);
+    const bad = new Request("https://fn.example", { method: "POST", headers: { [SECRET_HEADER]: HOOK }, body: "{" });
     expect((await handle(bad, ENV, okFetch(), () => {})).status).toBe(400);
     expect((await handle(request(finished), { ...ENV, OPENROUTER_API_KEY: "" }, okFetch(), () => {})).status).toBe(500);
   });
@@ -155,5 +160,26 @@ describe("retry from the app", () => {
     const res = await handle(new Request("https://fn.example", { method: "OPTIONS" }), ENV, okFetch(), () => {});
     expect(res.status).toBe(200);
     expect(res.headers.get("Access-Control-Allow-Headers")).toContain("authorization");
+  });
+});
+
+describe("webhook secret from Vault", () => {
+  it("reads it once, caches it, and rejects when it is missing or too short", async () => {
+    forgetWebhookSecret();
+    const fetchFn = okFetch();
+    expect(await webhookSecret(ENV, fetchFn, 0)).toBe(HOOK);
+    expect(await webhookSecret(ENV, fetchFn, 1000)).toBe(HOOK);
+    expect(fetchFn.mock.calls.filter(([u]) => String(u).includes("analyze_webhook_secret"))).toHaveLength(1);
+    forgetWebhookSecret();
+    expect(await webhookSecret(ENV, vi.fn<typeof fetch>(async () => new Response(JSON.stringify("short"), { status: 200 })), 0)).toBeNull();
+    forgetWebhookSecret();
+    expect(await webhookSecret(ENV, vi.fn<typeof fetch>(async () => new Response("down", { status: 500 })), 0)).toBeNull();
+  });
+  it("refuses webhooks when the secret cannot be read, and the old shared secret no longer works", async () => {
+    forgetWebhookSecret();
+    const down = vi.fn<typeof fetch>(async () => new Response("down", { status: 500 }));
+    expect((await handle(request(finished), ENV, down, () => {})).status).toBe(500);
+    forgetWebhookSecret();
+    expect((await handle(request(finished, "hook-secret"), ENV, okFetch(), () => {})).status).toBe(401);
   });
 });
