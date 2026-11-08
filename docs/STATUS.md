@@ -8,6 +8,10 @@ Last updated: 2026-11-06.
 
 ## In progress
 
+- 2026-11-08: Branch `feat/workout-rename-delete`: rename and delete a
+  finished workout from History; `delete_workout` and an `undo_import` fix
+  (migration needs SQL approval).
+
 - 2026-11-08: Branch `feat/quick-log`: Log a workout (Today and History),
   migration `quick_log` (needs SQL approval), analyze-workout reviews the
   whole day (needs manual Edge deploy after merge).

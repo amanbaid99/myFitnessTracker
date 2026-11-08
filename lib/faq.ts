@@ -90,6 +90,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Can I rename or delete a workout?",
+        a: [
+          "Yes. Open the workout in History. Tap the pencil next to its name to rename it; leave the name empty to go back to the plan day's name. Tap the bin to delete it.",
+          "A deleted workout leaves History, your records, volume and streak at once. It can't be undone in the app, so you're asked to confirm first.",
+        ],
+      },
+      {
         q: "Can I bring my workouts from Strong or Hevy?",
         a: [
           "Yes. Export your data from Strong or Hevy as a CSV file, then go to Settings, Import workouts from Strong or Hevy, and choose the file. For anything else, download the Repd template there and copy your sets into it.",

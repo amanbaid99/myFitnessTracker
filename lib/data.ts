@@ -354,6 +354,10 @@ export interface HistoryWorkout {
   startedAt: string;
   endedAt: string;
   source: WorkoutSource;
+  /** The name the user gave it, if any. */
+  title?: string | null;
+  /** The name without the user's: custom workout or plan day. */
+  defaultName?: string | null;
   energy: number | null;
   notes: string | null;
 }
@@ -365,8 +369,10 @@ function toHistoryWorkout(w: Record<string, unknown>): HistoryWorkout {
   const custom = w.workout_customizations as {name:string}|null;
   return {
     id: w.id as string,
-    // A quick log's own name, else a custom workout's, else the plan day's.
+    // The workout's own name (quick logs, renames), else a custom workout's, else the plan day's.
     routineName: (w.title as string | null | undefined) ?? custom?.name ?? routine?.name ?? null,
+    title: (w.title as string | null | undefined) ?? null,
+    defaultName: custom?.name ?? routine?.name ?? null,
     startedAt: w.started_at as string,
     endedAt: w.ended_at as string,
     source: toSource(w.source),

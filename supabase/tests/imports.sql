@@ -39,9 +39,11 @@ select public.undo_import('99999999-0000-0000-0000-0000000000a1');
 select pg_temp.expect(
  (select cancelled_at is not null from public.workouts where import_id='99999999-0000-0000-0000-0000000000a1') and
  (select undone_at is not null from public.imports where id='99999999-0000-0000-0000-0000000000a1') and
- (select count(*) from public.sets where deleted_at is null and exercise_id='99999999-0000-0000-0000-000000000001')=2 and
- (select count(*) from public.exercise_session_best where exercise_id='99999999-0000-0000-0000-000000000001')=0,
- 'undo removes the import from history and records without touching sets');
+ (select count(*) from public.sets where deleted_at is null and exercise_id='99999999-0000-0000-0000-000000000001')=0 and
+ (select count(*) from public.sets where exercise_id='99999999-0000-0000-0000-000000000001')=2 and
+ (select count(*) from public.exercise_session_best where exercise_id='99999999-0000-0000-0000-000000000001')=0 and
+ (select count(*) from public.exercise_prs where exercise_id='99999999-0000-0000-0000-000000000001')=0,
+ 'undo removes the import from history, records and prefill; sets are soft-deleted, not erased');
 select pg_temp.expect_error($$select public.import_workouts('99999999-0000-0000-0000-0000000000a1','[]')$$,'cannot add to an undone import');
 reset role;
 set role anon;
