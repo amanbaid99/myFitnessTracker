@@ -377,3 +377,31 @@ an existing open session. Home reads prescription details only for open
 sessions and the latest recap; optional metadata failure still leaves a
 Resume action. Persisted extras keep the same replace/remove/rest behavior,
 including when the source plan is no longer available.
+
+
+### Evidence-led AI reports
+
+`analyze-workout/context.ts` loads bounded, paginated owner-scoped history in
+parallel: finished app-session metadata, weekly_exercise_volume,
+exercise_session_best, workout_muscle_sets, weekly_targets and body_weights.
+It uses the SQL values directly. Imports can contribute to volume/lift
+comparisons; app activity and muscle commentary remain scoped to finished
+app sessions. Failed or truncated optional reads are unavailable.
+
+After saving the daily review, the weekly request returns its own analysis
+and a four-week interpretation together. Both use the selected India-time
+week; the longer view includes that week and three earlier weeks, with the
+preceding four available as context. New bounded fields live in insights
+`details.analysis` and `details.longerTerm`, alongside deterministic evidence
+basis and period metadata. `lib/analysis-review.ts` validates the content for
+both Deno and the UI. Existing title/summary rows still render.
+
+Today is a reading-only preview. `AnalysisRefresh` on the weekly page sends
+the existing owner-authenticated weekly retry request, shows progress and
+polls for a new generation with a bounded wait. A short reuse window avoids
+paying for an immediately repeated successful refresh. Recommendations are
+visible on the weekly page and expandable in the daily recap. Refreshing an
+old weekly review does not rewrite its daily review. Old daily copy changes
+only for newly generated reviews. No SQL or announcement migration is needed;
+the changed analyze-workout bundle must be deployed separately, retaining
+Vault authentication and its existing JWT setting.

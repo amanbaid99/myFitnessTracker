@@ -62,7 +62,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "What does the weekly analysis cover?",
-        a: ["Today shows a brief AI summary of completed app workouts in the current Monday to Sunday week, using India time. It refreshes after your workout review finishes and excludes warm-ups, cancelled sessions, imports and starting weights. When this week's analysis is not ready yet, it shows last week's instead. Tap Read full analysis for the complete review with a body heatmap; switch between This week and Last week at the top. Use Refresh weekly analysis if it is missing or behind."],
+        a: ["Today shows a short takeaway for the current Monday to Sunday week in India time, falling back to last week until a new analysis is ready. Tap Read full analysis for the evidence, Next focus, refresh control and body heatmap. Switch between This week and Last week. The bigger picture adds the selected week and three earlier weeks, with context from the preceding four weeks when available. It is a four-week view, not a calendar-month or all-time score.", "The week reviews completed app workouts, including quick logs. Imported history can contribute to existing volume and lift comparisons, but not app-session goals or streaks. Small quick logs still count as training; they count towards the weekly goal only with at least six working sets. Warm-ups and deleted sets stay excluded. The evidence labels describe how much comparable history is available, not a prediction of results. Older saved reviews remain readable; the updated analysis arrives after another workout, or use Refresh analysis on the detailed page for an existing week."],
       },
       {
         q: "Can I change Reps to Time while adding an exercise?",
@@ -269,7 +269,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What does the AI do?",
         a: [
-          "After each workout it writes a short review that compares today with last time. AI Coach answers questions about your training and keeps the selected scope and conversation when you navigate within the app. It can also build a plan from your description and write a day's warm-up and cool-down.",
+          "After each workout it compares like-for-like lifts, reps or hold time and recorded effort with earlier sessions. A brief takeaway appears in the recap; expand Evidence and next focus for specifics. Session notes and energy are treated as self-report. The weekly and four-week views use existing SQL metrics and saved goals, distinguish partial periods and explain limited evidence. More volume is not automatically better, and one workout does not establish a trend. AI Coach answers questions about your training and keeps the selected scope and conversation when you navigate within the app. It can also build a plan from your description and write a day's warm-up and cool-down.",
         ],
       },
       {
@@ -287,7 +287,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What does the AI see, and can I trust it?",
         a: [
-          "It sees exercise names, your sets and how they felt, your experience level and, for workout reviews, your exercise notes. Also your latest body weight as a number, so pull-ups and dips count properly. Never your name, email, gender or height, and contact details are removed from anything you type.",
+          "It sees exercise names, your sets and how they felt, your experience level and, for workout reviews, your exercise notes. Also dated body-weight readings as numbers for relevant comparisons. The weekly context includes training dates, saved goals, existing volume and lift estimates, and mapped muscle coverage. Unavailable data is not treated as zero. Never your name, email, gender or height, and contact details are removed from anything you type.",
           "It can be wrong, and it's general fitness information, not medical advice. Check its suggestions before you act on them.",
         ],
       },

@@ -156,6 +156,27 @@ describe("retry from the app", () => {
     expect(defer).not.toHaveBeenCalled();
   });
 
+  it("reuses a just-generated rich weekly review and still allows old versions to refresh", async () => {
+    const recentFetch = (version: number) => {
+      const base = db({ reviewed: true });
+      return vi.fn<typeof fetch>(async (input, init) => {
+        const url = String(input);
+        if (url.includes("kind=eq.weekly_review")) return Response.json([{ details: { analysisVersion: version, generatedAt: new Date().toISOString(), coveredThrough: "2026-10-21T04:30:00Z" } }]);
+        if (url.includes("/workouts?id=")) return Response.json([{ user_id: "u1", source: "app", started_at: "2026-10-21T03:30:00Z", ended_at: "2026-10-21T04:30:00Z", cancelled_at: null }]);
+        return base(input, init);
+      });
+    };
+    const deferred: Promise<unknown>[] = [];
+    const defer = (work: Promise<unknown>) => deferred.push(work);
+    const reused = await handle(ask({ workoutId: W, weekly: true }), ENV, recentFetch(2), () => {}, defer);
+    expect(await reused.json()).toEqual({ status: "exists" });
+    expect(deferred).toHaveLength(0);
+    const older = await handle(ask({ workoutId: W, weekly: true }), ENV, recentFetch(1), () => {}, defer);
+    expect(older.status).toBe(202);
+    expect(deferred).toHaveLength(1);
+    await Promise.all(deferred);
+  });
+
   it("answers the browser's preflight", async () => {
     const res = await handle(new Request("https://fn.example", { method: "OPTIONS" }), ENV, okFetch(), () => {});
     expect(res.status).toBe(200);

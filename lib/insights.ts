@@ -1,9 +1,11 @@
+import { analysisDetail } from "./analysis-review";
 /**
  * Post-workout analysis: the analyze-workout Edge Function asks a free model
  * on OpenRouter and writes a workout_review row in public.insights; the app reads it (server first, then by polling).
  * Safe for both server and browser Supabase clients.
  */
 
+import type { AnalysisBasis, AnalysisDetail, AnalysisReport } from "./analysis-review";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface WorkoutReview {
@@ -11,6 +13,7 @@ export interface WorkoutReview {
   title: string;
   summary: string;
   readAt: string | null;
+  analysis?: AnalysisDetail;
 }
 
 export const POLL_EVERY_MS = 10_000;
@@ -22,21 +25,25 @@ export const SHOW_PENDING_FOR_MS = 24 * 60 * 60_000;
 export async function fetchWorkoutReview(supabase: SupabaseClient, workoutId: string): Promise<WorkoutReview | null> {
   const { data, error } = await supabase
     .from("insights")
-    .select("id, title, summary, read_at")
+    .select("id, title, summary, read_at, details")
     .eq("kind", "workout_review")
     .eq("workout_id", workoutId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error || !data) return null;
-  return { id: data.id, title: data.title, summary: data.summary, readAt: data.read_at };
+  return { id: data.id, title: data.title, summary: data.summary, readAt: data.read_at, analysis: analysisDetail(data.details?.analysis) ?? undefined };
 }
 
-export type WeeklyReview = { title: string; summary: string; details: { coveredThrough?: string; workoutCount?: number } };
+export type WeeklyReview = { title: string; summary: string; details: {
+  coveredThrough?: string; generatedAt?: string; workoutCount?: number; analysisVersion?: number;
+  analysis?: AnalysisDetail; basis?: AnalysisBasis; longerTerm?: AnalysisReport;
+  broaderBasis?: AnalysisBasis; broaderStart?: string; broaderEnd?: string;
+} };
 
 /** The newest weekly review for a week (period_start is its Monday, YYYY-MM-DD). */
 export function newestWeeklyReview(rows: WeeklyReview[]): WeeklyReview | null {
-  return [...rows].sort((a, b) => (b.details.coveredThrough ?? "").localeCompare(a.details.coveredThrough ?? ""))[0] ?? null;
+  return [...rows].sort((a, b) => (b.details.coveredThrough ?? "").localeCompare(a.details.coveredThrough ?? "") || (b.details.generatedAt ?? "").localeCompare(a.details.generatedAt ?? ""))[0] ?? null;
 }
 
 export async function fetchWeeklyReview(supabase: SupabaseClient, weekStart: string): Promise<WeeklyReview | null> {
