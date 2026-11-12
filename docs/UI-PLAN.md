@@ -238,3 +238,9 @@ warm-ups visible and Use bodyweight outside the row dropdown. The general add-on
 and skip redesign remains deferred. Review branch: `ui/review-assisted-bodyweight`;
 see `docs/ui-evidence/assisted-bodyweight` for mobile, offline and database evidence.
 No wider paused work or new tour batch is resumed by this feature.
+
+
+Owner follow-up (12 Nov): Add missed set to finished History exercises, including
+assisted/bodyweight sets. Focused editable sheet, visible stale-analysis status
+and explicit refresh. Review branch: `ui/review-history-missed-sets`; mobile,
+error/offline and SQL evidence: `docs/ui-evidence/history-missed-sets`.

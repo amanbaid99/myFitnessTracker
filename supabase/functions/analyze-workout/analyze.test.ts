@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyzeWorkout, loadWorkout, analyzeWeek, WEEK_PROMPT, buildSummary, sameDayLines, SYSTEM_PROMPT, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
+import { analyzeWorkout, loadWorkout, analyzeWeek, WEEK_PROMPT, buildSummary, sameDayLines, SYSTEM_PROMPT, compareWithPlan, compareWithPrevious, MODELS, PAID_MODEL, parseReview, saveReview, planSlots, sessionStats, type WorkoutData } from "./analyze";
 
 const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "service-123", OPENROUTER_API_KEY: "or-key-123" };
 
@@ -409,4 +409,11 @@ it("describes assistance as machine help and excludes it from lifted volume even
  const data={...DATA,today:[assisted,unassisted],bodyWeightKg:75,last:{"Assisted dips":[{...assisted,assistanceKg:30}]}};
  expect(sessionStats(data.today,75)).toEqual({sets:2,volumeKg:0});
  const summary=buildSummary(data);expect(summary).toContain("25kg assistance (machine help, not lifted load)x10");expect(summary).toContain("unassisted bodyweightx10");expect(summary).toContain("compare corresponding set numbers");
+});
+
+it("saves the revision loaded before generation so a later edit remains stale",async()=>{
+ const fetchFn=vi.fn<typeof fetch>(async()=>new Response(null,{status:201}));
+ const revision="2026-11-12T10:00:00.123456+00:00";
+ await saveReview(ENV,fetchFn,"w1",{...DATA,setsChangedAt:revision},{title:"Saved review",summary:"Recorded before the next edit."},MODELS[0]);
+ expect(JSON.parse(String(fetchFn.mock.calls[0][1]?.body)).details.setsChangedAt).toBe(revision);
 });

@@ -8,6 +8,23 @@ Last updated: 2026-11-12.
 
 ## In progress
 
+- 2026-11-12: `ui/review-history-missed-sets` starts from live #67
+  (dc6a08b). Adds a focused Add missed set sheet beneath existing exercises
+  in finished History workouts. Prefills remain editable for standard loads,
+  add-ons, per-hand loads, assistance/bodyweight and holds. Idempotent append
+  uses the original workout date; existing SQL metrics update immediately.
+  Finished set additions, corrections and deletions mark saved AI recaps stale;
+  generation remains explicit, revision-aware and deduplicated. Existing logger,
+  offline outbox, plans and approved tour stay unchanged. New SQL requires exact
+  owner approval before merge; analyze-workout needs separate deployment.
+  Evidence and limitations: `docs/ui-evidence/history-missed-sets`.
+  Review only, not merged or deployed.
+
+- 2026-11-12: #67 is live as dc6a08b. Assisted-bodyweight migration applied
+  through production CI; analyze-workout v23 and ask-coach v8 deployed and source
+  verified. Live version, production deployment and mobile sample checks pass.
+  Earlier unmerged review notes below describe prior snapshots.
+
 - 2026-11-12: `ui/review-assisted-bodyweight` builds on live #66 (911deb4).
   Planned and temporary exercises support positive machine assistance and zero
   for full bodyweight in independent visible rows. Includes defaults, reverse

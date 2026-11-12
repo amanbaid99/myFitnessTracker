@@ -190,6 +190,13 @@ export const FAQ: FaqSection[] = [
         ],
       },
       {
+        q: "Can I add a set after finishing a workout?",
+        a: [
+          "Yes. Open the workout in History, find the exercise under Logged sets and choose Add missed set. Check the prefilled weight or assistance and reps or seconds, then save. You can choose a working set or warm-up. This needs a connection and changes only that saved workout, not your plan.",
+          "The set keeps the original workout date. Eligible records, volume and muscle coverage update from your logged sets. If a saved AI recap exists, it is marked as needing a refresh. Choose Refresh analysis to update it; adding a set does not request AI automatically. Starting-weight entries cannot use Add missed set.",
+        ],
+      },
+      {
         q: "I logged a set wrong. How do I fix it?",
         a: [
           "Open History, pick the workout and tap the set. Change the weight or reps and tap Save fix, or delete it. To find a wrong PR quickly, tap the PR on Routines: it opens the workout it came from.",

@@ -21,7 +21,7 @@ export function WorkoutRecap({ workoutId, endedAt, review, rows, workload, exerc
       {results && results.length > 0 && <dl className="mt-2 grid grid-cols-2 gap-1.5 min-[340px]:grid-cols-4">{results.map((r) => <div key={r.label} className="min-w-0 rounded-xl bg-muted/40 px-2 py-1.5"><dt className="truncate text-[11px] text-muted-foreground">{r.label}</dt><dd className="text-sm font-semibold tabular-nums">{r.value}</dd></div>)}</dl>}
     </div>
     <div className="grid md:grid-cols-2">
-      <div className="p-4"><WorkoutReviewCard embedded workoutId={workoutId} endedAt={endedAt} initial={review} demo={demo} /></div>
+      <div className="p-4"><WorkoutReviewCard key={`${workoutId}:${review?.id ?? "pending"}:${review?.setsChangedAt ?? ""}:${review?.latestSetsChangedAt ?? ""}`} embedded workoutId={workoutId} endedAt={endedAt} initial={review} demo={demo} /></div>
       <div className="border-t p-4 md:border-t-0 md:border-l"><WorkoutMuscles embedded rows={rows} workload={workload} exercises={exercises} demo={demo} /></div>
     </div>
   </section>;

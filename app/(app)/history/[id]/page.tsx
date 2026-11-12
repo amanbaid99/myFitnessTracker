@@ -7,6 +7,7 @@ import { LocalDate } from "@/components/local-date";
 import { WorkoutRecap } from "@/components/workout-recap";
 import { workoutWorkload } from "@/lib/anatomy";
 import { sessionResults } from "@/lib/history";
+import { AddMissedSet } from "@/components/history/add-missed-set";
 import { FixableSets } from "@/components/history/fixable-sets";
 import {
   getWorkoutExercises,
@@ -95,11 +96,12 @@ export default async function HistoryWorkoutPage({ params }: PageProps<"/history
       )}
 
       <div id="logged-sets" className="scroll-mt-4 space-y-3">
-        {sets.length > 0 && <p className="text-xs text-muted-foreground">Logged something wrong? Tap a set to fix it.</p>}
+        {sets.length > 0 && <p className="text-xs text-muted-foreground">Tap a set to fix it, or add a set you forgot to log.</p>}
         {[...byExercise].map(([exerciseId, rows]) => (
           <section key={exerciseId} className="rounded-2xl border bg-card px-4 py-3">
             <h2 className="font-medium">{names.get(exerciseId) ?? "Exercise"}</h2>
             <FixableSets rows={rows} units={profile.units} exerciseName={names.get(exerciseId) ?? "Exercise"} />
+            {workout.source !== "baseline" && <AddMissedSet workoutId={workout.id} endedAt={workout.endedAt} rows={rows} units={profile.units} name={names.get(exerciseId) ?? "Exercise"} perHand={exercises.find(e=>e.id===exerciseId)?.perHand}/> }
             {notes.get(exerciseId) && (
               <p className="mt-2 flex gap-2 rounded-xl bg-secondary/60 px-3 py-2 text-sm">
                 <StickyNote className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
