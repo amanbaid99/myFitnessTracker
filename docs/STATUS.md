@@ -4,9 +4,23 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-11.
+Last updated: 2026-11-12.
 
 ## In progress
+
+- 2026-11-12: `ui/review-home-training-overview` starts from live #65
+  (f33a451, analyze-workout v22). Home shows the existing four-week takeaway
+  as Your training overview, with matching direct detail navigation. It
+  never substitutes a weekly-only paragraph. Current/previous snapshot
+  selection, pending/legacy/error states and mobile/large-text layouts have
+  regression coverage. No schema, Edge, model-call or training behavior
+  changes. The published tour's selector follows the new accessible label;
+  approved copy and batch/seen behavior stay intact. Evidence is under
+  `docs/ui-evidence/home-training-overview`. Not deployed.
+
+- 2026-11-12: #65 is live as f33a451 with analyze-workout v22. Production
+  CI, source parity, auth/preflight, live version and public mobile analysis
+  plus existing-tour checks passed. Earlier review notes below are history.
 
 - 2026-11-11: `ui/review-analysis-depth` starts from owner merges through #64
   (4d3a338). Replaces the restrictive 75-word analysis contract with a short

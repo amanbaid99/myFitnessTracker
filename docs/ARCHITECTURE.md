@@ -405,3 +405,18 @@ old weekly review does not rewrite its daily review. Old daily copy changes
 only for newly generated reviews. No SQL or announcement migration is needed;
 the changed analyze-workout bundle must be deployed separately, retaining
 Vault authentication and its existing JWT setting.
+
+
+### Home training overview
+
+The Home card still reads existing weekly insight snapshots, but displays
+only their validated details.longerTerm four-week title and takeaway.
+`home-training-overview.ts` selects the newest valid current window, then
+the previous one, preserving India-time boundaries and freshness metadata.
+Weekly-only legacy rows produce a refresh prompt, never relabelled advice.
+The detail link includes the matching week and #training-overview anchor;
+legacy/missing content links to the ordinary page so refresh remains easy
+to reach. Home performs no generation or write request. The surrounding
+weekly goal/streak and Start/Resume layout are unchanged.
+The existing update tour uses data-guide=training-overview as its stable
+target, retaining its approved copy and batch identity.

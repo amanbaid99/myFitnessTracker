@@ -26,7 +26,7 @@ export const NOVEMBER_UPDATE_PREVIEW: UpdateTour = {
       title: "Today keeps the important things together",
       body: "Weekly insight comes first. Start and Resume share one place, and your latest workout has a clear recap card.",
       href: "/demo",
-      target: `section[aria-label="Current week analysis"]`,
+      target: `[data-guide="training-overview"]`,
       prs: [20, 22, 27, 34, 52],
       changes: [
         "Compact weekly insight, next focus, streak and activity markers.",

@@ -2,7 +2,7 @@
 const {chromium}=require('/opt/codex/runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const assert=require('node:assert/strict');
 const titles=['Today keeps the important things together','See what your workout worked','Log sets in a familiar order','Replace one exercise','Progress starts with charts','Review and edit a plan clearly'];
-const targets=['section[aria-label="Current week analysis"]','section[aria-label="Workout body map"]','[data-guide="tip:log-set"]','details:has(button[aria-label^="Replace exercise"]) > summary','a[aria-label="Explore training volume"]','details[aria-label^="Day 1"]'];
+const targets=['[data-guide="training-overview"]','section[aria-label="Workout body map"]','[data-guide="tip:log-set"]','details:has(button[aria-label^="Replace exercise"]) > summary','a[aria-label="Explore training volume"]','details[aria-label^="Day 1"]'];
 (async()=>{const b=await chromium.launch({headless:true});try{
  const c=await b.newContext({viewport:{width:390,height:844},serviceWorkers:'block',reducedMotion:'reduce'}),p=await c.newPage(),requests=[],errors=[];
  await c.route(/^https:\/\//,r=>{if(r.request().url().includes('.supabase.co'))requests.push(r.request().url());return r.abort();});p.on('pageerror',e=>errors.push(e.message));
