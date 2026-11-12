@@ -5,7 +5,7 @@ const ENV = { SUPABASE_URL: "https://db.example", SUPABASE_SERVICE_ROLE_KEY: "se
 
 const set = (exercise: string, weightKg: number | null, reps: number, rpe: number | null = null, setNo = 1) => ({
   exercise,
-  equipment: "barbell",
+  equipment: weightKg === null ? "bodyweight" : "barbell",
   perHand: false,
   setNo,
   weightKg,
@@ -30,8 +30,8 @@ describe("buildSummary", () => {
     expect(buildSummary(DATA)).toBe(
       [
         "Session: Push, 52 min.",
-        '- Bench Press (barbell): today 82.5kgx6, 82.5kgx5; felt good, hard; last time 80kgx6, 80kgx6; new heaviest (was 80kg); note: "Left shoulder a bit tight".',
-        "- Dips (barbell): today bodyweightx12; first time logged.",
+        '- Bench Press (barbell): today 82.5kgx6, 82.5kgx5; felt good, hard; last time 80kgx6, 80kgx6; above observed earlier base load (was 80kg); note: "Left shoulder a bit tight".',
+        "- Dips (bodyweight): today bodyweightx12; first time logged.",
       ].join("\n"),
     );
   });
@@ -88,6 +88,13 @@ describe("parseReview", () => {
     const reasoning = 'Format is {"title": "...", "summary": "..."}. Bench {went} up. {"title":"Bench up","summary":"82.5kg for 6."}';
     expect(parseReview(reasoning)).toEqual({ title: "Bench up", summary: "82.5kg for 6." });
   });
+  it("keeps rich sections, rejects broken structures and leaves old stored reviews readable", () => {
+    const analysis = { highlights: ["80kg for six reps became 82.5kg for six."], watch: "One comparison is preliminary.", nextFocus: "Repeat the next planned target." };
+    const value = { title: "Bench moving", summary: "A small like-for-like improvement.", analysis, longerTerm: { title: "A baseline", summary: "Repeated sessions help establish a trend.", ...analysis } };
+    expect(parseReview(JSON.stringify(value))).toEqual(value);
+    expect(parseReview(JSON.stringify({ ...value, analysis: { ...analysis, highlights: [] } }))).toBeNull();
+    expect(parseReview(JSON.stringify({ title: "Older review", summary: "Still available." }))).toEqual({ title: "Older review", summary: "Still available." });
+  });
 });
 
 /** A fake PostgREST plus OpenRouter. */
@@ -130,8 +137,13 @@ function fakeFetch(modelReplies: (Response | Error)[]) {
   });
 }
 
-const modelOk = (content: string, model = MODELS[0]) =>
-  new Response(JSON.stringify({ model, choices: [{ message: { content } }] }), { status: 200 });
+const modelOk = (content: string, model = MODELS[0]) => {
+  let raw: Record<string, unknown>;
+  try { raw = JSON.parse(content); } catch { return new Response(JSON.stringify({ model, choices: [{ message: { content } }] })); }
+  const analysis = { highlights: ["Bench load increased from 80kg to 82.5kg, with one fewer total rep."], watch: "A load increase with fewer reps is not a proven strength trend.", nextFocus: "Repeat the load and aim to maintain reps across sets." };
+  const answer = { ...raw, analysis, longerTerm: { ...raw, ...analysis } };
+  return new Response(JSON.stringify({ model, choices: [{ message: { content: JSON.stringify(answer) } }] }), { status: 200 });
+};
 
 describe("analyzeWorkout", () => {
   it("saves the first usable review as a workout_review insight", async () => {
@@ -147,6 +159,8 @@ describe("analyzeWorkout", () => {
     const prevQuery = fetchFn.mock.calls.map(([u]) => String(u)).find((u) => u.includes("/workouts?user_id="))!;
     expect(prevQuery).toContain("routine_id=eq.r1");
     expect(prevQuery).toContain("started_at=lt.2026-10-14T09%3A00%3A00Z");
+    const historyQuery = fetchFn.mock.calls.map(([u]) => String(u)).find(u => u.includes("sets?user_id="))!;
+    expect(historyQuery).toContain("workouts.started_at=lt.2026-10-14T09%3A00%3A00Z");
     expect(sent.messages[1].content).not.toContain("u1");
     expect((modelCall[1]?.headers as Record<string, string>).Authorization).toBe("Bearer or-key-123");
 
@@ -178,7 +192,7 @@ describe("analyzeWorkout", () => {
     expect(models[0]).toBe(PAID_MODEL);
     const paid = fetchFn.mock.calls.map(([, init]) => JSON.parse(String(init?.body ?? "{}"))).find((b) => b.model === PAID_MODEL);
     expect(paid.reasoning).toEqual({ enabled: false });
-    expect(paid.max_tokens).toBeLessThanOrEqual(600);
+    expect(paid.max_tokens).toBe(1100);
     expect(log).toHaveBeenCalledWith("analyze-workout: model refused", { model: MODELS[0], status: 429, reason: "rate limited" });
   });
 
@@ -247,7 +261,7 @@ describe("body weight", () => {
     const text = buildSummary({ ...DATA, today: [dips], bodyWeightKg: 74.8 });
     expect(text).toContain("Body weight: 74.8kg (the load of bodyweight exercises, plus any add-on).");
     expect(text).toContain("Dips (bodyweight): today bodyweightx10");
-    expect(buildSummary({ ...DATA, bodyWeightKg: 74.8 })).not.toContain("Body weight:");
+    expect(buildSummary({ ...DATA, today: DATA.today.filter(s => s.weightKg !== null), bodyWeightKg: 74.8 })).not.toContain("Body weight:");
   });
 });
 
@@ -288,6 +302,10 @@ describe("weekly analysis", () => {
     expect(query).toContain("started_at=lt.2026-10-18T18%3A30%3A00.000Z");
     const saved = JSON.parse(String(fetchFn.mock.calls.at(-1)![1]?.body));
     expect(saved).toMatchObject({ kind: "weekly_review", workout_id: "w1", period_start: "2026-10-12", period_end: "2026-10-18", details: { workoutCount: 2, coveredThrough: "2026-10-15T10:00:00Z" } });
+    expect(saved.details.analysisVersion).toBe(2);
+    expect(saved.details.longerTerm).toBeTruthy();
+    expect(saved).not.toHaveProperty("analysis");
+    expect(saved).not.toHaveProperty("longerTerm");
   });
 
   it("runs after saving the workout review and isolates a failed weekly request", async () => {
@@ -303,6 +321,31 @@ describe("weekly analysis", () => {
     expect(await analyzeWorkout(ENV, fetchFn, "w1", log)).toBe("saved");
     expect(log).toHaveBeenCalledWith("analyze-workout: weekly review failed");
   });
+});
+
+it("uses optional energy, redacted session notes and actual planned set targets", () => {
+  const text = buildSummary({ ...DATA, energy: 2, sessionNote: "A short day; ask coach@example.com", planTargets: [{ names: ["Bench Press"], sets: 3, reps: 6, tracking: "reps" }] });
+  expect(text).toContain("Planned Bench Press: 3 sets of 6 reps; 2 working sets logged in this session.");
+  expect(text).toContain("Self-reported energy: 2/5");
+  expect(text).toContain("A short day; ask [email]");
+  expect(text).not.toContain("coach@example.com");
+});
+
+it("does not call work missing when it was logged in another session that day", () => {
+  const lines = compareWithPlan({ ...DATA, plan: ["Bench Press", "Pull Up"], sameDay: [{ startedAt: DATA.startedAt, name: "Morning", sets: [set("Pull Up", null, 6)] }] });
+  expect(lines).toContain("Every exercise in the Push plan was done.");
+});
+
+it("does not invent historical plan adherence from today's routine", () => {
+  const lines = compareWithPlan({ ...DATA, plan: ["Bench Press", "Cable Fly"], planReference: true });
+  expect(lines.join(" ")).toContain("Not confirmed as the historical prescription");
+  expect(lines.join(" ")).not.toContain("but not done today");
+});
+
+it("does not start an expired weekly model job", async () => {
+  const fetchFn = vi.fn<typeof fetch>();
+  await analyzeWeek(ENV, fetchFn, "w1", DATA, () => {}, Date.now() - 1);
+  expect(fetchFn).not.toHaveBeenCalled();
 });
 
 it("analyses an ad hoc custom session against its reviewed prescription, with actual exercise history",async()=>{

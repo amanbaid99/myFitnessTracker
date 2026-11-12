@@ -21,7 +21,7 @@ export default async function DemoWeekPage({ searchParams }: PageProps<"/demo/we
         </Link>
         <Badge variant="accent">Sample data</Badge>
       </div>
-      <div className="mt-2"><WeekAnalysis which={which} basePath="/demo/week" state="ready" review={DEMO_WEEKLY_REVIEW} workload={workload} range={weekRangeLabel(week)} /></div>
+      <div className="mt-2"><WeekAnalysis which={which} basePath="/demo/week" state="ready" review={DEMO_WEEKLY_REVIEW} workload={workload} range={weekRangeLabel(week)} refresh={{ workoutId: "demo", weekStart: week.start, demo: true }} /></div>
     </main>
   );
 }

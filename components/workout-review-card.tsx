@@ -15,6 +15,7 @@ import {
 } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/client";
 import { AskCoach } from "@/components/coach/ask-coach";
+import { AnalysisDetails } from "@/components/analysis-details";
 import { MD } from "@/components/compact-markdown";
 
 /** How long to wait for a retried review before giving up. */
@@ -126,6 +127,7 @@ export function WorkoutReviewCard({
           <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
             <ReactMarkdown components={MD} skipHtml>{review.summary}</ReactMarkdown>
           </div>
+          {review.analysis && <details className="mt-2"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-primary">Evidence and next focus</summary><AnalysisDetails analysis={review.analysis} /></details>}
           {!demo && <AskCoach workoutId={workoutId} label="Ask about this" className="mt-3 w-full" />}
         </>
       ) : state === "polling" ? (

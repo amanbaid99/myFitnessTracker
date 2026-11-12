@@ -13,6 +13,7 @@
  * runs for their own finished, not cancelled app workout without a review.
  */
 
+import { analysisWeek } from "../../../lib/analysis-week.ts";
 import { analyzeWorkout, analyzeWeek, loadWorkout, readRows } from "./analyze.ts";
 
 export interface Env {
@@ -183,10 +184,10 @@ async function retry(
       return json(401, { error: "sign in first" });
     }
     const userId = ((await who.json()) as { id?: string }).id;
-    const [workout] = await readRows<{ user_id: string; ended_at: string | null; cancelled_at: string | null; source: string }[]>(
+    const [workout] = await readRows<{ user_id: string; ended_at: string | null; cancelled_at: string | null; source: string; started_at?: string }[]>(
       env,
       fetchFn,
-      `workouts?id=eq.${workoutId}&select=user_id,ended_at,cancelled_at,source`,
+      `workouts?id=eq.${workoutId}&select=user_id,started_at,ended_at,cancelled_at,source`,
     );
     if (!workout || workout.user_id !== userId) return json(404, { error: "not found" });
     if (!workout.ended_at || workout.cancelled_at || workout.source !== "app") return json(409, { error: "not reviewable" });
@@ -197,6 +198,14 @@ async function retry(
     );
     if (existing.length) {
       if (weekly === true) {
+        // Repeated taps immediately after success reuse the saved result.
+        // Older versions remain refreshable without rewriting session reviews.
+        if (workout.started_at) {
+          const week = analysisWeek(workout.started_at);
+          const recent = await readRows<{ details?: { analysisVersion?: number; generatedAt?: string; coveredThrough?: string } }[]>(env, fetchFn,
+            `insights?user_id=eq.${encodeURIComponent(userId!)}&kind=eq.weekly_review&period_start=eq.${week.start}&select=details&order=created_at.desc&limit=100`);
+          if (recent.some(r => r.details?.analysisVersion === 2 && Date.parse(r.details.generatedAt ?? "") > Date.now() - 60_000 && Date.parse(r.details.coveredThrough ?? "") >= Date.parse(workout.ended_at!))) return json(200, { status: "exists" });
+        }
         defer((async () => {
           try {
             const data = await loadWorkout(env, fetchFn, workoutId as string);

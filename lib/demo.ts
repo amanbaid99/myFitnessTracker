@@ -190,8 +190,24 @@ export function demoRoutine(slug: string): Routine | null {
 /** Example coach copy for the public Today preview, never a saved insight. */
 export const DEMO_WEEKLY_REVIEW = {
   title: "A steady start to the week",
-  summary: "Two workouts cover your main pushing and pulling movements. Keep an eye on recovery as the week builds. Aim for one lower-body session before Sunday.",
-  details: { workoutCount: 2 },
+  summary: "Bench press held 80kg for four sets of six, with pushing and pulling sessions logged this week. The week is still in progress, so repeatable lift performance is a better reference than total volume alone.",
+  details: {
+    workoutCount: 2, analysisVersion: 2,
+    analysis: {
+      highlights: ["Bench press held 80kg for all four sets of six. Stable reps across the session are a more useful signal than simply adding extra work.", "Two sessions cover pushing and pulling movements; lower-body work is not logged this week yet."],
+      watch: "This week is still in progress. Lower volume than a finished week would not show a decline.",
+      nextFocus: "Keep the next planned lower-body session. On bench, follow the existing target and check whether reps stay repeatable.",
+    },
+    basis: { sessions: 2, trainingDays: 2, comparableLifts: 1, historyAvailable: true },
+    longerTerm: {
+      title: "Consistency is becoming repeatable",
+      summary: "In this sample, training is spread across all four weeks, with repeat bench sessions providing a useful reference. That is a clearer reason for confidence than one unusually high-volume workout.",
+      highlights: ["Twelve sessions across ten training days show repeated training, rather than a single busy week.", "Bench work can be compared with the same lift over repeated sessions. The example does not establish a whole-body strength score."],
+      watch: "The last week is incomplete, and external-load volume leaves out bodyweight exercises, bands and timed holds.",
+      nextFocus: "Keep the planned rhythm and compare the same lifts again after the next completed week.",
+    },
+    broaderBasis: { sessions: 12, trainingDays: 10, comparableLifts: 2, historyAvailable: true },
+  },
 };
 
 
@@ -201,6 +217,11 @@ export const DEMO_WORKOUT_REVIEW = {
   title: "A steady push session",
   summary: "Your pressing and triceps work covered the front of your upper body. Keep your last reps controlled. Aim for the same load with one more rep next time.",
   readAt: null,
+  analysis: {
+    highlights: ["Bench press completed four sets of six at 80kg. Incline dumbbell reps fell from ten to nine to eight at 28kg per hand."],
+    watch: "The later incline sets felt hard. That describes reported effort, not a diagnosis of fatigue or poor technique.",
+    nextFocus: "Keep the incline load and aim for steadier reps before adding weight, following the next target in your plan.",
+  },
 };
 export const DEMO_WORKOUT_MUSCLES = [
   { muscle: "chest", sets: 6 }, { muscle: "triceps", sets: 5 },

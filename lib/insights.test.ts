@@ -20,4 +20,10 @@ describe("newestWeeklyReview", () => {
     expect(newestWeeklyReview([r("old", "2026-11-02T10:00:00Z"), r("new", "2026-11-03T10:00:00Z"), r("none")])?.title).toBe("new");
     expect(newestWeeklyReview([])).toBeNull();
   });
+  it("uses the newer generation when two snapshots cover the same sessions", () => {
+    const coveredThrough = "2026-11-03T10:00:00Z";
+    const older = { title: "Older", summary: "", details: { coveredThrough } };
+    const newer = { title: "Richer", summary: "", details: { coveredThrough, generatedAt: "2026-11-04T10:00:00Z" } };
+    expect(newestWeeklyReview([older, newer])?.title).toBe("Richer");
+  });
 });

@@ -2367,3 +2367,50 @@ the secret from Vault; the function reads it back with
 longer accepts the old value. Nobody types or sees the secret, and it no
 longer appears in the trigger definition. Local test databases have no
 Vault or pg_net, so the migration skips that part there.
+
+
+## 2026-11-11: Evidence-led workout, weekly and four-week analysis (Aman)
+
+Aman reported that daily and weekly reviews were too basic, wanted a broader
+view that gives useful confidence, and asked to move Next focus and analysis
+controls off Today. The old prompts required at most 75 words and the weekly
+request contained only that week's raw sets. It could not support a genuine
+previous-week or longer-term interpretation.
+
+Keep a brief takeaway on Today and put recommendations, supporting evidence,
+refresh and retry on the dedicated analysis page. Missing Home analysis still
+links there without adding another row. Keep polling, last-week fallback,
+Start/Resume placement and the published six-step tour unchanged. Daily recap
+evidence is expandable so it does not bury the body map or set corrections.
+
+Use four Monday-Sunday India-time weeks including the selected week for the
+bigger picture, with the preceding four as context, rather than an unlimited
+all-time score. A calendar-month preference was offered; no answer was
+received before implementation, so the proposed four-week default is used.
+It is explicitly labelled and current periods remain incomplete. This does
+not change the existing week definition, SQL metrics or goal snapshots.
+
+Supply existing owner-filtered SQL volume, lift estimates and mapped muscle
+credits, saved weekly targets, finished app-session dates and dated weights.
+Imports retain their existing contribution to volume/records, not goals or
+streaks; small quick logs count as training but need six working sets to
+qualify for a goal. Keep the existing broader daily kg-moved estimate separate
+from Progress volume. Unknown targets/failed reads are unavailable, not zero.
+Treat unmapped muscles and purposeful training choices cautiously.
+
+Generate the weekly and four-week sections together, after the session review
+is saved, using the same paid-first/fallback models and existing insights
+JSON details. No migration, extra scheduled call, new provider or metric
+formula. Structured evidence/watch/next-focus fields are bounded and checked;
+legacy stored reviews remain readable. Evidence labels describe available
+repeated observations, not a probability of gains or a health assessment.
+Parallel optional context reads and a shared background time budget reduce
+avoidable waits; a weekly failure cannot invalidate the saved session review.
+
+For backdated workouts, select only earlier exercise sessions and dated body
+weight on/before the training day. Do not call a heavier observed base load an
+all-time PR. A current routine is only a reference for historical work;
+confirmed custom prescriptions can support actual target comparisons. Preserve
+rename priority, same-day quick-log context and Vault webhook authentication.
+The analyze-workout function requires separate deployment before the app.
+No new tour batch or release copy is activated by this change.

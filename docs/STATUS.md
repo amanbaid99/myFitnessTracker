@@ -4,9 +4,23 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-06.
+Last updated: 2026-11-11.
 
 ## In progress
+
+- 2026-11-11: `ui/review-analysis-depth` starts from owner merges through #64
+  (4d3a338). Replaces the restrictive 75-word analysis contract with a short
+  takeaway and bounded evidence/watch/next-focus sections. Weekly context
+  uses existing owner-scoped SQL metrics and saved goals; a four-week bigger
+  picture shares the weekly model request. Today keeps only the takeaway and
+  report link; generation controls move to the full page. Backdated history
+  and body-weight reads exclude later observations. No migration, metric,
+  logger/outbox or tour activation change; imports, quick logs, rename/delete,
+  Back navigation and Vault authentication are preserved. Separate deployment
+  of analyze-workout is required. Local synthetic browser and real PostgREST
+  checks are documented in `docs/ui-evidence/analysis-depth`; not live.
+  Lint, strict types, 525 tests, seed check, production build, database/RLS
+  and mobile/clock-skew browser checks pass. No temporary routes ship.
 
 - 2026-11-08: Branch `feat/workout-rename-delete`: rename and delete a
   finished workout from History; `delete_workout` and an `undo_import` fix
