@@ -48,7 +48,7 @@ export function effectiveWeeklyGoal(
 export function reportSetsLine(eligible: number, excluded: number): string {
   const sets = (n: number) => `${n} ${n === 1 ? "set" : "sets"}`;
   const counted = `${sets(eligible)} counted`;
-  return excluded > 0 ? `${counted} · ${sets(excluded)} not counted (bodyweight, bands or timed)` : counted;
+  return excluded > 0 ? `${counted} · ${sets(excluded)} not counted (bodyweight, assistance, bands or timed)` : counted;
 }
 
 /** One explanation outside the list covers missing targets, without inventing old goals. */

@@ -326,17 +326,18 @@ type SetRow = {
   added_kg: number | string;
   reps: number | null;
   duration_sec?: number | null;
+  assistance_kg?: number | string | null;
   rpe: number | string | null;
   exercises: { name: string } | null;
 };
-const SET_SELECT = "workout_id,weight_kg,added_kg,reps,duration_sec,rpe,exercises(name)";
+const SET_SELECT = "*,exercises(name)";
 
 /** One line per exercise: "Leg Press: 110kgx7 (hard), ...", in the order done. */
 function describeSets(sets: SetRow[]): { names: string[]; lines: string[] } {
   const byExercise = new Map<string, string[]>();
   for (const s of sets) {
     const name = s.exercises?.name ?? "Exercise";
-    const load = s.weight_kg === null ? "bodyweight" : `${num(Number(s.weight_kg))}${Number(s.added_kg) ? `+${num(Number(s.added_kg))}` : ""}kg`;
+    const load = s.assistance_kg != null ? (Number(s.assistance_kg) === 0 ? "unassisted bodyweight" : `${num(Number(s.assistance_kg))}kg assistance (less help is harder; not lifted load)`) : s.weight_kg === null ? "bodyweight" : `${num(Number(s.weight_kg))}${Number(s.added_kg) ? `+${num(Number(s.added_kg))}` : ""}kg`;
     const feel = s.rpe === null ? "" : ` (${FEEL(Number(s.rpe))})`;
     const done = s.duration_sec != null ? (s.weight_kg === null ? `${s.duration_sec}s hold` : `${load} for ${s.duration_sec}s`) : `${load}x${s.reps ?? "?"}`;
     byExercise.set(name, [...(byExercise.get(name) ?? []), `${done}${feel}`]);

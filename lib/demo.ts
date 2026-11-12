@@ -183,7 +183,7 @@ export const DEMO_LAST_DONE: Map<string, string> = new Map(
 export const DEMO_NEXT_ROUTINE_ID = "push";
 
 export function demoRoutine(slug: string): Routine | null {
-  return DEMO_ROUTINES.find((r) => r.id === slug) ?? null;
+  return slug === "assisted" ? ASSISTED_DEMO_ROUTINE : DEMO_ROUTINES.find((r) => r.id === slug) ?? null;
 }
 
 
@@ -260,3 +260,12 @@ export function demoProgress(now = new Date()) {
   const bodyWeights = { available: true, entries: Array.from({length: 8}, (_, i) => ({ day: ago(56 - i * 8).slice(0, 10), weightKg: Math.round((76 - i * 0.15 + (i % 2 ? 0.2 : 0)) * 10) / 10 })) };
   return { exercises, workoutDates,muscleRows,reports,bodyWeights,coverage:{workouts:8,unmapped_sets:0,planned:["chest","quads","glutes","lats","adductors"],covered:muscleRows.map(row=>row.muscle),goal:"plan" as const,exclusions:[],paused_until:null} };
 }
+
+/** Standalone assisted example; does not alter the existing demo plan or tour. */
+export const ASSISTED_DEMO_ROUTINE: Routine = {
+  id:"assisted",planId:DEMO_PLAN.id,name:"Assisted bodyweight sample",sortOrder:0,warmup:null,cooldown:null,
+  exercises:[{id:"sample-assisted-dips-slot",sortOrder:0,targetSets:5,targetReps:10,restSec:90,exercise:{
+    id:"sample-assisted-dips",name:"Assisted dips",equipment:"machine",muscleGroups:["triceps","chest"],machineSetting:null,perHand:false,warmupEnabled:true,warmupTemplate:[{pct:100,reps:8}],weightStepKg:5,tracking:"reps",loadMode:"assisted",defaultAssistanceKg:30,
+  }}],
+};
+export const ASSISTED_DEMO_PREVIOUS: Map<string,SessionSet[]> = new Map([["sample-assisted-dips",[30,20,10,0,0].map((assistanceKg,index)=>({id:`sample-assist-${index}`,exerciseId:"sample-assisted-dips",setNo:index+1,setType:"working",weightKg:null,addedKg:0,assistanceKg,reps:10,rpe:9}))]]);

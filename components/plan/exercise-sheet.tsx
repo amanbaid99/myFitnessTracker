@@ -1,5 +1,7 @@
 "use client";
 
+import { assistanceFromInput, validAssistance, type LoadMode } from "@/lib/assistance";
+import { fromKg, toKg, type Units } from "@/lib/units";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowLeftRight, ArrowUp, Minus, Plus, Trash2, X } from "lucide-react";
@@ -28,6 +30,8 @@ export interface ExerciseEdits {
     perHand: boolean;
     weightStepKg: number;
     tracking: Tracking;
+    loadMode?: LoadMode;
+    defaultAssistanceKg?: number;
   };
   slot: { targetSets: number; targetReps: number; restSec: number | null };
 }
@@ -40,6 +44,7 @@ export interface ExerciseEdits {
  */
 export function ExerciseSheet({
   item,
+  units = "kg",
   defaultRestSec,
   canMoveUp,
   canMoveDown,
@@ -56,6 +61,7 @@ export function ExerciseSheet({
   onRecords,
 }: {
   item: RoutineExercise;
+  units?: Units;
   defaultRestSec: number;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -85,6 +91,8 @@ export function ExerciseSheet({
   const [name, setName] = useState(e.name);
   const [sets, setSets] = useState(item.targetSets);
   const [reps, setReps] = useState(item.targetReps);
+  const [loadMode, setLoadMode] = useState<LoadMode>(e.loadMode ?? "standard");
+  const [assistance, setAssistance] = useState(String(fromKg(e.defaultAssistanceKg ?? 20,units)));
   const [tracking, setTracking] = useState<Tracking>(e.tracking);
   /** Switching between reps and time starts the target somewhere sensible. */
   function switchTracking(next: Tracking) {
@@ -120,11 +128,12 @@ export function ExerciseSheet({
 
   async function save() {
     if (!restValid) return;
+    if (loadMode === "assisted" && (!assistance.trim() || !validAssistance(toKg(Number(assistance),units)))) {setError("Enter assistance of 0 or more.");return;}
     if (!name.trim()) {
       setError("Give the exercise a name.");
       return;
     }
-    const step = customStep && stepKg(equipment) !== null ? customValue : weightStep;
+    const step = customStep && (loadMode === "assisted" || stepKg(equipment) !== null) ? customValue : weightStep;
     if (step === null) {
       setError(`Enter a weight step above 0 and up to ${MAX_WEIGHT_STEP_KG} kg, or pick one.`);
       return;
@@ -137,9 +146,11 @@ export function ExerciseSheet({
         equipment,
         machineSetting: seat.trim() || null,
         muscleGroups: muscles,
-        perHand,
+        perHand: loadMode === "assisted" ? false : perHand,
         weightStepKg: step,
-        tracking,
+        tracking: loadMode === "assisted" ? "reps" : tracking,
+        loadMode,
+        defaultAssistanceKg: loadMode === "assisted" ? assistanceFromInput(Number(assistance),units,e.defaultAssistanceKg) : 0,
       },
       slot: { targetSets: sets, targetReps: reps, restSec: rest },
     });
@@ -203,7 +214,7 @@ export function ExerciseSheet({
         ) : (
           <>
             <div className={`min-h-0 space-y-6 overflow-y-auto px-5 pb-4 pt-2 ${MASK}`}>
-              {e.tracking !== "time" && (
+              {e.tracking !== "time" && e.loadMode !== "assisted" && (
                 <Button asChild variant="outline" className="w-full">
                   <Link href={recordHref ?? `/starting-weights?exercise=${e.id}`} onClick={onRecords}>Add previous record / starting weight</Link>
                 </Button>
@@ -285,7 +296,9 @@ export function ExerciseSheet({
               )}
 
               <section className="space-y-4 border-t pt-5"><div><h3 className="font-semibold">Tracking</h3><p className="text-xs text-muted-foreground">Apply in every plan. Switching between reps and time keeps your old records as they are.</p></div>
-              <div role="radiogroup" aria-labelledby="ex-tracking-label">
+              <Field label="Load tracking" htmlFor="ex-load"><select id="ex-load" value={loadMode} onChange={ev=>{setLoadMode(ev.target.value as LoadMode); if(ev.target.value === "assisted"){setTracking("reps");setPerHand(false);}}} className="min-h-11 w-full rounded-xl border bg-card px-3 text-base"><option value="standard">Standard weight or bodyweight</option><option value="assisted">Assisted bodyweight</option></select></Field>
+              {loadMode === "assisted" && <Field label={`Default assistance (${units})`} htmlFor="ex-assistance" hint="Help from the machine. Less assistance is harder; 0 is bodyweight. Previous sets keep their original tracking."><Input id="ex-assistance" inputMode="decimal" value={assistance} onChange={ev=>setAssistance(ev.target.value)}/></Field>}
+              {loadMode !== "assisted" && <div role="radiogroup" aria-labelledby="ex-tracking-label">
                 <p id="ex-tracking-label" className="text-sm font-medium">
                   Track by
                 </p>
@@ -308,13 +321,14 @@ export function ExerciseSheet({
                 </div>
               </div>
 
-              {stepKg(equipment) !== null && (
+              }
+              {(loadMode === "assisted" || stepKg(equipment) !== null) && (
                 <div role="radiogroup" aria-labelledby="ex-step-label">
                   <p id="ex-step-label" className="text-sm font-medium">
-                    Weight steps
+                    {loadMode === "assisted" ? "Assistance steps" : "Weight steps"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    The smallest plate or stack jump. Aims and warm-ups go up by this.
+                    {loadMode === "assisted" ? "The smallest change on the assistance stack. Progression reduces help by this amount." : "The smallest plate or stack jump. Aims and warm-ups go up by this."}
                   </p>
                   <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(min(100%,4rem),1fr))] gap-2">
                     {WEIGHT_STEPS.map((s) => {
@@ -383,7 +397,8 @@ export function ExerciseSheet({
                 </span>
                 <input
                   type="checkbox"
-                  checked={perHand}
+                  checked={loadMode === "assisted" ? false : perHand}
+                  disabled={loadMode === "assisted"}
                   onChange={(ev) => setPerHand(ev.target.checked)}
                   className="size-5 accent-[var(--primary)]"
                 />

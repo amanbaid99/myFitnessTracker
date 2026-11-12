@@ -12,7 +12,7 @@ export default async function LogPage() {
   const { data: claims } = await supabase.auth.getClaims();
   const [profile, exercises] = await Promise.all([
     supabase.from("profiles").select("units").eq("id", claims?.claims.sub ?? "").maybeSingle(),
-    supabase.from("exercises").select("id, name, equipment, tracking").is("archived_at", null).order("name"),
+    supabase.from("exercises").select("*").is("archived_at", null).order("name"),
   ]);
   return (
     <>
@@ -20,7 +20,7 @@ export default async function LogPage() {
       <ScreenHeader title="Log a workout" subtitle="Something you did outside a planned workout, like push-ups at home." />
       <QuickLogForm
         units={profile.data?.units === "lb" ? "lb" : "kg"}
-        library={(exercises.data ?? []).map((e) => ({ id: e.id as string, name: e.name as string, equipment: e.equipment as string, tracking: e.tracking === "time" ? "time" : "reps" }))}
+        library={(exercises.data ?? []).map((e) => ({ id: e.id as string, name: e.name as string, equipment: e.equipment as string, loadMode: e.load_mode === "assisted" ? "assisted" : "standard", tracking: e.tracking === "time" ? "time" : "reps" }))}
       />
     </>
   );

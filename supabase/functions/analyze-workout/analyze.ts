@@ -56,6 +56,7 @@ export interface SetData {
   reps: number | null;
   /** Seconds held, for a timed exercise (plank); reps are empty then. */
   durationSec?: number | null;
+  assistanceKg?: number | null;
   rpe: number | null;
 }
 
@@ -103,6 +104,7 @@ type Log = (message: string, fields?: Record<string, unknown>) => void;
 const num = (n: number) => String(Math.round(n * 100) / 100);
 
 function setText(s: SetData): string {
+  if (s.assistanceKg != null) return `set ${s.setNo}: ${s.assistanceKg === 0 ? "unassisted bodyweight" : `${num(s.assistanceKg)}kg assistance (machine help, not lifted load)`}x${s.reps ?? "?"}`;
   const load = s.weightKg === null ? `${s.equipment === "bodyweight" ? "bodyweight" : "unrecorded base load"}${s.addedKg ? `+${num(s.addedKg)}kg` : ""}` : `${num(s.weightKg)}${s.addedKg ? `+${num(s.addedKg)}` : ""}kg`;
   if (s.durationSec != null) return s.weightKg === null && !s.addedKg ? `${s.durationSec}s hold` : `${load} for ${s.durationSec}s`;
   return `${load}x${s.reps ?? "?"}`;
@@ -116,6 +118,7 @@ function setText(s: SetData): string {
 export function sessionStats(sets: SetData[], bodyWeightKg: number | null = null): { sets: number; volumeKg: number } {
   let volumeKg = 0;
   for (const s of sets) {
+    if (s.assistanceKg != null) continue;
     const base = s.weightKg ?? (s.equipment === "bodyweight" ? (bodyWeightKg ?? 0) : 0);
     const load = base + s.addedKg;
     volumeKg += load * (s.perHand ? 2 : 1) * (s.reps ?? 0);
@@ -207,6 +210,7 @@ export function buildSummary(d: WorkoutData): string {
     ...(d.sessionNote ? [`Session note (user data): ${d.sessionNote.slice(0, 500)}`] : []),
     ...(d.energy != null ? [`Self-reported energy: ${d.energy}/5 (1 lowest, 5 highest).`] : []),
   ];
+  if (d.today.some(s => s.assistanceKg != null)) lines.push("Assisted sets: compare corresponding set numbers, assistance and reps. Less assistance at similar reps/effort is harder. Zero means unassisted bodyweight. Do not count machine help as lifted volume or estimated 1RM. Machine setup may differ; avoid cross-machine strength claims.");
   const byExercise = new Map<string, SetData[]>();
   for (const s of d.today) byExercise.set(s.exercise, [...(byExercise.get(s.exercise) ?? []), s]);
   if (byExercise.size === 0) lines.push("No working sets were logged.");
@@ -333,11 +337,12 @@ interface SetRow {
   added_kg: number | string;
   reps: number | null;
   duration_sec?: number | null;
+  assistance_kg?: number | string | null;
   rpe: number | string | null;
   exercises: { name: string; equipment: string; per_hand: boolean } | null;
 }
 
-const SET_SELECT = "workout_id,exercise_id,set_no,weight_kg,added_kg,reps,duration_sec,rpe,exercises(name,equipment,per_hand)";
+const SET_SELECT = "*,exercises(name,equipment,per_hand)";
 
 function toSet(r: SetRow): SetData {
   return {
@@ -349,6 +354,7 @@ function toSet(r: SetRow): SetData {
     addedKg: Number(r.added_kg) || 0,
     reps: r.reps,
     durationSec: r.duration_sec ?? null,
+    assistanceKg: r.assistance_kg == null ? null : Number(r.assistance_kg),
     rpe: r.rpe === null ? null : Number(r.rpe),
   };
 }

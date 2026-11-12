@@ -21,6 +21,7 @@ interface LibraryItem {
   name: string;
   equipment: string;
   tracking: "reps" | "time";
+  loadMode?: "standard" | "assisted";
 }
 
 const FEELS: Feel[] = ["easy", "good", "hard", "max"];
@@ -53,8 +54,8 @@ export function QuickLogForm({ units, library }: { units: Units; library: Librar
   function rename(e: QuickEntry, name: string) {
     const match = byName.get(name.trim().toLowerCase());
     update(e.key, match
-      ? { name, exerciseId: match.id, equipment: match.equipment, tracking: match.tracking }
-      : { name, exerciseId: null, tracking: defaultTracking(name), equipment: e.exerciseId ? "bodyweight" : e.equipment });
+      ? { name, exerciseId: match.id, equipment: match.equipment, tracking: match.tracking, loadMode: match.loadMode ?? "standard", ...(match.id !== e.exerciseId ? {weight:null} : {}) }
+      : { name, exerciseId: null, loadMode:"standard", tracking: defaultTracking(name), equipment: e.exerciseId ? "bodyweight" : e.equipment });
   }
 
   async function save() {
@@ -130,8 +131,8 @@ export function QuickLogForm({ units, library }: { units: Units; library: Librar
             <label className="text-xs font-medium">{e.tracking === "time" ? "Seconds each" : "Reps each"}
               <Input inputMode="numeric" value={e.amount ?? ""} onChange={(ev) => update(e.key, { amount: numberOrNull(ev.target.value) })} placeholder={e.tracking === "time" ? "45" : "20"} className="mt-1 tabular-nums" />
             </label>
-            <label className="text-xs font-medium">Weight ({units})
-              <Input inputMode="decimal" value={e.weight ?? ""} onChange={(ev) => update(e.key, { weight: numberOrNull(ev.target.value) })} placeholder="None" className="mt-1 tabular-nums" />
+            <label className="text-xs font-medium">{e.loadMode === "assisted" ? "Assistance" : "Weight"} ({units})
+              <Input inputMode="decimal" value={e.weight ?? ""} onChange={(ev) => update(e.key, { weight: numberOrNull(ev.target.value) })} placeholder={e.loadMode === "assisted" ? "0 = bodyweight" : "None"} className="mt-1 tabular-nums" />
             </label>
           </div>
           <div role="radiogroup" aria-label={`How did ${e.name || "it"} feel?`}>

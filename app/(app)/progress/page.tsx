@@ -1,3 +1,4 @@
+import { AssistedExerciseLinks } from "@/components/progress/assisted-progress";
 import type { Metadata } from "next";
 import { DataError } from "@/components/data-error";
 import type { ExerciseProgress } from "@/components/progress/progress-overview";
@@ -6,7 +7,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { getWeeklyReports,getCoverage } from "@/lib/feedback-data";
 import { getProgressWorkouts } from "@/lib/progress-data";
 import { unmappedExercises } from "@/lib/anatomy";
-import { getBodyWeights, getExerciseLibrary, getExerciseNames, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
+import { getAssistedProgress, getBodyWeights, getExerciseLibrary, getExerciseNames, getMuscleSets, getProfile, getSessionBests, load } from "@/lib/data";
 import { progressWindowStart } from "@/lib/progress";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,7 +23,7 @@ export default async function ProgressPage() {
   const [profile, result] = await Promise.all([
     getProfile(supabase),
     load(async () => {
-      const [bests, muscleRows, workouts, library,reports,coverage,bodyWeights] = await Promise.all([
+      const [bests, muscleRows, workouts, library,reports,coverage,bodyWeights,assisted] = await Promise.all([
         getSessionBests(supabase),
         getMuscleSets(supabase, since),
         getProgressWorkouts(supabase),
@@ -30,9 +31,10 @@ export default async function ProgressPage() {
         getExerciseLibrary(supabase).catch(() => []),
         getWeeklyReports(supabase),getCoverage(supabase),
         getBodyWeights(supabase).catch(() => ({ entries: [], available: false })),
+        getAssistedProgress(supabase).catch(() => []),
       ]);
       const names = await getExerciseNames(supabase, [...new Set(bests.map((b) => b.exerciseId))]);
-      return { bests, muscleRows, workouts, names, library,reports,coverage,bodyWeights };
+      return { bests, muscleRows, workouts, names, library,reports,coverage,bodyWeights,assisted };
     }),
   ]);
 
@@ -44,7 +46,7 @@ export default async function ProgressPage() {
       </>
     );
   }
-  const { bests, muscleRows: allMuscleRows, workouts: finished, names, library,reports,coverage,bodyWeights } = result.data;
+  const { bests, muscleRows: allMuscleRows, workouts: finished, names, library,reports,coverage,bodyWeights,assisted } = result.data;
   const unmapped = unmappedExercises(library).map(({ id, name, equipment, muscleGroups }) => ({ id, name, equipment, muscleGroups }));
   // Starting weights are numbers to build on, not training: they count for
   // the 1RM charts but not for the streak or sets per muscle. Imported
@@ -72,6 +74,7 @@ export default async function ProgressPage() {
         reports={reports} coverage={coverage} userId={profile.id}
         bodyWeights={bodyWeights}
       />
+      <AssistedExerciseLinks exercises={library.filter(e=>e.loadMode === "assisted" || assisted.some(s=>s.exerciseId===e.id))}/>
     </>
   );
 }

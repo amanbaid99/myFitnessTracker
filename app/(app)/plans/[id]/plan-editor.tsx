@@ -41,11 +41,13 @@ export function PlanEditor({
   routines,
   library,
   defaultRestSec,
+  units = "kg",
 }: {
   plan: Plan;
   routines: Routine[];
   library: Exercise[];
   defaultRestSec: number;
+  units?: "kg" | "lb";
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -132,6 +134,7 @@ export function PlanEditor({
       <div className="space-y-5">
         {routines.map((routine, i) => (
           <RoutineEditor
+            units={units}
             key={routine.id}
             routine={routine}
             library={library}
@@ -171,6 +174,7 @@ export function PlanEditor({
 }
 
 function RoutineEditor({
+  units = "kg",
   routine,
   library,
   defaultRestSec,
@@ -183,6 +187,7 @@ function RoutineEditor({
   routine: Routine;
   library: Exercise[];
   defaultRestSec: number;
+  units?: "kg" | "lb";
   run: Run;
   onMove: (dir: -1 | 1) => void;
   first: boolean;
@@ -303,6 +308,7 @@ function RoutineEditor({
       <div className="border-t p-2">
         {adding ? (
           <AddExercise
+            units={units}
             library={library}
             targetsFor={(id) => defaultTargets(id, slots(items))}
             existingIds={items.map((i) => i.exercise.id)}
@@ -348,6 +354,7 @@ function RoutineEditor({
 
       {editingItem && (
         <ExerciseSheet
+            units={units}
           key={editingItem.id}
           item={editingItem}
           recordHref={`/starting-weights?exercise=${editingItem.exercise.id}&plan=${routine.planId}`}

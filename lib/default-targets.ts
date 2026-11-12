@@ -8,6 +8,8 @@
  */
 
 export interface Targets {
+  assistanceKg?: number;
+  assistanceStepKg?: number;
   sets: number;
   reps: number;
   restSec: number | null;

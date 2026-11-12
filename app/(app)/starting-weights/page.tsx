@@ -64,7 +64,7 @@ export default async function StartingWeightsPage({ searchParams }: PageProps<"/
   for (const routine of routines) {
     for (const exercise of routine.exercises.flatMap((item) => [item.exercise, ...("alternates" in item ? item.alternates ?? [] : [])])) {
       // Timed holds (planks) have no weight to start from.
-      if (seen.has(exercise.id) || exercise.tracking === "time") continue;
+      if (seen.has(exercise.id) || exercise.tracking === "time" || exercise.loadMode === "assisted") continue;
       seen.add(exercise.id);
       exercises.push({
         id: exercise.id,
@@ -82,7 +82,7 @@ export default async function StartingWeightsPage({ searchParams }: PageProps<"/
     <>
       {header}
       {exercises.length ? <StartingWeightsForm exercises={exercises} units={profile.units} returnTo={context.returnTo} /> : (
-        <p className="text-sm text-muted-foreground">No rep-based exercises found. Timed holds do not have personal records yet.</p>
+        <p className="text-sm text-muted-foreground">No rep-based exercises found. Timed holds and assisted bodyweight use separate tracking.</p>
       )}
     </>
   );

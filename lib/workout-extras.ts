@@ -35,7 +35,9 @@ export function parseExtraTargets(value: string | undefined): Record<string, Tar
     return Object.fromEntries(Object.entries(parsed).filter(([, t]) =>
       t && Number.isInteger(t.sets) && t.sets >= 1 && t.sets <= 10 &&
       Number.isInteger(t.reps) && t.reps >= 1 && t.reps <= 3600 &&
-      (t.restSec === null || (Number.isInteger(t.restSec) && t.restSec >= 0 && t.restSec <= 3600)),
+      (t.restSec === null || (Number.isInteger(t.restSec) && t.restSec >= 0 && t.restSec <= 3600)) &&
+      (t.assistanceKg === undefined || (typeof t.assistanceKg === "number" && Number.isFinite(t.assistanceKg) && t.assistanceKg >= 0 && t.assistanceKg <= 9999.99)) &&
+      (t.assistanceStepKg === undefined || (typeof t.assistanceStepKg === "number" && t.assistanceStepKg > 0 && t.assistanceStepKg <= 20)),
     ));
   } catch { return {}; }
 }
@@ -67,7 +69,7 @@ export function extraItem(exercise: Exercise, index: number, targets: Targets): 
     targetSets: targets.sets,
     targetReps: targets.reps,
     restSec: targets.restSec,
-    exercise,
+    exercise: exercise.loadMode === "assisted" ? {...exercise, defaultAssistanceKg: targets.assistanceKg ?? exercise.defaultAssistanceKg, weightStepKg: targets.assistanceStepKg ?? exercise.weightStepKg} : exercise,
   };
 }
 

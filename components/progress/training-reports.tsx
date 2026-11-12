@@ -341,8 +341,8 @@ export function TrainingReports({
             </summary>
             <p className="leading-relaxed">
               Sum of logged load × reps for eligible working sets. Warm-ups,
-              deleted sets, cancelled workouts, imports and starting weights are
-              excluded. Bodyweight, bands and timed holds have no comparable
+              deleted sets, cancelled workouts and starting weights are
+              excluded. Imported workouts count when comparable load is recorded. Bodyweight, machine assistance, bands and timed holds have no comparable
               external-load volume and are excluded. Per-hand loads use the
               entered value and are not doubled. Muscle estimates assign full
               volume to the main muscle and half to supporting muscles; they

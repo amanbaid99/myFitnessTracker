@@ -17,6 +17,7 @@ export interface CustomExercise {
   equipment: string;
   muscleGroups: string[];
   tracking: "reps" | "time";
+  loadMode?: "standard" | "assisted";
   perHand: boolean;
   sets: number;
   reps: number;
@@ -52,6 +53,7 @@ export function customExercise(item: RoutineExercise): CustomExercise {
     equipment: item.exercise.equipment,
     muscleGroups: item.exercise.muscleGroups,
     tracking: item.exercise.tracking,
+    ...(item.exercise.loadMode === "assisted" ? {loadMode: "assisted" as const} : {}),
     perHand: item.exercise.perHand,
     sets: item.targetSets,
     reps: item.targetReps,
@@ -108,6 +110,7 @@ export function parseCustomDraft(
         groups.some((m) => !MUSCLE_GROUPS.includes(m))
       )
         return null;
+      if (!e.exerciseId && e.loadMode === "assisted") return null;
       const name = (e.name as string).trim();
       const known =
         library.find((k) => k.id === e.exerciseId) ??
@@ -131,6 +134,7 @@ export function parseCustomDraft(
         equipment: known?.equipment ?? (e.equipment as string),
         muscleGroups: known ? known.muscleGroups : (groups as string[]),
         tracking,
+        ...((known?.loadMode ?? e.loadMode) === "assisted" ? {loadMode: "assisted" as const} : {}),
         perHand: known?.perHand ?? e.perHand,
         sets: e.sets as number,
         reps: e.reps as number,

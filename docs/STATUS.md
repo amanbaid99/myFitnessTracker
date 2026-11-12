@@ -8,6 +8,19 @@ Last updated: 2026-11-12.
 
 ## In progress
 
+- 2026-11-12: `ui/review-assisted-bodyweight` builds on live #66 (911deb4).
+  Planned and temporary exercises support positive machine assistance and zero
+  for full bodyweight in independent visible rows. Includes defaults, reverse
+  progression, offline restoration, quick logs, correction, SQL-derived assisted
+  progress and explicit AI labels. No historical rewrite, normal progression,
+  coaching, Home or tour change. A new migration needs exact-SQL approval before
+  merge; analyze-workout and ask-coach need separate deployment. Validation and
+  synthetic browser/API evidence are under `docs/ui-evidence/assisted-bodyweight`.
+  Lint, strict types, 546 unit tests, production build, full database/RLS/race/seed
+  checks, real PostgREST/offline flows, previous-schema reads and production
+  sample/mobile checks pass. Temporary fixture routes do not ship.
+  Not merged or deployed.
+
 - 2026-11-12: `ui/review-home-training-overview` starts from live #65
   (f33a451, analyze-workout v22). Home shows the existing four-week takeaway
   as Your training overview, with matching direct detail navigation. It

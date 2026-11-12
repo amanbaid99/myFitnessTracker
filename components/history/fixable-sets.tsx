@@ -1,5 +1,6 @@
 "use client";
 
+import { assistanceFromInput } from "@/lib/assistance";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2, X } from "lucide-react";
@@ -60,7 +61,8 @@ function parseNumber(text: string): number | null | "bad" {
 
 function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units: Units; exerciseName: string; onClose: () => void }) {
   const router = useRouter();
-  const [weight, setWeight] = useState(toText(set.weightKg, units));
+  const assisted = set.assistanceKg != null;
+  const [weight, setWeight] = useState(toText(assisted ? set.assistanceKg! : set.weightKg, units));
   const [added, setAdded] = useState(set.addedKg ? toText(set.addedKg, units) : "");
   // A timed set (plank) is fixed in seconds instead of reps.
   const timed = set.durationSec !== null;
@@ -77,6 +79,7 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
       setError(`Check the numbers: weight and ${timed ? "seconds" : "reps"} can't be negative, and ${timed ? "seconds" : "reps"} are whole numbers.`);
       return;
     }
+    if (assisted && w === null) { setError("Enter assistance, or 0 for bodyweight."); return; }
     if (r === null || (timed && (r < 1 || r > 3600))) {
       setError(timed ? "Enter the seconds held, from 1 to 3600." : "Enter the reps.");
       return;
@@ -89,7 +92,8 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
     setError(null);
     const { error } = await createClient().rpc("correct_set", {
       p_set: set.id,
-      p_weight_kg: w === null ? null : toKg(w, units),
+      p_weight_kg: assisted || w === null ? null : toKg(w, units),
+      ...(assisted ? {p_assistance_kg: assistanceFromInput(w!,units,set.assistanceKg!)} : {}),
       p_added_kg: a === null ? 0 : toKg(a, units),
       p_reps: timed ? null : r,
       ...(timed ? { p_duration_sec: r } : {}),
@@ -150,8 +154,8 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-medium">Weight ({units})</span>
-            <Input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Bodyweight" />
+            <span className="mb-1.5 block text-sm font-medium">{assisted ? "Assistance" : "Weight"} ({units})</span>
+            <Input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder={assisted ? "0 = bodyweight" : "Bodyweight"} />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium">{timed ? "Seconds held" : "Reps"}</span>

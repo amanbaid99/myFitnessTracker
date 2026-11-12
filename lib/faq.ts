@@ -123,6 +123,7 @@ export const FAQ: FaqSection[] = [
     id: "workout",
     title: "During a workout",
     items: [
+      {q: "How do I log assisted dips or pull-ups?", a: ["Choose Assisted bodyweight under Load tracking when adding or editing the exercise. Enter the assistance supplied by the machine, not weight lifted. Less assistance is harder; 0 is full bodyweight. Each set has its own value, so you can move from assisted sets to bodyweight in one exercise.", "Use bodyweight is visible beside each unlogged assisted set. Defaults and the machine step can be saved for planned exercises. An exercise added just for today keeps its temporary settings without changing your plan.", "History and assisted progress show help and reps. These sets count towards muscle coverage, but machine assistance is excluded from lifted volume, estimated 1RM and weight records. Compare the same machine and setup."]},
       {
         q: "How are the weight and reps for each set chosen?",
         a: [

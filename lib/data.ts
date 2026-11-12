@@ -39,6 +39,8 @@ export interface Exercise {
   weightStepKg: number;
   /** Counted in reps, or timed (planks): then a plan's target reps are seconds. */
   tracking: Tracking;
+  loadMode?: "standard" | "assisted";
+  defaultAssistanceKg?: number;
 }
 
 export type { Tracking };
@@ -88,6 +90,7 @@ export interface WorkoutSummary {
 }
 
 export interface SetRow {
+  assistanceKg?: number | null;
   id: string;
   workoutId: string;
   exerciseId: string;
@@ -193,7 +196,7 @@ export async function getPlan(supabase: Supabase, planId: string): Promise<Plan 
 // Routines ---------------------------------------------------------------------
 
 const EXERCISE_COLS =
-  "id, name, equipment, muscle_groups, machine_setting, per_hand, warmup_enabled, warmup_template, weight_step_kg, tracking";
+  "*";
 
 interface ExerciseRow {
   id: string;
@@ -206,6 +209,8 @@ interface ExerciseRow {
   warmup_template: WarmupStep[] | null;
   weight_step_kg: number | string | null;
   tracking?: string | null;
+  load_mode?: string | null;
+  default_assistance_kg?: number | string | null;
 }
 
 interface RoutineRow {
@@ -238,6 +243,8 @@ export function toExercise(e: ExerciseRow): Exercise {
     warmupTemplate: e.warmup_template,
     weightStepKg: Number(e.weight_step_kg) || DEFAULT_WEIGHT_STEP_KG,
     tracking: toTracking(e.tracking),
+    loadMode: e.load_mode === "assisted" ? "assisted" : "standard",
+    defaultAssistanceKg: Number(e.default_assistance_kg) || 0,
   };
 }
 
@@ -254,7 +261,7 @@ async function queryRoutines(
   const activePlan = filter.activePlan ? ", plans!inner(is_active)" : "";
   const run = (withAlternates: boolean) => {
     const alternates = withAlternates
-      ? `, routine_exercise_alternates(sort_order, exercises(${EXERCISE_COLS}, archived_at))`
+      ? `, routine_exercise_alternates(sort_order, exercises(${EXERCISE_COLS}))`
       : "";
     let query = supabase
       .from("routines")
@@ -596,12 +603,13 @@ function toSet(s: Record<string, unknown>): SetRow {
     addedKg: num(s.added_kg) ?? 0,
     reps: s.reps as number | null,
     durationSec: num(s.duration_sec),
+    assistanceKg: num(s.assistance_kg),
     rpe: num(s.rpe),
     loggedAt: s.logged_at as string,
   };
 }
 
-const SET_COLS = "id, workout_id, exercise_id, set_no, set_type, weight_kg, added_kg, reps, duration_sec, rpe, logged_at";
+const SET_COLS = "*";
 
 /** Live sets logged in one workout, oldest first. */
 export async function getWorkoutSets(supabase: Supabase, workoutId: string): Promise<SetRow[]> {
@@ -726,4 +734,18 @@ export async function getBodyWeights(supabase: Supabase): Promise<{ entries: Bod
     entries: log.error ? [] : (log.data ?? []).map((r) => ({ day: r.measured_on as string, weightKg: Number(r.weight_kg) })),
     profileKg: profile.error || profile.data?.body_weight_kg == null ? null : Number(profile.data.body_weight_kg),
   };
+}
+
+export interface AssistedSessionProgress {
+  exerciseId: string; workoutId: string; startedAt: string;
+  leastAssistanceKg: number; repsAtLeastAssistance: number;
+  workingSets: number; bodyweightSets: number; totalReps: number;
+}
+export async function getAssistedProgress(supabase: Supabase, exerciseId?: string): Promise<AssistedSessionProgress[]> {
+  let query = supabase.from("assisted_session_progress").select("*").order("started_at",{ascending:false}).limit(1000);
+  if (exerciseId) query = query.eq("exercise_id", exerciseId);
+  const {data,error} = await query;
+  if (error && ["42P01","PGRST205"].includes(error.code)) return [];
+  if (error) throw new Error(error.message);
+  return [...data ?? []].reverse().map(s => ({exerciseId:s.exercise_id,workoutId:s.workout_id,startedAt:s.started_at,leastAssistanceKg:Number(s.least_assistance_kg),repsAtLeastAssistance:Number(s.reps_at_least_assistance),workingSets:Number(s.working_sets),bodyweightSets:Number(s.bodyweight_sets),totalReps:Number(s.total_reps)}));
 }
