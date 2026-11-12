@@ -13,17 +13,19 @@ export function OverviewChart({
   kind = "line",
   label,
   unit,
+  minimum,
 }: {
   points: OverviewPoint[];
   kind?: "line" | "bars";
   label: string;
   unit: string;
+  minimum?: number;
 }) {
   const values = points.flatMap((point) =>
     point.value === null ? [] : [point.value],
   );
   if (!values.length) return null;
-  const lo = kind === "bars" ? 0 : Math.floor(Math.min(...values) - 1);
+  const lo = kind === "bars" ? 0 : Math.max(minimum ?? -Infinity, Math.floor(Math.min(...values) - 1));
   const hi = Math.max(lo + 1, ...values) + (kind === "bars" ? 0 : 1);
   const y = (value: number) => 86 - ((value - lo) / (hi - lo)) * 72;
   const first = Date.parse(points[0].at),

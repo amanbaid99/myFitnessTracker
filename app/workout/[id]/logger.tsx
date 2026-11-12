@@ -1,5 +1,6 @@
 "use client";
 
+import { parseAssistedDraft, restoreAssistedOps, validAssistance } from "@/lib/assistance";
 import { workoutCompletion } from "@/lib/workout-focus";
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
@@ -16,7 +17,7 @@ import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
 import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition, feelDisplay, feelGesture, FEEL_SETTLE_MS } from "@/lib/feel";
 import { carryWeightForward, isExerciseDone, nextOpenExercise, nextWarmupRow, workoutOrder, type Row, type SessionExercise } from "@/lib/session";
-import { enqueue, flush, onOutboxFailure, pendingCount, pendingRestoreCount, useOnline, usePendingCount } from "@/lib/outbox/store";
+import { enqueue, flush, onOutboxFailure, pendingCount, pendingRestoreCount, pendingWorkoutOps, useOnline, usePendingCount } from "@/lib/outbox/store";
 import { createClient } from "@/lib/supabase/client";
 import { formatWeight, fromKg, toKg, type Units } from "@/lib/units";
 import { formatDuration, formatTarget } from "@/lib/tracking";
@@ -151,6 +152,26 @@ export function Logger(props: {
   const router = useRouter();
 
   const [exercises, setExercises] = useState(props.session);
+  const assistedDraftKey = `wt-assisted-inputs-v1:${workoutId}`;
+  const [assistedRestored, setAssistedRestored] = useState(false);
+  useEffect(() => {
+    let active=true;
+    async function restore() {
+      let saved: SessionExercise[]=[];
+      try { const parsed:unknown=JSON.parse(sessionStorage.getItem(assistedDraftKey) ?? "[]"); saved=parseAssistedDraft(parsed); } catch {}
+      const ops=demo?[]:await pendingWorkoutOps(workoutId).catch(()=>[]);
+      if(!active)return;
+      setExercises(prev=>restoreAssistedOps(retainCustomInputs(prev,saved),ops));
+      setAssistedRestored(true);
+    }
+    void restore();
+    return ()=>{active=false;};
+  }, [assistedDraftKey,workoutId,demo]);
+  useEffect(() => {
+    if(!assistedRestored)return;
+    const assisted=exercises.filter(ex=>[...ex.warmups,...ex.working].some(r=>r.assistanceKg != null));
+    try {sessionStorage.setItem(assistedDraftKey,JSON.stringify(assisted.map(ex=>({...ex,warmups:ex.warmups.filter(r=>!r.logged),working:ex.working.filter(r=>!r.logged)}))));} catch {}
+  },[exercises,assistedRestored,assistedDraftKey]);
   const skipKey = `wt-skipped-sets-${workoutId}`;
   useEffect(() => {
     try {
@@ -475,6 +496,8 @@ export function Logger(props: {
 
   async function tick(exIndex: number, row: Row) {
     const item = items[exIndex];
+    if (item.exercise.loadMode === "assisted" && !assistedRestored) return;
+    if (item.exercise.loadMode === "assisted" && (!validAssistance(row.assistanceKg) || row.reps == null || row.reps < 1)) { setError("Enter assistance of zero or more and at least one rep."); return; }
     if (!startedRef.current.includes(exIndex)) startedRef.current = [...startedRef.current, exIndex];
     const id = crypto.randomUUID();
     const logged = {
@@ -486,13 +509,14 @@ export function Logger(props: {
       addedKg: row.addedKg,
       reps: row.reps,
       durationSec: row.durationSec ?? null,
+      assistanceKg: row.assistanceKg ?? null,
       rpe: null,
     };
     if(writing.current.has(row.key))return;
     writing.current.add(row.key);
     syncFailed.current=false;
     try {
-      if(!demo)await enqueue(workoutId,{kind:"insertSet",row:{id,workout_id:workoutId,exercise_id:item.exercise.id,set_no:row.setNo,set_type:row.setType,weight_kg:row.weightKg,added_kg:row.addedKg,reps:row.reps,...(row.durationSec!=null?{duration_sec:row.durationSec}:{})}});
+      if(!demo)await enqueue(workoutId,{kind:"insertSet",row:{id,workout_id:workoutId,exercise_id:item.exercise.id,set_no:row.setNo,set_type:row.setType,weight_kg:row.weightKg,added_kg:row.addedKg,reps:row.reps,...(row.durationSec!=null?{duration_sec:row.durationSec}:{}),...(row.assistanceKg!=null?{assistance_kg:row.assistanceKg}:{})}});
     }catch{setError("Could not save on this device. Your input is kept; try again.");writing.current.delete(row.key);return;}
     writing.current.delete(row.key);
     if(!syncFailed.current)setSaveState("local");
@@ -594,7 +618,11 @@ export function Logger(props: {
       const target = nextOpenExercise(next.map((i) => exercises[i]), next.indexOf(exIndex));
       setTimeout(() => openExercise(target), FEEL_SETTLE_MS);
     }
-    if (next) {
+    if (next && row.assistanceKg != null && next.assistanceKg === row.assistanceKg && !next.weightEdited && !next.repsEdited && feel === "easy" && (row.logged.reps ?? 0) >= items[exIndex].targetReps) {
+      const assistanceKg = Math.max(0, Math.round((row.assistanceKg - items[exIndex].exercise.weightStepKg) * 100) / 100);
+      updateRow(exIndex,next.key,{assistanceKg,reps:assistanceKg === 0 && row.assistanceKg === 0 ? (next.reps ?? 0)+1 : next.reps});
+    }
+    if (next && row.assistanceKg == null) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
       const adjusted = adjustNextSet({
         done: { weightKg: row.logged.weightKg, reps: row.logged.reps, addedKg: row.logged.addedKg },
@@ -684,6 +712,7 @@ export function Logger(props: {
               setNo: no,
               label: String(no),
               weightKg: last?.weightKg ?? null,
+              assistanceKg: last?.assistanceKg ?? (items[i].exercise.loadMode === "assisted" ? items[i].exercise.defaultAssistanceKg ?? 0 : null),
               addedKg: last?.addedKg ?? 0,
               reps: last?.reps ?? items[i].targetReps,
               logged: null,
@@ -810,7 +839,7 @@ export function Logger(props: {
           onSkip={()=>setWarmupOpen(false)}
           footer={
             items[0] && exercises[0]?.warmups.length > 0
-              ? `Then ramp up on ${items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.`
+              ? items[0].exercise.loadMode === "assisted" ? "Edit warm-up assistance below. More assistance makes the movement easier." : `Then ramp up on ${items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.`
               : undefined
           }
         />
@@ -916,7 +945,7 @@ export function Logger(props: {
                 </div>
                     <details className="group -mt-1">
                     <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                      <span className="min-w-0 text-xs text-muted-foreground">{ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</span>
+                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode === "assisted" ? "Assistance helps you lift. Less help is harder; 0 is bodyweight." : ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</span>
                       <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
                     </summary>
                     <div className="mb-2 space-y-0.5 text-xs">
@@ -1014,6 +1043,7 @@ export function Logger(props: {
                     <SetRow
                       key={row.key}
                       row={row}
+                      assistedTracking={item.exercise.loadMode === "assisted"}
                       units={units}
                       perHand={item.exercise.perHand}
                       warmup
@@ -1052,6 +1082,7 @@ export function Logger(props: {
                       </div>
                     ) : <SetRow
                       row={row}
+                      assistedTracking={item.exercise.loadMode === "assisted"}
                       guide={row.key === guideRowKey ? "tip:log-set" : undefined}
                       units={units}
                       perHand={item.exercise.perHand}
@@ -1159,6 +1190,7 @@ export function Logger(props: {
                   : `Just for today. ${props.routineName} in your plan stays as it is.`}
               </p>
               <AddExercise
+                units={units}
                 library={editing.library}
                 targetsFor={(id) => defaultTargets(id, slots(dayItems), editing.planSlots)}
                 existingIds={[...items.map((i) => i.exercise.id), ...Object.values(props.options ?? {}).flatMap((o) => o.map((x) => x.exercise.id))]}
@@ -1387,6 +1419,7 @@ export function Logger(props: {
 
       {editing && editItem && editIndex >= 0 && (
           <ExerciseSheet
+            units={units}
             key={editItem.id}
             item={editItem}
             recordHref={`/starting-weights?exercise=${editItem.exercise.id}&workout=${workoutId}`}
@@ -1511,6 +1544,7 @@ function SetRow({
   units,
   warmup = false,
   timed = false,
+  assistedTracking = false,
   holdLeft = null,
   onHoldStart,
   onHoldStop,
@@ -1528,6 +1562,7 @@ function SetRow({
   warmup?: boolean;
   /** Logged as seconds held (plank) instead of reps. */
   timed?: boolean;
+  assistedTracking?: boolean;
   /** Seconds left while this set's hold is running, else null. */
   holdLeft?: number | null;
   /** Starts the countdown; missing while another set is being held. */
@@ -1541,6 +1576,7 @@ function SetRow({
   feel?: React.ReactNode;
 }) {
   const done = row.logged !== null;
+  const assisted = assistedTracking || row.assistanceKg != null;
   const [options, setOptions] = useState(row.addedKg > 0);
   const [showAddOn, setShowAddOn] = useState(row.addedKg > 0);
   const holding = holdLeft !== null;
@@ -1558,7 +1594,7 @@ function SetRow({
       {hasOptions ? <button type="button" className="flex size-11 shrink-0 items-center justify-center gap-0.5 text-sm font-medium tabular-nums" onClick={() => setOptions(!options)} aria-label={`Options for set ${row.label}`} aria-expanded={options}>
         {row.label}<ChevronDown className="size-3 text-muted-foreground" aria-hidden />
       </button> : <span className="flex size-11 shrink-0 items-center justify-center text-sm tabular-nums">{row.label}</span>}
-      <NumberField label={`Set ${row.label} weight`} value={row.weightKg === null ? null : fromKg(row.weightKg,units)} onChange={value => onChange({weightKg:value === null ? null : toKg(value,units),weightEdited:true})} disabled={done} suffix={units} className="min-w-12 flex-1" />
+      <NumberField label={`Set ${row.label} ${assisted ? "assistance" : "weight"}`} value={assisted ? row.assistanceKg == null ? null : fromKg(row.assistanceKg,units) : row.weightKg === null ? null : fromKg(row.weightKg,units)} onChange={value => onChange(assisted ? {assistanceKg:value === null ? null : toKg(value,units),weightEdited:true} : {weightKg:value === null ? null : toKg(value,units),weightEdited:true})} disabled={done} suffix={units} className="min-w-12 flex-1" />
       {timed ? <>
         {holding ? <span className="min-w-16 text-center text-lg font-semibold tabular-nums text-primary" aria-live="polite">{clock(holdLeft)}</span> : <DurationStepper label={row.label} value={row.durationSec ?? null} disabled={done} onChange={durationSec => onChange({durationSec,repsEdited:true})} />}
         {!done && (holding || onHoldStart) && <button type="button" onClick={holding ? onHoldStop : onHoldStart} className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary" aria-label={holding ? `Stop the timer on set ${row.label}` : `Start a ${row.durationSec ?? 0} second timer for set ${row.label}`}>{holding ? <Square className="size-4"/> : <Play className="size-4"/>}</button>}
@@ -1568,12 +1604,13 @@ function SetRow({
       </> : <NumberField label={`Set ${row.label} reps`} value={row.reps} onChange={value => onChange({reps:value === null ? null : Math.round(value),repsEdited:true})} disabled={done} integer suffix="reps" className="min-w-12 flex-1" />}
       <button type="button" onClick={done ? onUntick : onTick} className="ml-auto flex size-11 shrink-0 items-center justify-center" aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`} aria-pressed={done}><TickCircle on={done} small={warmup}/></button>
     </div>
+    {assisted && <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-2 px-3"><span className="text-xs text-muted-foreground">{row.assistanceKg === 0 ? "Bodyweight · no assistance" : "Assistance"}</span><button type="button" className="min-h-11 px-2 text-sm font-medium text-primary" onClick={() => onChange({assistanceKg:0,weightEdited:true})}>{row.assistanceKg === 0 ? "Bodyweight selected" : "Use bodyweight"}</button></div>}
     {row.addedKg > 0 && !options && <p className="px-3 text-xs text-muted-foreground">+ {fromKg(row.addedKg,units)} {units} add-on</p>}
     {options && hasOptions && <div className="mx-2 mb-2 space-y-2 min-[380px]:pl-11">
       {showAddOn && <NumberField label={`Set ${row.label} add-on weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="Add-on" suffix={units} className="w-full"/>}
       {!warmup && !done && !timed && <div className="min-[380px]:hidden"><RepsStepper label={row.label} value={row.reps} compact={false} onChange={reps => onChange({reps,repsEdited:true})}/></div>}
       {!done && <div className="flex gap-2 [&>*]:flex-1 [&>*]:whitespace-nowrap [&>*]:px-3 [&>*]:text-sm">
-        {!showAddOn && !warmup && !timed && <Button variant="secondary" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
+        {!assisted && !showAddOn && !warmup && !timed && <Button variant="secondary" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
         {onSkip && <Button variant="outline" disabled={holding} onClick={onSkip} aria-label={`Skip set ${row.label}`}>Skip set</Button>}
       </div>}
     </div>}

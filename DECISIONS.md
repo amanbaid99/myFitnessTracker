@@ -2438,3 +2438,44 @@ remain unchanged; this is not a new announcement batch. Browser evidence
 checks identical or smaller card bounds at 320/390/430, matching report
 navigation, sparse/legacy/error/offline states and retained Start/Resume
 position. Header text wraps for larger text instead of being truncated.
+
+## 2026-11-12: Assisted bodyweight is machine help, separate from lifted load
+
+Aman requested assisted dips/pull-ups in planned days and exercises added during
+training, including assisted and unassisted sets in the same exercise. Keep the
+existing all-set rows and circular logging ticks. Each set records nonnegative
+`assistance_kg`; zero explicitly means bodyweight, while null means standard
+tracking. Show Assistance and a visible Use bodyweight action. Do not infer or
+rewrite old weights from exercise names. The broader add-on/skip UI redesign is
+still deferred.
+
+Exercise `load_mode` and `default_assistance_kg` configure future rows. Adding a
+tracking variant from the picker keeps an existing library entry intact. Editing
+shared exercise defaults is explicit; temporary targets and increments stay in
+the existing per-workout cookie. A mode change is rejected while that exercise
+has live sets in an open workout. Finished history retains its per-set marker.
+
+Match prior assisted sets by set number. Reaching target reps at reported effort
+of 8 or below can reduce help by the machine step; hard or unknown effort repeats
+help. At zero, progress by reps. In-session Easy only adjusts an untouched next
+row with the same assistance; never flatten mixed assistance/bodyweight rows or
+overwrite manual input. Warm-ups never use lifted-load percentages backwards.
+
+Assisted sets have null base weight and no add-on, so existing SQL views exclude
+them from lifted volume, Epley estimates and weight PRs while retaining muscle
+coverage and completed-set counts. A new invoker view reports least assistance,
+reps at that assistance, total reps and bodyweight sets. Interpret this alongside
+all session rows, without claiming equivalent machines or effective bodyweight
+loads. Existing standard-weight records remain reachable after a mode change.
+
+Keep append-only correction and the idempotent outbox. Restore pending assisted
+ops from IndexedDB without re-inserting; retain unlogged assisted input in
+validated session storage. Do not convert an unchanged rounded pound display
+back to slightly different kg. Quick logging and AI summaries carry the marker.
+Existing library exercises can be reused in AI custom workouts; creating a new
+assisted exercise remains in the day editor or workout Add exercise flow, since
+the AI draft-create protocol does not configure new assistance defaults.
+
+Reads work before the migration using owner-scoped row selections and a missing-
+view fallback. Deployment needs exact final SQL approval, then separate deployment
+of analyze-workout and ask-coach. No new guided tour or announcement is activated.

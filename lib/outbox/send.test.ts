@@ -77,3 +77,10 @@ it("routes an old queued rest edit to its preserved workout after the future pla
  expect(await sendOp(client,{kind:'setRest',routineExerciseId:'retired-slot',restSec:135},'open-workout')).toEqual({ok:true});
  expect(rpc).toHaveBeenCalledWith('set_custom_workout_rest',{p_workout:'open-workout',p_slot:'retired-slot',p_seconds:135});
 });
+
+it("sends assisted set values unchanged and treats a repeated insert as already saved",async()=>{
+ const insert=vi.fn().mockResolvedValueOnce({error:null}).mockResolvedValueOnce({error:{code:"23505",message:"duplicate"}});
+ const client={from:()=>({insert})} as unknown as SupabaseClient;
+ const op={kind:"insertSet" as const,row:{id:"local",workout_id:"workout",exercise_id:"dips",set_no:1,set_type:"working" as const,weight_kg:null,added_kg:0,assistance_kg:0,reps:8}};
+ expect(await sendOp(client,op)).toEqual({ok:true});expect(await sendOp(client,op)).toEqual({ok:true});expect(insert).toHaveBeenCalledWith(op.row);
+});

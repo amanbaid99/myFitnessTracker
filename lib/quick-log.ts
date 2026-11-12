@@ -13,6 +13,7 @@ export interface QuickEntry {
   name: string;
   equipment: string;
   tracking: "reps" | "time";
+  loadMode?: "standard" | "assisted";
   sets: number;
   /** Reps per set, or seconds per set for a timed hold. */
   amount: number | null;
@@ -58,6 +59,7 @@ export function problem(entries: QuickEntry[], when: When, minutes: number, now:
     if (e.amount === null || !Number.isFinite(e.amount) || e.amount < 1) return e.tracking === "time" ? `Enter the seconds held for ${label}.` : `Enter the reps for ${label}.`;
     if (e.tracking === "reps" && e.amount > 500) return `Check the reps for ${label}.`;
     if (e.tracking === "time" && e.amount > 3600) return `Check the seconds for ${label}.`;
+    if (e.loadMode === "assisted" && e.weight === null) return `Enter assistance for ${label}, or 0 for bodyweight.`;
     if (e.weight !== null && (!Number.isFinite(e.weight) || e.weight < 0 || e.weight > 1000)) return `Check the weight for ${label}.`;
   }
   if (!Number.isInteger(minutes) || minutes < 1 || minutes > MAX_MINUTES) return `Enter how long it took, 1 to ${MAX_MINUTES} minutes.`;
@@ -68,6 +70,7 @@ export function problem(entries: QuickEntry[], when: When, minutes: number, now:
 }
 
 export interface QuickSet {
+  assistance_kg?: number;
   exercise_id: string;
   set_no: number;
   weight_kg: number | null;
@@ -88,7 +91,8 @@ export function quickSets(entries: QuickEntry[], ids: ReadonlyMap<string, string
       return {
         exercise_id: id,
         set_no: n,
-        weight_kg: e.weight ? toKg(e.weight, units) : null,
+        weight_kg: e.loadMode === "assisted" ? null : e.weight ? toKg(e.weight, units) : null,
+        ...(e.loadMode === "assisted" ? {assistance_kg:toKg(e.weight ?? 0,units)} : {}),
         reps: e.tracking === "reps" ? Math.round(e.amount ?? 0) : null,
         duration_sec: e.tracking === "time" ? Math.round(e.amount ?? 0) : null,
         rpe: e.feel ? FEEL_RPE[e.feel] : null,

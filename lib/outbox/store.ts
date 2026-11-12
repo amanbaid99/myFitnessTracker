@@ -106,3 +106,8 @@ function subscribeOnline(cb: () => void) {
 export function useOnline(): boolean {
   return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
 }
+
+/** A read-only snapshot for restoring assisted rows, never a second write. */
+export async function pendingWorkoutOps(workoutId: string): Promise<Op[]> {
+  return (await outbox().ops.where("workoutId").equals(workoutId).sortBy("seq")).map(item=>item.op);
+}

@@ -1,8 +1,9 @@
+import { AssistedProgress } from "@/components/progress/assisted-progress";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DataError } from "@/components/data-error";
 import { ExerciseProgressView } from "@/components/progress/exercise-progress";
-import { getExerciseNames, getProfile, getSessionBests, load } from "@/lib/data";
+import { getExerciseNames, getExercisesById, getAssistedProgress, getProfile, getSessionBests, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { BackLink } from "@/components/back-link";
 
@@ -15,7 +16,7 @@ export default async function ExerciseProgressPage({ params }: PageProps<"/progr
 
   const [profile, result] = await Promise.all([
     getProfile(supabase),
-    load(() => Promise.all([getExerciseNames(supabase, [exerciseId]), getSessionBests(supabase, exerciseId)])),
+    load(() => Promise.all([getExerciseNames(supabase, [exerciseId]), getSessionBests(supabase, exerciseId), getExercisesById(supabase,[exerciseId]), getAssistedProgress(supabase,exerciseId)])),
   ]);
   const units = profile.units;
 
@@ -31,9 +32,10 @@ export default async function ExerciseProgressPage({ params }: PageProps<"/progr
       </>
     );
   }
-  const [names, sessions] = result.data;
+  const [names, sessions, exercises, assisted] = result.data;
   const name = names.get(exerciseId);
   if (!name) notFound();
 
+  if (exercises[0]?.loadMode === "assisted" || assisted.length) return <>{back}<AssistedProgress name={name} sessions={assisted} units={units}/>{sessions.length>0&&<details className="mt-4"><summary className="flex min-h-11 cursor-pointer items-center">Earlier standard-weight records</summary><ExerciseProgressView name={name} sessions={sessions} units={units}/></details>}</>;
   return <ExerciseProgressView name={name} sessions={sessions} units={units} />;
 }

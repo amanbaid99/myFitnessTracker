@@ -27,7 +27,7 @@ export default async function PlanPage({ params }: PageProps<"/plans/[id]">) {
   return (
     <>
       <BackLink fallback="/plans" label="All plans" />
-      <PlanEditor plan={plan} routines={routines} library={library} defaultRestSec={profile.defaultRestSec} />
+      <PlanEditor units={profile.units} plan={plan} routines={routines} library={library} defaultRestSec={profile.defaultRestSec} />
     </>
   );
 }

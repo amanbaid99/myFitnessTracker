@@ -6,10 +6,12 @@
  * session's sets come along for reference. Pure, so it is unit tested.
  */
 
+import { assistedTarget } from "./assistance";
 import { aimForSession, type Aim } from "./progression";
 import { DEFAULT_RAMP, roundToIncrement, warmupSets, WARMUP_INCREMENT_KG, type WarmupStep } from "./warmup";
 
 export interface SessionSet {
+  assistanceKg?: number | null;
   id: string;
   exerciseId: string;
   setNo: number;
@@ -32,6 +34,8 @@ export interface SessionExerciseInput {
     weightStepKg?: number;
     /** "time": logged as seconds held, and targetReps is the target in seconds. */
     tracking?: "reps" | "time";
+    loadMode?: "standard" | "assisted";
+    defaultAssistanceKg?: number;
   };
   targetSets: number;
   targetReps: number;
@@ -39,6 +43,7 @@ export interface SessionExerciseInput {
 }
 
 export interface Row {
+  assistanceKg?: number | null;
   /** Omitted for this workout only; never saved as a logged set. */
   skipped?: boolean;
   key: string;
@@ -67,10 +72,12 @@ export interface Row {
  */
 export function carryWeightForward(
   working: Row[],
-  done: { setNo: number; weightKg: number | null; addedKg: number; reps?: number | null; durationSec?: number | null },
+  done: { setNo: number; weightKg: number | null; addedKg: number; reps?: number | null; durationSec?: number | null; assistanceKg?: number | null },
 ): Row[] {
   return working.map((r) => {
     if (r.setNo <= done.setNo || r.logged) return r;
+    // Assisted rows have independent targets, including bodyweight transitions.
+    if (done.assistanceKg != null || r.assistanceKg != null) return r;
     // A timed set: later sets take the time just held, unless changed by hand.
     if (done.durationSec != null && !r.repsEdited) r = { ...r, durationSec: done.durationSec };
     if (r.weightEdited) return r;
@@ -86,7 +93,7 @@ export interface SessionExercise {
   working: Row[];
   aim: Aim | null;
   /** Last session's working sets, in order, shown for reference. */
-  last: { weightKg: number | null; addedKg: number; reps: number | null; durationSec?: number | null }[];
+  last: { weightKg: number | null; addedKg: number; reps: number | null; durationSec?: number | null; assistanceKg?: number | null }[];
 }
 
 export function buildSession(
@@ -96,14 +103,15 @@ export function buildSession(
 ): SessionExercise[] {
   return items.map((item, index) => {
     const id = item.exercise.id;
-    const prev = (previous.get(id) ?? []).filter((s) => s.setType === "working");
+    const prev = (previous.get(id) ?? []).filter((s) => s.setType === "working" && (item.exercise.loadMode === "assisted" || s.assistanceKg == null));
     const mine = logged.filter((s) => s.exerciseId === id);
     const find = (type: "warmup" | "working", no: number) =>
       mine.find((s) => s.setType === type && s.setNo === no) ?? null;
+    if (item.exercise.loadMode === "assisted") return assistedExercise(item, prev, mine);
     if (item.exercise.tracking === "time") return timedExercise(item, prev, mine);
 
     const aim = aimForSession({
-      lastSets: prev.map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps, rpe: s.rpe })),
+      lastSets: prev.filter(s => s.assistanceKg == null).map((s) => ({ weightKg: s.weightKg, addedKg: s.addedKg, reps: s.reps, rpe: s.rpe })),
       targetSets: item.targetSets,
       targetReps: item.targetReps,
       equipment: item.exercise.equipment,
@@ -150,6 +158,7 @@ export function buildSession(
         setType: "working",
         setNo: no,
         label: String(no),
+        assistanceKg: done?.assistanceKg ?? null,
         weightKg: done ? done.weightKg : (source?.weightKg ?? null),
         addedKg: done ? done.addedKg : (source?.addedKg ?? 0),
         reps: done ? done.reps : (source?.reps ?? item.targetReps),
@@ -177,6 +186,7 @@ export function nextWarmupRow(
 ): Row {
   const no = (warmups[warmups.length - 1]?.setNo ?? 0) + 1;
   const base = { key: `${exerciseId}-w${no}`, setType: "warmup" as const, setNo: no, label: `W${no}`, addedKg: 0, logged: null };
+  if (working[0]?.assistanceKg != null) return { ...base, weightKg: null, assistanceKg: warmups.at(-1)?.assistanceKg ?? working[0].assistanceKg, reps: opts.targetReps };
   const top = working[0]?.weightKg ?? null;
   if (top === null || top <= 0 || opts.equipment === "bodyweight") {
     return { ...base, weightKg: null, reps: warmups[warmups.length - 1]?.reps ?? opts.targetReps };
@@ -274,4 +284,19 @@ export function nextOpenExercise(exercises: Pick<SessionExercise, "exerciseId" |
     if (!isExerciseDone(exercises[i])) return exercises[i].exerciseId;
   }
   return null;
+}
+
+/** Machine assistance is configured in positive kg. Warm-ups are editable help, not % load ramps. */
+function assistedExercise(item: SessionExerciseInput, previous: SessionSet[], mine: SessionSet[]): SessionExercise {
+  const id = item.exercise.id;
+  const prev = previous.filter(s => s.assistanceKg != null);
+  const make = (type: "warmup" | "working", no: number, reps: number): Row => {
+    const done = mine.find(s => s.setType === type && s.setNo === no) ?? null;
+    const target = assistedTarget(type === "working" ? prev.find(s => s.setNo === no) : undefined, reps, item.exercise.defaultAssistanceKg ?? 0, item.exercise.weightStepKg ?? 2.5);
+    return { key: `${id}-${type === "warmup" ? "w" : "s"}${no}`, setType: type, setNo: no, label: type === "warmup" ? `W${no}` : String(no), weightKg: null, addedKg: 0, assistanceKg: done ? (done.assistanceKg ?? 0) : target.assistanceKg, reps: done ? done.reps : target.reps, logged: done };
+  };
+  const warmupPlan = item.exercise.warmupEnabled ? (item.exercise.warmupTemplate ?? []) : [];
+  const warmupCount = Math.max(warmupPlan.length, 0, ...mine.filter(s => s.setType === "warmup").map(s => s.setNo));
+  const count = Math.max(item.targetSets, 0, ...mine.filter(s => s.setType === "working").map(s => s.setNo));
+  return { exerciseId: id, aim: null, warmups: Array.from({length: warmupCount}, (_, i) => make("warmup", i + 1, warmupPlan[i]?.reps ?? item.targetReps)), working: Array.from({length: count}, (_, i) => make("working", i + 1, item.targetReps)), last: prev.map(s => ({weightKg: null, addedKg: 0, reps: s.reps, assistanceKg: s.assistanceKg})) };
 }

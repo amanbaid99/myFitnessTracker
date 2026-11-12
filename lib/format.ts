@@ -2,6 +2,7 @@ import { formatDuration } from "./tracking";
 import { fromKg, type Units } from "./units";
 
 export interface SetLike {
+  assistanceKg?: number | null;
   weightKg: number | null;
   addedKg: number;
   reps: number | null;
@@ -21,6 +22,7 @@ export function formatLoad(weightKg: number | null, addedKg: number, units: Unit
  * recorded); a timed set: "45 s", "10 kg × 45 s".
  */
 export function formatSet(set: SetLike, units: Units): string {
+  if (set.assistanceKg != null) return `${set.assistanceKg === 0 ? "Bodyweight" : `${fromKg(set.assistanceKg, units)} ${units} assistance`} × ${set.reps ?? "?"}`;
   const load = formatLoad(set.weightKg, set.addedKg, units);
   if (set.durationSec != null) return load ? `${load} × ${formatDuration(set.durationSec)}` : formatDuration(set.durationSec);
   if (!load) return set.reps === null ? "" : `${set.reps} reps`;
@@ -34,6 +36,7 @@ export function formatSet(set: SetLike, units: Units): string {
 export function formatSets(sets: SetLike[], units: Units): string {
   if (sets.length === 0) return "";
   const first = sets[0];
+  if (sets.some(s => s.assistanceKg != null)) return sets.map(s => formatSet(s, units)).join(" · ");
   if (sets.some((s) => s.durationSec != null)) {
     const loadless = sets.every((s) => s.weightKg === null);
     return loadless ? sets.map((s) => (s.durationSec != null ? formatDuration(s.durationSec) : "?")).join(", ") : sets.map((s) => formatSet(s, units)).join(" · ");

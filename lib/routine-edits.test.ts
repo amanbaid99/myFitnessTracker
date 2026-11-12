@@ -66,3 +66,11 @@ it("keeps a mapping confirmed later in a draft when the exercise was just create
   await prepareDraftExercises(supabase,[{name:"A",exercises:[exercise]},{name:"B",exercises:[{...exercise,muscle_groups:["lats"],musclesConfirmed:true}]}]);
   expect(updates.at(-1)).toEqual({muscle_groups:["lats"]});
 });
+
+it("creates assisted exercise defaults separately while temporary reuse leaves shared defaults alone",async()=>{
+ const {supabase,writes,updates}=client();
+ await exerciseIdFor(supabase,{exerciseId:null,name:"Assisted dips",equipment:"machine",tracking:"reps",loadMode:"assisted",defaultAssistanceKg:25,weightStepKg:5});
+ expect(writes[0].value).toMatchObject({load_mode:"assisted",default_assistance_kg:25,weight_step_kg:5,per_hand:false});
+ await exerciseIdFor(supabase,{exerciseId:"existing",name:"Assisted dips",equipment:"machine",loadMode:"assisted",defaultAssistanceKg:10});
+ expect(updates).toEqual([]);
+});

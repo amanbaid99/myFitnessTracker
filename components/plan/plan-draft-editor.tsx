@@ -139,6 +139,7 @@ export function PlanDraftEditor({
           {adding === d ? (
             <div className="border-t">
               <AddExercise
+                allowAssisted={false}
                 library={catalog}
                 targetsFor={() => ({ sets: 3, reps: 10, restSec: null })}
                 existingIds={catalog.filter((c) => day.exercises.some((e) => e.name.toLowerCase() === c.name.toLowerCase())).map((c) => c.id)}

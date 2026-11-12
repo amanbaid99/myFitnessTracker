@@ -230,3 +230,11 @@ nothing overflows at 320, 390 and 430; secondary settings never push
 results down; measurements feel optional and editing is obvious; plan
 editing stays capable and easier to scan; themes, accessibility and privacy
 masking are intact; every phase has evidence and passing checks.
+
+
+Owner follow-up (12 Nov): add assisted-bodyweight tracking using the existing
+all-set rows and ticks in planned days and workout-only additions. Keep configured
+warm-ups visible and Use bodyweight outside the row dropdown. The general add-on
+and skip redesign remains deferred. Review branch: `ui/review-assisted-bodyweight`;
+see `docs/ui-evidence/assisted-bodyweight` for mobile, offline and database evidence.
+No wider paused work or new tour batch is resumed by this feature.

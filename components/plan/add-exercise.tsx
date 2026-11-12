@@ -8,6 +8,8 @@ import { FALLBACK_TARGETS } from "@/lib/default-targets";
 import { Input } from "@/components/ui/input";
 import type { Exercise } from "@/lib/data";
 import { EQUIPMENT } from "@/lib/muscles";
+import { fromKg, toKg, type Units } from "@/lib/units";
+import { assistanceFromInput, validAssistance, type LoadMode } from "@/lib/assistance";
 import { defaultTracking, pickForTracking, type Tracking } from "@/lib/tracking";
 import type { Targets } from "@/lib/default-targets";
 
@@ -16,6 +18,9 @@ export interface ExercisePick {
   name: string;
   equipment: string;
   tracking?: Tracking;
+  loadMode?: LoadMode;
+  defaultAssistanceKg?: number;
+  weightStepKg?: number;
   targets?: Targets;
   muscleGroups?: string[];
 }
@@ -29,7 +34,11 @@ export function AddExercise({
   targetsFor,
   allowAi = true,
   preserveLibraryDetails = false,
+  units = "kg",
+  allowAssisted = true,
 }: {
+  allowAssisted?: boolean;
+  units?: Units;
   allowAi?: boolean;
   preserveLibraryDetails?: boolean;
   library: Exercise[];
@@ -44,6 +53,9 @@ export function AddExercise({
   const [selected, setSelected] = useState<ExercisePick | null>(null);
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
+  const [loadMode, setLoadMode] = useState<LoadMode>("standard");
+  const [assistance, setAssistance] = useState("20");
+  const [assistanceStep, setAssistanceStep] = useState("5");
   const [tracking, setTracking] = useState<Tracking>("reps");
   const [muscles, setMuscles] = useState<string[]>([]);
   const [muscleEdited, setMuscleEdited] = useState(false);
@@ -68,6 +80,9 @@ export function AddExercise({
     setMuscleEdited(false);
     const mode = library.find((e) => e.id === pick.exerciseId)?.tracking ?? defaultTracking(pick.name);
     const targets = targetsFor?.(pick.exerciseId) ?? FALLBACK_TARGETS;
+    setLoadMode(known?.loadMode ?? "standard");
+    setAssistance(String(fromKg(known?.defaultAssistanceKg ?? 20, units)));
+    setAssistanceStep(String(fromKg(known?.weightStepKg ?? 5, units)));
     setSelected(pick);
     setTracking(mode);
     setSets(String(targets.sets));
@@ -83,12 +98,27 @@ export function AddExercise({
   if (selected) {
     const readOnlyDetails = preserveLibraryDetails && library.some(e=>e.id===selected.exerciseId);
     const existing = selected.exerciseId && !selected.exerciseId.startsWith("template:");
-    const valid = Number.isInteger(Number(sets)) && Number(sets) >= 1 && Number(sets) <= 10 &&
+    const validTargets = Number.isInteger(Number(sets)) && Number(sets) >= 1 && Number(sets) <= 10 &&
       Number.isInteger(Number(reps)) && Number(reps) >= 1 && Number(reps) <= (tracking === "time" ? 3600 : 50);
+    const validHelp = loadMode !== "assisted" || (assistance.trim() !== "" && validAssistance(toKg(Number(assistance), units)) && toKg(Number(assistanceStep), units) > 0 && toKg(Number(assistanceStep), units) <= 20);
+    const valid = validTargets && validHelp;
+    const originalAssistance = library.find(e=>e.id===selected.exerciseId)?.defaultAssistanceKg;
+    const assistanceKg = assistanceFromInput(Number(assistance),units,originalAssistance);
+    function finalPick(): ExercisePick {
+      let pick = pickForTracking(selected!, tracking, library);
+      const known = library.find(e => e.id === pick.exerciseId);
+      if (selected!.exerciseId && (known?.loadMode ?? "standard") !== loadMode) {
+        const name = `${selected!.name} (${loadMode === "assisted" ? "assisted" : "unassisted"})`;
+        pick = {...pick, exerciseId: library.find(e => e.name.toLowerCase() === name.toLowerCase() && (e.loadMode ?? "standard") === loadMode)?.id ?? null, name};
+      }
+      return {...pick, loadMode, ...(loadMode === "assisted" ? {tracking:"reps", defaultAssistanceKg:assistanceKg,weightStepKg:toKg(Number(assistanceStep),units)} : {})};
+    }
     return (
       <fieldset disabled={busy} aria-busy={busy} className="min-w-0 space-y-3 p-2">
         <p className="font-medium">{selected.name}</p>
-        {targetsFor && <>{readOnlyDetails ? <p className="text-xs text-muted-foreground">Tracked in {tracking==="time"?"seconds":"reps"} using your saved exercise details.</p> : <label className="block text-sm">Track by
+        {allowAssisted && !preserveLibraryDetails && <label className="block text-sm">Load tracking<select aria-label="Load tracking" value={loadMode} className="mt-1 min-h-11 w-full rounded-xl border bg-card px-3 text-base" onChange={e=>{setLoadMode(e.target.value as LoadMode); if(e.target.value === "assisted")setTracking("reps");}}><option value="standard">Standard weight or bodyweight</option><option value="assisted">Assisted bodyweight</option></select></label>}
+        {loadMode === "assisted" && !readOnlyDetails && <><p className="text-xs text-muted-foreground">Enter the help supplied by the machine. Less help is harder. Use 0 for bodyweight.</p><div className="grid grid-cols-2 gap-3"><label className="text-sm">Starting assistance ({units})<Input aria-label="Starting assistance" inputMode="decimal" value={assistance} onChange={e=>setAssistance(e.target.value)}/></label><label className="text-sm">Machine step ({units})<Input aria-label="Assistance step" inputMode="decimal" value={assistanceStep} onChange={e=>setAssistanceStep(e.target.value)}/></label></div></>}
+        {targetsFor && <>{readOnlyDetails || loadMode === "assisted" ? <p className="text-xs text-muted-foreground">{loadMode === "assisted" ? "Assisted bodyweight. Each set records machine help; 0 is bodyweight." : `Tracked in ${tracking === "time" ? "seconds" : "reps"} using your saved exercise details.`}</p> : <label className="block text-sm">Track by
           <select aria-label="Track by" value={tracking}
             className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-base"
             onChange={(e) => { const t = e.target.value as Tracking; setTracking(t); setReps(t === "time" ? "30" : "10"); }}>
@@ -102,9 +132,10 @@ export function AddExercise({
         </div>
         </>}
         {readOnlyDetails ? <p className="text-xs text-muted-foreground">{muscles.length?`Muscles: ${muscles.join(", ")}. Your library mapping stays the same.`:"Muscles are not mapped yet. You can map them after your workout."}</p> : <MusclePicker allowAi={allowAi} key={`${selected.name}:${selected.equipment}`} name={selected.name} equipment={selected.equipment} value={muscles} onChange={(groups) => { setMuscles(groups); setMuscleEdited(true); }} />}
-        {!valid && <p className="text-sm text-destructive">Enter 1 to 10 sets and {tracking === "time" ? "1 to 3600 seconds" : "1 to 50 reps"} per set.</p>}
+        {!validTargets && <p className="text-sm text-destructive">Enter 1 to 10 sets and {tracking === "time" ? "1 to 3600 seconds" : "1 to 50 reps"} per set.</p>}
+        {!validHelp && <p role="alert" className="text-sm text-destructive">Enter assistance of 0 or more and a machine step above 0 and up to {fromKg(20,units)} {units}.</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...pickForTracking(selected, tracking, library), ...(muscleEdited || muscles.length ? { muscleGroups: muscles } : {}), ...(targetsFor ? { targets: { ...targetsFor(selected.exerciseId), sets: Number(sets), reps: Number(reps) } } : {}) })}>
+        <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...finalPick(), ...(muscleEdited || muscles.length ? { muscleGroups: muscles } : {}), ...(targetsFor ? { targets: { ...targetsFor(selected.exerciseId), sets: Number(sets), reps: Number(reps), ...(loadMode === "assisted" ? {assistanceKg,assistanceStepKg:toKg(Number(assistanceStep),units)} : {}) } } : {}) })}>
           {busy ? <Loader2 className="animate-spin motion-reduce:animate-none" /> : <Plus />} {busy ? "Adding exercise…" : "Add exercise"}
         </Button>
         <Button variant="ghost" className="w-full" onClick={() => setSelected(null)}>Back to exercises</Button>

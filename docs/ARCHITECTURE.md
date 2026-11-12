@@ -77,6 +77,18 @@ and PRs, then builds everything the logger shows with pure functions:
 - `lib/workout-extras.ts`: exercises added for this workout only (cookie
   per workout).
 - `lib/tracking.ts`: timed exercises (planks), logged as seconds.
+- `lib/assistance.ts`: positive machine help, per-set reverse progression,
+  validated assisted-input restoration and pending-op replay without re-inserting.
+  Assisted exercise defaults use `load_mode` and `default_assistance_kg`; sets
+  carry `assistance_kg` independently of editable library metadata. Zero means
+  bodyweight. The normal progression path stays unchanged. Temporary defaults
+  and machine steps extend the existing extras cookie, not plan membership.
+- `assisted_session_progress`: owner-scoped invoker view for help/reps and
+  bodyweight-set history. Assisted sets retain null lifted load and are excluded
+  from normal volume, e1RM and PR views while counting towards muscle coverage.
+  `components/progress/assisted-progress.tsx` shows this separately, including
+  access to old standard-weight records. Daily analysis and AI Coach label help
+  explicitly; Edge code must be deployed separately after review.
 
 Set skips stay on the phone per workout and can be undone; they do not
 create logged sets or change the plan.

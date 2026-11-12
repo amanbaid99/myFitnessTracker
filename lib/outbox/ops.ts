@@ -20,6 +20,7 @@ export type Op =
         reps: number | null;
         /** Seconds held, for a timed exercise; left out otherwise. */
         duration_sec?: number;
+        assistance_kg?: number;
       };
     }
   | { kind: "deleteSet"; id: string; deletedAt: string }

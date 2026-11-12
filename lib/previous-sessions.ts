@@ -13,13 +13,14 @@ function toSet(s: Record<string, unknown>): SetRow {
     addedKg: num(s.added_kg) ?? 0,
     reps: s.reps as number | null,
     durationSec: num(s.duration_sec),
+    assistanceKg: num(s.assistance_kg),
     rpe: num(s.rpe),
     loggedAt: s.logged_at as string,
   };
 }
 
 const SET_COLS =
-  "id, workout_id, exercise_id, set_no, set_type, weight_kg, added_kg, reps, duration_sec, rpe, logged_at";
+  "*";
 
 export async function getPreviousSessions(
   supabase: Supabase,

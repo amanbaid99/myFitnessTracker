@@ -402,3 +402,11 @@ describe("other sessions the same day", () => {
     expect(SYSTEM_PROMPT).toContain("review the day as a whole");
   });
 });
+
+it("describes assistance as machine help and excludes it from lifted volume even with known bodyweight",()=>{
+ const assisted={...set("Assisted dips",null,10),equipment:"machine",assistanceKg:25};
+ const unassisted={...assisted,assistanceKg:0,setNo:2};
+ const data={...DATA,today:[assisted,unassisted],bodyWeightKg:75,last:{"Assisted dips":[{...assisted,assistanceKg:30}]}};
+ expect(sessionStats(data.today,75)).toEqual({sets:2,volumeKg:0});
+ const summary=buildSummary(data);expect(summary).toContain("25kg assistance (machine help, not lifted load)x10");expect(summary).toContain("unassisted bodyweightx10");expect(summary).toContain("compare corresponding set numbers");
+});

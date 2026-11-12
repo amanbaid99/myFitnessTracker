@@ -25,7 +25,7 @@ export async function exerciseIdFor(supabase: SupabaseClient, pick: ExercisePick
   }
   const { data, error } = await supabase
     .from("exercises")
-    .insert({ name: pick.name, equipment: pick.equipment, per_hand: pick.equipment === "dumbbell", ...(pick.muscleGroups !== undefined ? { muscle_groups: pick.muscleGroups } : {}), tracking: pick.tracking ?? defaultTracking(pick.name) })
+    .insert({ name: pick.name, equipment: pick.equipment, per_hand: pick.equipment === "dumbbell", ...(pick.muscleGroups !== undefined ? { muscle_groups: pick.muscleGroups } : {}), tracking: pick.tracking ?? defaultTracking(pick.name), ...(pick.loadMode === "assisted" ? {load_mode:"assisted",default_assistance_kg:pick.defaultAssistanceKg ?? 0,weight_step_kg:pick.weightStepKg ?? 5,per_hand:false} : {}) })
     .select("id")
     .single();
   // The insert trigger infers timed holds by name. An explicit choice wins.
@@ -46,6 +46,10 @@ export async function addExercise(
 ): Promise<DbResult> {
   const { id, error } = await exerciseIdFor(supabase, pick);
   if (error || !id) return { error: error ?? { message: "Could not create the exercise." } };
+  if (pick.exerciseId && pick.loadMode === "assisted") {
+    const configured = await supabase.from("exercises").update({default_assistance_kg:pick.defaultAssistanceKg ?? 0,weight_step_kg:pick.weightStepKg ?? 5}).eq("id",id);
+    if (configured.error) return configured;
+  }
   const sort = items.length ? Math.max(...items.map((i) => i.sortOrder)) + 1 : 1;
   const t = pick.targets ?? targets ?? defaultTargets(id, slots(items));
   return supabase.from("routine_exercises").insert({
@@ -120,6 +124,8 @@ export async function saveExerciseEdits(
     x.perHand !== e.perHand ||
     x.weightStepKg !== e.weightStepKg ||
     x.tracking !== e.tracking ||
+    (x.loadMode ?? "standard") !== (e.loadMode ?? "standard") ||
+    (x.defaultAssistanceKg ?? 0) !== (e.defaultAssistanceKg ?? 0) ||
     x.muscleGroups.join() !== e.muscleGroups.join();
   const slotChanged =
     edits.slot.targetSets !== item.targetSets ||
@@ -137,6 +143,7 @@ export async function saveExerciseEdits(
         weight_step_kg: x.weightStepKg,
         muscle_groups: x.muscleGroups,
         tracking: x.tracking,
+        ...((x.loadMode === "assisted" || e.loadMode === "assisted") ? {load_mode: x.loadMode ?? "standard", default_assistance_kg: x.defaultAssistanceKg ?? 0} : {}),
       })
       .eq("id", e.id);
     if (error) return { error, slotChanged: false };

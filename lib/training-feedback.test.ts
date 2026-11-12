@@ -127,9 +127,9 @@ describe("training feedback boundaries", () => {
 
 describe("reportSetsLine", () => {
   it("says what was counted in plain words", () => {
-    expect(reportSetsLine(12, 3)).toBe("12 sets counted · 3 sets not counted (bodyweight, bands or timed)");
+    expect(reportSetsLine(12, 3)).toBe("12 sets counted · 3 sets not counted (bodyweight, assistance, bands or timed)");
     expect(reportSetsLine(1, 0)).toBe("1 set counted");
-    expect(reportSetsLine(0, 1)).toBe("0 sets counted · 1 set not counted (bodyweight, bands or timed)");
+    expect(reportSetsLine(0, 1)).toBe("0 sets counted · 1 set not counted (bodyweight, assistance, bands or timed)");
   });
 });
 
