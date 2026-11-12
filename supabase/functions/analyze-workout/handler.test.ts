@@ -177,6 +177,25 @@ describe("retry from the app", () => {
     await Promise.all(deferred);
   });
 
+  it("refreshes stale reviews only explicitly, claims once with the caller JWT and rejects a failed claim", async () => {
+    for (const [refresh,claimed,status,calls] of [[false,true,200,0],[true,true,202,1],[true,false,202,0],[true,"error",503,0]] as const) {
+      const base=db({reviewed:true}), defer=vi.fn();
+      const fetchFn=vi.fn<typeof fetch>(async(input,init)=>{
+        const url=String(input);
+        if(url.includes("/workouts?id="))return Response.json([{user_id:"u1",ended_at:"2026-11-01T10:00:00Z",cancelled_at:null,source:"app",sets_changed_at:"2026-11-12T10:00:00.123456Z"}]);
+        if(url.includes("/rpc/claim_workout_review_refresh")) {
+          expect((init?.headers as Record<string,string>).Authorization).toBe("Bearer user-jwt");
+          expect(JSON.parse(String(init?.body))).toEqual({p_workout:W,p_revision:"2026-11-12T10:00:00.123456Z"});
+          return claimed==="error"?new Response("failed",{status:500}):Response.json(claimed);
+        }
+        return base(input,init);
+      });
+      expect((await handle(ask({workoutId:W,refresh}),ENV,fetchFn,()=>{},defer)).status).toBe(status);
+      expect(defer).toHaveBeenCalledTimes(calls);
+      if(!refresh)expect(fetchFn.mock.calls.some(([url])=>String(url).includes("claim_workout_review_refresh"))).toBe(false);
+    }
+  });
+
   it("answers the browser's preflight", async () => {
     const res = await handle(new Request("https://fn.example", { method: "OPTIONS" }), ENV, okFetch(), () => {});
     expect(res.status).toBe(200);

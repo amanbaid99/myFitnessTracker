@@ -13,6 +13,7 @@
  * runs for their own finished, not cancelled app workout without a review.
  */
 
+import { reviewNeedsRefresh } from "../../../lib/analysis-review.ts";
 import { analysisWeek } from "../../../lib/analysis-week.ts";
 import { analyzeWorkout, analyzeWeek, loadWorkout, readRows } from "./analyze.ts";
 
@@ -167,8 +168,9 @@ async function retry(
 ): Promise<Response> {
   let workoutId: unknown;
   let weekly: unknown;
+  let refresh: unknown;
   try {
-    ({ workoutId, weekly } = (await req.json()) as { workoutId?: unknown; weekly?: unknown });
+    ({ workoutId, weekly, refresh } = (await req.json()) as { workoutId?: unknown; weekly?: unknown; refresh?: unknown });
   } catch {
     return json(400, { error: "invalid json" });
   }
@@ -184,19 +186,28 @@ async function retry(
       return json(401, { error: "sign in first" });
     }
     const userId = ((await who.json()) as { id?: string }).id;
-    const [workout] = await readRows<{ user_id: string; ended_at: string | null; cancelled_at: string | null; source: string; started_at?: string }[]>(
+    const [workout] = await readRows<{ user_id: string; ended_at: string | null; cancelled_at: string | null; source: string; started_at?: string; sets_changed_at?: string | null }[]>(
       env,
       fetchFn,
-      `workouts?id=eq.${workoutId}&select=user_id,started_at,ended_at,cancelled_at,source`,
+      `workouts?id=eq.${workoutId}&select=*`,
     );
     if (!workout || workout.user_id !== userId) return json(404, { error: "not found" });
     if (!workout.ended_at || workout.cancelled_at || workout.source !== "app") return json(409, { error: "not reviewable" });
-    const existing = await readRows<{ id: string }[]>(
+    const existing = await readRows<{ id: string; details?: {setsChangedAt?: string | null} }[]>(
       env,
       fetchFn,
-      `insights?workout_id=eq.${workoutId}&kind=eq.workout_review&select=id&limit=1`,
+      `insights?workout_id=eq.${workoutId}&kind=eq.workout_review&select=id,details&limit=1`,
     );
     if (existing.length) {
+      if (refresh === true && weekly !== true && reviewNeedsRefresh(existing[0].details?.setsChangedAt,workout.sets_changed_at)) {
+        const claimed = await fetchFn(`${env.SUPABASE_URL}/rest/v1/rpc/claim_workout_review_refresh`,{
+          method:"POST",headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:bearer,"Content-Type":"application/json"},
+          body:JSON.stringify({p_workout:workoutId,p_revision:workout.sets_changed_at}),signal:AbortSignal.timeout(10_000),
+        });
+        if(!claimed.ok){await claimed.body?.cancel();return json(503,{error:"could not start refresh"});}
+        if(await claimed.json() === true)defer(analyzeWorkout(env,fetchFn,workoutId,log));
+        return json(202,{analyzing:workoutId});
+      }
       if (weekly === true) {
         // Repeated taps immediately after success reuse the saved result.
         // Older versions remain refreshable without rewriting session reviews.

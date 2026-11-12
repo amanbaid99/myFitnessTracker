@@ -65,6 +65,7 @@ export interface WorkoutData {
   dayName: string | null;
   startedAt: string;
   endedAt: string;
+  setsChangedAt?: string | null;
   /** Working sets done today, in order. */
   today: SetData[];
   /** Working sets from the last other session, by exercise name. */
@@ -361,10 +362,9 @@ function toSet(r: SetRow): SetData {
 
 export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workoutId: string): Promise<WorkoutData | null> {
   const id = encodeURIComponent(workoutId);
-  type Row = { user_id: string; routine_id: string | null; started_at: string; ended_at: string | null; title?: string | null; notes?: string | null; energy?: number | null; routines: { name: string } | null };
-  // title arrives with the quick-log migration; read without it if it is not there yet.
-  const [workout] = await getJson<Row[]>(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,title,notes,energy,routines(name)`)
-    .catch(() => getJson<Row[]>(env, fetchFn, `workouts?id=eq.${id}&select=user_id,routine_id,started_at,ended_at,notes,energy,routines(name)`));
+  type Row = { sets_changed_at?: string | null; user_id: string; routine_id: string | null; started_at: string; ended_at: string | null; title?: string | null; notes?: string | null; energy?: number | null; routines: { name: string } | null };
+  // Optional fields come through * so the function also runs before migrations.
+  const [workout] = await getJson<Row[]>(env,fetchFn,`workouts?id=eq.${id}&select=*,routines(name)`);
   if (!workout?.ended_at) return null;
   // Custom prescriptions are separate from the regular plan and can have no routine_id.
   const [custom, bodyWeightKg, todayRows] = await Promise.all([
@@ -479,6 +479,7 @@ export async function loadWorkout(env: AnalyzeEnv, fetchFn: typeof fetch, workou
     sameDay,
     startedAt: workout.started_at,
     endedAt: workout.ended_at,
+    setsChangedAt: workout.sets_changed_at ?? null,
     today: todayRows.map(toSet),
     last,
     bestBefore,
@@ -532,7 +533,7 @@ export async function saveReview(
       period_end: day,
       title: review.title,
       summary: review.summary,
-      details: { model, analysisVersion: 2, ...(review.analysis ? { analysis: review.analysis } : {}) },
+      details: { model, analysisVersion: 2, setsChangedAt: data.setsChangedAt ?? null, ...(review.analysis ? { analysis: review.analysis } : {}) },
       generated_by: "openrouter",
     }),
   });
