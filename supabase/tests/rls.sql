@@ -611,5 +611,6 @@ reset role;
 \i supabase/tests/webhook-secret.sql
 \i supabase/tests/assisted-bodyweight.sql
 \i supabase/tests/history-missed-sets.sql
+\i supabase/tests/weighted-sets.sql
 \o
 \echo 'All RLS checks passed.'

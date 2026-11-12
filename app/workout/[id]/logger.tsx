@@ -1,6 +1,8 @@
 "use client";
 
 import { parseAssistedDraft, restoreAssistedOps, validAssistance } from "@/lib/assistance";
+import { RecordSheet } from "@/components/record-sheet";
+import { canChooseSetMode, loadForMode, savedLoad, setModeOf, setModeProblem, SET_MODE_LABEL, SET_MODES, type SetMode } from "@/lib/set-mode";
 import { workoutCompletion } from "@/lib/workout-focus";
 import { track } from "@/lib/analytics";
 import { MASK } from "@/lib/mask";
@@ -122,6 +124,8 @@ export function Logger(props: {
   // Alternates switched to on this screen, by slot id.
   const [swapped,setSwapped]=useState<Record<string,SlotOption & {targetSets?:number;targetReps?:number}>>({});
   const [swapIndex,setSwapIndex]=useState<number|null>(null);
+  /** Exercise whose previous record is being added in a sheet, staying in the workout. */
+  const [recordFor,setRecordFor]=useState<string|null>(null);
   const [adaptOpen,setAdaptOpen]=useState(false);
   const customRequest=useRef<string|null>(null);
   const customRevision=useRef(props.customSession?.revision??props.customization?.revision??0);
@@ -169,7 +173,7 @@ export function Logger(props: {
   }, [assistedDraftKey,workoutId,demo]);
   useEffect(() => {
     if(!assistedRestored)return;
-    const assisted=exercises.filter(ex=>[...ex.warmups,...ex.working].some(r=>r.assistanceKg != null));
+    const assisted=exercises.filter(ex=>[...ex.warmups,...ex.working].some(r=>r.assistanceKg != null || (r.weightKg === null && r.addedKg > 0)));
     try {sessionStorage.setItem(assistedDraftKey,JSON.stringify(assisted.map(ex=>({...ex,warmups:ex.warmups.filter(r=>!r.logged),working:ex.working.filter(r=>!r.logged)}))));} catch {}
   },[exercises,assistedRestored,assistedDraftKey]);
   const skipKey = `wt-skipped-sets-${workoutId}`;
@@ -497,7 +501,11 @@ export function Logger(props: {
   async function tick(exIndex: number, row: Row) {
     const item = items[exIndex];
     if (item.exercise.loadMode === "assisted" && !assistedRestored) return;
-    if (item.exercise.loadMode === "assisted" && (!validAssistance(row.assistanceKg) || row.reps == null || row.reps < 1)) { setError("Enter assistance of zero or more and at least one rep."); return; }
+    const modes = canChooseSetMode(item.exercise), mode = modes ? setModeOf(row) : null;
+    if (mode) { const problem = setModeProblem(mode, row); if (problem) { setError(problem); return; } }
+    if (item.exercise.loadMode === "assisted" && (mode === null || mode !== "weighted") && (!validAssistance(mode === "bodyweight" ? 0 : row.assistanceKg) || row.reps == null || row.reps < 1)) { setError("Enter assistance of zero or more and at least one rep."); return; }
+    // Each set keeps its own mode: assisted, bodyweight or weighted (set-mode.ts).
+    row = { ...row, ...savedLoad(row, item.exercise) };
     if (!startedRef.current.includes(exIndex)) startedRef.current = [...startedRef.current, exIndex];
     const id = crypto.randomUUID();
     const logged = {
@@ -622,7 +630,7 @@ export function Logger(props: {
       const assistanceKg = Math.max(0, Math.round((row.assistanceKg - items[exIndex].exercise.weightStepKg) * 100) / 100);
       updateRow(exIndex,next.key,{assistanceKg,reps:assistanceKg === 0 && row.assistanceKg === 0 ? (next.reps ?? 0)+1 : next.reps});
     }
-    if (next && row.assistanceKg == null) {
+    if (next && row.assistanceKg == null && next.assistanceKg == null) {
       const planned = { weightKg: next.weightKg, reps: next.reps ?? items[exIndex].targetReps };
       const adjusted = adjustNextSet({
         done: { weightKg: row.logged.weightKg, reps: row.logged.reps, addedKg: row.logged.addedKg },
@@ -988,9 +996,7 @@ export function Logger(props: {
                       )}
                       {/* Only for an exercise with no history yet; later records go through the plan's exercise sheet. */}
                       {!demo && item.exercise.tracking !== "time" && !pr && ex.last.length === 0 && (
-                        <ActionTile icon={<Trophy />} label="Add record" href={`/starting-weights?exercise=${item.exercise.id}&workout=${workoutId}`} onClick={() => {
-                          try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
-                        }} ariaLabel={`Add a previous record for ${item.exercise.name}`} />
+                        <ActionTile icon={<Trophy />} label="Add record" onClick={() => setRecordFor(item.exercise.id)} ariaLabel={`Add a previous record for ${item.exercise.name}`} />
                       )}
                     </div>
                     {(editing || props.customSession) && isExtraItem(item) && (
@@ -1044,6 +1050,8 @@ export function Logger(props: {
                       key={row.key}
                       row={row}
                       assistedTracking={item.exercise.loadMode === "assisted"}
+                      modes={canChooseSetMode(item.exercise)}
+                      onMode={(m) => updateRow(exIndex, row.key, { ...loadForMode(row, m, item.exercise, rememberedLoad(ex)), setMode: m, weightEdited: true })}
                       units={units}
                       perHand={item.exercise.perHand}
                       warmup
@@ -1083,6 +1091,8 @@ export function Logger(props: {
                     ) : <SetRow
                       row={row}
                       assistedTracking={item.exercise.loadMode === "assisted"}
+                      modes={canChooseSetMode(item.exercise)}
+                      onMode={(m) => updateRow(exIndex, row.key, { ...loadForMode(row, m, item.exercise, rememberedLoad(ex)), setMode: m, weightEdited: true })}
                       guide={row.key === guideRowKey ? "tip:log-set" : undefined}
                       units={units}
                       perHand={item.exercise.perHand}
@@ -1417,15 +1427,24 @@ export function Logger(props: {
         />
       )}
 
+      {recordFor && (() => {
+        const exIndex = items.findIndex((i) => i.exercise.id === recordFor);
+        if (exIndex < 0) return null;
+        return <RecordSheet exercise={items[exIndex].exercise} units={units} onClose={() => setRecordFor(null)} onSaved={(saved) => {
+          setRecordFor(null);
+          // Today's untouched working sets start from the record, like a suggestion would.
+          if (items[exIndex].exercise.loadMode !== "assisted" && items[exIndex].exercise.tracking !== "time")
+            setExercises((prev) => prev.map((ex, i) => i !== exIndex ? ex : { ...ex, working: ex.working.map((r) => r.logged || r.weightEdited || r.repsEdited || r.assistanceKg != null ? r : { ...r, weightKg: saved.weightKg, addedKg: 0, reps: saved.reps }) }));
+          router.refresh();
+        }} />;
+      })()}
+
       {editing && editItem && editIndex >= 0 && (
           <ExerciseSheet
             units={units}
             key={editItem.id}
             item={editItem}
-            recordHref={`/starting-weights?exercise=${editItem.exercise.id}&workout=${workoutId}`}
-            onRecords={() => {
-              try { sessionStorage.setItem(uiKey, JSON.stringify({ rest, openId } satisfies SavedUi)); } catch {}
-            }}
+            onAddRecord={demo ? undefined : () => { setEditItemId(null); setRecordFor(editItem.exercise.id); }}
             defaultRestSec={props.defaultRestSec}
             canMoveUp={editIndex > 0}
             canMoveDown={editIndex < dayItems.length - 1}
@@ -1538,6 +1557,15 @@ function ActionTile({ icon, label, ariaLabel, onClick, href }: { icon: React.Rea
     : <button type="button" onClick={onClick} aria-label={ariaLabel} className={cls}>{body}</button>;
 }
 
+/** The last assistance and added weight used in an exercise, to prefill a mode switch. */
+function rememberedLoad(ex: SessionExercise) {
+  const rows = [...ex.warmups, ...ex.working].reverse();
+  return {
+    assistanceKg: rows.map((r) => r.logged?.assistanceKg ?? r.assistanceKg ?? 0).find((v) => v > 0) ?? null,
+    addedKg: rows.map((r) => r.logged?.addedKg ?? r.addedKg).find((v) => v > 0) ?? null,
+  };
+}
+
 function SetRow({
   row,
   guide,
@@ -1545,6 +1573,8 @@ function SetRow({
   warmup = false,
   timed = false,
   assistedTracking = false,
+  modes = false,
+  onMode,
   holdLeft = null,
   onHoldStart,
   onHoldStop,
@@ -1563,6 +1593,9 @@ function SetRow({
   /** Logged as seconds held (plank) instead of reps. */
   timed?: boolean;
   assistedTracking?: boolean;
+  /** Offer Assisted, Bodyweight and Weighted for this set (set-mode.ts). */
+  modes?: boolean;
+  onMode?: (mode: SetMode) => void;
   /** Seconds left while this set's hold is running, else null. */
   holdLeft?: number | null;
   /** Starts the countdown; missing while another set is being held. */
@@ -1576,7 +1609,8 @@ function SetRow({
   feel?: React.ReactNode;
 }) {
   const done = row.logged !== null;
-  const assisted = assistedTracking || row.assistanceKg != null;
+  const mode = modes ? setModeOf(row) : null;
+  const assisted = mode ? mode === "assisted" : assistedTracking || row.assistanceKg != null;
   const [options, setOptions] = useState(row.addedKg > 0);
   const [showAddOn, setShowAddOn] = useState(row.addedKg > 0);
   const holding = holdLeft !== null;
@@ -1590,11 +1624,16 @@ function SetRow({
   </div>;
 
   return <div data-guide={guide}>
+    {modes && onMode && <div role="radiogroup" aria-label={`Set ${row.label} type`} className="mx-2 mt-1 grid grid-cols-3 gap-1 rounded-full bg-secondary p-1">
+      {SET_MODES.map(m => <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => onMode(m)} className={cn("min-h-11 rounded-full px-1 text-sm font-medium", mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{SET_MODE_LABEL[m]}</button>)}
+    </div>}
     <div className={cn("flex min-h-14 flex-wrap items-center gap-1 px-2 py-1", warmup && "text-muted-foreground")}>
       {hasOptions ? <button type="button" className="flex size-11 shrink-0 items-center justify-center gap-0.5 text-sm font-medium tabular-nums" onClick={() => setOptions(!options)} aria-label={`Options for set ${row.label}`} aria-expanded={options}>
         {row.label}<ChevronDown className="size-3 text-muted-foreground" aria-hidden />
       </button> : <span className="flex size-11 shrink-0 items-center justify-center text-sm tabular-nums">{row.label}</span>}
-      <NumberField label={`Set ${row.label} ${assisted ? "assistance" : "weight"}`} value={assisted ? row.assistanceKg == null ? null : fromKg(row.assistanceKg,units) : row.weightKg === null ? null : fromKg(row.weightKg,units)} onChange={value => onChange(assisted ? {assistanceKg:value === null ? null : toKg(value,units),weightEdited:true} : {weightKg:value === null ? null : toKg(value,units),weightEdited:true})} disabled={done} suffix={units} className="min-w-12 flex-1" />
+      {mode === "bodyweight" ? <span className="flex min-h-11 min-w-12 flex-1 items-center px-2 text-sm font-medium">Bodyweight</span>
+      : mode === "weighted" ? <NumberField label={`Set ${row.label} added weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="+" suffix={units} className="min-w-12 flex-1" />
+      : <NumberField label={`Set ${row.label} ${assisted ? "assistance" : "weight"}`} value={assisted ? row.assistanceKg == null ? null : fromKg(row.assistanceKg,units) : row.weightKg === null ? null : fromKg(row.weightKg,units)} onChange={value => onChange(assisted ? {assistanceKg:value === null ? null : toKg(value,units),weightEdited:true} : {weightKg:value === null ? null : toKg(value,units),weightEdited:true})} disabled={done} suffix={units} className="min-w-12 flex-1" />}
       {timed ? <>
         {holding ? <span className="min-w-16 text-center text-lg font-semibold tabular-nums text-primary" aria-live="polite">{clock(holdLeft)}</span> : <DurationStepper label={row.label} value={row.durationSec ?? null} disabled={done} onChange={durationSec => onChange({durationSec,repsEdited:true})} />}
         {!done && (holding || onHoldStart) && <button type="button" onClick={holding ? onHoldStop : onHoldStart} className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary" aria-label={holding ? `Stop the timer on set ${row.label}` : `Start a ${row.durationSec ?? 0} second timer for set ${row.label}`}>{holding ? <Square className="size-4"/> : <Play className="size-4"/>}</button>}
@@ -1604,13 +1643,13 @@ function SetRow({
       </> : <NumberField label={`Set ${row.label} reps`} value={row.reps} onChange={value => onChange({reps:value === null ? null : Math.round(value),repsEdited:true})} disabled={done} integer suffix="reps" className="min-w-12 flex-1" />}
       <button type="button" onClick={done ? onUntick : onTick} className="ml-auto flex size-11 shrink-0 items-center justify-center" aria-label={done ? `Undo set ${row.label}` : `Log set ${row.label}`} aria-pressed={done}><TickCircle on={done} small={warmup}/></button>
     </div>
-    {assisted && <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-2 px-3"><span className="text-xs text-muted-foreground">{row.assistanceKg === 0 ? "Bodyweight · no assistance" : "Assistance"}</span><button type="button" className="min-h-11 px-2 text-sm font-medium text-primary" onClick={() => onChange({assistanceKg:0,weightEdited:true})}>{row.assistanceKg === 0 ? "Bodyweight selected" : "Use bodyweight"}</button></div>}
-    {row.addedKg > 0 && !options && <p className="px-3 text-xs text-muted-foreground">+ {fromKg(row.addedKg,units)} {units} add-on</p>}
+    {assisted && !modes && <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-2 px-3"><span className="text-xs text-muted-foreground">{row.assistanceKg === 0 ? "Bodyweight · no assistance" : "Assistance"}</span><button type="button" className="min-h-11 px-2 text-sm font-medium text-primary" onClick={() => onChange({assistanceKg:0,weightEdited:true})}>{row.assistanceKg === 0 ? "Bodyweight selected" : "Use bodyweight"}</button></div>}
+    {row.addedKg > 0 && !options && mode !== "weighted" && <p className="px-3 text-xs text-muted-foreground">+ {fromKg(row.addedKg,units)} {units} add-on</p>}
     {options && hasOptions && <div className="mx-2 mb-2 space-y-2 min-[380px]:pl-11">
-      {showAddOn && <NumberField label={`Set ${row.label} add-on weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="Add-on" suffix={units} className="w-full"/>}
+      {showAddOn && mode !== "weighted" && <NumberField label={`Set ${row.label} add-on weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="Add-on" suffix={units} className="w-full"/>}
       {!warmup && !done && !timed && <div className="min-[380px]:hidden"><RepsStepper label={row.label} value={row.reps} compact={false} onChange={reps => onChange({reps,repsEdited:true})}/></div>}
       {!done && <div className="flex gap-2 [&>*]:flex-1 [&>*]:whitespace-nowrap [&>*]:px-3 [&>*]:text-sm">
-        {!assisted && !showAddOn && !warmup && !timed && <Button variant="secondary" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
+        {!assisted && !modes && !showAddOn && !warmup && !timed && <Button variant="secondary" onClick={() => setShowAddOn(true)} aria-label="Add pin add-on weight"><Plus/>Add weight</Button>}
         {onSkip && <Button variant="outline" disabled={holding} onClick={onSkip} aria-label={`Skip set ${row.label}`}>Skip set</Button>}
       </div>}
     </div>}

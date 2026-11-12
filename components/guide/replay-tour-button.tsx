@@ -1,4 +1,5 @@
 "use client";
+import { SettingsRow } from "@/components/settings/settings-row";
 
 import { Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,10 @@ export function ReplayUpdateTourButton({ tourId, href }: { tourId: string; href:
 }
 
 /** Settings: runs the intro tour again on Today. Hidden when the guide is off. */
-export function ReplayTourButton() {
+export function ReplayTourButton({ row = false }: { row?: boolean } = {}) {
   const guide = useGuide();
   if (!guide) return null;
+  if (row) return <SettingsRow icon={Compass} label="Replay the tour" hint="A quick walk through the app" onClick={guide.replayTour} />;
   return (
     <Button variant="outline" className="w-full" onClick={guide.replayTour}>
       <Compass /> Replay the tour

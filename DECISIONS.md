@@ -2511,3 +2511,51 @@ The app reads the previous schema without revision metadata and reports a
 friendly install message if the new RPC has not landed. The migration needs
 exact SQL approval before merge, and analyze-workout needs separate deployment.
 No new update-tour batch or unapproved release wording is activated.
+
+
+## 2026-11-12: Each set picks Assisted, Bodyweight or Weighted (Aman)
+
+Aman asked for assisted machine work to be fluid: for dips, log 2 assisted
+sets with their own assistance, then sets at bodyweight or with weight added,
+all in one exercise. Assisted and bodyweight could already mix, but a weighted
+set (belt or vest) was blocked in the logger and by the database trigger.
+
+Every unlogged set of a rep-based bodyweight movement (assisted tracking, or
+equipment Bodyweight, not per hand) shows a three-way choice: Assisted,
+Bodyweight, Weighted. Storage keeps existing meanings, so no metric changes:
+assisted is assistance_kg above 0; bodyweight is 0 help on assisted-tracking
+exercises and no help otherwise; weighted is no help, no base weight and an
+add-on. The picked mode is remembered on the row so Weighted stays chosen
+before a number is typed. Switching prefills from the set, then the last value
+used in that exercise, then the exercise default. Logged weighted sets read
+"Bodyweight + 10 kg x 6". Weighted sets on assisted exercises are prefilled
+next time by set number, like assisted ones.
+
+The trigger that stops older clients logging assistance as lifted load now
+allows a set with no base weight and a positive add-on. Older clients send a
+base weight, so they stay blocked. Lifted volume, estimated 1RM and records
+are unchanged: views still need a base weight.
+
+Add missed set offers the same choice, using the exercise's load mode. Fixing
+an existing set (correct_set) still keeps its original kind; that is a
+separate change if wanted.
+
+## 2026-11-12: Add record stays in the workout (Aman)
+
+Add record in the logger, and Add previous record in the workout's exercise
+sheet, went to the starting-weights page. Aman: it should be added there and
+then. Both now open a short sheet (weight, reps) that saves the same baseline
+set through shared code in lib/starting-weights.ts. Untouched working sets of
+that exercise take the record as their starting values, and the workout keeps
+its state. The plan editor still links to the full page, which also lists
+every exercise in a plan. Saving needs a connection; the logger itself still
+works offline.
+
+## 2026-11-12: Settings as grouped lists (Aman)
+
+Aman asked for a better Settings page. Same destinations, grouped into cards
+of rows with an icon, a short hint and a chevron: account card, Training,
+Appearance, Help (including feedback and the tour), App and Privacy and terms,
+then Sign out. Measurement system, feedback and Replay the tour gained a row
+style; their other uses are unchanged. FAQ paths were updated to the new
+group names.

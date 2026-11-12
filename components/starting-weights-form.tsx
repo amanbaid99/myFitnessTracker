@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { formatSet, type SetLike } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { MASK } from "@/lib/mask";
-import { toKg, type Units } from "@/lib/units";
+import type { Units } from "@/lib/units";
+import { saveStartingRows, startingRows } from "@/lib/starting-weights";
 
 export interface StartingExercise {
   id: string;
@@ -26,12 +27,6 @@ interface Entry {
   reps: string;
 }
 
-const parse = (t: string) => {
-  const v = t.trim().replace(",", ".");
-  if (!v) return null;
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? n : NaN;
-};
 
 /**
  * One row per exercise: weight and reps of a set they can do now. Saved as
@@ -52,26 +47,9 @@ export function StartingWeightsForm({ exercises, units, returnTo = "/routines" }
 
   async function save() {
     if (saving.current) return;
-    const rows = [];
-    for (const e of filled) {
-      const w = parse(entries[e.id].weight);
-      const r = parse(entries[e.id].reps);
-      if (Number.isNaN(w) || Number.isNaN(r) || (r !== null && !Number.isInteger(r))) {
-        setError(`Check the numbers for ${e.name}.`);
-        return;
-      }
-      if (!r) {
-        setError(`Add the reps for ${e.name}.`);
-        return;
-      }
-      if (w === null && !e.bodyweight) {
-        setError(`Add the weight for ${e.name}.`);
-        return;
-      }
-      rows.push({ exerciseId: e.id, weightKg: w === null ? null : toKg(w, units), reps: r });
-    }
-    if (!rows.length) {
-      setError("Fill in at least one exercise.");
+    const checked = startingRows(exercises, entries, units);
+    if ("error" in checked) {
+      setError(checked.error);
       return;
     }
     if (!navigator.onLine) {
@@ -83,36 +61,13 @@ export function StartingWeightsForm({ exercises, units, returnTo = "/routines" }
     setBusy(true);
     setError(null);
     try {
-      const supabase = createClient();
-      const workoutId = crypto.randomUUID();
-      const now = new Date().toISOString();
-      const made = await supabase.from("workouts").insert({ id: workoutId, started_at: now, ended_at: now, source: "baseline" });
-      if (made.error) {
+      const failed = await saveStartingRows(createClient(), checked.rows);
+      if (failed) {
         setBusy(false);
-        setError(made.error.message);
+        setError(failed);
         return;
       }
-      const sets = await supabase.from("sets").insert(
-        rows.map((r) => ({
-          id: crypto.randomUUID(),
-          workout_id: workoutId,
-          exercise_id: r.exerciseId,
-          set_no: 1,
-          set_type: "working",
-          weight_kg: r.weightKg,
-          added_kg: 0,
-          reps: r.reps,
-          logged_at: now,
-        })),
-      );
-      if (sets.error) {
-        // Nothing half-saved: remove the empty entry again.
-        await supabase.from("workouts").delete().eq("id", workoutId);
-        setBusy(false);
-        setError(sets.error.message);
-        return;
-      }
-      track("starting_weights_saved", { exercises: rows.length });
+      track("starting_weights_saved", { exercises: checked.rows.length });
       router.push(returnTo);
       router.refresh();
     } catch {

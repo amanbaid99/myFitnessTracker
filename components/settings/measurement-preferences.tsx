@@ -6,14 +6,19 @@ import { Button } from "@/components/ui/button";
 import { MeasurementSystem } from "@/components/measurement-system";
 import { createClient } from "@/lib/supabase/client";
 import type { Units } from "@/lib/units";
+import { Scale } from "lucide-react";
+import { SettingsRow } from "@/components/settings/settings-row";
 export function MeasurementPreferences({
   units: initial,
   userId,
   demo = false,
+  row = false,
 }: {
   units: Units;
   userId: string;
   demo?: boolean;
+  /** Shown as a Settings list row. */
+  row?: boolean;
 }) {
   const router = useRouter();
   const [savedUnits,setSavedUnits] = useState(initial);
@@ -47,10 +52,10 @@ export function MeasurementPreferences({
   }
   return (
     <section>
-      <Button variant="outline" className="h-auto min-h-11 w-full flex-wrap justify-between whitespace-normal py-3 text-left" onClick={() => { setUnits(savedUnits); setMessage(""); setEditing(true); }}>
+      {row ? <SettingsRow icon={Scale} label="Measurement system" value={savedUnits === "lb" ? "Imperial · lb, in" : "Metric · kg, cm"} onClick={() => { setUnits(savedUnits); setMessage(""); setEditing(true); }} /> : <Button variant="outline" className="h-auto min-h-11 w-full flex-wrap justify-between whitespace-normal py-3 text-left" onClick={() => { setUnits(savedUnits); setMessage(""); setEditing(true); }}>
         <span className="min-w-0 break-words">Measurement system</span><span className="min-w-0 break-words text-muted-foreground">{savedUnits === "lb" ? "Imperial · lb, in" : "Metric · kg, cm"}</span>
-      </Button>
-      {message && !editing && <p role="status" className="mt-2 text-sm text-muted-foreground">{message}</p>}
+      </Button>}
+      {message && !editing && <p role="status" className={row ? "px-4 pb-2 text-sm text-muted-foreground" : "mt-2 text-sm text-muted-foreground"}>{message}</p>}
       {editing && <Sheet title="Measurement system" onClose={() => { if (!busy) setEditing(false); }}>
         <div className="space-y-4"><MeasurementSystem value={units} onChange={setUnits} />
           <Button className="w-full" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save units"}</Button>

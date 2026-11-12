@@ -8,6 +8,15 @@ Last updated: 2026-11-12.
 
 ## In progress
 
+- 2026-11-12: `ui/review-flexible-sets` from live #68 (0820ca8). Per-set
+  Assisted, Bodyweight or Weighted in the logger and Add missed set; Add
+  record opens a sheet inside the workout; Settings redesigned as grouped
+  lists. One migration (`weighted_sets_on_assisted`) relaxes the assisted
+  trigger for weighted sets; needs exact SQL approval. No Edge Function
+  changes. Evidence in `docs/ui-evidence/flexible-sets`. Not merged.
+- 2026-11-12: #68 is live as 0820ca8 (history_missed_sets migration
+  applied, analyze-workout v24). Its review note below is history.
+
 - 2026-11-12: `ui/review-history-missed-sets` starts from live #67
   (dc6a08b). Adds a focused Add missed set sheet beneath existing exercises
   in finished History workouts. Prefills remain editable for standard loads,

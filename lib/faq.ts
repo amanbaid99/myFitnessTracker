@@ -19,7 +19,7 @@ export const FAQ: FaqSection[] = [
     id: "training-feedback",
     title: "Training reports and workout options",
     items: [
-      { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Training preferences, Measurement system, choose Metric (kg, cm) or Imperial (lb, ft/in), then Save units. This single preference controls workout weights, body weight, height and body measurements. Your recorded values stay unchanged."] },
+      { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Training, Measurement system, choose Metric (kg, cm) or Imperial (lb, ft/in), then Save units. This single preference controls workout weights, body weight, height and body measurements. Your recorded values stay unchanged."] },
       { q: "What if the equipment I need is busy?", a: ["Tap Options on the exercise, then Replace. Search by name or choose the equipment you can use. Tap an exercise to review the replacement and its muscles, then choose Use replacement. Cancel keeps the current exercise; Choose another keeps your search and equipment choice. It changes today only, not your regular plan. Logged sets must be unticked first. Check the replacement weight; it uses its own history. Known library exercises work offline. AI suggestions and new exercises need a connection."] },
       { q: "Can I do a custom workout today?", a: ["On Today, choose Custom workout today below Start workout. Your plan and source workout are shown first. Choose equipment, focus and time, or describe what you want. AI uses the source plan to draft a version you can review. Edit sets, reps or seconds and rest, replace or remove exercises, add your own, and reorder them before starting. A today-only workout keeps your regular plan and rotation unchanged. It still counts as a workout and appears in History."] },
       { q: "Can I customize a workout I have already started?", a: ["Choose Customize workout. Adapt the remaining workout, or review an adapted copy of the whole plan and choose a day. Exercises with logged or skipped sets and extras you added stay intact. Review the draft, then choose Use this workout. Sets must finish syncing before the reviewed changes are applied. Check starting weights; each exercise uses its own history."] },
@@ -78,7 +78,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "I already lift. Can I start from my current weights?",
         a: [
-          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, an exercise you have never logged shows Add record under Options. Once it has history, add records from the exercise in your plan. Enter weight and reps for one set and skip any you don't know.",
+          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, an exercise you have never logged shows Add record under Options; it opens a short form and you stay in the workout. Once it has history, add records from the exercise in your plan. Enter weight and reps for one set and skip any you don't know.",
           "Your next workout's suggested weights, warm-ups and records build on these. They don't count as a workout, so they don't change your streak or totals.",
         ],
       },
@@ -99,7 +99,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "Can I bring my workouts from Strong or Hevy?",
         a: [
-          "Yes. Export your data from Strong or Hevy as a CSV file, then go to Settings, Import workouts from Strong or Hevy, and choose the file. For anything else, download the Repd template there and copy your sets into it.",
+          "Yes. Export your data from Strong or Hevy as a CSV file, then go to Settings, Training, Import workouts, and choose the file. For anything else, download the Repd template there and copy your sets into it.",
           "Before anything is saved you review it: each exercise is matched to one of yours, added as new or left out, and days you already logged in Repd are skipped. Imported workouts show in History and count towards your records and volume, not your streaks or weekly goals. You can undo an import from the same screen.",
         ],
       },
@@ -123,7 +123,7 @@ export const FAQ: FaqSection[] = [
     id: "workout",
     title: "During a workout",
     items: [
-      {q: "How do I log assisted dips or pull-ups?", a: ["Choose Assisted bodyweight under Load tracking when adding or editing the exercise. Enter the assistance supplied by the machine, not weight lifted. Less assistance is harder; 0 is full bodyweight. Each set has its own value, so you can move from assisted sets to bodyweight in one exercise.", "Use bodyweight is visible beside each unlogged assisted set. Defaults and the machine step can be saved for planned exercises. An exercise added just for today keeps its temporary settings without changing your plan.", "History and assisted progress show help and reps. These sets count towards muscle coverage, but machine assistance is excluded from lifted volume, estimated 1RM and weight records. Compare the same machine and setup."]},
+      {q: "How do I log assisted dips or pull-ups?", a: ["Choose Assisted bodyweight under Load tracking when adding or editing the exercise. Enter the assistance supplied by the machine, not weight lifted. Less assistance is harder; 0 is full bodyweight. Each set has its own choice of Assisted, Bodyweight or Weighted, so 2 assisted sets, 2 at bodyweight and 1 with a 10 kg belt can all be one exercise. Plain bodyweight exercises like Pull-up or Dip offer the same choice.", "Assisted asks for machine help, Weighted asks for the weight you added, and Bodyweight needs no number. Defaults and the machine step can be saved for planned exercises. An exercise added just for today keeps its temporary settings without changing your plan.", "History and assisted progress show help and reps. These sets count towards muscle coverage, but machine assistance is excluded from lifted volume, estimated 1RM and weight records. Compare the same machine and setup."]},
       {
         q: "How are the weight and reps for each set chosen?",
         a: [
@@ -192,7 +192,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "Can I add a set after finishing a workout?",
         a: [
-          "Yes. Open the workout in History, find the exercise under Logged sets and choose Add missed set. Check the prefilled weight or assistance and reps or seconds, then save. You can choose a working set or warm-up. This needs a connection and changes only that saved workout, not your plan.",
+          "Yes. Open the workout in History, find the exercise under Logged sets and choose Add missed set. Check the prefilled weight or assistance and reps or seconds, then save. You can choose a working set or warm-up, and for bodyweight movements whether the set was Assisted, Bodyweight or Weighted. This needs a connection and changes only that saved workout, not your plan.",
           "The set keeps the original workout date. Eligible records, volume and muscle coverage update from your logged sets. If a saved AI recap exists, it is marked as needing a refresh. Choose Refresh analysis to update it; adding a set does not request AI automatically. Starting-weight entries cannot use Add missed set.",
         ],
       },
@@ -308,13 +308,13 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I switch between kg and lb?",
         a: [
-          "Settings, then Training preferences, then Measurement system. Everything is stored in kg and shown in the unit you pick, so switching never changes your history.",
+          "Settings, then Training, then Measurement system. Everything is stored in kg and shown in the unit you pick, so switching never changes your history.",
         ],
       },
       {
         q: "Can I change the colours?",
         a: [
-          "Yes: Settings, then Appearance, then Customize colours. Pick a Dark, Light or Beige background and one of 10 accent colours. It's saved on that device. On iPhone, close and reopen the installed app to update the status bar colour.",
+          "Yes: Settings, then Appearance, then Theme and colours. Pick a Dark, Light or Beige background and one of 10 accent colours. It's saved on that device. On iPhone, close and reopen the installed app to update the status bar colour.",
         ],
       },
       {
@@ -339,7 +339,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I delete my data or my account?",
         a: [
-          "Use Give feedback in Settings to ask, and it will be done within 30 days. The Privacy Policy explains what is stored and who handles it.",
+          "Use Give feedback in Settings, under Help, to ask, and it will be done within 30 days. The Privacy Policy explains what is stored and who handles it.",
         ],
       },
       {
