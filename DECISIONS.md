@@ -2414,3 +2414,27 @@ confirmed custom prescriptions can support actual target comparisons. Preserve
 rename priority, same-day quick-log context and Vault webhook authentication.
 The analyze-workout function requires separate deployment before the app.
 No new tour batch or release copy is activated by this change.
+
+
+## 2026-11-12: Home leads with the broader training overview (Aman)
+
+Aman asked to replace the weekly interpretation on Home with an expansive
+view of training direction, while keeping the card compact. Use the existing
+four-week report in details.longerTerm: its title and short takeaway, not
+the weekly title/summary under a new heading. Label it Your training overview
+and link View training analysis directly to that report's section.
+
+Prefer the newest valid current four-week snapshot, then the previous window
+with its ending date. A legacy weekly-only insight is not a substitute:
+show an honest refresh prompt and link to the existing detailed controls.
+Keep the existing polling, read-only Home behavior, model requests, SQL
+metrics, India-time windows, weekly goal/streak footer and Start/Resume slot.
+No new generation call, schema or Edge deployment is needed. Weekly detail,
+recommendations, charts and the body map remain available.
+
+A stable data-guide target replaces the old weekly aria-label selector for
+the existing published tour. Its wording, ID, date and seen/replay behavior
+remain unchanged; this is not a new announcement batch. Browser evidence
+checks identical or smaller card bounds at 320/390/430, matching report
+navigation, sparse/legacy/error/offline states and retained Start/Resume
+position. Header text wraps for larger text instead of being truncated.

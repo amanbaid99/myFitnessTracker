@@ -85,7 +85,7 @@ export function WeekAnalysis({ review, state, workload, range, which, basePath, 
         </div>}
         {refresh && <AnalysisRefresh key={refresh.weekStart} {...refresh} previousGeneration={review?.details.generatedAt} />}
       </section>
-      <section aria-label="Longer-term analysis" className={`mt-4 rounded-2xl border bg-card p-5 ${MASK}`}>
+      <section id="training-overview" tabIndex={-1} aria-label="Longer-term analysis" className={`scroll-mt-4 mt-4 rounded-2xl border bg-card p-5 ${MASK}`}>
         <h2 className="text-sm font-semibold">The bigger picture</h2>
         <p className="mt-1 text-xs text-muted-foreground">Last 4 weeks, including {last ? "the selected week" : "this week so far"}{review?.details.broaderStart && review.details.broaderEnd ? ` · ${weekRangeLabel({ start: review.details.broaderStart, end: review.details.broaderEnd })}` : ""}</p>
         {broader ? <>
