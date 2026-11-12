@@ -41,6 +41,11 @@ export function analysisReport(value: unknown): AnalysisReport | null {
   return detail && title && summary ? { title, summary, ...detail } : null;
 }
 
+/** Exact revision comparison preserves edits within the same millisecond. */
+export function reviewNeedsRefresh(recorded: string | null | undefined, current: string | null | undefined): boolean {
+  return current != null && recorded !== current;
+}
+
 /** Evidence quality, not a probability of fitness gains or a medical claim. */
 export function evidenceLabel(basis: AnalysisBasis): string {
   if (!basis.historyAvailable || basis.sessions < 3 || basis.trainingDays < 2) return "Limited evidence";

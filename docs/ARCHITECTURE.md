@@ -432,3 +432,23 @@ to reach. Home performs no generation or write request. The surrounding
 weekly goal/streak and Start/Resume layout are unchanged.
 The existing update tour uses data-guide=training-overview as its stable
 target, retaining its approved copy and batch identity.
+
+
+### Missed sets and saved-analysis revisions
+
+History's AddMissedSet opens a native modal sheet. `lib/missed-sets.ts` owns
+prefills, validation, gap numbering and stable display order. `add_missed_set`
+is an authenticated SECURITY INVOKER RPC: it locks a finished owner workout,
+requires an existing logged exercise and appends an idempotent client UUID at
+the original finish time. Existing correction/soft-delete and SQL-derived
+metrics remain authoritative. No new outbox operation is introduced.
+
+`finished_sets_changed` updates workouts.sets_changed_at after inserts or soft
+delete changes in finished workouts. Existing rows start NULL. `saveReview`
+saves the loaded revision in insights.details.setsChangedAt. The recap compares
+exact timestamp strings, including microseconds, and retains old analysis while
+refresh is pending or fails. `claim_workout_review_refresh` uses caller JWT/RLS
+and an atomic update of review_refresh_requested_at to suppress duplicate
+refreshes for the same revision for 150 seconds. A new edit permits a new claim.
+The Edge function remains backward compatible and requires a separate deploy;
+only the reviewed migration is applied by merge CI after owner SQL approval.

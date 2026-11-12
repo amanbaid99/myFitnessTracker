@@ -18,6 +18,7 @@ done
 
 psql -v ON_ERROR_STOP=1 -q -d "$DB" < supabase/tests/rls.sql
 ./scripts/test-custom-workout-race.sh "$DB"
+./scripts/test-missed-set-race.sh "$DB"
 
 # Seed: runs twice (second run must be a no-op), then checks the result.
 psql -q -d "$DB" -c "insert into auth.users (id, email) values ('33333333-3333-3333-3333-333333333333', 'seed@example.com')"

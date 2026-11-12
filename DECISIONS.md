@@ -2479,3 +2479,35 @@ the AI draft-create protocol does not configure new assistance defaults.
 Reads work before the migration using owner-scoped row selections and a missing-
 view fallback. Deployment needs exact final SQL approval, then separate deployment
 of analyze-workout and ask-coach. No new guided tour or announcement is activated.
+
+
+## 2026-11-12: Add missed sets to saved workouts
+
+Aman approved adding a forgotten set after finishing a workout. History offers
+Add missed set beneath each exercise that already has live logged sets. The
+sheet prefills from its last working set, using the saved set's tracking marker
+rather than the exercise's mutable future load mode. The user checks actual
+values, chooses working or warm-up, and saves. Starting-weight records and
+adding an entirely unlogged exercise are outside this change.
+
+The authenticated invoker RPC locks the owner workout, fills the first missing
+set number and inserts a fresh client UUID. Retrying the same payload and UUID
+returns the saved row. A changed payload cannot overwrite it. Its training date
+is the original finish time, never today's edit time. No plan, finish timestamp,
+rotation, streak or outbox behavior changes. Historical edits need a connection,
+as existing corrections do; the running workout logger still works offline.
+
+A finished-workout set-change timestamp distinguishes edits from training time.
+A saved recap records the revision loaded before model generation, so an edit
+during generation remains visibly stale. Additions, soft deletions and existing
+append-only corrections all invalidate the saved recap. Legacy workouts get no
+invented edit time. A visible Refresh analysis action requests the existing
+session-then-week pipeline; atomic owner-scoped claims share repeated requests
+for the same revision for 150 seconds. No automatic AI generation on editing,
+new model, volume formula or week boundary. Refresh updates the edited session's
+own week; it does not promise a cascade through every later saved report.
+
+The app reads the previous schema without revision metadata and reports a
+friendly install message if the new RPC has not landed. The migration needs
+exact SQL approval before merge, and analyze-workout needs separate deployment.
+No new update-tour batch or unapproved release wording is activated.

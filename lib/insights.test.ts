@@ -27,3 +27,20 @@ describe("newestWeeklyReview", () => {
     expect(newestWeeklyReview([older, newer])?.title).toBe("Richer");
   });
 });
+
+import {createClient} from '@supabase/supabase-js';
+import {fetchWorkoutReview} from './insights';
+it('reads a changed workout revision and retains legacy reviews against the previous schema',async()=>{
+ const requests:string[]=[];
+ const db=createClient('https://local.example','synthetic-only',{auth:{persistSession:false},global:{fetch:async(input)=>{
+  const url=String(input);requests.push(url);
+  if(decodeURIComponent(url).includes('workouts('))return Response.json({code:'42703',message:'column does not exist'},{status:400});
+  return Response.json([{id:'i',title:'Saved',summary:'Still readable.',read_at:null,details:{}}]);
+ }}});
+ const review=await fetchWorkoutReview(db,'w');
+ expect(review?.title).toBe('Saved');expect(review?.stale).toBe(false);expect(requests).toHaveLength(2);
+});
+it('does not accept a stale review just because it was saved recently',async()=>{
+ const db=createClient('https://local.example','synthetic-only',{auth:{persistSession:false},global:{fetch:async()=>Response.json([{id:'i',title:'Older sets',summary:'Before another edit.',read_at:null,details:{setsChangedAt:'2026-11-12T10:00:00.123456+00:00'},workouts:{sets_changed_at:'2026-11-12T10:00:00.123457+00:00'}}])}});
+ expect((await fetchWorkoutReview(db,'w'))?.stale).toBe(true);
+});

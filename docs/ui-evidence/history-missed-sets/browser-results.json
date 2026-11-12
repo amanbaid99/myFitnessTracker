@@ -1,0 +1,17 @@
+{
+  "viewports": [
+    320,
+    390,
+    430
+  ],
+  "checks": [
+    "gap order",
+    "editable prefills",
+    "offline retains input",
+    "lost-response retry inserts once",
+    "stale analysis banner",
+    "assistance to bodyweight",
+    "timed warmup excluded from working count"
+  ],
+  "pageErrors": []
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { orderedHistorySets } from "@/lib/missed-sets";
 import { assistanceFromInput } from "@/lib/assistance";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +25,7 @@ export function FixableSets({ rows, units, exerciseName }: { rows: SetRow[]; uni
   return (
     <>
       <ol className="mt-1 text-sm tabular-nums">
-        {rows.map((s) => {
+        {orderedHistorySets(rows).map((s) => {
           const label = s.setType === "warmup" ? `W${s.setNo}` : String(s.setNo);
           return (
             <li key={s.id}>

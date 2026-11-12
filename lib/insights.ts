@@ -1,4 +1,4 @@
-import { analysisDetail } from "./analysis-review";
+import { analysisDetail, reviewNeedsRefresh } from "./analysis-review";
 /**
  * Post-workout analysis: the analyze-workout Edge Function asks a free model
  * on OpenRouter and writes a workout_review row in public.insights; the app reads it (server first, then by polling).
@@ -14,6 +14,9 @@ export interface WorkoutReview {
   summary: string;
   readAt: string | null;
   analysis?: AnalysisDetail;
+  stale?: boolean;
+  setsChangedAt?: string | null;
+  latestSetsChangedAt?: string | null;
 }
 
 export const POLL_EVERY_MS = 10_000;
@@ -23,16 +26,17 @@ export const POLL_WINDOW_MS = 10 * 60_000;
 export const SHOW_PENDING_FOR_MS = 24 * 60 * 60_000;
 
 export async function fetchWorkoutReview(supabase: SupabaseClient, workoutId: string): Promise<WorkoutReview | null> {
-  const { data, error } = await supabase
-    .from("insights")
-    .select("id, title, summary, read_at, details")
-    .eq("kind", "workout_review")
-    .eq("workout_id", workoutId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) return null;
-  return { id: data.id, title: data.title, summary: data.summary, readAt: data.read_at, analysis: analysisDetail(data.details?.analysis) ?? undefined };
+  const run = (revision: boolean) => supabase.from("insights")
+    .select(`id,title,summary,read_at,details${revision ? ",workouts(sets_changed_at)" : ""}`)
+    .eq("kind","workout_review").eq("workout_id",workoutId)
+    .order("created_at",{ascending:false}).limit(1).maybeSingle();
+  let {data,error} = await run(true);
+  if(error && ["42703","PGRST200"].includes(error.code)) ({data,error}=await run(false));
+  if(error || !data)return null;
+  const row=data as unknown as {id:string;title:string;summary:string;read_at:string|null;details?:{analysis?:unknown;setsChangedAt?:string|null};workouts?:{sets_changed_at?:string|null}|null};
+  const recorded=row.details?.setsChangedAt??null,current=row.workouts?.sets_changed_at??null;
+  return {id:row.id,title:row.title,summary:row.summary,readAt:row.read_at,analysis:analysisDetail(row.details?.analysis)??undefined,
+    setsChangedAt:recorded,latestSetsChangedAt:current,stale:reviewNeedsRefresh(recorded,current)};
 }
 
 export type WeeklyReview = { title: string; summary: string; details: {

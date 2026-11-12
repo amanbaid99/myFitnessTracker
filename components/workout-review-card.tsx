@@ -51,7 +51,7 @@ export function WorkoutReviewCard({
     setStarting(true);
     setRetryError(null);
     const supabase = createClient();
-    const { data, error } = await supabase.functions.invoke<{ status?: string }>("analyze-workout", { body: { workoutId } });
+    const { data, error } = await supabase.functions.invoke<{ status?: string }>("analyze-workout", { body: { workoutId, ...(review?.stale ? {refresh:true} : {}) } });
     setStarting(false);
     if (error) {
       setRetryError(
@@ -63,11 +63,15 @@ export function WorkoutReviewCard({
     }
     if (data?.status === "exists") {
       const found = await fetchWorkoutReview(supabase, workoutId);
-      if (found) {
+      if (found && !found.stale) {
         setReview(found);
         setState("done");
         return;
       }
+    }
+    if (data?.status === "exists") {
+      setRetryError("The review still needs updating. Try again in a moment.");
+      return;
     }
     track("ai_review_retried", { older: state === "none" });
     setRetryUntil(Date.now() + RETRY_WAIT_MS);
@@ -82,7 +86,7 @@ export function WorkoutReviewCard({
     const check = async () => {
       const found = await fetchWorkoutReview(supabase, workoutId);
       if (stopped) return;
-      if (found) {
+      if (found && !found.stale) {
         setReview(found);
         setState("done");
       } else if (Date.now() >= deadline) {
@@ -120,6 +124,18 @@ export function WorkoutReviewCard({
     <section aria-live="polite" className={embedded ? "" : "rounded-2xl border border-primary/40 bg-accent/30 p-4"}>
       {review ? (
         <>
+          {review.stale && (
+            <div className="mb-4 rounded-xl border border-primary/30 bg-accent/30 p-3">
+              <p className="text-sm font-medium">Your logged sets changed</p>
+              <p className="mt-1 text-sm text-muted-foreground">Totals are up to date. This saved AI recap needs a refresh.</p>
+              <Button variant="secondary" className="mt-2 w-full" disabled={starting || state === "polling" || demo} onClick={retry}>
+                {starting || state === "polling" ? <Loader2 className="motion-safe:animate-spin"/> : <RotateCcw/>}
+                {starting || state === "polling" ? "Refreshing analysis…" : "Refresh analysis"}
+              </Button>
+              {state === "late" && <p className="mt-2 text-xs text-muted-foreground">Still waiting for an updated review. Try again in a moment.</p>}
+              {retryError && <p role="alert" className="mt-2 text-sm text-destructive">{retryError}</p>}
+            </div>
+          )}
           <h3 className="flex items-start gap-2 font-semibold leading-snug">
             <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
             {review.title}
