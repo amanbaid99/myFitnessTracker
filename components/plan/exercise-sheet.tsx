@@ -59,6 +59,7 @@ export function ExerciseSheet({
   onClose,
   recordHref,
   onRecords,
+  onAddRecord,
 }: {
   item: RoutineExercise;
   units?: Units;
@@ -78,6 +79,8 @@ export function ExerciseSheet({
   onClose: () => void;
   recordHref?: string;
   onRecords?: () => void;
+  /** Opens the record sheet in place instead of going to the starting-weights page. */
+  onAddRecord?: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -215,7 +218,7 @@ export function ExerciseSheet({
           <>
             <div className={`min-h-0 space-y-6 overflow-y-auto px-5 pb-4 pt-2 ${MASK}`}>
               {e.tracking !== "time" && e.loadMode !== "assisted" && (
-                <Button asChild variant="outline" className="w-full">
+                onAddRecord ? <Button variant="outline" className="w-full" onClick={onAddRecord}>Add previous record / starting weight</Button> : <Button asChild variant="outline" className="w-full">
                   <Link href={recordHref ?? `/starting-weights?exercise=${e.id}`} onClick={onRecords}>Add previous record / starting weight</Link>
                 </Button>
               )}

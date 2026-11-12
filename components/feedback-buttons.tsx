@@ -1,4 +1,5 @@
 "use client";
+import { SettingsRow } from "@/components/settings/settings-row";
 
 import { useState } from "react";
 import { Bug, MessageSquareHeart } from "lucide-react";
@@ -7,8 +8,13 @@ import type { FeedbackKind } from "@/lib/feedback";
 import { FeedbackSheet } from "./feedback-sheet";
 
 /** "Give feedback" and "Report a bug", for Settings. */
-export function FeedbackButtons() {
+export function FeedbackButtons({ rows = false }: { rows?: boolean } = {}) {
   const [open, setOpen] = useState<FeedbackKind | null>(null);
+  if (rows) return <>
+    <SettingsRow icon={MessageSquareHeart} label="Give feedback" hint="Ideas, questions or anything unclear" onClick={() => setOpen("feedback")} />
+    <SettingsRow icon={Bug} label="Report a bug" hint="Something broken or wrong" onClick={() => setOpen("bug")} />
+    {open && <FeedbackSheet kind={open} onClose={() => setOpen(null)} />}
+  </>;
   return (
     <>
       <div className="grid grid-cols-2 gap-3">

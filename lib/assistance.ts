@@ -56,7 +56,9 @@ export function restoreAssistedOps(
     working: ex.working.map((r) => ({ ...r })),
   }));
   for (const op of ops) {
-    if (op.kind === "insertSet" && op.row.assistance_kg != null) {
+    // Assisted sets, and weighted bodyweight sets logged beside them (set-mode.ts).
+    const weightedBodyweight = op.kind === "insertSet" && op.row.assistance_kg == null && op.row.weight_kg == null && (op.row.added_kg ?? 0) > 0;
+    if (op.kind === "insertSet" && (op.row.assistance_kg != null || weightedBodyweight)) {
       const s = op.row,
         ex = result.find((e) => e.exerciseId === s.exercise_id);
       if (!ex) continue;
@@ -76,7 +78,9 @@ export function restoreAssistedOps(
         rows.push(row);
         rows.sort((a, b) => a.setNo - b.setNo);
       }
-      row.assistanceKg = s.assistance_kg;
+      row.assistanceKg = s.assistance_kg ?? null;
+      row.weightKg = null;
+      row.addedKg = s.assistance_kg == null ? (s.added_kg ?? 0) : 0;
       row.reps = s.reps;
       row.skipped = false;
       row.logged = {
@@ -85,15 +89,15 @@ export function restoreAssistedOps(
         setNo: s.set_no,
         setType: s.set_type,
         weightKg: null,
-        addedKg: 0,
-        assistanceKg: s.assistance_kg,
+        addedKg: row.addedKg,
+        assistanceKg: s.assistance_kg ?? null,
         reps: s.reps,
         rpe: null,
       };
     } else if (op.kind === "deleteSet" || op.kind === "setRpe") {
       for (const ex of result)
         for (const row of [...ex.warmups, ...ex.working]) {
-          if (row.assistanceKg != null && row.logged?.id === op.id)
+          if ((row.assistanceKg != null || (row.weightKg === null && row.addedKg > 0)) && row.logged?.id === op.id)
             row.logged =
               op.kind === "deleteSet" ? null : { ...row.logged, rpe: op.rpe };
         }
@@ -126,7 +130,7 @@ export function parseAssistedDraft(
           !Number.isInteger(r.setNo) ||
           Number(r.setNo) < 1 ||
           r.setType !== type ||
-          !validAssistance(r.assistanceKg) ||
+          !(validAssistance(r.assistanceKg) || (r.assistanceKg == null && typeof r.addedKg === "number" && r.addedKg > 0 && r.addedKg <= 999.99)) ||
           !Number.isInteger(r.reps) ||
           Number(r.reps) < 1 ||
           Number(r.reps) > 500
@@ -140,8 +144,8 @@ export function parseAssistedDraft(
             setType: type,
             label: type === "warmup" ? `W${no}` : String(no),
             weightKg: null,
-            addedKg: 0,
-            assistanceKg: r.assistanceKg,
+            addedKg: r.assistanceKg == null ? Number(r.addedKg) : 0,
+            assistanceKg: r.assistanceKg == null ? null : Number(r.assistanceKg),
             reps: Number(r.reps),
             logged: null,
             weightEdited: r.weightEdited === true,

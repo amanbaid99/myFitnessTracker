@@ -1,7 +1,6 @@
 import { MeasurementPreferences } from "@/components/settings/measurement-preferences";
 import { FeedbackButtons } from "@/components/feedback-buttons";
-import Link from "next/link";
-import { CircleHelp, Sparkles } from "lucide-react";
+import { ChevronRight, CircleHelp, FileText, History, Palette, Ruler, Shield, Sparkles, UserRound, type LucideIcon } from "lucide-react";
 import { ReplayTourButton } from "@/components/guide/replay-tour-button";
 import { InstallButton } from "@/components/install-button";
 import { UpdateCheck } from "@/components/update/update-check";
@@ -9,87 +8,85 @@ import { SignOutButton } from "@/components/sign-out-button";
 import { ThemePicker } from "@/components/theme-picker";
 import type { Theme } from "@/lib/theme";
 import { ScreenHeader } from "@/components/screen-header";
-import { Button } from "@/components/ui/button";
 import { MASK } from "@/lib/mask";
+import { SettingsRow } from "@/components/settings/settings-row";
 
-
+/**
+ * Settings as grouped lists (Aman, 12 Nov: the page needed a cleaner look).
+ * Same destinations as before; each group is one card of rows.
+ */
 export function SettingsContent({email,userId,units,theme}: {email:string|null;userId:string;units:"kg"|"lb";theme:Theme}) {
   return (
     <>
       <ScreenHeader title="Settings" />
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium">Account and details</h2>
-        <dl className="divide-y rounded-xl border bg-card"><Row label="Signed in as" value={email ?? "Unknown"} masked /></dl>
-        <Button asChild variant="outline" className="h-auto min-h-11 w-full whitespace-normal py-3"><Link href="/welcome?details=1">Your details</Link></Button>
-      </section>
-      <section className="mt-6 space-y-3">
-        <h2 className="text-sm font-medium">Training preferences</h2>
-        <MeasurementPreferences key={units} userId={userId} units={units} />
-      </section>
-      <section className="mt-6 space-y-3">
-        <h2 className="text-sm font-medium">Your workout history</h2>
-        <Button asChild variant="outline" className="h-auto min-h-11 w-full whitespace-normal py-3"><Link href="/import">Import workouts from Strong or Hevy</Link></Button>
-      </section>
-      <section className="mt-6 space-y-3">
-        <h2 className="text-sm font-medium">Measurements and reminders</h2>
-        <Button asChild variant="outline" className="h-auto min-h-11 w-full whitespace-normal py-3"><Link href="/measurements">Check-ins, trends and monthly reminders</Link></Button>
-      </section>
-      <section className="mt-8">
-        <h2 className="mb-3 text-sm font-medium">Appearance</h2>
-        <details className="rounded-xl border bg-card p-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm">Customize colours</summary><ThemePicker initial={theme} /></details>
-      </section>
+      <div className="flex items-center gap-3 rounded-2xl border bg-card p-4">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-hidden>
+          <UserRound className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">Signed in as</p>
+          <p className={`break-all text-sm font-medium ${MASK}`}>{email ?? "Unknown"}</p>
+        </div>
+      </div>
 
-      <section className="mt-8">
-        <h2 className="mb-2 text-sm font-medium">App and installation</h2>
-        <UpdateCheck />
-        <div className="mt-3">
+      <Group title="Training">
+        <LinkRow href="/welcome?details=1" icon={UserRound} label="Your details" hint="Name, height and lifting experience" />
+        <MeasurementPreferences key={units} userId={userId} units={units} row />
+        <LinkRow href="/measurements" icon={Ruler} label="Measurements and reminders" hint="Check-ins, trends and monthly reminders" />
+        <LinkRow href="/import" icon={History} label="Import workouts" hint="From Strong, Hevy or a spreadsheet" />
+      </Group>
+
+      <Group title="Appearance">
+        <details className="group">
+          <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+            <Palette className="size-5 shrink-0 text-primary" aria-hidden />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium">Theme and colours</span>
+              <span className="block text-xs text-muted-foreground">Light, dark or beige, and an accent colour</span>
+            </span>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+          </summary>
+          <div className="px-4 pb-4"><ThemePicker initial={theme} /></div>
+        </details>
+      </Group>
+
+      <Group title="Help">
+        <LinkRow href="/faq" icon={CircleHelp} label="Help and FAQ" hint="How the app works" />
+        <LinkRow href="/whats-new" icon={Sparkles} label="What's new" hint="Recent updates" />
+        <ReplayTourButton row />
+        <FeedbackButtons rows />
+      </Group>
+
+      <section className="mt-6">
+        <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">App</h2>
+        <div className="space-y-3">
+          <UpdateCheck />
           <InstallButton />
         </div>
       </section>
 
-      <section className="mt-8">
-        <h2 className="mb-1 text-sm font-medium">Feedback</h2>
-        <p className="mb-3 text-xs text-muted-foreground">Tell us what you think, or report something broken.</p>
-        <FeedbackButtons />
-      </section>
+      <Group title="Privacy and terms">
+        <LinkRow href="/privacy" icon={Shield} label="Privacy Policy" />
+        <LinkRow href="/terms" icon={FileText} label="Terms of Use" />
+      </Group>
 
-      <section className="mt-8">
-        <h2 className="mb-1 text-sm font-medium">Help and about</h2>
-        <p className="mb-3 text-xs text-muted-foreground">How the app works, how your data is used, and the rules for using it.</p>
-        <Button asChild variant="secondary" size="lg" className="mb-3 w-full">
-          <Link href="/faq">
-            <CircleHelp /> Help & FAQ
-          </Link>
-        </Button>
-        <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3">
-          <Button asChild variant="outline">
-            <Link href="/whats-new">
-              <Sparkles /> What&apos;s new
-            </Link>
-          </Button>
-          <ReplayTourButton />
-        </div>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3">
-          <Button asChild variant="outline">
-            <Link href="/privacy">Privacy Policy</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/terms">Terms of Use</Link>
-          </Button>
-        </div>
-      </section>
-
-      <SignOutButton />
+      <div className="mt-8">
+        <SignOutButton />
+      </div>
     </>
   );
 }
 
-function Row({ label, value, masked }: { label: string; value: string; masked?: boolean }) {
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-12 flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className={masked ? `min-w-0 break-all ${MASK}` : "min-w-0 break-words"}>{value}</dd>
-    </div>
+    <section className="mt-6">
+      <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</h2>
+      <div className="divide-y overflow-hidden rounded-2xl border bg-card">{children}</div>
+    </section>
   );
+}
+
+function LinkRow(props: { href: string; icon: LucideIcon; label: string; hint?: string }) {
+  return <SettingsRow {...props} />;
 }

@@ -12,7 +12,8 @@ export interface SetLike {
 
 /** "15 kg", "22.5 + 3.75 kg" (stack plus pin add-on), or "" with no weight. */
 export function formatLoad(weightKg: number | null, addedKg: number, units: Units): string {
-  if (weightKg === null) return "";
+  // Weight added to body weight (belt or vest): "Bodyweight + 10 kg".
+  if (weightKg === null) return addedKg > 0 ? `Bodyweight + ${fromKg(addedKg, units)} ${units}` : "";
   const base = fromKg(weightKg, units);
   return addedKg > 0 ? `${base} + ${fromKg(addedKg, units)} ${units}` : `${base} ${units}`;
 }

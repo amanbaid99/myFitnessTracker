@@ -17,6 +17,8 @@ describe("formatSet", () => {
 describe("formatLoad", () => {
   it("converts both parts to lb", () => {
     expect(formatLoad(22.5, 3.75, "lb")).toBe("49.6 + 8.3 lb");
+    expect(formatLoad(null, 10, "kg")).toBe("Bodyweight + 10 kg");
+    expect(formatLoad(null, 0, "kg")).toBe("");
   });
 });
 

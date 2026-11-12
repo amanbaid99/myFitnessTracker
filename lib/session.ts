@@ -44,6 +44,8 @@ export interface SessionExerciseInput {
 
 export interface Row {
   assistanceKg?: number | null;
+  /** Assisted, bodyweight or weighted as picked on screen (set-mode.ts); not saved. */
+  setMode?: import("./set-mode").SetMode | null;
   /** Omitted for this workout only; never saved as a logged set. */
   skipped?: boolean;
   key: string;
@@ -289,14 +291,20 @@ export function nextOpenExercise(exercises: Pick<SessionExercise, "exerciseId" |
 /** Machine assistance is configured in positive kg. Warm-ups are editable help, not % load ramps. */
 function assistedExercise(item: SessionExerciseInput, previous: SessionSet[], mine: SessionSet[]): SessionExercise {
   const id = item.exercise.id;
-  const prev = previous.filter(s => s.assistanceKg != null);
+  // Weighted sets (belt or vest, no help) sit alongside assisted ones (set-mode.ts).
+  const weighted = (s: SessionSet) => s.assistanceKg == null && s.weightKg === null && s.addedKg > 0;
+  const prev = previous.filter(s => s.assistanceKg != null || weighted(s));
   const make = (type: "warmup" | "working", no: number, reps: number): Row => {
     const done = mine.find(s => s.setType === type && s.setNo === no) ?? null;
-    const target = assistedTarget(type === "working" ? prev.find(s => s.setNo === no) : undefined, reps, item.exercise.defaultAssistanceKg ?? 0, item.exercise.weightStepKg ?? 2.5);
-    return { key: `${id}-${type === "warmup" ? "w" : "s"}${no}`, setType: type, setNo: no, label: type === "warmup" ? `W${no}` : String(no), weightKg: null, addedKg: 0, assistanceKg: done ? (done.assistanceKg ?? 0) : target.assistanceKg, reps: done ? done.reps : target.reps, logged: done };
+    const key = `${id}-${type === "warmup" ? "w" : "s"}${no}`, label = type === "warmup" ? `W${no}` : String(no);
+    const before = type === "working" ? prev.find(s => s.setNo === no) : undefined;
+    if (done ? weighted(done) : before && weighted(before))
+      return { key, setType: type, setNo: no, label, weightKg: null, addedKg: (done ?? before)!.addedKg, assistanceKg: null, reps: done ? done.reps : (before?.reps ?? reps), logged: done };
+    const target = assistedTarget(before, reps, item.exercise.defaultAssistanceKg ?? 0, item.exercise.weightStepKg ?? 2.5);
+    return { key, setType: type, setNo: no, label, weightKg: null, addedKg: 0, assistanceKg: done ? (done.assistanceKg ?? 0) : target.assistanceKg, reps: done ? done.reps : target.reps, logged: done };
   };
   const warmupPlan = item.exercise.warmupEnabled ? (item.exercise.warmupTemplate ?? []) : [];
   const warmupCount = Math.max(warmupPlan.length, 0, ...mine.filter(s => s.setType === "warmup").map(s => s.setNo));
   const count = Math.max(item.targetSets, 0, ...mine.filter(s => s.setType === "working").map(s => s.setNo));
-  return { exerciseId: id, aim: null, warmups: Array.from({length: warmupCount}, (_, i) => make("warmup", i + 1, warmupPlan[i]?.reps ?? item.targetReps)), working: Array.from({length: count}, (_, i) => make("working", i + 1, item.targetReps)), last: prev.map(s => ({weightKg: null, addedKg: 0, reps: s.reps, assistanceKg: s.assistanceKg})) };
+  return { exerciseId: id, aim: null, warmups: Array.from({length: warmupCount}, (_, i) => make("warmup", i + 1, warmupPlan[i]?.reps ?? item.targetReps)), working: Array.from({length: count}, (_, i) => make("working", i + 1, item.targetReps)), last: prev.map(s => ({weightKg: null, addedKg: s.assistanceKg == null ? s.addedKg : 0, reps: s.reps, assistanceKg: s.assistanceKg ?? null})) };
 }

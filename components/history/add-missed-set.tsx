@@ -14,6 +14,8 @@ import {
 } from "@/lib/missed-sets";
 import type { SetRow } from "@/lib/data";
 import type { Units } from "@/lib/units";
+import { SET_MODE_LABEL, SET_MODES, type ModeExercise, type SetMode } from "@/lib/set-mode";
+import { cn } from "@/lib/utils";
 import { LocalDate } from "@/components/local-date";
 export function AddMissedSet({
   workoutId,
@@ -22,6 +24,7 @@ export function AddMissedSet({
   units,
   name,
   perHand = false,
+  exercise,
 }: {
   workoutId: string;
   endedAt: string;
@@ -29,6 +32,8 @@ export function AddMissedSet({
   units: Units;
   name: string;
   perHand?: boolean;
+  /** Offers Assisted, Bodyweight and Weighted for bodyweight movements. */
+  exercise?: ModeExercise;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -52,6 +57,7 @@ export function AddMissedSet({
           units={units}
           name={name}
           perHand={perHand}
+          exercise={exercise}
           onClose={() => setOpen(false)}
           onSaved={() => {
             setOpen(false);
@@ -69,6 +75,7 @@ function MissedSetSheet({
   units,
   name,
   perHand,
+  exercise,
   onClose,
   onSaved,
 }: {
@@ -78,17 +85,27 @@ function MissedSetSheet({
   units: Units;
   name: string;
   perHand: boolean;
+  exercise?: ModeExercise;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
     saving = useRef(false);
   const [id] = useState(() => crypto.randomUUID()),
-    [prefill] = useState(() => missedSetPrefill(rows, units));
+    [prefill] = useState(() => missedSetPrefill(rows, units, exercise));
   const [weight, setWeight] = useState(prefill.weight),
     [added, setAdded] = useState(prefill.added),
     [amount, setAmount] = useState(prefill.amount),
-    [bodyweight, setBodyweight] = useState(prefill.bodyweight);
+    [bodyweight, setBodyweight] = useState(prefill.bodyweight),
+    [mode, setMode] = useState<SetMode | null>(prefill.mode);
+  function chooseMode(next: SetMode) {
+    setMode(next);
+    setError(null);
+    if (next === "assisted" && !(Number(weight) > 0))
+      setWeight(prefill.assistance || (exercise?.defaultAssistanceKg ? String(exercise.defaultAssistanceKg) : ""));
+    if (next === "weighted" && !(Number(added) > 0)) setAdded(prefill.addOn);
+  }
+  const assistedField = mode ? mode === "assisted" : prefill.assisted;
   const [type, setType] = useState<"working" | "warmup">("working"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState<string | null>(null);
@@ -107,9 +124,10 @@ function MissedSetSheet({
   async function save() {
     if (saving.current) return;
     const result = missedSetValues(
-      { weight, added, amount, bodyweight },
+      { weight, added, amount, bodyweight, mode },
       prefill.source,
       units,
+      exercise,
     );
     if (result.error) {
       setError(result.error);
@@ -211,9 +229,18 @@ function MissedSetSheet({
           <p className="text-xs text-muted-foreground">
             Set {nextHistorySetNo(rows, type)} · Check the prefilled values
             against what you did.
-            {perHand && !prefill.assisted ? " Weight is per hand." : ""}
+            {perHand && !prefill.assisted && !mode ? " Weight is per hand." : ""}
           </p>
-          {!prefill.assisted && (
+          {mode && (
+            <div role="radiogroup" aria-label="How was this set done?" className="grid grid-cols-3 gap-1 rounded-full bg-secondary p-1">
+              {SET_MODES.map((m) => (
+                <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => chooseMode(m)} className={cn("min-h-11 rounded-full px-1 text-sm font-medium", mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>
+                  {SET_MODE_LABEL[m]}
+                </button>
+              ))}
+            </div>
+          )}
+          {!mode && !prefill.assisted && (
             <label className="flex min-h-11 items-center gap-3 text-sm">
               <input
                 type="checkbox"
@@ -225,11 +252,18 @@ function MissedSetSheet({
             </label>
           )}
           <div className="grid grid-cols-2 gap-3">
-            {(!bodyweight || prefill.assisted) && (
+            {mode === "weighted" && (
               <label className="min-w-0 text-sm">
-                {prefill.assisted ? "Assistance" : "Weight"} ({units})
+                Added weight ({units})
+                <Input aria-label="Added weight" inputMode="decimal" value={added} onChange={(e) => setAdded(e.target.value)} />
+              </label>
+            )}
+            {mode === "bodyweight" && <p className="flex min-h-11 items-end pb-3 text-sm font-medium">Bodyweight</p>}
+            {(mode ? mode === "assisted" : !bodyweight || prefill.assisted) && (
+              <label className="min-w-0 text-sm">
+                {assistedField ? "Assistance" : "Weight"} ({units})
                 <Input
-                  aria-label={prefill.assisted ? "Assistance" : "Weight"}
+                  aria-label={assistedField ? "Assistance" : "Weight"}
                   inputMode="decimal"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
@@ -246,7 +280,11 @@ function MissedSetSheet({
               />
             </label>
           </div>
-          {prefill.assisted ? (
+          {mode ? (
+            <p className="text-xs text-muted-foreground">
+              {mode === "assisted" ? "Machine help. Less is harder." : mode === "weighted" ? "Weight added to your body, like a belt or vest." : "Just your body weight."}
+            </p>
+          ) : prefill.assisted ? (
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">
                 Machine help. Less is harder; 0 is bodyweight.

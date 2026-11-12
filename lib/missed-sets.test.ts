@@ -112,3 +112,24 @@ describe("missed sets", () => {
     expect(reviewNeedsRefresh(before, after)).toBe(true);
   });
 });
+
+describe("missed set modes", () => {
+  const dips = { loadMode: "assisted" as const, equipment: "machine", tracking: "reps" as const };
+  const assisted = row({ assistanceKg: 20, weightKg: null, addedKg: 0, reps: 8 });
+  it("offers the mode of the last set and remembers values from earlier sets", () => {
+    const p = missedSetPrefill([assisted, row({ setNo: 2, assistanceKg: null, weightKg: null, addedKg: 10, reps: 5 })], "kg", dips);
+    expect(p.mode).toBe("weighted");
+    expect(p.assistance).toBe("20");
+    expect(p.addOn).toBe("10");
+    expect(missedSetPrefill([assisted], "kg").mode).toBeNull();
+  });
+  it("saves each mode with the right fields", () => {
+    const input = { weight: "15", added: "7.5", amount: "6", bodyweight: false };
+    expect(missedSetValues({ ...input, mode: "assisted" }, assisted, "kg", dips).values).toMatchObject({ p_assistance_kg: 15, p_weight_kg: null, p_added_kg: 0, p_reps: 6 });
+    expect(missedSetValues({ ...input, mode: "bodyweight" }, assisted, "kg", dips).values).toMatchObject({ p_assistance_kg: 0, p_weight_kg: null, p_added_kg: 0 });
+    expect(missedSetValues({ ...input, mode: "bodyweight" }, assisted, "kg", { ...dips, loadMode: "standard", equipment: "bodyweight" }).values).toMatchObject({ p_assistance_kg: null });
+    expect(missedSetValues({ ...input, mode: "weighted" }, assisted, "kg", dips).values).toMatchObject({ p_assistance_kg: null, p_weight_kg: null, p_added_kg: 7.5 });
+    expect(missedSetValues({ ...input, added: "", mode: "weighted" }, assisted, "kg", dips).error).toMatch(/added/);
+    expect(missedSetValues({ ...input, weight: "0", mode: "assisted" }, assisted, "kg", dips).error).toMatch(/assistance/);
+  });
+});
