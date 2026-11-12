@@ -2559,3 +2559,21 @@ Appearance, Help (including feedback and the tour), App and Privacy and terms,
 then Sign out. Measurement system, feedback and Replay the tour gained a row
 style; their other uses are unchanged. FAQ paths were updated to the new
 group names.
+
+## 2026-11-12: One line per set; add-on and Skip in a set menu (Aman)
+
+Aman's screenshots showed two problems. A set with an add-on opened its options
+panel on load, so every set grew a full-width Add-on field and Skip set button
+(three sets filled the screen). Without an add-on, Add weight and Skip set were
+behind an unlabeled chevron beside the set number.
+
+Every unlogged set is now one line. An add-on shows inside the weight box
+("100 +3.75 kg"). When unlogged sets carry an add-on, one line under Working
+sets says "Add-on 3.75 kg on each set" with Edit. The set number has a visible
+dots marker and opens a short sheet: add-on weight for this set or all unlogged
+sets, and Skip set. Exercise Options gained Skip remaining sets.
+
+The dots sit under the set number rather than as a separate button beside the
+tick, as first proposed: a separate 44 px button left the weight box too narrow
+to show "100 +3.75" at 390 and 320 px. Assisted, Bodyweight and Weighted stay
+visible above the row, since that choice is made on most sets.
