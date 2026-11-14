@@ -8,6 +8,11 @@ Last updated: 2026-11-12.
 
 ## In progress
 
+- 2026-11-14: `ui/review-add-exercise-search` from live #69 (adf246d).
+  Add exercise in a workout lists exercises already on screen with Go to
+  it, allows adding alternates, and matches words in any order. No
+  migration or Edge change. Not merged.
+
 - 2026-11-12: `ui/review-flexible-sets` from live #68 (0820ca8). Per-set
   Assisted, Bodyweight or Weighted in the logger and Add missed set; Add
   record opens a sheet inside the workout; Settings redesigned as grouped

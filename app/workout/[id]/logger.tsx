@@ -601,6 +601,11 @@ export function Logger(props: {
     const current = exercises[exIndex];
     const option = props.options?.[slotId]?.find((o) => o.exercise.id === exerciseId);
     if (!option || !current || current.exerciseId === exerciseId) return;
+    // Added separately today: switching would show it twice and mix up its sets.
+    if (exercises.some((e, i) => i !== exIndex && e.exerciseId === exerciseId)) {
+      setError(`${option.exercise.name} is already in this workout. Log it there.`);
+      return;
+    }
     if ([...current.warmups, ...current.working].some((r) => r.logged)) {
       setLockHint(slotId);
       return;
@@ -1226,7 +1231,10 @@ export function Logger(props: {
                 units={units}
                 library={editing.library}
                 targetsFor={(id) => defaultTargets(id, slots(dayItems), editing.planSlots)}
-                existingIds={[...items.map((i) => i.exercise.id), ...Object.values(props.options ?? {}).flatMap((o) => o.map((x) => x.exercise.id))]}
+                // Alternates not on screen can be added too (Aman: Lat Pulldown was hidden as an alternate).
+                existingIds={[]}
+                inWorkoutIds={items.map((i) => i.exercise.id)}
+                onOpenExisting={(id) => { setAddingExercise(false); openExercise(id); }}
                 onCancel={() => setAddingExercise(false)}
                 onAdd={async (pick) => {
                   const err = await applyEdit(

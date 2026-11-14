@@ -2577,3 +2577,18 @@ The dots sit under the set number rather than as a separate button beside the
 tick, as first proposed: a separate 44 px button left the weight box too narrow
 to show "100 +3.75" at 390 and 320 px. Assisted, Bodyweight and Weighted stay
 visible above the row, since that choice is made on most sets.
+
+## 2026-11-14: Add exercise finds exercises already in the workout (Aman)
+
+Aman typed "Lat pull" in a workout's Add exercise and only got "New exercise:
+Lat pull". Lat Pulldown was a slot on that day with Pullups as its alternate,
+and the picker hid every exercise in the workout and every alternate. That
+invited a duplicate exercise with a new name and lost history.
+
+In the workout, the picker no longer hides alternates that are not on screen,
+so either side of a slot can be added as an extra. An exercise already on
+screen stays listed, last, as "Already in this workout" with Go to it, which
+closes the picker and opens that exercise, rather than adding a second card
+for the same exercise. Switching a slot to an alternate that was already added
+separately is refused with a plain message. Search now matches every typed
+word in any order ("pulldown lat"). Other pickers keep their exclusions.
