@@ -1,6 +1,7 @@
 "use client";
 
 import { prepareDraftExercises } from "@/lib/routine-edits";
+import { friendlyError } from "@/lib/friendly-error";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -80,7 +81,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
     setError(null);
     const supabase = createClient();
     const prepared = await prepareDraftExercises(supabase, days);
-    if (prepared.error) { setBusy(false); setError(prepared.error.message); return; }
+    if (prepared.error) { setBusy(false); setError(friendlyError(prepared.error.message, "Could not create the plan. Try again.")); return; }
     const { error } = await supabase.rpc("create_plan", {
       p_name: name.trim() || "My plan",
       p_template: null,
@@ -90,7 +91,7 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
     });
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(friendlyError(error.message, "Could not create the plan. Try again."));
       return;
     }
     track("plan_created", { method: "ai", days: days.length });

@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyError as plainError } from "@/lib/friendly-error";
 import { parseAssistedDraft, restoreAssistedOps, validAssistance } from "@/lib/assistance";
 import { RecordSheet } from "@/components/record-sheet";
 import { Sheet } from "@/components/ui/sheet";
@@ -243,7 +244,7 @@ export function Logger(props: {
 
   // Changes the database refused (not retried) are shown, never silent.
   useEffect(
-    () => onOutboxFailure((message) => {syncFailed.current=true;setSaveState("error");setError(`A change could not be saved: ${message}`);}),
+    () => onOutboxFailure((message) => {syncFailed.current=true;setSaveState("error");setError(`A change could not be saved. ${plainError(message, "Refresh the page and check your last sets.")}`);}),
     [],
   );
 
@@ -974,7 +975,7 @@ export function Logger(props: {
                 </div>
                     <details className="group -mt-1">
                     <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ""}</span>
+                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ex.last.length ? `Last time: ${formatSets(ex.last, units)}` : "First time: enter what you lift"}</span>
                       <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
                     </summary>
                     <div className="mb-2 space-y-0.5 text-xs">
@@ -996,7 +997,7 @@ export function Logger(props: {
                     </p>
                   )}
                   {/* No "Aim" line: the set rows are already filled in with it. */}
-                  {ex.last.length > 0 && (
+                  {ex.last.length > 0 && item.exercise.loadMode !== "assisted" && ex.aim && (
                     <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
                   )}
                   {props.lastNotes?.[ex.exerciseId] && (
@@ -2362,7 +2363,7 @@ function FinishSheet({
     const { error } = await createClient().from("workouts").delete().eq("id", workoutId);
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(plainError(error.message, "Could not finish the workout. Your sets are kept; try again."));
       return;
     }
     onDone("discarded");

@@ -270,7 +270,7 @@ function Dashboard(props: Props) {
                   points={weekPoints("volume_kg")}
                   kind="bars"
                   label="Weekly training volume"
-                  unit={`${units} × reps`}
+                  unit={units}
                 />
               )}
             </TrendCard>

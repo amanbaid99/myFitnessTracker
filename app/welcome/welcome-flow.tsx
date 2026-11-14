@@ -1,6 +1,7 @@
 "use client";
 
 import { prepareDraftExercises } from "@/lib/routine-edits";
+import { friendlyError } from "@/lib/friendly-error";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import Link from "next/link";
@@ -166,7 +167,7 @@ export function WelcomeFlow({
     setBusy(true);
     setError(null);
     const prepared = await prepareDraftExercises(supabase, draft);
-    if (prepared.error) { setBusy(false); setError(prepared.error.message); return; }
+    if (prepared.error) { setBusy(false); setError(friendlyError(prepared.error.message, "Could not save your details. Try again.")); return; }
     const { data: planId, error } = await supabase.rpc("create_plan", {
       p_name: rec.name,
       p_template: rec.template,
@@ -176,7 +177,7 @@ export function WelcomeFlow({
     });
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(friendlyError(error.message, "Could not save your details. Try again."));
       return;
     }
     // Changed before creating: it is the user's own version of the template.

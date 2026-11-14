@@ -118,7 +118,7 @@ export function exerciseHeadline<T extends { e1rmKg: number }>(sessions: T[]): {
   return { latest, best: topSets[0], latestIsBest: latest.e1rmKg >= topSets[0].e1rmKg, topSets };
 }
 
-/** Volume with the same unit wording as the weekly reports, e.g. "1,240 kg × reps". Pure. */
+/** Volume lifted, e.g. "1,240 kg" (load times reps; Aman, 14 Nov: plain kg reads better). Pure. */
 export function volumeLabel(value: number, units: string): string {
-  return `${Math.round(value).toLocaleString("en-GB")} ${units} × reps`;
+  return `${Math.round(value).toLocaleString("en-GB")} ${units}`;
 }

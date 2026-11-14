@@ -2661,3 +2661,16 @@ Walked Progress as a numbers-focused lifter.
 - Removed the remaining time zone sentence from the Strength tab.
 - Demo strength samples used loads that read as bugs (a 75 kg curl, a
   67 kg lateral raise). They now use plausible loads per lift.
+
+## 2026-11-14: UX rotation 4, plain kg, useful card line, plain errors (staging)
+
+- Volume reads "4,200 kg", not "kg × reps" (Aman agreed to the change).
+  Explanations still say it is load times reps.
+- The open exercise card's Options row was often empty beside "Options".
+  It now shows the suggestion, or last time's sets, or "First time: enter
+  what you lift"; last time is not repeated inside Options.
+- Edge case: several screens showed raw database or sign-in errors ("new
+  row violates row-level security policy", "Invalid login credentials").
+  `lib/friendly-error.ts` maps network, session, sign-in, rate-limit and
+  permission errors to plain words, keeps Repd's own human messages, and
+  hides anything technical behind a short fallback for that screen.

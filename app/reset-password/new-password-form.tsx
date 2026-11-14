@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/friendly-error";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ export function NewPasswordForm() {
     const { error } = await createClient().auth.updateUser({ password });
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message, "Could not set the new password. Try again."));
       return;
     }
     router.replace("/");

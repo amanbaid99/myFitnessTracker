@@ -1,6 +1,7 @@
 "use client";
 
 import { orderedHistorySets } from "@/lib/missed-sets";
+import { friendlyError } from "@/lib/friendly-error";
 import { assistanceFromInput } from "@/lib/assistance";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -101,7 +102,7 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
     });
     setBusy(false);
     if (error) {
-      setError(error.message.includes("not found") ? "This set was already changed. Refresh and try again." : error.message);
+      setError(error.message.includes("not found") ? "This set was already changed. Refresh and try again." : friendlyError(error.message, "Could not fix the set. Try again."));
       return;
     }
     track("set_fixed", { action: "fix", set_type: set.setType });
@@ -125,7 +126,7 @@ function FixSetSheet({ set, units, exerciseName, onClose }: { set: SetRow; units
     const { error } = await createClient().from("sets").update({ deleted_at: new Date().toISOString() }).eq("id", set.id).is("deleted_at", null);
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message, "Could not fix the set. Try again."));
       return;
     }
     track("set_fixed", { action: "delete", set_type: set.setType });

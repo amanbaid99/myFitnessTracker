@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/friendly-error";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export function LoginForm({
     setNotice(null);
     const { error } = await call();
     setBusy(false);
-    if (error) setError(error.message);
+    if (error) setError(friendlyError(error.message, "Could not sign in. Try again."));
     return !error;
   }
 

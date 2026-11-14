@@ -1,6 +1,7 @@
 "use client";
 
 import { prepareDraftExercises } from "@/lib/routine-edits";
+import { friendlyError } from "@/lib/friendly-error";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -73,7 +74,7 @@ export function NewPlanWizard({
     setError(null);
     const supabase = createClient();
     const prepared = await prepareDraftExercises(supabase, draft);
-    if (prepared.error) { setBusy(false); setError(prepared.error.message); return; }
+    if (prepared.error) { setBusy(false); setError(friendlyError(prepared.error.message, "Could not create the plan. Try again.")); return; }
     const { data: planId, error } = await supabase.rpc("create_plan", {
       p_name: name.trim() || defaultPlanName(template, days),
       p_template: template,
@@ -83,7 +84,7 @@ export function NewPlanWizard({
     });
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(friendlyError(error.message, "Could not create the plan. Try again."));
       return;
     }
     // Changed before creating: it is the user's own version of the template.
