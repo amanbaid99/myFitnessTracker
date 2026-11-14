@@ -12,6 +12,7 @@ import { fromKg, toKg, type Units } from "@/lib/units";
 import { assistanceFromInput, validAssistance, type LoadMode } from "@/lib/assistance";
 import { defaultTracking, pickForTracking, type Tracking } from "@/lib/tracking";
 import type { Targets } from "@/lib/default-targets";
+import { searchLibrary } from "@/lib/exercise-search";
 
 export interface ExercisePick {
   exerciseId: string | null;
@@ -36,8 +37,13 @@ export function AddExercise({
   preserveLibraryDetails = false,
   units = "kg",
   allowAssisted = true,
+  inWorkoutIds = [],
+  onOpenExisting,
 }: {
   allowAssisted?: boolean;
+  /** Exercises already on screen in this workout: listed, but tapping one goes to it instead of adding a copy. */
+  inWorkoutIds?: string[];
+  onOpenExisting?: (exerciseId: string) => void;
   units?: Units;
   allowAi?: boolean;
   preserveLibraryDetails?: boolean;
@@ -90,9 +96,7 @@ export function AddExercise({
   }
 
   const q = query.trim().toLowerCase();
-  const matches = library
-    .filter((e) => !existingIds.includes(e.id) && (!q || e.name.toLowerCase().includes(q)))
-    .slice(0, 6);
+  const matches = searchLibrary(library, query, { hidden: existingIds, inWorkout: inWorkoutIds });
   const exact = library.find((e) => e.name.toLowerCase() === q);
 
   if (selected) {
@@ -150,14 +154,26 @@ export function AddExercise({
       <ul className="divide-y rounded-xl border">
         {matches.map((e) => (
           <li key={e.id}>
-            <button
+            {inWorkoutIds.includes(e.id) ? (
+              <button
+                type="button"
+                className="flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-sm active:bg-muted"
+                onClick={() => onOpenExisting?.(e.id)}
+              >
+                <span className="min-w-0">
+                  <span className="block">{e.name}</span>
+                  <span className="block text-xs text-muted-foreground">Already in this workout</span>
+                </span>
+                <span className="shrink-0 text-sm font-medium text-primary">Go to it</span>
+              </button>
+            ) : <button
               type="button"
               className="flex min-h-11 w-full items-center justify-between px-3 text-left text-sm active:bg-muted"
               onClick={() => choose({ exerciseId: e.id, name: e.name, equipment: e.equipment })}
             >
               <span>{e.name}</span>
               <span className="text-xs text-muted-foreground">{e.equipment}</span>
-            </button>
+            </button>}
           </li>
         ))}
         {q && !exact && (

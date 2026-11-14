@@ -2577,3 +2577,38 @@ The dots sit under the set number rather than as a separate button beside the
 tick, as first proposed: a separate 44 px button left the weight box too narrow
 to show "100 +3.75" at 390 and 320 px. Assisted, Bodyweight and Weighted stay
 visible above the row, since that choice is made on most sets.
+
+## 2026-11-14: Add exercise finds exercises already in the workout (Aman)
+
+Aman typed "Lat pull" in a workout's Add exercise and only got "New exercise:
+Lat pull". Lat Pulldown was a slot on that day with Pullups as its alternate,
+and the picker hid every exercise in the workout and every alternate. That
+invited a duplicate exercise with a new name and lost history.
+
+In the workout, the picker no longer hides alternates that are not on screen,
+so either side of a slot can be added as an extra. An exercise already on
+screen stays listed, last, as "Already in this workout" with Go to it, which
+closes the picker and opens that exercise, rather than adding a second card
+for the same exercise. Switching a slot to an alternate that was already added
+separately is refused with a plain message. Search now matches every typed
+word in any order ("pulldown lat"). Other pickers keep their exclusions.
+
+## 2026-11-14: Set type from the set number, not a switch on every set (Aman)
+
+Aman found the Assisted, Bodyweight, Weighted switch above every set heavy,
+and pointed to how other lifting apps do it: tap the set number to choose the
+set type from a short list. The switch is gone. Each row shows its type in
+place ("Help 30 kg", "+ 10 kg" or "Bodyweight"), the set number opens a sheet
+with Set type (Assisted, Bodyweight, Weighted, with one-line hints) and Skip
+set, and a single hint under Working sets says how to change it. Storage,
+validation and progression are unchanged.
+
+## 2026-11-14: Calmer exercise card (Aman)
+
+Aman found the open exercise card cluttered. Changes: finished ramp-up sets
+fold into one line ("Ramp-up · 2 sets done", tap to show); the "Sets are
+logged on ..." note after tapping an alternate disappears after 5 seconds;
+the filler "Edit the prefilled target below" and the assisted explainer line
+are gone (the set type sheet explains help); the set type hint shows only
+before the first working set; logged bodyweight sets read "Bodyweight × 4"
+instead of "4 reps".
