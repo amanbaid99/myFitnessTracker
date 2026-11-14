@@ -215,6 +215,13 @@ export function WelcomeFlow({
             </Field>
 
             <Chips
+              label="Lifting experience"
+              options={EXPERIENCE.map((e) => ({ key: e.key, label: e.label, hint: e.hint }))}
+              value={experience}
+              onChange={(v) => setExperience(v as Experience | null)}
+            />
+
+            <Chips
               label="Gender"
               options={GENDERS.map((g) => ({ key: g.key, label: g.label }))}
               value={gender}
@@ -241,13 +248,6 @@ export function WelcomeFlow({
                 </div>
               )}
             </div>
-
-            <Chips
-              label="Lifting experience"
-              options={EXPERIENCE.map((e) => ({ key: e.key, label: e.label, hint: e.hint }))}
-              value={experience}
-              onChange={(v) => setExperience(v as Experience | null)}
-            />
 
             {!detailsOnly && <details className="border-t pt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Optional: choose your colours</summary><p className="mb-3 text-xs text-muted-foreground">You can change these later in Settings.</p><ThemePicker initial={theme}/></details>}
 
@@ -350,11 +350,12 @@ export function WelcomeFlow({
             <Button size="lg" className="w-full" onClick={createPlan} disabled={busy || Boolean(emptyDay)}>
               {busy ? "Creating…" : "Create this plan"}
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => finish(`/plans/new?setup=${setup}`)} disabled={busy}>
-              Choose a different plan
+            <p className="pt-2 text-center text-sm text-muted-foreground">Not quite right?</p>
+            <Button variant="ghost" className="w-full" onClick={() => finish(`/plans/new?setup=${setup}`)} disabled={busy}>
+              Pick another plan
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => finish(`/plans/new?describe=1&setup=${setup}`)} disabled={busy}>
-              <Sparkles /> Describe my own plan instead
+            <Button variant="ghost" className="w-full" onClick={() => finish(`/plans/new?describe=1&setup=${setup}`)} disabled={busy}>
+              <Sparkles /> Describe the plan you want
             </Button>
             {hasPlan && (
               <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => finish("/")} disabled={busy}>

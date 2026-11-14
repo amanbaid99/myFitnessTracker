@@ -73,10 +73,9 @@ export default async function TodayPage() {
     const openSnapshot=openCustom?customizations.rows.get(openCustom.id):null;
     return (
       <>
-        {hero()}
-        {openCustom&&<HomeWorkoutCard name={openSnapshot?.name??"Workout in progress"} exerciseCount={openSnapshot?.items.length??null}
+        {hero(openCustom?<HomeWorkoutCard name={openSnapshot?.name??"Workout in progress"} exerciseCount={openSnapshot?.items.length??null}
           action={<Button asChild size="lg" className="w-full"><Link href={`/workout/${openCustom.id}`}><RotateCcw/>Resume workout</Link></Button>}
-          footer={<CancelWorkoutButton workoutId={openCustom.id} loggedSets={null} className="w-full text-muted-foreground"/>}/>}
+          footer={<CancelWorkoutButton workoutId={openCustom.id} loggedSets={null} className="w-full text-muted-foreground"/>}/>:null)}
         <div className="mt-6 rounded-2xl border border-dashed p-6 text-center">
           <p className="text-lg font-medium">No active workout plan</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -87,6 +86,7 @@ export default async function TodayPage() {
               <Plus /> Create a workout plan
             </Link>
           </Button>
+          <Link href="/log" className="mt-2 flex min-h-11 items-center justify-center text-sm text-muted-foreground underline-offset-4 hover:underline">Already trained today? Log it</Link>
         </div>
         {/* Secondary prompts sit below the main action. */}
         {monthly}

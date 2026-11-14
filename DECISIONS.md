@@ -2674,3 +2674,20 @@ Walked Progress as a numbers-focused lifter.
   `lib/friendly-error.ts` maps network, session, sign-in, rate-limit and
   permission errors to plain words, keeps Repd's own human messages, and
   hides anything technical behind a short fallback for that screen.
+
+## 2026-11-14: UX rotation 5, first ten minutes and naming (staging)
+
+Walked sign-up to first workout as a newcomer, plus empty screens.
+- Welcome step 1 asks lifting experience right after the name, before
+  gender, units, weight and height: it shapes the plan most.
+- Welcome step 3 had three outlined buttons under Create this plan. The
+  alternatives are now quiet ("Not quite right? Pick another plan /
+  Describe the plan you want").
+- Empty History now explains what will appear and offers Start a workout
+  and Bring history from Strong or Hevy.
+- Today without a plan shows a resumable workout first and offers
+  "Already trained today? Log it".
+- The tab called "Routines" opened a screen about "your plan", while Today
+  said "View full plan" and "Choose another workout". The tab and screen are
+  now "Plan" / "Your plan" (URL unchanged). The intro tour's step title
+  changed from "Routines" to "Plan" to match; its body text is unchanged.

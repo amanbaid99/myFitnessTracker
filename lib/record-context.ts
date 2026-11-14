@@ -7,6 +7,6 @@ export function recordContext(params: Record<string, string | string[] | undefin
   return {
     exercise: uuid(params.exercise), plan, setup,
     returnTo: workout ? `/workout/${workout}` : plan ? `/plans/${plan}` : setup ? "/" : "/routines",
-    returnLabel: workout ? "Back to workout" : plan ? "Back to plan" : setup ? "Skip for now" : "Routines",
+    returnLabel: workout ? "Back to workout" : plan ? "Back to plan" : setup ? "Skip for now" : "Your plan",
   };
 }
