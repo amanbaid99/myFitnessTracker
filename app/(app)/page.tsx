@@ -51,8 +51,8 @@ export default async function TodayPage() {
   const finishedAll = workouts.filter((w) => w.endedAt && w.source === "app");
   const lastFinished = finishedAll.find((w) => w.source === "app");
   const customizations = await getWorkoutCustomizations(supabase,workouts.filter(w=>w.source==="app"&&(!w.endedAt||w.id===lastFinished?.id)).map(w=>w.id)).catch(()=>({available:false,rows:new Map()}));
-  const hero = () => (
-    <HomeHero name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
+  const hero = (lead?: React.ReactNode) => (
+    <HomeHero lead={lead} name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
       <WeeklyReviewCard lastEndedAt={lastFinished?.endedAt ?? null} lastStartedAt={lastFinished?.startedAt ?? null} lastWorkoutId={lastFinished?.id ?? null} />
     </HomeHero>
   );
@@ -112,9 +112,7 @@ export default async function TodayPage() {
   return (
     <>
       {askFeedback && <FeedbackPrompt userId={profile.id} />}
-      {hero()}
-
-      {workoutRoutine && <HomeWorkoutCard
+      {hero(workoutRoutine ? <HomeWorkoutCard
           name={workoutRoutine.name}
           exerciseCount={open&&!customOpen&&!routines.some(r=>r.id===open.routineId)?null:workoutRoutine.exercises.length}
           lastDone={relativeDay(lastDone.get(workoutRoutine.id))}
@@ -142,7 +140,7 @@ export default async function TodayPage() {
           </ul>
         </details>
           ) : undefined}
-        />}
+        /> : null)}
 
       {/* Nothing logged yet: offer starting weights so the first workout is not empty boxes. */}
       {!open && finished.length === 0 && !workouts.some((w) => w.source === "baseline") && (

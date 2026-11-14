@@ -68,12 +68,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
         </div>}
 
         <div className="mt-4">
-          <HomeHero name={DEMO_PROFILE.name} workoutDates={[...DEMO_LAST_DONE.values()]} daysPerWeek={DEMO_PLAN.daysPerWeek}>
-            <WeeklyReviewCard lastEndedAt={null} lastStartedAt={null} lastWorkoutId={null} demoReview={DEMO_WEEKLY_REVIEW} fullHref="/demo/week" />
-          </HomeHero>
-        </div>
-
-        <HomeWorkoutCard name={next.name} exerciseCount={next.exercises.length} lastDone={relativeDay(DEMO_LAST_DONE.get(next.id))}
+          <HomeHero lead={<HomeWorkoutCard name={next.name} exerciseCount={next.exercises.length} lastDone={relativeDay(DEMO_LAST_DONE.get(next.id))}
           action={<><Button asChild size="lg" className="w-full"><Link href={`/demo/workout/${next.id}`}><Play />Try this workout</Link></Button><Button asChild variant="ghost" className="mt-1 min-h-11 w-full"><Link href="/demo/custom-workout">Custom workout today</Link></Button></>}
           footer={
         <details className="group">
@@ -97,7 +92,12 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </ul>
         </details>
           }
-        />
+        />} name={DEMO_PROFILE.name} workoutDates={[...DEMO_LAST_DONE.values()]} daysPerWeek={DEMO_PLAN.daysPerWeek}>
+            <WeeklyReviewCard lastEndedAt={null} lastStartedAt={null} lastWorkoutId={null} demoReview={DEMO_WEEKLY_REVIEW} fullHref="/demo/week" />
+          </HomeHero>
+        </div>
+
+
         {latest && <HomeWorkoutRecap href="/demo?finished=1" name={latest.name} startedAt={DEMO_LAST_DONE.get(latest.id)!} when={relativeDay(DEMO_LAST_DONE.get(latest.id))} />}
 
 

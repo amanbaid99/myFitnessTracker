@@ -167,11 +167,12 @@ export function LoginForm({
           <Button type="submit" size="lg" className="w-full" disabled={busy || !email || !password}>
             {busy ? "Signing in…" : "Sign in"}
           </Button>
-          <div className="flex justify-between">
-            <Button type="button" variant="ghost" onClick={() => go("forgot")}>
-              Forgot password?
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => go("signup")}>
+          <Button type="button" variant="ghost" className="w-full" onClick={() => go("forgot")}>
+            Forgot password?
+          </Button>
+          <div className="border-t pt-4 text-center">
+            <p className="text-sm text-muted-foreground">New to Repd?</p>
+            <Button type="button" variant="secondary" size="lg" className="mt-2 w-full" onClick={() => go("signup")}>
               Create account
             </Button>
           </div>

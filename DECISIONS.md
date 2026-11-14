@@ -2624,3 +2624,19 @@ that needs a migration not yet live, so a `staging-guard` CI job refuses
 such a push; approved migrations go live first, then reach staging. Work now
 goes to staging first, and a PR from staging to the default branch goes live
 only when Aman says so.
+
+## 2026-11-14: UX rotation 1, first impressions (staging)
+
+Walked the app as a beginner, a regular lifter and a returning user.
+- Sign in said only "Sign in with your email and password"; a newcomer was
+  not told what Repd does, and Create account was a small link. Now one line
+  says what it does and Create account is a full-width button.
+- Today opened with the AI overview paragraph, pushing the workout to start
+  below it. Today's workout now sits under the greeting; the overview and
+  week follow. This reverses the earlier order for the "main action first"
+  rule; Aman reviews it on staging.
+- Removed "Week: India time · Streak: device time" from Today and the time
+  zone sentence under Progress charts: true, but noise for a lifter (the
+  FAQ still explains it).
+- History no longer prints "No recap" on rows without one.
+Kept "kg × reps" for volume: an earlier deliberate choice, revisit with Aman.

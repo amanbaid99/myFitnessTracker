@@ -363,8 +363,7 @@ function Dashboard(props: Props) {
             </TrendCard>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Weekly bars use India time. The lighter bar is this week, still in
-            progress. Streaks use your device timezone.
+            The lighter bar is this week, still in progress.
           </p>
           <div className="mt-4 divide-y overflow-hidden rounded-2xl border bg-card">
             <Link

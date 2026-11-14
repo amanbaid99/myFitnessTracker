@@ -47,7 +47,7 @@ export function HistoryTimeline({ workouts, metadataUnavailable = false, demo = 
         const isLatest = w.id === latest;
         const duration = Math.max(1, Math.round((Date.parse(w.endedAt) - Date.parse(w.startedAt)) / 60000));
         const status = recapStatus(w, now);
-        const statusText = [status ? RECAP_LABEL[status] : null, isLatest ? "Latest" : null].filter(Boolean).join(" · ");
+        const statusText = [status && status !== "none" ? RECAP_LABEL[status] : null, isLatest ? "Latest" : null].filter(Boolean).join(" · ");
         return <li key={w.id}><Link href={demo ? "/demo?finished=1" : `/history/${w.id}`} aria-label={`${historyName(w)}, ${date}${statusText ? `, ${statusText.toLowerCase().replace(" · ", ", ")}` : ""}`} className={`flex min-h-20 items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40 active:bg-muted/60 ${isLatest ? "bg-primary/5" : ""}`}>
           <time dateTime={w.startedAt} aria-label={date} className={`flex w-11 shrink-0 flex-col items-center rounded-xl py-1.5 ${isLatest ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"}`}><span className="text-lg leading-tight font-semibold tabular-nums">{Number(date.slice(8))}</span><span className="text-[11px]">{month}</span></time>
           <div className="min-w-0 flex-1"><p className={`truncate font-medium ${MASK}`}>{historyName(w)}</p><p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{w.source === "app" ? `${duration} min${w.workingSets !== null ? ` · ${w.workingSets} working ${w.workingSets === 1 ? "set" : "sets"}` : ""}` : w.source === "baseline" ? "Starting weights" : "Imported workout"}</p>
