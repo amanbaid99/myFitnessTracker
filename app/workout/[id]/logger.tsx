@@ -138,6 +138,14 @@ export function Logger(props: {
   const [restIndex,setRestIndex] = useState<number|null>(null);
   const [choice, setChoice] = useState<Record<string, string>>({});
   const [lockHint, setLockHint] = useState<string | null>(null);
+  // The "sets are logged on ..." note is a reply to a tap, not a permanent line.
+  useEffect(() => {
+    if (!lockHint) return;
+    const t = setTimeout(() => setLockHint(null), 5000);
+    return () => clearTimeout(t);
+  }, [lockHint]);
+  /** Exercises whose finished ramp-up sets are shown in full instead of one summary line. */
+  const [warmupsShown, setWarmupsShown] = useState<string[]>([]);
   const items = props.items.map((i) => {
     const replacement = swapped[i.id];
     const o = replacement ?? (choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined);
@@ -966,7 +974,7 @@ export function Logger(props: {
                 </div>
                     <details className="group -mt-1">
                     <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode === "assisted" ? "Assistance helps you lift. Less help is harder; 0 is bodyweight." : ex.aim?`Suggested: ${formatSet(ex.aim,units)}`:"Edit the prefilled target below"}</span>
+                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ""}</span>
                       <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
                     </summary>
                     <div className="mb-2 space-y-0.5 text-xs">
@@ -1060,7 +1068,12 @@ export function Logger(props: {
                     </details>
               </div>
 
-              {showWarmups && (
+              {showWarmups && ex.warmups.every((r) => r.logged) && !warmupsShown.includes(ex.exerciseId) ? (
+                <button type="button" onClick={() => setWarmupsShown((w) => [...w, ex.exerciseId])} className="mt-2 flex min-h-11 w-full items-center justify-between gap-2 border-t border-dashed px-4 text-sm text-muted-foreground" aria-expanded={false}>
+                  <span>Ramp-up · {ex.warmups.length} {ex.warmups.length === 1 ? "set" : "sets"} done</span>
+                  <ChevronDown className="size-4" aria-hidden />
+                </button>
+              ) : showWarmups && (
                 <div className="mt-2 border-t border-dashed px-2" role="group" aria-label="Ramp-up sets">
                   <div className="flex min-h-11 items-center justify-between gap-2 px-2"><p className="text-sm text-muted-foreground">Ramp-up sets</p><p className="text-xs tabular-nums text-muted-foreground">{ex.warmups.filter(r=>r.logged).length} of {ex.warmups.length} logged</p></div>
                   {ex.warmups.map((row) => (
@@ -1099,7 +1112,7 @@ export function Logger(props: {
                   <p className="text-sm font-medium">Working sets</p>
                   <p className="text-xs tabular-nums text-muted-foreground">{ex.working.filter(row=>row.logged).length} of {ex.working.length} logged{ex.working.some(row=>row.skipped&&!row.logged)?` · ${ex.working.filter(row=>row.skipped&&!row.logged).length} skipped`:""}</p>
                 </div>
-                {canChooseSetMode(item.exercise) && ex.working.some((r) => !r.logged && !r.skipped) && <p className="px-2 pb-1 text-xs text-muted-foreground">Tap a set number to make it assisted, bodyweight or weighted.</p>}
+                {canChooseSetMode(item.exercise) && !ex.working.some((r) => r.logged) && <p className="px-2 pb-1 text-xs text-muted-foreground">Tap a set number to make it assisted, bodyweight or weighted.</p>}
                 {(() => {
                   // One line for the add-on instead of a field under every set.
                   const open = ex.working.filter((r) => !r.logged && !r.skipped && r.weightKg !== null && r.addedKg > 0);
@@ -1668,7 +1681,7 @@ function SetRow({
   // A logged set is one compact line: what was done, its feel, and the tick to undo.
   if (row.logged) return <div data-guide={guide} className={cn("flex min-h-12 items-center gap-1 px-2", warmup && "text-muted-foreground")}>
     <span className="flex w-11 shrink-0 justify-center text-sm tabular-nums">{row.label}</span>
-    <span className="min-w-0 flex-1 truncate font-medium tabular-nums">{formatSet(row.logged, units)}</span>
+    <span className="min-w-0 flex-1 truncate font-medium tabular-nums">{modes && setModeOf(row.logged) === "bodyweight" && row.logged.reps != null ? `Bodyweight × ${row.logged.reps}` : formatSet(row.logged, units)}</span>
     {feel}
     <button type="button" onClick={onUntick} className="flex size-11 shrink-0 items-center justify-center" aria-label={`Undo set ${row.label}`} aria-pressed><TickCircle on small={warmup}/></button>
   </div>;

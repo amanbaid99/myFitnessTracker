@@ -2602,3 +2602,13 @@ place ("Help 30 kg", "+ 10 kg" or "Bodyweight"), the set number opens a sheet
 with Set type (Assisted, Bodyweight, Weighted, with one-line hints) and Skip
 set, and a single hint under Working sets says how to change it. Storage,
 validation and progression are unchanged.
+
+## 2026-11-14: Calmer exercise card (Aman)
+
+Aman found the open exercise card cluttered. Changes: finished ramp-up sets
+fold into one line ("Ramp-up · 2 sets done", tap to show); the "Sets are
+logged on ..." note after tapping an alternate disappears after 5 seconds;
+the filler "Edit the prefilled target below" and the assisted explainer line
+are gone (the set type sheet explains help); the set type hint shows only
+before the first working set; logged bodyweight sets read "Bodyweight × 4"
+instead of "4 reps".
