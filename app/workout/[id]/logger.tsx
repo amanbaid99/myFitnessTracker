@@ -1069,10 +1069,10 @@ export function Logger(props: {
                       row={row}
                       assistedTracking={item.exercise.loadMode === "assisted"}
                       modes={canChooseSetMode(item.exercise)}
-                      onMode={(m) => updateRow(exIndex, row.key, { ...loadForMode(row, m, item.exercise, rememberedLoad(ex)), setMode: m, weightEdited: true })}
                       units={units}
                       perHand={item.exercise.perHand}
                       warmup
+                      onMore={canChooseSetMode(item.exercise) ? () => setSetMenu({ exIndex, key: row.key }) : undefined}
                       timed={item.exercise.tracking === "time"}
                       holdLeft={hold?.key === row.key ? Math.max(0, Math.ceil((hold.endsAt - now) / 1000)) : null}
                       onHoldStart={hold ? undefined : () => startHold(exIndex, row)}
@@ -1099,6 +1099,7 @@ export function Logger(props: {
                   <p className="text-sm font-medium">Working sets</p>
                   <p className="text-xs tabular-nums text-muted-foreground">{ex.working.filter(row=>row.logged).length} of {ex.working.length} logged{ex.working.some(row=>row.skipped&&!row.logged)?` · ${ex.working.filter(row=>row.skipped&&!row.logged).length} skipped`:""}</p>
                 </div>
+                {canChooseSetMode(item.exercise) && ex.working.some((r) => !r.logged && !r.skipped) && <p className="px-2 pb-1 text-xs text-muted-foreground">Tap a set number to make it assisted, bodyweight or weighted.</p>}
                 {(() => {
                   // One line for the add-on instead of a field under every set.
                   const open = ex.working.filter((r) => !r.logged && !r.skipped && r.weightKg !== null && r.addedKg > 0);
@@ -1120,7 +1121,6 @@ export function Logger(props: {
                       row={row}
                       assistedTracking={item.exercise.loadMode === "assisted"}
                       modes={canChooseSetMode(item.exercise)}
-                      onMode={(m) => updateRow(exIndex, row.key, { ...loadForMode(row, m, item.exercise, rememberedLoad(ex)), setMode: m, weightEdited: true })}
                       guide={row.key === guideRowKey ? "tip:log-set" : undefined}
                       units={units}
                       perHand={item.exercise.perHand}
@@ -1463,8 +1463,11 @@ export function Logger(props: {
         const row = ex && [...ex.warmups, ...ex.working].find((r) => r.key === setMenu.key);
         if (!row || row.logged) return null;
         const remaining = ex.working.filter((r) => !r.logged && !r.skipped && r.weightKg !== null);
+        const modes = canChooseSetMode(item.exercise);
         return <SetMenuSheet row={row} units={units} perHand={item.exercise.perHand}
-          canAddOn={row.weightKg !== null && row.assistanceKg == null && item.exercise.tracking !== "time"}
+          mode={modes ? setModeOf(row) : null}
+          onMode={modes ? (m) => { updateRow(setMenu.exIndex, row.key, { ...loadForMode(row, m, item.exercise, rememberedLoad(ex)), setMode: m, weightEdited: true }); setSetMenu(null); } : undefined}
+          canAddOn={!modes && row.weightKg !== null && row.assistanceKg == null && item.exercise.tracking !== "time"}
           remaining={row.setType === "working" ? remaining.length : 0}
           onClose={() => setSetMenu(null)}
           onAddOn={(addedKg, all) => {
@@ -1623,7 +1626,6 @@ function SetRow({
   timed = false,
   assistedTracking = false,
   modes = false,
-  onMode,
   holdLeft = null,
   onHoldStart,
   onHoldStop,
@@ -1644,7 +1646,6 @@ function SetRow({
   assistedTracking?: boolean;
   /** Offer Assisted, Bodyweight and Weighted for this set (set-mode.ts). */
   modes?: boolean;
-  onMode?: (mode: SetMode) => void;
   /** Seconds left while this set's hold is running, else null. */
   holdLeft?: number | null;
   /** Starts the countdown; missing while another set is being held. */
@@ -1673,16 +1674,13 @@ function SetRow({
   </div>;
 
   return <div data-guide={guide}>
-    {modes && onMode && <div role="radiogroup" aria-label={`Set ${row.label} type`} className="mx-2 mt-1 grid grid-cols-3 gap-1 rounded-full bg-secondary p-1">
-      {SET_MODES.map(m => <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => onMode(m)} className={cn("min-h-11 rounded-full px-1 text-sm font-medium", mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{SET_MODE_LABEL[m]}</button>)}
-    </div>}
     <div className={cn("flex min-h-14 flex-wrap items-center gap-1 px-2 py-1", warmup && "text-muted-foreground")}>
-      {onMore && !done ? <button type="button" onClick={onMore} disabled={holding} className="flex h-11 w-9 shrink-0 flex-col items-center justify-center rounded-lg text-sm font-medium tabular-nums leading-none active:bg-muted" aria-label={`Set ${row.label} options: add-on weight or skip`}>
+      {onMore && !done ? <button type="button" onClick={onMore} disabled={holding} className="flex h-11 w-9 shrink-0 flex-col items-center justify-center rounded-lg text-sm font-medium tabular-nums leading-none active:bg-muted" aria-label={modes ? `Set ${row.label} type: assisted, bodyweight or weighted` : `Set ${row.label} options: add-on weight or skip`}>
         {row.label}<MoreHorizontal className="size-4 text-primary" aria-hidden />
       </button> : <span className="flex h-11 w-9 shrink-0 items-center justify-center text-sm font-medium tabular-nums">{row.label}</span>}
       {mode === "bodyweight" ? <span className="flex min-h-11 min-w-12 flex-1 items-center px-2 text-sm font-medium">Bodyweight</span>
       : mode === "weighted" ? <NumberField label={`Set ${row.label} added weight`} value={row.addedKg ? fromKg(row.addedKg,units) : null} onChange={value => onChange({addedKg:value === null ? 0 : toKg(value,units),weightEdited:true})} disabled={done} prefix="+" suffix={units} className="min-w-12 flex-1" />
-      : <NumberField label={`Set ${row.label} ${assisted ? "assistance" : "weight"}`} value={assisted ? row.assistanceKg == null ? null : fromKg(row.assistanceKg,units) : row.weightKg === null ? null : fromKg(row.weightKg,units)} onChange={value => onChange(assisted ? {assistanceKg:value === null ? null : toKg(value,units),weightEdited:true} : {weightKg:value === null ? null : toKg(value,units),weightEdited:true})} disabled={done} suffix={weightSuffix} className="min-w-12 flex-1" />}
+      : <NumberField label={`Set ${row.label} ${assisted ? "assistance" : "weight"}`} value={assisted ? row.assistanceKg == null ? null : fromKg(row.assistanceKg,units) : row.weightKg === null ? null : fromKg(row.weightKg,units)} onChange={value => onChange(assisted ? {assistanceKg:value === null ? null : toKg(value,units),weightEdited:true} : {weightKg:value === null ? null : toKg(value,units),weightEdited:true})} disabled={done} prefix={assisted && modes ? "Help" : undefined} suffix={weightSuffix} className="min-w-12 flex-1" />}
       {timed ? <>
         {holding ? <span className="min-w-16 text-center text-lg font-semibold tabular-nums text-primary" aria-live="polite">{clock(holdLeft)}</span> : <DurationStepper label={row.label} value={row.durationSec ?? null} disabled={done} onChange={durationSec => onChange({durationSec,repsEdited:true})} />}
         {!done && (holding || onHoldStart) && <button type="button" onClick={holding ? onHoldStop : onHoldStart} className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary" aria-label={holding ? `Stop the timer on set ${row.label}` : `Start a ${row.durationSec ?? 0} second timer for set ${row.label}`}>{holding ? <Square className="size-4"/> : <Play className="size-4"/>}</button>}
@@ -1697,9 +1695,11 @@ function SetRow({
 }
 
 /** A set's ⋯ menu: change the add-on for this set or every unlogged set, or skip it. */
-function SetMenuSheet({ row, units, perHand, canAddOn, remaining, onClose, onAddOn, onSkip }: {
+function SetMenuSheet({ row, units, perHand, canAddOn, remaining, onClose, onAddOn, onSkip, mode = null, onMode }: {
   row: Row; units: Units; perHand: boolean; canAddOn: boolean; remaining: number;
   onClose: () => void; onAddOn: (addedKg: number, all: boolean) => void; onSkip?: () => void;
+  /** Set type for bodyweight movements, chosen from a list like other lifting apps. */
+  mode?: SetMode | null; onMode?: (mode: SetMode) => void;
 }) {
   const [text, setText] = useState(row.addedKg > 0 ? String(fromKg(row.addedKg, units)) : "");
   const value = text.trim() === "" ? 0 : Number(text.replace(",", "."));
@@ -1707,6 +1707,21 @@ function SetMenuSheet({ row, units, perHand, canAddOn, remaining, onClose, onAdd
   const kg = valid ? toKg(value, units) : 0;
   return <Sheet title={`Set ${row.label}`} onClose={onClose}>
     <div className="space-y-4">
+      {onMode && <section aria-label="Set type">
+        <h3 className="mb-2 text-sm font-medium">Set type</h3>
+        <ul className="divide-y overflow-hidden rounded-2xl border">
+          {SET_MODES.map((m) => <li key={m}>
+            <button type="button" onClick={() => onMode(m)} aria-pressed={mode === m} className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left active:bg-muted">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-primary" aria-hidden>{m === "assisted" ? "A" : m === "bodyweight" ? "B" : "W"}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">{SET_MODE_LABEL[m]}</span>
+                <span className="block text-xs text-muted-foreground">{m === "assisted" ? "Machine help. Less help is harder." : m === "bodyweight" ? "Just your body weight." : "Weight added with a belt or vest."}</span>
+              </span>
+              {mode === m && <Check className="size-5 shrink-0 text-primary" aria-label="Selected" />}
+            </button>
+          </li>)}
+        </ul>
+      </section>}
       {canAddOn && <section className="space-y-2">
         <label className="block text-sm font-medium">
           Add-on weight ({units}){perHand ? " per hand" : ""}

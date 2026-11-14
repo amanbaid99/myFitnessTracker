@@ -2592,3 +2592,13 @@ closes the picker and opens that exercise, rather than adding a second card
 for the same exercise. Switching a slot to an alternate that was already added
 separately is refused with a plain message. Search now matches every typed
 word in any order ("pulldown lat"). Other pickers keep their exclusions.
+
+## 2026-11-14: Set type from the set number, not a switch on every set (Aman)
+
+Aman found the Assisted, Bodyweight, Weighted switch above every set heavy,
+and pointed to how other lifting apps do it: tap the set number to choose the
+set type from a short list. The switch is gone. Each row shows its type in
+place ("Help 30 kg", "+ 10 kg" or "Bodyweight"), the set number opens a sheet
+with Set type (Assisted, Bodyweight, Weighted, with one-line hints) and Skip
+set, and a single hint under Working sets says how to change it. Storage,
+validation and progression are unchanged.
