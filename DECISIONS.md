@@ -2640,3 +2640,14 @@ Walked the app as a beginner, a regular lifter and a returning user.
   FAQ still explains it).
 - History no longer prints "No recap" on rows without one.
 Kept "kg × reps" for volume: an earlier deliberate choice, revisit with Aman.
+
+## 2026-11-14: UX rotation 2, during the workout (staging)
+
+Walked a workout as a beginner and as someone in a hurry.
+- After ticking a set, people tap the word "Hard" under the feel slider;
+  only the track reacted. The four words are now buttons too (44 px wide,
+  labelled "Felt Hard" for screen readers).
+- Finishing early read "1 completed working sets · 0 skipped · 15
+  unlogged". It now says "1 working set done" and, when sets are not
+  ticked, plainly that they will not be saved and to go back if they were
+  done. Skipped shows only when there are any.

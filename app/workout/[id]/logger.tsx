@@ -2227,15 +2227,19 @@ function FeelSlider({ rpe, onPick, onDone, guide }: { rpe: number | null; onPick
           />
         )}
       </div>
-      <div aria-hidden className="relative h-4 text-[11px]">
+      {/* The words are buttons too: people tap "Hard" rather than the dot above it. */}
+      <div className="relative -mt-2 h-9 text-[11px]">
         {FEEL_STOPS.map((f, i) => (
-          <span
+          <button
+            type="button"
             key={f}
-            className={cn("absolute -translate-x-1/2", feel === f ? "font-medium text-foreground" : "text-muted-foreground")}
+            onClick={() => commit(FEEL_RPE[f])}
+            aria-label={`Felt ${FEEL_LABEL[f]}`}
+            className={cn("absolute top-0 flex h-9 min-w-11 -translate-x-1/2 items-center justify-center px-1", feel === f ? "font-medium text-foreground" : "text-muted-foreground")}
             style={{ left: left(stopPosition(i)) }}
           >
             {FEEL_LABEL[f]}
-          </span>
+          </button>
         ))}
       </div>
     </div>
@@ -2383,7 +2387,7 @@ function FinishSheet({
 
         {anyLogged ? (
           <>
-            <p className="mt-3 text-sm">{completion.completed} completed working sets · {completion.skipped} skipped · {completion.unlogged} unlogged</p><p className="mt-3 text-sm font-medium">Energy today (optional)</p><p className="text-xs text-muted-foreground">1 = very low · 5 = very high</p>
+            <p className="mt-3 text-sm">{completion.completed} working {completion.completed === 1 ? "set" : "sets"} done{completion.skipped ? ` · ${completion.skipped} skipped` : ""}</p>{completion.unlogged > 0 && <p className="mt-1 text-sm text-muted-foreground">{completion.unlogged} {completion.unlogged === 1 ? "set was" : "sets were"} not ticked and will not be saved. Go back to tick them if you did them.</p>}<p className="mt-3 text-sm font-medium">Energy today (optional)</p><p className="text-xs text-muted-foreground">1 = very low · 5 = very high</p>
             <div className="mt-2 grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
