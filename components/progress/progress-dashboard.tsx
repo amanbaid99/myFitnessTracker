@@ -447,9 +447,20 @@ function Dashboard(props: Props) {
         />
       ) : (
         <>
+          <Details
+            {...props}
+            activeTab={tab}
+            initialRange={range}
+            onTabChange={(next) => {
+              const query = new URLSearchParams(params.toString());
+              query.set("view", next.toLowerCase());
+              globalThis.window.history.pushState(null, "", `?${query}`);
+            }}
+          />
+          {/* A setting, so it sits after the trends rather than above them. */}
           {view === "strength" && exercises.length > 0 && (
-            <label className="mb-4 block text-xs text-muted-foreground">
-              Lift featured on your overview
+            <label className="mt-6 block text-xs text-muted-foreground">
+              Lift shown on the Progress overview
               <select
                 aria-label="Lift featured on your overview"
                 value={lift?.id ?? ""}
@@ -469,16 +480,6 @@ function Dashboard(props: Props) {
               </select>
             </label>
           )}
-          <Details
-            {...props}
-            activeTab={tab}
-            initialRange={range}
-            onTabChange={(next) => {
-              const query = new URLSearchParams(params.toString());
-              query.set("view", next.toLowerCase());
-              globalThis.window.history.pushState(null, "", `?${query}`);
-            }}
-          />
         </>
       )}
     </div>

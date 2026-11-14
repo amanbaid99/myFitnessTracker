@@ -2651,3 +2651,13 @@ Walked a workout as a beginner and as someone in a hurry.
   unlogged". It now says "1 working set done" and, when sets are not
   ticked, plainly that they will not be saved and to go back if they were
   done. Skipped shows only when there are any.
+
+## 2026-11-14: UX rotation 3, progress (staging)
+
+Walked Progress as a numbers-focused lifter.
+- The Strength view opened with "Lift featured on your overview", a
+  setting, above the trends people came for. It now sits at the end, as
+  "Lift shown on the Progress overview".
+- Removed the remaining time zone sentence from the Strength tab.
+- Demo strength samples used loads that read as bugs (a 75 kg curl, a
+  67 kg lateral raise). They now use plausible loads per lift.

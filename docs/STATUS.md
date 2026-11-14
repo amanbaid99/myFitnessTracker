@@ -8,6 +8,11 @@ Last updated: 2026-11-12.
 
 ## In progress
 
+- 2026-11-14: `staging` (test site my-fitness-tracker-staging.vercel.app)
+  carries UX rotations 1 to 3: sign-in copy, workout first on Today, trimmed
+  time zone notes, tappable feel words, clearer finish summary, featured
+  lift setting moved, realistic demo loads. Not live; Aman reviews there.
+
 - 2026-11-14: `ui/review-add-exercise-search` from live #69 (adf246d).
   Add exercise in a workout lists exercises already on screen with Go to
   it, allows adding alternates, and matches words in any order. No
