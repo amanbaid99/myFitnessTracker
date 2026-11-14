@@ -2691,3 +2691,12 @@ Walked sign-up to first workout as a newcomer, plus empty screens.
   said "View full plan" and "Choose another workout". The tab and screen are
   now "Plan" / "Your plan" (URL unchanged). The intro tour's step title
   changed from "Routines" to "Plan" to match; its body text is unchanged.
+
+## 2026-11-14: UX rotation 6, workout wording (staging)
+
+The logger used "Warm-up" for three things: the preparation checklist,
+the button that adds a lighter set, and the link that skips lighter sets.
+The checklist stays "Warm-up"; lighter sets are "Ramp-up sets" everywhere:
+the button is "Ramp-up set" and the link "Skip ramp-up sets". A first-time
+exercise now says "First time: log what you do and it becomes your
+starting point", which also fits bodyweight moves like pull-ups.

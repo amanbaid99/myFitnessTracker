@@ -9,7 +9,7 @@ Last updated: 2026-11-12.
 ## In progress
 
 - 2026-11-14: `staging` (test site my-fitness-tracker-staging.vercel.app)
-  carries UX rotations 1 to 3: sign-in copy, workout first on Today, trimmed
+  carries UX rotations 1 to 6 (see DECISIONS, 14 Nov): sign-in copy, workout first on Today, trimmed
   time zone notes, tappable feel words, clearer finish summary, featured
   lift setting moved, realistic demo loads. Not live; Aman reviews there.
 

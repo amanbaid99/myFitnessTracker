@@ -975,7 +975,7 @@ export function Logger(props: {
                 </div>
                     <details className="group -mt-1">
                     <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ex.last.length ? `Last time: ${formatSets(ex.last, units)}` : "First time: enter what you lift"}</span>
+                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ex.last.length ? `Last time: ${formatSets(ex.last, units)}` : "First time: log what you do and it becomes your starting point"}</span>
                       <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
                     </summary>
                     <div className="mb-2 space-y-0.5 text-xs">
@@ -1102,7 +1102,7 @@ export function Logger(props: {
                       onClick={() => setSkipped((s) => [...s, ex.exerciseId])}
                       className="min-h-11 px-2 text-xs text-muted-foreground underline underline-offset-4"
                     >
-                      Skip warm-up
+                      Skip ramp-up sets
                     </button>
                   )}
                 </div>
@@ -1195,7 +1195,7 @@ export function Logger(props: {
                         onClick={() => addWarmup(exIndex)}
                         className="flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 break-words text-sm text-muted-foreground"
                       >
-                        <Flame className="size-4" /> Warm-up
+                        <Flame className="size-4" /> Ramp-up set
                       </button>
                       <button
                         type="button"
