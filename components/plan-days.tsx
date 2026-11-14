@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trophy } from "lucide-react";
+import { ChevronDown, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { Routine } from "@/lib/data";
 import { formatSet, settingLabel, type SetLike } from "@/lib/format";
@@ -23,13 +23,21 @@ export function PlanDays({
   startingWeightsHref?: string;
 }) {
   return (
-    <div className="space-y-8">
-      {routines.map((routine) => (
-        <section key={routine.id} id={routine.id} className="scroll-mt-6">
-          <h2 className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-            <span className="text-lg font-semibold">{routine.name}</span>
-            <span className="text-xs text-muted-foreground">{routine.exercises.length} {routine.exercises.length === 1 ? "exercise" : "exercises"}</span>
-          </h2>
+    <div className="space-y-4">
+      {routines.map((routine, dayIndex) => (
+        // Days fold so the whole plan reads at a glance; the first stays open
+        // and every detail is one tap away (Aman, 14 Nov: less to take in).
+        <details key={routine.id} id={routine.id} open={dayIndex === 0} className="group scroll-mt-6">
+          <summary className="mb-2 flex min-h-11 cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-lg font-semibold">{routine.name}</h2>
+                <span className="text-xs text-muted-foreground">{routine.exercises.length} {routine.exercises.length === 1 ? "exercise" : "exercises"}</span>
+              </div>
+              <p className="truncate text-xs text-muted-foreground group-open:hidden">{routine.exercises.map((e) => e.exercise.name).join(" · ")}</p>
+            </div>
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
           <ol className="divide-y rounded-xl border bg-card">
             {routine.exercises.map(({ id, exercise, targetSets, targetReps }) => {
               const last = lastSets.get(exercise.id);
@@ -78,7 +86,7 @@ export function PlanDays({
               );
             })}
           </ol>
-        </section>
+        </details>
       ))}
     </div>
   );

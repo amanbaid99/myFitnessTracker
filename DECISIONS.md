@@ -2709,3 +2709,15 @@ looks at everything you did that day." It now says how many more sets
 are needed ("2 more sets and it counts towards your weekly goal too"),
 and drops the AI sentence, which did not help the decision to save.
 The 6-set rule itself (Aman) is unchanged.
+
+## 2026-11-14: Designer pass, fewer choices at once (staging)
+
+Looking for friction, clutter and overload, without removing anything.
+- Today's workout card stacked four choices under Start (Custom workout
+  today, Did something else? Log a workout, Choose another workout). The
+  first two now sit side by side as small buttons, "Customize today" and
+  "Quick log", so Start stands alone and every option stays.
+- The plan listed every exercise of every day with four lines each (demo
+  Today was 3,184 px tall). Days now fold: the first is open, the others
+  show name, count and a one-line preview of their exercises; all details
+  are one tap away. Demo Today is now about 2,060 px.

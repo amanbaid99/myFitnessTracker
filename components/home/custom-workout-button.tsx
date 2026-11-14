@@ -23,15 +23,15 @@ export function CustomWorkoutButton({
   return (
     <>
       <Button
-        variant="ghost"
-        className="mt-1 h-auto min-h-11 w-full whitespace-normal py-2 text-sm"
+        variant="secondary"
+        className="h-auto min-h-11 w-full whitespace-normal py-2 text-sm"
         onClick={() => {
           request.current = null;
           setOpen(true);
         }}
       >
         <Sparkles className="size-4 shrink-0" />
-        Custom workout today
+        Customize today
       </Button>
       {open && (
         <Sheet
