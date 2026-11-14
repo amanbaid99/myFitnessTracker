@@ -42,6 +42,14 @@ others); `CLAUDE.md` only points here.
   branch: app and database CI still run, but automatic preview deployment
   is skipped. This does not change production releases or previews on
   other feature branches.
+- **Staging first (Aman, 14 Nov).** Every change goes to the `staging`
+  branch first. CI deploys it to the test site
+  https://my-fitness-tracker-staging.vercel.app, which uses the live
+  database. Aman tries it there; only when he says so does a PR from
+  `staging` into the default branch go live. Staging must not carry a
+  migration that is not live yet (CI refuses it): ship approved migrations
+  through the default branch first, then bring them into staging.
+  Anything logged on the test site is real data, so test with care.
 - **Migrations:** new files in `supabase/migrations/` with a timestamp
   prefix. Show Aman the exact final SQL in chat and get a yes before the
   PR is merged; merging applies it. If the SQL changes after approval,

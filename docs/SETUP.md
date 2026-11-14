@@ -72,6 +72,13 @@ Fine for one user; add custom SMTP later if needed.
 
 Deploys come from GitHub Actions, after CI passes. `vercel.json` turns off
 Vercel's own Git deploys so nothing deploys twice or skips the checks.
+The `staging` branch deploys a preview and points the fixed test address
+https://my-fitness-tracker-staging.vercel.app at it after every green push.
+It uses the live database (Aman's choice, 14 Nov), so CI refuses a staging
+push that adds a migration not yet on the default branch. Sign-in there
+needs the preview pattern in Supabase Redirect URLs (see Troubleshooting).
+If the alias step fails because the name is taken, change `STAGING_ALIAS` in
+`ci.yml`.
 Branches beginning `ui/review-` run validation without an automatic preview.
 Other feature branches keep previews, and the default branch still releases
 to production after checks pass.

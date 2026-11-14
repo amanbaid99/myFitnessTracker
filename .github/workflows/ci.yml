@@ -8,6 +8,10 @@ name: CI
 #   2. deploy: to Vercel, production for the default branch, a preview for
 #      any other branch. Runs after migrate, so the app never runs ahead of
 #      the database.
+#   3. staging (Aman, 14 Nov): the `staging` branch deploys a preview and
+#      points the fixed test address at it (STAGING_ALIAS below). It uses the
+#      live database, so it must not carry migrations that are not live yet;
+#      the staging-guard job stops such a push before anything deploys.
 #
 # Secrets: SUPABASE_DB_URL (migrate), VERCEL_TOKEN, VERCEL_ORG_ID and
 # VERCEL_PROJECT_ID (deploy). A job without its secrets skips with a notice.
@@ -65,6 +69,28 @@ jobs:
       - name: Migrations and RLS checks
         run: ./scripts/test-db.sh
 
+  # The test site shares the live database, so a migration that is not live
+  # yet would leave it broken (or worse). Those wait for approval and go
+  # live through the default branch first.
+  staging-guard:
+    if: github.ref_name == 'staging' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: No migrations that are not live yet
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git fetch --quiet origin "$DEFAULT_BRANCH"
+          new=$(git diff --name-only --diff-filter=A "origin/$DEFAULT_BRANCH"...HEAD -- supabase/migrations)
+          if [ -n "$new" ]; then
+            echo "::error::Staging uses the live database. These migrations are not live yet: $new. Ship them to the default branch first, after approval."
+            exit 1
+          fi
+          echo "No new migrations on staging."
+
   migrate:
     needs: [app, database]
     if: github.event_name != 'pull_request'
@@ -116,10 +142,14 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
   deploy:
-    needs: [app, database, migrate]
+    needs: [app, database, migrate, staging-guard]
     # Review-only UI branches validate without publishing a preview.
     # Production and other feature branches retain their deployment behavior.
-    if: github.event_name != 'pull_request' && !startsWith(github.ref_name, 'ui/review-')
+    # staging-guard is skipped on other branches; skipped counts as fine here.
+    if: >-
+      always() && github.event_name != 'pull_request' && !startsWith(github.ref_name, 'ui/review-') &&
+      needs.app.result == 'success' && needs.database.result == 'success' &&
+      needs.migrate.result == 'success' && needs.staging-guard.result != 'failure' && needs.staging-guard.result != 'cancelled'
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-${{ github.ref }}
@@ -211,3 +241,15 @@ jobs:
           url=$(vercel deploy --prebuilt $PROD --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "### Deployed ($TARGET): $url" >> "$GITHUB_STEP_SUMMARY"
+
+      # The test site keeps one address, so it can be bookmarked on a phone.
+      # It matches the preview pattern already allowed in Supabase sign-in
+      # redirects (my-fitness-tracker-*.vercel.app).
+      - if: steps.check.outputs.enabled == 'true' && github.ref_name == 'staging'
+        name: Point the test address at this deploy
+        env:
+          STAGING_ALIAS: my-fitness-tracker-staging.vercel.app
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          vercel alias set "$URL" "$STAGING_ALIAS" --token="$VERCEL_TOKEN"
+          echo "### Test site: https://$STAGING_ALIAS" >> "$GITHUB_STEP_SUMMARY"

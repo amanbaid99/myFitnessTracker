@@ -2612,3 +2612,15 @@ the filler "Edit the prefilled target below" and the assisted explainer line
 are gone (the set type sheet explains help); the set type hint shows only
 before the first working set; logged bodyweight sets read "Bodyweight × 4"
 instead of "4 reps".
+
+## 2026-11-14: A staging test site before anything goes live (Aman)
+
+Aman wants to see changes before they reach users. The `staging` branch
+deploys to a fixed address, https://my-fitness-tracker-staging.vercel.app,
+through the same CI checks. Aman chose the live database for it (a separate
+test database would need a third Supabase project on the free plan): he can
+try changes on his own workouts. The cost is that staging cannot run code
+that needs a migration not yet live, so a `staging-guard` CI job refuses
+such a push; approved migrations go live first, then reach staging. Work now
+goes to staging first, and a PR from staging to the default branch goes live
+only when Aman says so.
