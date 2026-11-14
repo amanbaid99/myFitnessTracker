@@ -2700,3 +2700,12 @@ The checklist stays "Warm-up"; lighter sets are "Ramp-up sets" everywhere:
 the button is "Ramp-up set" and the link "Skip ramp-up sets". A first-time
 exercise now says "First time: log what you do and it becomes your
 starting point", which also fits bodyweight moves like pull-ups.
+
+## 2026-11-14: UX rotation 7, quick log (staging)
+
+As someone logging push-ups done at home: the note under Save said "With
+6 or more sets it also counts towards your weekly goal. The AI review
+looks at everything you did that day." It now says how many more sets
+are needed ("2 more sets and it counts towards your weekly goal too"),
+and drops the AI sentence, which did not help the decision to save.
+The 6-set rule itself (Aman) is unchanged.

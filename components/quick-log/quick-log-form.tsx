@@ -176,8 +176,8 @@ export function QuickLogForm({ units, library }: { units: Units; library: Librar
         </label>
         <p className="text-xs leading-relaxed text-muted-foreground">
           {countsForWeeklyGoal(totalSets)
-            ? "Counts towards your streak, records and weekly goal. The AI review looks at everything you did that day."
-            : "Counts towards your streak and records. With 6 or more sets it also counts towards your weekly goal. The AI review looks at everything you did that day."}
+            ? "Counts towards your streak, records and weekly goal."
+            : `Counts towards your streak and records. ${6 - totalSets} more ${6 - totalSets === 1 ? "set" : "sets"} and it counts towards your weekly goal too.`}
         </p>
       </section>
 
