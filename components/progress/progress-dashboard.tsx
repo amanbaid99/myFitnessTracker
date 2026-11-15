@@ -1,5 +1,6 @@
 "use client";
 
+import { BACK_CLASS } from "@/components/back-link";
 import {
   Suspense,
   useState,
@@ -10,7 +11,7 @@ import {
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MASK } from "@/lib/mask";
 import { fromKg } from "@/lib/units";
@@ -207,9 +208,9 @@ function Dashboard(props: Props) {
           href={href("overview")}
           prefetch={false}
           onClick={navigate}
-          className="mb-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium"
+          className={BACK_CLASS}
         >
-          <ArrowLeft className="size-4" aria-hidden />
+          <ChevronLeft className="size-4" aria-hidden />
           Progress overview
         </Link>
       )}

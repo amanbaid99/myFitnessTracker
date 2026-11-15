@@ -243,7 +243,7 @@ export function ImportFlow({ available, units, library, workoutStarts, pastImpor
                     const v = ev.target.value;
                     setChoices(new Map(choices).set(e.source, v === "new" || v === "skip" ? { kind: v } : { kind: "existing", exerciseId: v }));
                   }}
-                  className={`h-11 w-full rounded-xl border bg-background px-3 text-sm ${MASK}`}>
+                  className={`h-11 w-full rounded-xl border bg-card px-3 text-sm ${MASK}`}>
                   {e.match.exerciseId && <option value={e.match.exerciseId}>{e.match.kind === "suggested" ? "Looks like: " : "Same as: "}{names.get(e.match.exerciseId)}</option>}
                   <option value="new">Add as new: {e.name}</option>
                   <option value="skip">Leave out</option>

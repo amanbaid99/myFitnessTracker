@@ -1,12 +1,13 @@
 "use client";
 
 import { prepareDraftExercises } from "@/lib/routine-edits";
+import { BACK_CLASS } from "@/components/back-link";
 import { friendlyError } from "@/lib/friendly-error";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
-import { ArrowLeft, Check, Loader2, Sparkles, TriangleAlert } from "lucide-react";
+import { Check, Loader2, Sparkles, TriangleAlert, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Exercise } from "@/lib/data";
@@ -103,9 +104,9 @@ export function DescribePlan({ setup, library, onBack }: { setup: TrainingSetup;
     <button
       type="button"
       onClick={days ? () => setDays(null) : onBack}
-      className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground"
+      className={BACK_CLASS}
     >
-      <ArrowLeft className="size-4" /> {days ? "Change description" : "Back"}
+      <ChevronLeft className="size-4" aria-hidden /> {days ? "Change description" : "Back"}
     </button>
   );
 

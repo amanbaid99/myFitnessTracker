@@ -112,12 +112,12 @@ export function QuickLogForm({ units, library }: { units: Units; library: Librar
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-2">
               <p className="col-span-full text-xs text-muted-foreground">New exercise. It is added to your exercises when you save.</p>
               <label className="text-xs font-medium">Equipment
-                <select value={e.equipment} onChange={(ev) => update(e.key, { equipment: ev.target.value })} className="mt-1 h-11 w-full rounded-xl border bg-background px-3 text-sm capitalize">
+                <select value={e.equipment} onChange={(ev) => update(e.key, { equipment: ev.target.value })} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm capitalize">
                   {EQUIPMENT.map((eq) => <option key={eq} value={eq}>{eq}</option>)}
                 </select>
               </label>
               <label className="text-xs font-medium">Measured by
-                <select value={e.tracking} onChange={(ev) => update(e.key, { tracking: ev.target.value as "reps" | "time", amount: null })} className="mt-1 h-11 w-full rounded-xl border bg-background px-3 text-sm">
+                <select value={e.tracking} onChange={(ev) => update(e.key, { tracking: ev.target.value as "reps" | "time", amount: null })} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm">
                   <option value="reps">Reps</option>
                   <option value="time">Time (holds)</option>
                 </select>

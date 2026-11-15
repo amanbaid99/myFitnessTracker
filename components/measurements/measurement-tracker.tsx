@@ -243,7 +243,7 @@ export function MeasurementTracker({
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="mt-1 h-12 w-full rounded-xl border bg-background px-3"
+                className="mt-1 h-12 w-full rounded-xl border bg-card px-3"
               >
                 <option value="smart_scale">Smart scale</option>
                 <option value="calipers">Calipers</option>
@@ -269,7 +269,7 @@ export function MeasurementTracker({
           <select
             value={metric}
             onChange={(e) => setMetric(e.target.value as Metric)}
-            className="mt-1 h-12 w-full rounded-xl border bg-background px-3"
+            className="mt-1 h-12 w-full rounded-xl border bg-card px-3"
           >
             {METRICS.map(([key, label]) => (
               <option key={key} value={key}>

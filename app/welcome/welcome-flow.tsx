@@ -1,13 +1,14 @@
 "use client";
 
 import { prepareDraftExercises } from "@/lib/routine-edits";
+import { BACK_CLASS } from "@/components/back-link";
 import { friendlyError } from "@/lib/friendly-error";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import Link from "next/link";
 import { MeasurementSystem } from "@/components/measurement-system";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Dumbbell, Home, PersonStanding, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Dumbbell, Home, PersonStanding, Sparkles, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -190,9 +191,9 @@ export function WelcomeFlow({
     <button
       type="button"
       onClick={() => setStep(to)}
-      className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground"
+      className={BACK_CLASS}
     >
-      <ArrowLeft className="size-4" /> Back
+      <ChevronLeft className="size-4" aria-hidden /> Back
     </button>
   );
 

@@ -1,11 +1,12 @@
 "use client";
 
 import { prepareDraftExercises } from "@/lib/routine-edits";
+import { BACK_CLASS } from "@/components/back-link";
 import { friendlyError } from "@/lib/friendly-error";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, ChevronRight, Sparkles } from "lucide-react";
+import { Check, ChevronRight, Sparkles, ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,9 +107,9 @@ export function NewPlanWizard({
           <button
             type="button"
             onClick={() => (step === 3 ? setTemplate(null) : setDays(null))}
-            className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground"
+            className={BACK_CLASS}
           >
-            <ArrowLeft className="size-4" /> Back
+            <ChevronLeft className="size-4" aria-hidden /> Back
           </button>
         )}
         <p className="text-xs font-medium uppercase tracking-wider text-primary">New plan · Step {step} of 3</p>

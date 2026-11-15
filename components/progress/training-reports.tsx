@@ -241,7 +241,7 @@ export function TrainingReports({
               value={scope}
               disabled={loading || demo}
               onChange={(e) => void reload(e.target.value)}
-              className="mt-1 h-12 w-full rounded-xl border bg-background px-2 text-sm"
+              className="mt-1 h-12 w-full rounded-xl border bg-card px-2 text-sm"
             >
               <option value="all">All eligible exercises</option>
               <optgroup label="Exercises">

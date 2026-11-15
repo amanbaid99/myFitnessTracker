@@ -19,7 +19,7 @@ export function MeasurementSystem({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value as Units)}
-        className="mt-1 h-12 w-full rounded-xl border bg-background px-3 text-base"
+        className="mt-1 h-12 w-full rounded-xl border bg-card px-3 text-base"
       >
         <option value="kg">Metric (kg, cm)</option>
         <option value="lb">Imperial (lb, ft/in)</option>

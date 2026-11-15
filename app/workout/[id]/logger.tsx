@@ -2088,7 +2088,7 @@ function NumberField({
         className="h-full w-full min-w-0 bg-transparent px-1.5 text-center text-base tabular-nums outline-none disabled:text-inherit"
         placeholder="–"
       />
-      {suffix && <span className="pr-1.5 text-[10px] text-muted-foreground">{suffix}</span>}
+      {suffix && <span className="pr-1.5 text-[11px] text-muted-foreground">{suffix}</span>}
     </label>
   );
 }
