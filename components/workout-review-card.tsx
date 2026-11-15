@@ -15,7 +15,8 @@ import {
 } from "@/lib/insights";
 import { createClient } from "@/lib/supabase/client";
 import { AskCoach } from "@/components/coach/ask-coach";
-import { AnalysisDetails } from "@/components/analysis-details";
+import { AnalysisDetails, NextStep } from "@/components/analysis-details";
+import { plainWords } from "@/lib/analysis-review";
 import { MD } from "@/components/compact-markdown";
 
 /** How long to wait for a retried review before giving up. */
@@ -138,12 +139,12 @@ export function WorkoutReviewCard({
           )}
           <h3 className="flex items-start gap-2 font-semibold leading-snug">
             <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-            {review.title}
+            {plainWords(review.title)}
           </h3>
           <div className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            <ReactMarkdown components={MD} skipHtml>{review.summary}</ReactMarkdown>
+            <ReactMarkdown components={MD} skipHtml>{plainWords(review.summary)}</ReactMarkdown>
           </div>
-          {review.analysis && <details className="mt-2"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-primary">Evidence and next focus</summary><AnalysisDetails analysis={review.analysis} /></details>}
+          {review.analysis && <><NextStep text={review.analysis.nextFocus} /><details className="mt-1"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-primary">Why we think this</summary><AnalysisDetails analysis={review.analysis} withNext={false} /></details></>}
           {!demo && <AskCoach workoutId={workoutId} label="Ask about this" className="mt-3 w-full" />}
         </>
       ) : state === "polling" ? (

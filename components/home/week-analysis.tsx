@@ -8,8 +8,8 @@ import type { WeeklyReview } from "@/lib/insights";
 import { MASK } from "@/lib/mask";
 import { reviewParts } from "@/lib/review-preview";
 import { cn } from "@/lib/utils";
-import { analysisDetail, analysisReport, evidenceLabel, type AnalysisBasis } from "@/lib/analysis-review";
-import { AnalysisDetails } from "@/components/analysis-details";
+import { analysisDetail, analysisReport, evidenceLabel, plainWords, type AnalysisBasis } from "@/lib/analysis-review";
+import { AnalysisDetails, NextStep } from "@/components/analysis-details";
 import { AnalysisRefresh } from "./analysis-refresh";
 
 export const WEEK_MAP_NOTE = "Each working set counts once for the main muscle of its exercise and half for each supporting muscle, Monday to Sunday India time. The most worked muscle is 100% and darkest; the rest are shown against it. Warm-ups and deleted sets do not count. It is a guide, not a measure of muscle activation or growth.";
@@ -73,10 +73,11 @@ export function WeekAnalysis({ review, state, workload, range, which, basePath, 
       <section aria-label="Weekly analysis" className={`rounded-2xl border border-primary/30 bg-gradient-to-br from-accent/50 via-card to-card p-5 ${MASK}`}>
         <div className="flex items-center gap-2 text-primary"><Sparkles className="size-4" aria-hidden /><h2 className="text-sm font-semibold">Analysis</h2></div>
         {review && parts ? <>
-          <p className="mt-3 text-lg font-semibold leading-snug">{review.title}</p>
-          {(analysis ? review.summary : parts.body) && <div className="mt-3 text-sm leading-relaxed text-muted-foreground"><ReactMarkdown components={MD} skipHtml>{analysis ? review.summary : parts.body}</ReactMarkdown></div>}
-          {analysis ? <AnalysisDetails analysis={analysis} /> : parts.focus && <p className="mt-3 rounded-xl bg-primary/10 px-3 py-2.5 text-sm leading-relaxed"><span className="font-medium text-primary">Next focus: </span>{parts.focus}</p>}
-          {evidence(review.details.basis)}
+          <p className="mt-3 text-lg font-semibold leading-snug">{plainWords(review.title)}</p>
+          {(analysis ? review.summary : parts.body) && <div className="mt-2 text-sm leading-relaxed text-muted-foreground"><ReactMarkdown components={MD} skipHtml>{plainWords(analysis ? review.summary : parts.body)}</ReactMarkdown></div>}
+          {analysis ? <NextStep text={analysis.nextFocus} /> : parts.focus && <NextStep text={plainWords(parts.focus)} />}
+          {analysis && <details className="mt-1"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-primary">Why we think this</summary><AnalysisDetails analysis={analysis} withNext={false} />{evidence(review.details.basis)}</details>}
+          {!analysis && evidence(review.details.basis)}
           <p className="mt-2 text-xs text-muted-foreground">Based on {typeof count === "number" ? `${plural(count, "completed workout")}` : "your completed workouts"}. Updated after each workout analysis.</p>
         </> : empty && <div role={state === "error" ? "alert" : "status"}>
           <p className="mt-3 font-medium">{empty.title}</p>
@@ -91,7 +92,8 @@ export function WeekAnalysis({ review, state, workload, range, which, basePath, 
         {broader ? <>
           <p className="mt-3 text-lg font-semibold leading-snug">{broader.title}</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{broader.summary}</p>
-          <details className="mt-2"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-primary">See the evidence and next focus</summary><AnalysisDetails analysis={broader} />{evidence(review?.details.broaderBasis)}</details>
+          <NextStep text={broader.nextFocus} />
+          <details className="mt-1"><summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-primary">Why we think this</summary><AnalysisDetails analysis={broader} withNext={false} />{evidence(review?.details.broaderBasis)}</details>
         </> : <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{state === "no-workouts" ? "A broader view appears with your next weekly analysis. A few weeks of training will make patterns clearer." : "The four-week view is included in the updated analysis. Refresh above when available, or it will arrive after your next workout review."}</p>}
         <Link href={basePath.startsWith("/demo") ? "/demo/progress" : "/progress"} className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary">Explore your progress charts</Link>
       </section>

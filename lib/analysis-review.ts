@@ -17,9 +17,29 @@ export interface AnalysisBasis {
   historyAvailable: boolean;
 }
 
+/**
+ * Swaps gym and data jargon for everyday words, so a lifter who has never
+ * heard of e1RM or RPE can still read the analysis (Aman, 15 Nov). Runs on
+ * new AI output and on reports saved before the prompts asked for plain
+ * words. Pure.
+ */
+export function plainWords(text: string): string {
+  return text
+    .replace(/\b(?:estimated\s+)?e?1RMs\b(?:\s+estimates)?/gi, "estimated maxes")
+    .replace(/\b(?:estimated\s+)?e?1RM\b(?:\s+estimates?)?/gi, "estimated max")
+    .replace(/\b(?:one|1)[- ]rep max(es)?\b/gi, (_m, p) => (p ? "estimated maxes" : "estimated max"))
+    .replace(/\bset credits?\b/gi, "sets")
+    .replace(/\bRPE\s*(\d+(?:\.\d+)?)/g, "effort $1 out of 10")
+    .replace(/\bRPE\b/g, "effort")
+    .replace(/\bhypertrophy\b/gi, "muscle growth")
+    .replace(/\be\.g\.,?/gi, "for example")
+    .replace(/\bi\.e\.,?/gi, "that is")
+    .replace(/\bSQL\s+/g, "");
+}
+
 export function analysisText(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
-  const text = value.replace(/\s*[\u2013\u2014]\s*/g, ", ").replace(/\s+/g, " ").trim();
+  const text = plainWords(value).replace(/\s*[\u2013\u2014]\s*/g, ", ").replace(/\s+/g, " ").trim();
   if (!text || text.length > max || !text.replace(/[.\s…]/g, "")) return null;
   return text;
 }

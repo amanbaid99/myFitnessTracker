@@ -2741,3 +2741,14 @@ Audit of the visual system (Aman asked for a UI expert's pass).
   greys. All use a rounded-rectangle track in `bg-muted` with
   rounded-lg segments.
 - kg and reps labels inside set rows grow from 10 px to 11 px.
+
+## 15 Nov: AI reports in everyday words (Aman)
+
+Aman found the four-week report hard to read ("e1RM", "set credits", long
+paragraphs). The prompts now ask for plain words, shorter highlights (30
+words) and a 40-word takeaway, and `plainWords` in `lib/analysis-review.ts`
+swaps leftover jargon (e1RM, RPE, set credits, e.g.) in new and already
+saved reports. The one thing to do next is shown without opening anything
+("Next time"); the reasons sit under "Why we think this", with a one-line
+explanation of "estimated max" when it appears. The prompt change lives in
+the analyze-workout Edge Function, which CI does not deploy.

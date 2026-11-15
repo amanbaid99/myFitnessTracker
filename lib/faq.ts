@@ -277,7 +277,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What does the AI do?",
         a: [
-          "After each workout it compares like-for-like lifts, reps or hold time and recorded effort with earlier sessions. A brief takeaway appears in the recap; expand Evidence and next focus for specifics. Session notes and energy are treated as self-report. The weekly and four-week views use existing SQL metrics and saved goals, distinguish partial periods and explain limited evidence. More volume is not automatically better, and one workout does not establish a trend. AI Coach answers questions about your training and keeps the selected scope and conversation when you navigate within the app. It can also build a plan from your description and write a day's warm-up and cool-down.",
+          "After each workout it compares like-for-like lifts, reps or hold time and recorded effort with earlier sessions. A short takeaway and one thing to do next time appear in the recap; tap Why we think this for the details. Reports use everyday words: an estimated max is the most you could likely lift for one rep, worked out from your sets. Session notes and energy are treated as self-report. The weekly and four-week views use the same numbers as Progress and saved goals, distinguish partial periods and explain limited evidence. More volume is not automatically better, and one workout does not establish a trend. AI Coach answers questions about your training and keeps the selected scope and conversation when you navigate within the app. It can also build a plan from your description and write a day's warm-up and cool-down.",
         ],
       },
       {
