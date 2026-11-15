@@ -95,7 +95,7 @@ describe("exercise headline", () => {
     expect(exerciseHeadline([])).toBeNull();
   });
   it("labels volume like the weekly reports", () => {
-    expect(volumeLabel(1240.4, "kg")).toBe("1,240 kg × reps");
+    expect(volumeLabel(1240.4, "kg")).toBe("1,240 kg");
   });
 });
 

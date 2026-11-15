@@ -243,7 +243,7 @@ export function MeasurementTracker({
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="mt-1 h-12 w-full rounded-xl border bg-background px-3"
+                className="mt-1 h-12 w-full rounded-xl border bg-card px-3"
               >
                 <option value="smart_scale">Smart scale</option>
                 <option value="calipers">Calipers</option>
@@ -255,7 +255,7 @@ export function MeasurementTracker({
               </span>
             </label>
           )}
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button size="lg" type="submit" className="w-full" disabled={busy}>
             {busy ? "Saving…" : editing ? "Save changes" : "Save check-in"}
           </Button>
           {editing && <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={() => { setEditing(false); setMore(false); setDate(localDay()); setValues({}); setMethod("smart_scale"); setMessage(""); }}>Cancel</Button>}
@@ -269,7 +269,7 @@ export function MeasurementTracker({
           <select
             value={metric}
             onChange={(e) => setMetric(e.target.value as Metric)}
-            className="mt-1 h-12 w-full rounded-xl border bg-background px-3"
+            className="mt-1 h-12 w-full rounded-xl border bg-card px-3"
           >
             {METRICS.map(([key, label]) => (
               <option key={key} value={key}>

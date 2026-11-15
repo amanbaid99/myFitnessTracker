@@ -1,12 +1,14 @@
 "use client";
 
 import { prepareDraftExercises } from "@/lib/routine-edits";
+import { BACK_CLASS } from "@/components/back-link";
+import { friendlyError } from "@/lib/friendly-error";
 import { track } from "@/lib/analytics";
 import { useState } from "react";
 import Link from "next/link";
 import { MeasurementSystem } from "@/components/measurement-system";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Dumbbell, Home, PersonStanding, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Dumbbell, Home, PersonStanding, Sparkles, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -166,7 +168,7 @@ export function WelcomeFlow({
     setBusy(true);
     setError(null);
     const prepared = await prepareDraftExercises(supabase, draft);
-    if (prepared.error) { setBusy(false); setError(prepared.error.message); return; }
+    if (prepared.error) { setBusy(false); setError(friendlyError(prepared.error.message, "Could not save your details. Try again.")); return; }
     const { data: planId, error } = await supabase.rpc("create_plan", {
       p_name: rec.name,
       p_template: rec.template,
@@ -176,7 +178,7 @@ export function WelcomeFlow({
     });
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(friendlyError(error.message, "Could not save your details. Try again."));
       return;
     }
     // Changed before creating: it is the user's own version of the template.
@@ -189,9 +191,9 @@ export function WelcomeFlow({
     <button
       type="button"
       onClick={() => setStep(to)}
-      className="-ml-2 mb-2 inline-flex h-11 items-center gap-1 px-2 text-sm text-muted-foreground"
+      className={BACK_CLASS}
     >
-      <ArrowLeft className="size-4" /> Back
+      <ChevronLeft className="size-4" aria-hidden /> Back
     </button>
   );
 
@@ -212,6 +214,13 @@ export function WelcomeFlow({
             <Field label="Name" htmlFor="w-name">
               <Input id="w-name" value={name} maxLength={40} autoComplete="given-name" onChange={(e) => setName(e.target.value)} />
             </Field>
+
+            <Chips
+              label="Lifting experience"
+              options={EXPERIENCE.map((e) => ({ key: e.key, label: e.label, hint: e.hint }))}
+              value={experience}
+              onChange={(v) => setExperience(v as Experience | null)}
+            />
 
             <Chips
               label="Gender"
@@ -240,13 +249,6 @@ export function WelcomeFlow({
                 </div>
               )}
             </div>
-
-            <Chips
-              label="Lifting experience"
-              options={EXPERIENCE.map((e) => ({ key: e.key, label: e.label, hint: e.hint }))}
-              value={experience}
-              onChange={(v) => setExperience(v as Experience | null)}
-            />
 
             {!detailsOnly && <details className="border-t pt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Optional: choose your colours</summary><p className="mb-3 text-xs text-muted-foreground">You can change these later in Settings.</p><ThemePicker initial={theme}/></details>}
 
@@ -349,11 +351,12 @@ export function WelcomeFlow({
             <Button size="lg" className="w-full" onClick={createPlan} disabled={busy || Boolean(emptyDay)}>
               {busy ? "Creating…" : "Create this plan"}
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => finish(`/plans/new?setup=${setup}`)} disabled={busy}>
-              Choose a different plan
+            <p className="pt-2 text-center text-sm text-muted-foreground">Not quite right?</p>
+            <Button variant="ghost" className="w-full" onClick={() => finish(`/plans/new?setup=${setup}`)} disabled={busy}>
+              Pick another plan
             </Button>
-            <Button variant="outline" className="w-full" onClick={() => finish(`/plans/new?describe=1&setup=${setup}`)} disabled={busy}>
-              <Sparkles /> Describe my own plan instead
+            <Button variant="ghost" className="w-full" onClick={() => finish(`/plans/new?describe=1&setup=${setup}`)} disabled={busy}>
+              <Sparkles /> Describe the plan you want
             </Button>
             {hasPlan && (
               <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => finish("/")} disabled={busy}>

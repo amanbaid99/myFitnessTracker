@@ -21,9 +21,9 @@ export const FAQ: FaqSection[] = [
     items: [
       { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Training, Measurement system, choose Metric (kg, cm) or Imperial (lb, ft/in), then Save units. This single preference controls workout weights, body weight, height and body measurements. Your recorded values stay unchanged."] },
       { q: "What if the equipment I need is busy?", a: ["Tap Options on the exercise, then Replace. Search by name or choose the equipment you can use. Tap an exercise to review the replacement and its muscles, then choose Use replacement. Cancel keeps the current exercise; Choose another keeps your search and equipment choice. It changes today only, not your regular plan. Logged sets must be unticked first. Check the replacement weight; it uses its own history. Known library exercises work offline. AI suggestions and new exercises need a connection."] },
-      { q: "Can I do a custom workout today?", a: ["On Today, choose Custom workout today below Start workout. Your plan and source workout are shown first. Choose equipment, focus and time, or describe what you want. AI uses the source plan to draft a version you can review. Edit sets, reps or seconds and rest, replace or remove exercises, add your own, and reorder them before starting. A today-only workout keeps your regular plan and rotation unchanged. It still counts as a workout and appears in History."] },
+      { q: "Can I do a custom workout today?", a: ["On Today, choose Customize today below Start workout. Your plan and source workout are shown first. Choose equipment, focus and time, or describe what you want. AI uses the source plan to draft a version you can review. Edit sets, reps or seconds and rest, replace or remove exercises, add your own, and reorder them before starting. A today-only workout keeps your regular plan and rotation unchanged. It still counts as a workout and appears in History."] },
       { q: "Can I customize a workout I have already started?", a: ["Choose Customize workout. Adapt the remaining workout, or review an adapted copy of the whole plan and choose a day. Exercises with logged or skipped sets and extras you added stay intact. Review the draft, then choose Use this workout. Sets must finish syncing before the reviewed changes are applied. Check starting weights; each exercise uses its own history."] },
-      { q: "Can I save an AI customization for future workouts?", a: ["From the review, choose Save for later. Add this workout to my plan adds another day. Replace an existing day updates the selected day; a whole-plan draft offers Update days in this plan. Review the affected days and confirm before replacing them. Current and past workouts keep their original prescription, preparation and alternates. The weekly goal and existing day order stay the same. Save as a new plan saves the reviewed days as an inactive plan; activate it later from Routines if you want. Generating or dismissing a draft does not save or change a plan. AI needs a connection and uses the shared daily allowance. Once started, set logging uses the same offline outbox as other workouts."] },
+      { q: "Can I save an AI customization for future workouts?", a: ["From the review, choose Save for later. Add this workout to my plan adds another day. Replace an existing day updates the selected day; a whole-plan draft offers Update days in this plan. Review the affected days and confirm before replacing them. Current and past workouts keep their original prescription, preparation and alternates. The weekly goal and existing day order stay the same. Save as a new plan saves the reviewed days as an inactive plan; activate it later from Plan if you want. Generating or dismissing a draft does not save or change a plan. AI needs a connection and uses the shared daily allowance. Once started, set logging uses the same offline outbox as other workouts."] },
       { q: "How is weekly training volume calculated?", a: ["Tap Training volume on Progress for load times reps for eligible working sets in completed app workouts. Weeks run Monday to Sunday in India time. Filter by exercise or muscle. Warm-ups, deleted sets, cancelled sessions, imports, starting records, bodyweight, bands and timed work are excluded. Per-hand weights use the entered load without doubling. Muscle breakdowns credit the primary muscle fully and supporting muscles by half, so muscle totals overlap. This week is unfinished; more volume does not always mean better training."] },
       { q: "What does goal completion mean?", a: ["Progress, Consistency opens with this week's completed workouts, target and completion percentage. You can change the current target under Set this week's target. Expand Recent weeks and targets for earlier weeks. Closed weeks keep their recorded targets; older weeks without a snapshot show completed workouts only, with one explanation. We do not guess which days were missed. The streak and expandable 12-week calendar use your device timezone, while weekly targets and reports use India time."] },
       { q: "How do monthly measurement reminders work?", a: ["Open Measurements from Settings to record optional weight, waist, chest, hips, arm circumference or a body fat estimate and its method. Weight also updates your daily weight log. A reminder appears on Today in a new month after at least 28 days without a measurement or weight log. Snooze for seven days or turn reminders off. Circumferences support cm and inches; body fat readings are estimates that depend on the method."] },
@@ -71,7 +71,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I create a workout plan?",
         a: [
-          "Go to Routines, then All plans, then Create a plan. Pick a template (Full Body, Upper Lower, Push Pull Legs or Bro Split), or describe your plan in your own words and let the AI build a draft.",
+          "Go to Plan, then All plans, then Create a plan. Pick a template (Full Body, Upper Lower, Push Pull Legs or Bro Split), or describe your plan in your own words and let the AI build a draft.",
           "Either way, review compact day summaries and expand a day to reorder, rename, add or remove exercises, or change sets and reps before creating it. Creating makes that plan active.",
         ],
       },
@@ -85,7 +85,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "Can I log a workout I did outside the app?",
         a: [
-          "Yes. On Today, tap Did something else? Log a workout, or use Log a workout in History. Add each exercise with sets, reps (or seconds) and an optional weight, say how it felt, and when you did it. You can give it a name, like Evening pull-ups.",
+          "Yes. On Today, tap Quick log below Start workout, or use Log a workout in History. Add each exercise with sets, reps (or seconds) and an optional weight, say how it felt, and when you did it. You can give it a name, like Evening pull-ups.",
           "It counts towards your streak and records, and towards your weekly goal when it has 6 or more working sets. It does not move your plan on. The AI review looks at everything you did that day, so morning push-ups and evening pull-ups are reviewed together.",
         ],
       },
@@ -147,7 +147,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What are the W1 and W2 sets?",
         a: [
-          "Ramp-up sets before your working sets: about 50% of your working weight for 10 reps, then 75% for 5. They warm up the first exercise of the day and don't count towards your records or volume. You can skip them, and you can add warm-up sets to any exercise with its Warm-up button.",
+          "Ramp-up sets before your working sets: about 50% of your working weight for 10 reps, then 75% for 5. They warm up the first exercise of the day and don't count towards your records or volume. You can skip them, and you can add one to any exercise with its Ramp-up set button.",
         ],
       },
       {
@@ -199,7 +199,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "I logged a set wrong. How do I fix it?",
         a: [
-          "Open History, pick the workout and tap the set. Change the weight or reps and tap Save fix, or delete it. To find a wrong PR quickly, tap the PR on Routines: it opens the workout it came from.",
+          "Open History, pick the workout and tap the set. Change the weight or reps and tap Save fix, or delete it. To find a wrong PR quickly, tap the PR on Plan: it opens the workout it came from.",
           "Your records and progress update straight away. The original entry is kept in the background but never shown or counted.",
         ],
       },
@@ -233,7 +233,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "How do I edit my plan?",
         a: [
-          "Routines, then Edit plan. Tap a name to rename it, tap an exercise to change its sets, reps, rest, seat setting or muscles, and open Day options for arrows to reorder or remove days. The exercise sheet shows everything in one scroll: Add previous record, sets and rest, exercise details, alternates, tracking, then move, swap or remove. Changes save straight away.",
+          "Plan, then Edit plan. Tap a name to rename it, tap an exercise to change its sets, reps, rest, seat setting or muscles, and open Day options for arrows to reorder or remove days. The exercise sheet shows everything in one scroll: Add previous record, sets and rest, exercise details, alternates, tracking, then move, swap or remove. Changes save straight away.",
           "You can keep several plans and switch the active one under All plans.",
         ],
       },
@@ -277,7 +277,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "What does the AI do?",
         a: [
-          "After each workout it compares like-for-like lifts, reps or hold time and recorded effort with earlier sessions. A brief takeaway appears in the recap; expand Evidence and next focus for specifics. Session notes and energy are treated as self-report. The weekly and four-week views use existing SQL metrics and saved goals, distinguish partial periods and explain limited evidence. More volume is not automatically better, and one workout does not establish a trend. AI Coach answers questions about your training and keeps the selected scope and conversation when you navigate within the app. It can also build a plan from your description and write a day's warm-up and cool-down.",
+          "After each workout it compares like-for-like lifts, reps or hold time and recorded effort with earlier sessions. A short takeaway and one thing to do next time appear in the recap; tap Why we think this for the details. Reports use everyday words: an estimated max is the most you could likely lift for one rep, worked out from your sets. Session notes and energy are treated as self-report. The weekly and four-week views use the same numbers as Progress and saved goals, distinguish partial periods and explain limited evidence. More volume is not automatically better, and one workout does not establish a trend. AI Coach answers questions about your training and keeps the selected scope and conversation when you navigate within the app. It can also build a plan from your description and write a day's warm-up and cool-down.",
         ],
       },
       {

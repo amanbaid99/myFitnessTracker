@@ -10,8 +10,13 @@ import { cn } from "@/lib/utils";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-/** The weekly summary stays above the single Start/Resume workout card. */
-export function HomeHero({ name, workoutDates, daysPerWeek, weeklyCount, children }: {
+/**
+ * Greeting, then today's workout (lead), then the training overview and week
+ * (Aman, 14 Nov: the main action comes first, the reading after).
+ */
+export function HomeHero({ name, workoutDates, daysPerWeek, weeklyCount, children, lead }: {
+  /** Today's workout card, shown right under the greeting. */
+  lead?: ReactNode;
   name: string | null;
   workoutDates: string[];
   daysPerWeek: number | null;
@@ -32,6 +37,7 @@ export function HomeHero({ name, workoutDates, daysPerWeek, weeklyCount, childre
         <p className="text-xs text-muted-foreground">{now ? new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "short" }).format(now) : "Your training"}</p>
         <h1 className={`mt-1 text-xl font-semibold tracking-tight ${MASK}`}>{name ? `Hi, ${name}` : "Today"}</h1>
       </header>
+      {lead}
       <div className="mt-4 overflow-hidden rounded-2xl border border-primary/20 bg-card">
         {children}
         {mounted ? (
@@ -51,7 +57,6 @@ export function HomeHero({ name, workoutDates, daysPerWeek, weeklyCount, childre
               </li>;
             })}
           </ol>
-          <p className="mt-2 text-[11px] text-muted-foreground">Week: India time · Streak: device time</p>
         </section>
       ) : <div aria-hidden className="h-20 border-t bg-muted/30" />}
       </div>

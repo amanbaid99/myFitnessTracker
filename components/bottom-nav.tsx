@@ -10,7 +10,7 @@ const TABS = [
   { href: "/history", label: "History", icon: History },
   { href: "/progress", label: "Progress", icon: LineChart },
   { href: "/coach", label: "AI Coach", icon: MessageCircle },
-  { href: "/routines", label: "Routines", icon: CalendarDays },
+  { href: "/routines", label: "Plan", icon: CalendarDays },
 ] as const;
 
 function isActive(pathname: string, href: string) {

@@ -139,7 +139,7 @@ export function AddExercise({
         {!validTargets && <p className="text-sm text-destructive">Enter 1 to 10 sets and {tracking === "time" ? "1 to 3600 seconds" : "1 to 50 reps"} per set.</p>}
         {!validHelp && <p role="alert" className="text-sm text-destructive">Enter assistance of 0 or more and a machine step above 0 and up to {fromKg(20,units)} {units}.</p>}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <Button className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...finalPick(), ...(muscleEdited || muscles.length ? { muscleGroups: muscles } : {}), ...(targetsFor ? { targets: { ...targetsFor(selected.exerciseId), sets: Number(sets), reps: Number(reps), ...(loadMode === "assisted" ? {assistanceKg,assistanceStepKg:toKg(Number(assistanceStep),units)} : {}) } } : {}) })}>
+        <Button size="lg" className="w-full" disabled={!valid || busy} onClick={() => void submit({ ...finalPick(), ...(muscleEdited || muscles.length ? { muscleGroups: muscles } : {}), ...(targetsFor ? { targets: { ...targetsFor(selected.exerciseId), sets: Number(sets), reps: Number(reps), ...(loadMode === "assisted" ? {assistanceKg,assistanceStepKg:toKg(Number(assistanceStep),units)} : {}) } } : {}) })}>
           {busy ? <Loader2 className="animate-spin motion-reduce:animate-none" /> : <Plus />} {busy ? "Adding exercise…" : "Add exercise"}
         </Button>
         <Button variant="ghost" className="w-full" onClick={() => setSelected(null)}>Back to exercises</Button>
@@ -193,7 +193,7 @@ export function AddExercise({
                 </option>
               ))}
             </select>
-            <Button className="w-full" onClick={() => choose({ exerciseId: null, name: query.trim(), equipment })}>
+            <Button size="lg" className="w-full" onClick={() => choose({ exerciseId: null, name: query.trim(), equipment })}>
               <Plus /> Add new exercise
             </Button>
           </li>

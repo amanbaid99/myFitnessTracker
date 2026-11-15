@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getActivePlan, getLastWorkingSets, getPersonalRecords, getProfile, load } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Routines" };
+export const metadata: Metadata = { title: "Your plan" };
 
 export default async function RoutinesPage() {
   const supabase = await createClient();
@@ -21,7 +21,7 @@ export default async function RoutinesPage() {
   if (result.error !== null) {
     return (
       <>
-        <ScreenHeader title="Routines" />
+        <ScreenHeader title="Your plan" />
         <DataError message={result.error} />
       </>
     );
@@ -31,7 +31,7 @@ export default async function RoutinesPage() {
   if (!active) {
     return (
       <>
-        <ScreenHeader title="Routines" subtitle="No active plan yet." />
+        <ScreenHeader title="Your plan" subtitle="No active plan yet." />
         <Button asChild size="lg" className="w-full">
           <Link href="/plans/new">
             <Plus /> Create a workout plan

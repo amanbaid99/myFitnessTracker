@@ -2612,3 +2612,144 @@ the filler "Edit the prefilled target below" and the assisted explainer line
 are gone (the set type sheet explains help); the set type hint shows only
 before the first working set; logged bodyweight sets read "Bodyweight × 4"
 instead of "4 reps".
+
+## 2026-11-14: A staging test site before anything goes live (Aman)
+
+Aman wants to see changes before they reach users. The `staging` branch
+deploys to a fixed address, https://my-fitness-tracker-staging.vercel.app,
+through the same CI checks. Aman chose the live database for it (a separate
+test database would need a third Supabase project on the free plan): he can
+try changes on his own workouts. The cost is that staging cannot run code
+that needs a migration not yet live, so a `staging-guard` CI job refuses
+such a push; approved migrations go live first, then reach staging. Work now
+goes to staging first, and a PR from staging to the default branch goes live
+only when Aman says so.
+
+## 2026-11-14: UX rotation 1, first impressions (staging)
+
+Walked the app as a beginner, a regular lifter and a returning user.
+- Sign in said only "Sign in with your email and password"; a newcomer was
+  not told what Repd does, and Create account was a small link. Now one line
+  says what it does and Create account is a full-width button.
+- Today opened with the AI overview paragraph, pushing the workout to start
+  below it. Today's workout now sits under the greeting; the overview and
+  week follow. This reverses the earlier order for the "main action first"
+  rule; Aman reviews it on staging.
+- Removed "Week: India time · Streak: device time" from Today and the time
+  zone sentence under Progress charts: true, but noise for a lifter (the
+  FAQ still explains it).
+- History no longer prints "No recap" on rows without one.
+Kept "kg × reps" for volume: an earlier deliberate choice, revisit with Aman.
+
+## 2026-11-14: UX rotation 2, during the workout (staging)
+
+Walked a workout as a beginner and as someone in a hurry.
+- After ticking a set, people tap the word "Hard" under the feel slider;
+  only the track reacted. The four words are now buttons too (44 px wide,
+  labelled "Felt Hard" for screen readers).
+- Finishing early read "1 completed working sets · 0 skipped · 15
+  unlogged". It now says "1 working set done" and, when sets are not
+  ticked, plainly that they will not be saved and to go back if they were
+  done. Skipped shows only when there are any.
+
+## 2026-11-14: UX rotation 3, progress (staging)
+
+Walked Progress as a numbers-focused lifter.
+- The Strength view opened with "Lift featured on your overview", a
+  setting, above the trends people came for. It now sits at the end, as
+  "Lift shown on the Progress overview".
+- Removed the remaining time zone sentence from the Strength tab.
+- Demo strength samples used loads that read as bugs (a 75 kg curl, a
+  67 kg lateral raise). They now use plausible loads per lift.
+
+## 2026-11-14: UX rotation 4, plain kg, useful card line, plain errors (staging)
+
+- Volume reads "4,200 kg", not "kg × reps" (Aman agreed to the change).
+  Explanations still say it is load times reps.
+- The open exercise card's Options row was often empty beside "Options".
+  It now shows the suggestion, or last time's sets, or "First time: enter
+  what you lift"; last time is not repeated inside Options.
+- Edge case: several screens showed raw database or sign-in errors ("new
+  row violates row-level security policy", "Invalid login credentials").
+  `lib/friendly-error.ts` maps network, session, sign-in, rate-limit and
+  permission errors to plain words, keeps Repd's own human messages, and
+  hides anything technical behind a short fallback for that screen.
+
+## 2026-11-14: UX rotation 5, first ten minutes and naming (staging)
+
+Walked sign-up to first workout as a newcomer, plus empty screens.
+- Welcome step 1 asks lifting experience right after the name, before
+  gender, units, weight and height: it shapes the plan most.
+- Welcome step 3 had three outlined buttons under Create this plan. The
+  alternatives are now quiet ("Not quite right? Pick another plan /
+  Describe the plan you want").
+- Empty History now explains what will appear and offers Start a workout
+  and Bring history from Strong or Hevy.
+- Today without a plan shows a resumable workout first and offers
+  "Already trained today? Log it".
+- The tab called "Routines" opened a screen about "your plan", while Today
+  said "View full plan" and "Choose another workout". The tab and screen are
+  now "Plan" / "Your plan" (URL unchanged). The intro tour's step title
+  changed from "Routines" to "Plan" to match; its body text is unchanged.
+
+## 2026-11-14: UX rotation 6, workout wording (staging)
+
+The logger used "Warm-up" for three things: the preparation checklist,
+the button that adds a lighter set, and the link that skips lighter sets.
+The checklist stays "Warm-up"; lighter sets are "Ramp-up sets" everywhere:
+the button is "Ramp-up set" and the link "Skip ramp-up sets". A first-time
+exercise now says "First time: log what you do and it becomes your
+starting point", which also fits bodyweight moves like pull-ups.
+
+## 2026-11-14: UX rotation 7, quick log (staging)
+
+As someone logging push-ups done at home: the note under Save said "With
+6 or more sets it also counts towards your weekly goal. The AI review
+looks at everything you did that day." It now says how many more sets
+are needed ("2 more sets and it counts towards your weekly goal too"),
+and drops the AI sentence, which did not help the decision to save.
+The 6-set rule itself (Aman) is unchanged.
+
+## 2026-11-14: Designer pass, fewer choices at once (staging)
+
+Looking for friction, clutter and overload, without removing anything.
+- Today's workout card stacked four choices under Start (Custom workout
+  today, Did something else? Log a workout, Choose another workout). The
+  first two now sit side by side as small buttons, "Customize today" and
+  "Quick log", so Start stands alone and every option stays.
+- The plan listed every exercise of every day with four lines each (demo
+  Today was 3,184 px tall). Days now fold: the first is open, the others
+  show name, count and a one-line preview of their exercises; all details
+  are one tap away. Demo Today is now about 2,060 px.
+
+## 2026-11-15: UI pass, consistent controls (staging)
+
+Audit of the visual system (Aman asked for a UI expert's pass).
+- Back controls used a chevron, an arrow or plain text depending on the
+  screen. One style now (`BACK_CLASS` in back-link.tsx): chevron, muted
+  text, 44 px.
+- 27 dropdowns used about ten different styles, each browser's own arrow,
+  and three greys. A base style in globals.css gives every select the same
+  chevron, padding and minimum height; selects use the card colour.
+- iPhones zoomed into fields under 16 px when tapped (several selects were
+  14 px). Fields stay at least 16 px on iOS.
+- Full-width main actions in sheets and forms were a mix of 44 and 48 px.
+  They now all use the large size (48 px, 16 px text).
+- Disabled buttons at 40% opacity were hard to read; now 50%.
+- FAQ topic chips were 36 px tall; now 44 px.
+- Segmented controls mixed pill and rounded-rectangle shapes and three
+  greys. All use a rounded-rectangle track in `bg-muted` with
+  rounded-lg segments.
+- kg and reps labels inside set rows grow from 10 px to 11 px.
+
+## 15 Nov: AI reports in everyday words (Aman)
+
+Aman found the four-week report hard to read ("e1RM", "set credits", long
+paragraphs). The prompts now ask for plain words, shorter highlights (30
+words) and a 40-word takeaway, and `plainWords` in `lib/analysis-review.ts`
+swaps leftover jargon (e1RM, RPE, set credits, e.g.) in new and already
+saved reports. The one thing to do next is shown without opening anything
+("Next time"); the reasons sit under "Why we think this", with a one-line
+explanation of "estimated max" when it appears. The prompt change lives in
+the analyze-workout Edge Function, which CI does not deploy; deployed as
+version 25 on 15 Nov with Aman's yes (shared by staging and production).

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { friendlyError } from "@/lib/friendly-error";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -16,7 +17,7 @@ export function MakeActiveButton({ planId, className }: { planId: string; classN
     const { error } = await createClient().rpc("set_active_plan", { p_plan: planId });
     setBusy(false);
     if (error) {
-      setError(error.message);
+      setError(friendlyError(error.message, "Could not change the plan. Try again."));
       return;
     }
     router.refresh();

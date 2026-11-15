@@ -5,6 +5,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { friendlyError as plainError } from "./friendly-error";
 import type { ExercisePick } from "@/components/plan/add-exercise";
 import type { ExerciseEdits } from "@/components/plan/exercise-sheet";
 import type { RoutineExercise } from "./data";
@@ -170,7 +171,7 @@ export function friendlyError(error: { message: string; code?: string }): string
   if (error.code === "23505" || /duplicate key|exercises_user_name_live_idx/i.test(error.message)) {
     return "You already have an exercise with that name. Pick a different name.";
   }
-  return error.message;
+  return plainError(error.message, "Could not save the change. Try again.");
 }
 
 /** Materialize explicitly configured new draft exercises before create_plan reuses them.

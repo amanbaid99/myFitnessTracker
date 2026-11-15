@@ -51,8 +51,8 @@ export default async function TodayPage() {
   const finishedAll = workouts.filter((w) => w.endedAt && w.source === "app");
   const lastFinished = finishedAll.find((w) => w.source === "app");
   const customizations = await getWorkoutCustomizations(supabase,workouts.filter(w=>w.source==="app"&&(!w.endedAt||w.id===lastFinished?.id)).map(w=>w.id)).catch(()=>({available:false,rows:new Map()}));
-  const hero = () => (
-    <HomeHero name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
+  const hero = (lead?: React.ReactNode) => (
+    <HomeHero lead={lead} name={profile.name} workoutDates={finishedAll.map((w) => w.startedAt)} daysPerWeek={effectiveWeeklyGoal(reports.rows,analysisWeek(new Date().toISOString()).start,result.data?.[0]?.plan.daysPerWeek??null,reports.available)} weeklyCount={reports.available?reports.rows.find(w=>w.week_start===analysisWeek(new Date().toISOString()).start)?.workouts:undefined}>
       <WeeklyReviewCard lastEndedAt={lastFinished?.endedAt ?? null} lastStartedAt={lastFinished?.startedAt ?? null} lastWorkoutId={lastFinished?.id ?? null} />
     </HomeHero>
   );
@@ -73,10 +73,9 @@ export default async function TodayPage() {
     const openSnapshot=openCustom?customizations.rows.get(openCustom.id):null;
     return (
       <>
-        {hero()}
-        {openCustom&&<HomeWorkoutCard name={openSnapshot?.name??"Workout in progress"} exerciseCount={openSnapshot?.items.length??null}
+        {hero(openCustom?<HomeWorkoutCard name={openSnapshot?.name??"Workout in progress"} exerciseCount={openSnapshot?.items.length??null}
           action={<Button asChild size="lg" className="w-full"><Link href={`/workout/${openCustom.id}`}><RotateCcw/>Resume workout</Link></Button>}
-          footer={<CancelWorkoutButton workoutId={openCustom.id} loggedSets={null} className="w-full text-muted-foreground"/>}/>}
+          footer={<CancelWorkoutButton workoutId={openCustom.id} loggedSets={null} className="w-full text-muted-foreground"/>}/>:null)}
         <div className="mt-6 rounded-2xl border border-dashed p-6 text-center">
           <p className="text-lg font-medium">No active workout plan</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -87,6 +86,7 @@ export default async function TodayPage() {
               <Plus /> Create a workout plan
             </Link>
           </Button>
+          <Link href="/log" className="mt-2 flex min-h-11 items-center justify-center text-sm text-muted-foreground underline-offset-4 hover:underline">Already trained today? Log it</Link>
         </div>
         {/* Secondary prompts sit below the main action. */}
         {monthly}
@@ -112,13 +112,11 @@ export default async function TodayPage() {
   return (
     <>
       {askFeedback && <FeedbackPrompt userId={profile.id} />}
-      {hero()}
-
-      {workoutRoutine && <HomeWorkoutCard
+      {hero(workoutRoutine ? <HomeWorkoutCard
           name={workoutRoutine.name}
           exerciseCount={open&&!customOpen&&!routines.some(r=>r.id===open.routineId)?null:workoutRoutine.exercises.length}
           lastDone={relativeDay(lastDone.get(workoutRoutine.id))}
-          action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <><form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form>{customizations.available&&<CustomWorkoutButton source={{planId:plan.id,planName:plan.name,routineId:workoutRoutine.id,routines}} library={library}/>}<Link href="/log" className="flex min-h-11 items-center justify-center text-sm text-muted-foreground underline-offset-4 hover:underline">Did something else? Log a workout</Link></>}
+          action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <><form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form><div className={`mt-2 grid gap-2 ${customizations.available ? "grid-cols-2" : ""}`}>{customizations.available&&<CustomWorkoutButton source={{planId:plan.id,planName:plan.name,routineId:workoutRoutine.id,routines}} library={library}/>}<Button asChild variant="secondary" className="h-auto min-h-11 whitespace-normal py-2 text-sm"><Link href="/log">Quick log</Link></Button></div></>}
           footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" /> : others.length > 0 ? (
         <details className="group">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden /></summary>
@@ -142,7 +140,7 @@ export default async function TodayPage() {
           </ul>
         </details>
           ) : undefined}
-        />}
+        /> : null)}
 
       {/* Nothing logged yet: offer starting weights so the first workout is not empty boxes. */}
       {!open && finished.length === 0 && !workouts.some((w) => w.source === "baseline") && (

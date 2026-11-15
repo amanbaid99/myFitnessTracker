@@ -112,12 +112,12 @@ export function QuickLogForm({ units, library }: { units: Units; library: Librar
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-2">
               <p className="col-span-full text-xs text-muted-foreground">New exercise. It is added to your exercises when you save.</p>
               <label className="text-xs font-medium">Equipment
-                <select value={e.equipment} onChange={(ev) => update(e.key, { equipment: ev.target.value })} className="mt-1 h-11 w-full rounded-xl border bg-background px-3 text-sm capitalize">
+                <select value={e.equipment} onChange={(ev) => update(e.key, { equipment: ev.target.value })} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm capitalize">
                   {EQUIPMENT.map((eq) => <option key={eq} value={eq}>{eq}</option>)}
                 </select>
               </label>
               <label className="text-xs font-medium">Measured by
-                <select value={e.tracking} onChange={(ev) => update(e.key, { tracking: ev.target.value as "reps" | "time", amount: null })} className="mt-1 h-11 w-full rounded-xl border bg-background px-3 text-sm">
+                <select value={e.tracking} onChange={(ev) => update(e.key, { tracking: ev.target.value as "reps" | "time", amount: null })} className="mt-1 h-11 w-full rounded-xl border bg-card px-3 text-sm">
                   <option value="reps">Reps</option>
                   <option value="time">Time (holds)</option>
                 </select>
@@ -176,8 +176,8 @@ export function QuickLogForm({ units, library }: { units: Units; library: Librar
         </label>
         <p className="text-xs leading-relaxed text-muted-foreground">
           {countsForWeeklyGoal(totalSets)
-            ? "Counts towards your streak, records and weekly goal. The AI review looks at everything you did that day."
-            : "Counts towards your streak and records. With 6 or more sets it also counts towards your weekly goal. The AI review looks at everything you did that day."}
+            ? "Counts towards your streak, records and weekly goal."
+            : `Counts towards your streak and records. ${6 - totalSets} more ${6 - totalSets === 1 ? "set" : "sets"} and it counts towards your weekly goal too.`}
         </p>
       </section>
 

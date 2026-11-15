@@ -38,7 +38,7 @@ export function MuscleFixCard({ exercises }: { exercises: WorkoutExercise[] }) {
           <X className="size-4" aria-hidden />
         </button>
       </div>
-      <Button className="mt-3 w-full" onClick={() => setOpen(true)}><Sparkles /> Suggest with AI</Button>
+      <Button size="lg" className="mt-3 w-full" onClick={() => setOpen(true)}><Sparkles /> Suggest with AI</Button>
       {open && <BulkMuscleSheet exercises={left} onClose={() => setOpen(false)} onSaved={(ids) => setDone((d) => [...d, ...ids])} />}
     </section>
   );

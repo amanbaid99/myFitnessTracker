@@ -1,5 +1,6 @@
 "use client";
 
+import { BACK_CLASS } from "@/components/back-link";
 import {
   Suspense,
   useState,
@@ -10,7 +11,7 @@ import {
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MASK } from "@/lib/mask";
 import { fromKg } from "@/lib/units";
@@ -207,9 +208,9 @@ function Dashboard(props: Props) {
           href={href("overview")}
           prefetch={false}
           onClick={navigate}
-          className="mb-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium"
+          className={BACK_CLASS}
         >
-          <ArrowLeft className="size-4" aria-hidden />
+          <ChevronLeft className="size-4" aria-hidden />
           Progress overview
         </Link>
       )}
@@ -270,7 +271,7 @@ function Dashboard(props: Props) {
                   points={weekPoints("volume_kg")}
                   kind="bars"
                   label="Weekly training volume"
-                  unit={`${units} × reps`}
+                  unit={units}
                 />
               )}
             </TrendCard>
@@ -363,8 +364,7 @@ function Dashboard(props: Props) {
             </TrendCard>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            Weekly bars use India time. The lighter bar is this week, still in
-            progress. Streaks use your device timezone.
+            The lighter bar is this week, still in progress.
           </p>
           <div className="mt-4 divide-y overflow-hidden rounded-2xl border bg-card">
             <Link
@@ -448,9 +448,20 @@ function Dashboard(props: Props) {
         />
       ) : (
         <>
+          <Details
+            {...props}
+            activeTab={tab}
+            initialRange={range}
+            onTabChange={(next) => {
+              const query = new URLSearchParams(params.toString());
+              query.set("view", next.toLowerCase());
+              globalThis.window.history.pushState(null, "", `?${query}`);
+            }}
+          />
+          {/* A setting, so it sits after the trends rather than above them. */}
           {view === "strength" && exercises.length > 0 && (
-            <label className="mb-4 block text-xs text-muted-foreground">
-              Lift featured on your overview
+            <label className="mt-6 block text-xs text-muted-foreground">
+              Lift shown on the Progress overview
               <select
                 aria-label="Lift featured on your overview"
                 value={lift?.id ?? ""}
@@ -470,16 +481,6 @@ function Dashboard(props: Props) {
               </select>
             </label>
           )}
-          <Details
-            {...props}
-            activeTab={tab}
-            initialRange={range}
-            onTabChange={(next) => {
-              const query = new URLSearchParams(params.toString());
-              query.set("view", next.toLowerCase());
-              globalThis.window.history.pushState(null, "", `?${query}`);
-            }}
-          />
         </>
       )}
     </div>

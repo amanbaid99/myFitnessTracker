@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
+import { BACK_CLASS } from "@/components/back-link";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { CustomWorkoutSheet } from "@/components/custom-workout-sheet";
 import { Button } from "@/components/ui/button";
 import { Logger } from "@/app/workout/[id]/logger";
@@ -62,18 +63,16 @@ export default function CustomWorkoutDemo() {
   }
   return (
     <main className="mx-auto max-w-lg p-4 pt-10">
-      <Button asChild variant="ghost">
-        <Link href="/demo">
-          <ArrowLeft />
-          Back to sample Today
-        </Link>
-      </Button>
+      <Link href="/demo" className={BACK_CLASS}>
+        <ChevronLeft className="size-4" aria-hidden />
+        Back to sample Today
+      </Link>
       <h1 className="mt-4 text-2xl font-semibold">Custom workout example</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Sample data only. Try the choices, review and start a sample workout. No
         AI requests or account changes.
       </p>
-      <Button className="mt-4 w-full" onClick={() => setOpen(true)}>
+      <Button size="lg" className="mt-4 w-full" onClick={() => setOpen(true)}>
         Try customization
       </Button>
       {open && (

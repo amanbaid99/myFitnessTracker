@@ -57,7 +57,7 @@ export function MonthlyCheckIn({
         Update your weight or optional measurements to keep a useful record.
         Recent daily weight logs count too.
       </p>
-      <Button asChild className="mt-3 w-full">
+      <Button size="lg" asChild className="mt-3 w-full">
         <Link href="/measurements">Record measurements</Link>
       </Button>
       <div className="mt-1 grid grid-cols-2">

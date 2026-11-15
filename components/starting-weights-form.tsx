@@ -1,6 +1,7 @@
 "use client";
 
 import { track } from "@/lib/analytics";
+import { friendlyError } from "@/lib/friendly-error";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -64,7 +65,7 @@ export function StartingWeightsForm({ exercises, units, returnTo = "/routines" }
       const failed = await saveStartingRows(createClient(), checked.rows);
       if (failed) {
         setBusy(false);
-        setError(failed);
+        setError(friendlyError(failed, "Could not save your previous sets. Try again."));
         return;
       }
       track("starting_weights_saved", { exercises: checked.rows.length });

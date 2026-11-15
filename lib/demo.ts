@@ -247,7 +247,9 @@ export function demoProgress(now = new Date()) {
   const ago = (days: number) => { const date = new Date(now); date.setDate(date.getDate() - days); date.setHours(7, 0, 0, 0); return new Date(Math.min(date.getTime(), now.getTime())).toISOString(); };
   const names = ["Barbell Bench Press", "Single-Leg Romanian Deadlift", "Lat Pulldown", "Leg Press", "Cable Lateral Raise", "Dumbbell Curl"];
   const exercises = names.map((name, i) => ({id:`sample-${i}`,name,sessions:Array.from({length:i === 5 ? 1 : 10}, (_, j) => {
-    const weightKg = 35 + i * 8 + (i === 2 ? -1 : i === 4 ? 0 : 1) * j;
+    // Plausible loads per lift (a 75 kg curl or 67 kg lateral raise read as a bug).
+    const base = [60, 30, 55, 140, 8, 12][i], step = [2.5, 2, 1.5, 5, 0, 1][i];
+    const weightKg = base + (i === 2 ? -1 : 1) * step * j;
     return {exerciseId:`sample-${i}`,workoutId:`demo-session-${i}-${j}`,startedAt:ago(i === 5 ? 1 : 67 - j * 7),weightKg,addedKg:0,reps:8,e1rmKg:weightKg * (1 + 8 / 30),workingSets:3,volumeKg:weightKg * 8 * 3};
   })}));
   const workoutDates=Array.from({length:32},(_,i)=>[ago(i*7), ...(i>0&&i%3!==0?[ago(i*7+2)]:[]), ...(i>0&&i%3===1?[ago(i*7+4)]:[])]).flat();

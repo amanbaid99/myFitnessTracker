@@ -232,9 +232,9 @@ function MissedSetSheet({
             {perHand && !prefill.assisted && !mode ? " Weight is per hand." : ""}
           </p>
           {mode && (
-            <div role="radiogroup" aria-label="How was this set done?" className="grid grid-cols-3 gap-1 rounded-full bg-secondary p-1">
+            <div role="radiogroup" aria-label="How was this set done?" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
               {SET_MODES.map((m) => (
-                <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => chooseMode(m)} className={cn("min-h-11 rounded-full px-1 text-sm font-medium", mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>
+                <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => chooseMode(m)} className={cn("min-h-11 rounded-lg px-1 text-sm font-medium", mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>
                   {SET_MODE_LABEL[m]}
                 </button>
               ))}

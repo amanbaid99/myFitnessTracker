@@ -58,7 +58,7 @@ export function MeasurementPreferences({
       {message && !editing && <p role="status" className={row ? "px-4 pb-2 text-sm text-muted-foreground" : "mt-2 text-sm text-muted-foreground"}>{message}</p>}
       {editing && <Sheet title="Measurement system" onClose={() => { if (!busy) setEditing(false); }}>
         <div className="space-y-4"><MeasurementSystem value={units} onChange={setUnits} />
-          <Button className="w-full" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save units"}</Button>
+          <Button size="lg" className="w-full" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save units"}</Button>
           {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
           <Button variant="ghost" className="w-full" disabled={busy} onClick={() => setEditing(false)}>Cancel</Button>
         </div>

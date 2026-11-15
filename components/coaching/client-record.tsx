@@ -168,7 +168,7 @@ export function ClientRecord({ record }: { record: ClientSummary }) {
               onChange={(e) => setReview(e.target.value)}
             />
           </label>
-          <Button className="w-full" type="submit" disabled={busy}>
+          <Button size="lg" className="w-full" type="submit" disabled={busy}>
             {busy
               ? "Saving…"
               : editing

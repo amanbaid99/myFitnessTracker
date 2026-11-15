@@ -66,6 +66,9 @@ function subscribe(listener: () => void) {
  * Back: one step back when you came here from another screen in the app;
  * otherwise (opened directly) to `fallback`, named by `label`.
  */
+/** One look for every back control: chevron, muted text, 44 px tall. */
+export const BACK_CLASS = "-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground";
+
 export function BackLink({ fallback, label, className }: { fallback: string; label: string; className?: string }) {
   const router = useRouter();
   const canGoBack = useSyncExternalStore(subscribe, () => readDepth() > 0, () => false);
@@ -77,7 +80,7 @@ export function BackLink({ fallback, label, className }: { fallback: string; lab
         event.preventDefault();
         router.back();
       }}
-      className={cn("-ml-2 mb-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground", className)}
+      className={cn(BACK_CLASS, className)}
     >
       <ChevronLeft className="size-4" aria-hidden /> {canGoBack ? "Back" : label}
     </Link>

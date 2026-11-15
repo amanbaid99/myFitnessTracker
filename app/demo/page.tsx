@@ -68,13 +68,8 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
         </div>}
 
         <div className="mt-4">
-          <HomeHero name={DEMO_PROFILE.name} workoutDates={[...DEMO_LAST_DONE.values()]} daysPerWeek={DEMO_PLAN.daysPerWeek}>
-            <WeeklyReviewCard lastEndedAt={null} lastStartedAt={null} lastWorkoutId={null} demoReview={DEMO_WEEKLY_REVIEW} fullHref="/demo/week" />
-          </HomeHero>
-        </div>
-
-        <HomeWorkoutCard name={next.name} exerciseCount={next.exercises.length} lastDone={relativeDay(DEMO_LAST_DONE.get(next.id))}
-          action={<><Button asChild size="lg" className="w-full"><Link href={`/demo/workout/${next.id}`}><Play />Try this workout</Link></Button><Button asChild variant="ghost" className="mt-1 min-h-11 w-full"><Link href="/demo/custom-workout">Custom workout today</Link></Button></>}
+          <HomeHero lead={<HomeWorkoutCard name={next.name} exerciseCount={next.exercises.length} lastDone={relativeDay(DEMO_LAST_DONE.get(next.id))}
+          action={<><Button asChild size="lg" className="w-full"><Link href={`/demo/workout/${next.id}`}><Play />Try this workout</Link></Button><div className="mt-2 grid grid-cols-2 gap-2"><Button asChild variant="secondary" className="min-h-11 text-sm"><Link href="/demo/custom-workout">Customize today</Link></Button><Button asChild variant="secondary" className="min-h-11 text-sm"><Link href="/login?mode=signup">Quick log</Link></Button></div></>}
           footer={
         <details className="group">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
@@ -97,7 +92,12 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
           </ul>
         </details>
           }
-        />
+        />} name={DEMO_PROFILE.name} workoutDates={[...DEMO_LAST_DONE.values()]} daysPerWeek={DEMO_PLAN.daysPerWeek}>
+            <WeeklyReviewCard lastEndedAt={null} lastStartedAt={null} lastWorkoutId={null} demoReview={DEMO_WEEKLY_REVIEW} fullHref="/demo/week" />
+          </HomeHero>
+        </div>
+
+
         {latest && <HomeWorkoutRecap href="/demo?finished=1" name={latest.name} startedAt={DEMO_LAST_DONE.get(latest.id)!} when={relativeDay(DEMO_LAST_DONE.get(latest.id))} />}
 
 

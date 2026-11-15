@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyError as plainError } from "@/lib/friendly-error";
 import { parseAssistedDraft, restoreAssistedOps, validAssistance } from "@/lib/assistance";
 import { RecordSheet } from "@/components/record-sheet";
 import { Sheet } from "@/components/ui/sheet";
@@ -243,7 +244,7 @@ export function Logger(props: {
 
   // Changes the database refused (not retried) are shown, never silent.
   useEffect(
-    () => onOutboxFailure((message) => {syncFailed.current=true;setSaveState("error");setError(`A change could not be saved: ${message}`);}),
+    () => onOutboxFailure((message) => {syncFailed.current=true;setSaveState("error");setError(`A change could not be saved. ${plainError(message, "Refresh the page and check your last sets.")}`);}),
     [],
   );
 
@@ -974,7 +975,7 @@ export function Logger(props: {
                 </div>
                     <details className="group -mt-1">
                     <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ""}</span>
+                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ex.last.length ? `Last time: ${formatSets(ex.last, units)}` : "First time: log what you do and it becomes your starting point"}</span>
                       <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
                     </summary>
                     <div className="mb-2 space-y-0.5 text-xs">
@@ -996,7 +997,7 @@ export function Logger(props: {
                     </p>
                   )}
                   {/* No "Aim" line: the set rows are already filled in with it. */}
-                  {ex.last.length > 0 && (
+                  {ex.last.length > 0 && item.exercise.loadMode !== "assisted" && ex.aim && (
                     <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
                   )}
                   {props.lastNotes?.[ex.exerciseId] && (
@@ -1101,7 +1102,7 @@ export function Logger(props: {
                       onClick={() => setSkipped((s) => [...s, ex.exerciseId])}
                       className="min-h-11 px-2 text-xs text-muted-foreground underline underline-offset-4"
                     >
-                      Skip warm-up
+                      Skip ramp-up sets
                     </button>
                   )}
                 </div>
@@ -1194,7 +1195,7 @@ export function Logger(props: {
                         onClick={() => addWarmup(exIndex)}
                         className="flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 break-words text-sm text-muted-foreground"
                       >
-                        <Flame className="size-4" /> Warm-up
+                        <Flame className="size-4" /> Ramp-up set
                       </button>
                       <button
                         type="button"
@@ -1742,7 +1743,7 @@ function SetMenuSheet({ row, units, perHand, canAddOn, remaining, onClose, onAdd
         </label>
         <p className="text-xs text-muted-foreground">A small plate or pin added to the main weight. Leave empty for none.</p>
         {!valid && <p role="alert" className="text-sm text-destructive">Enter 0 or more.</p>}
-        <Button className="w-full" disabled={!valid || (kg === 0 && row.addedKg === 0)} onClick={() => onAddOn(kg, false)}>{kg > 0 || row.addedKg === 0 ? "Use for this set" : "Remove from this set"}</Button>
+        <Button size="lg" className="w-full" disabled={!valid || (kg === 0 && row.addedKg === 0)} onClick={() => onAddOn(kg, false)}>{kg > 0 || row.addedKg === 0 ? "Use for this set" : "Remove from this set"}</Button>
         {remaining > 1 && (kg > 0 || row.addedKg > 0) && <Button variant="secondary" className="w-full" disabled={!valid} onClick={() => onAddOn(kg, true)}>{kg > 0 ? `Use for all ${remaining} unlogged sets` : `Remove from all ${remaining} unlogged sets`}</Button>}
       </section>}
       {onSkip && <Button variant="outline" className="w-full" onClick={onSkip}><SkipForward /> Skip set {row.label}</Button>}
@@ -2087,7 +2088,7 @@ function NumberField({
         className="h-full w-full min-w-0 bg-transparent px-1.5 text-center text-base tabular-nums outline-none disabled:text-inherit"
         placeholder="–"
       />
-      {suffix && <span className="pr-1.5 text-[10px] text-muted-foreground">{suffix}</span>}
+      {suffix && <span className="pr-1.5 text-[11px] text-muted-foreground">{suffix}</span>}
     </label>
   );
 }
@@ -2227,15 +2228,19 @@ function FeelSlider({ rpe, onPick, onDone, guide }: { rpe: number | null; onPick
           />
         )}
       </div>
-      <div aria-hidden className="relative h-4 text-[11px]">
+      {/* The words are buttons too: people tap "Hard" rather than the dot above it. */}
+      <div className="relative -mt-2 h-9 text-[11px]">
         {FEEL_STOPS.map((f, i) => (
-          <span
+          <button
+            type="button"
             key={f}
-            className={cn("absolute -translate-x-1/2", feel === f ? "font-medium text-foreground" : "text-muted-foreground")}
+            onClick={() => commit(FEEL_RPE[f])}
+            aria-label={`Felt ${FEEL_LABEL[f]}`}
+            className={cn("absolute top-0 flex h-9 min-w-11 -translate-x-1/2 items-center justify-center px-1", feel === f ? "font-medium text-foreground" : "text-muted-foreground")}
             style={{ left: left(stopPosition(i)) }}
           >
             {FEEL_LABEL[f]}
-          </span>
+          </button>
         ))}
       </div>
     </div>
@@ -2358,7 +2363,7 @@ function FinishSheet({
     const { error } = await createClient().from("workouts").delete().eq("id", workoutId);
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(plainError(error.message, "Could not finish the workout. Your sets are kept; try again."));
       return;
     }
     onDone("discarded");
@@ -2383,7 +2388,7 @@ function FinishSheet({
 
         {anyLogged ? (
           <>
-            <p className="mt-3 text-sm">{completion.completed} completed working sets · {completion.skipped} skipped · {completion.unlogged} unlogged</p><p className="mt-3 text-sm font-medium">Energy today (optional)</p><p className="text-xs text-muted-foreground">1 = very low · 5 = very high</p>
+            <p className="mt-3 text-sm">{completion.completed} working {completion.completed === 1 ? "set" : "sets"} done{completion.skipped ? ` · ${completion.skipped} skipped` : ""}</p>{completion.unlogged > 0 && <p className="mt-1 text-sm text-muted-foreground">{completion.unlogged} {completion.unlogged === 1 ? "set was" : "sets were"} not ticked and will not be saved. Go back to tick them if you did them.</p>}<p className="mt-3 text-sm font-medium">Energy today (optional)</p><p className="text-xs text-muted-foreground">1 = very low · 5 = very high</p>
             <div className="mt-2 grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
