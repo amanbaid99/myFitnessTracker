@@ -2751,4 +2751,5 @@ swaps leftover jargon (e1RM, RPE, set credits, e.g.) in new and already
 saved reports. The one thing to do next is shown without opening anything
 ("Next time"); the reasons sit under "Why we think this", with a one-line
 explanation of "estimated max" when it appears. The prompt change lives in
-the analyze-workout Edge Function, which CI does not deploy.
+the analyze-workout Edge Function, which CI does not deploy; deployed as
+version 25 on 15 Nov with Aman's yes (shared by staging and production).
