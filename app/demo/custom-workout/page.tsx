@@ -72,7 +72,7 @@ export default function CustomWorkoutDemo() {
         Sample data only. Try the choices, review and start a sample workout. No
         AI requests or account changes.
       </p>
-      <Button className="mt-4 w-full" onClick={() => setOpen(true)}>
+      <Button size="lg" className="mt-4 w-full" onClick={() => setOpen(true)}>
         Try customization
       </Button>
       {open && (

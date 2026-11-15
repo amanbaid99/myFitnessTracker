@@ -51,7 +51,7 @@ export function UnmappedExercises({ exercises, demo = false, description }: {
           <MusclePicker key={edit.id} name={edit.name} equipment={edit.equipment} value={selection} onChange={setSelection} disabled={saving} />
           <p className="mt-3 text-xs text-muted-foreground">Applies to this exercise throughout your plan and history.</p>
           {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
-          <Button className="mt-4 w-full" onClick={save} disabled={saving || selection.length === 0}>{saving ? "Saving…" : "Confirm muscles and save"}</Button>
+          <Button size="lg" className="mt-4 w-full" onClick={save} disabled={saving || selection.length === 0}>{saving ? "Saving…" : "Confirm muscles and save"}</Button>
           <Button variant="ghost" className="mt-2 w-full" disabled={saving} onClick={() => setEdit(null)}>Cancel</Button>
         </div>
       </MappingDialog>}

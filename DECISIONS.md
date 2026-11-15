@@ -2721,3 +2721,23 @@ Looking for friction, clutter and overload, without removing anything.
   Today was 3,184 px tall). Days now fold: the first is open, the others
   show name, count and a one-line preview of their exercises; all details
   are one tap away. Demo Today is now about 2,060 px.
+
+## 2026-11-15: UI pass, consistent controls (staging)
+
+Audit of the visual system (Aman asked for a UI expert's pass).
+- Back controls used a chevron, an arrow or plain text depending on the
+  screen. One style now (`BACK_CLASS` in back-link.tsx): chevron, muted
+  text, 44 px.
+- 27 dropdowns used about ten different styles, each browser's own arrow,
+  and three greys. A base style in globals.css gives every select the same
+  chevron, padding and minimum height; selects use the card colour.
+- iPhones zoomed into fields under 16 px when tapped (several selects were
+  14 px). Fields stay at least 16 px on iOS.
+- Full-width main actions in sheets and forms were a mix of 44 and 48 px.
+  They now all use the large size (48 px, 16 px text).
+- Disabled buttons at 40% opacity were hard to read; now 50%.
+- FAQ topic chips were 36 px tall; now 44 px.
+- Segmented controls mixed pill and rounded-rectangle shapes and three
+  greys. All use a rounded-rectangle track in `bg-muted` with
+  rounded-lg segments.
+- kg and reps labels inside set rows grow from 10 px to 11 px.

@@ -255,7 +255,7 @@ export function MeasurementTracker({
               </span>
             </label>
           )}
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button size="lg" type="submit" className="w-full" disabled={busy}>
             {busy ? "Saving…" : editing ? "Save changes" : "Save check-in"}
           </Button>
           {editing && <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={() => { setEditing(false); setMore(false); setDate(localDay()); setValues({}); setMethod("smart_scale"); setMessage(""); }}>Cancel</Button>}

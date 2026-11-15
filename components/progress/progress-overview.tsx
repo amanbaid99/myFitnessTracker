@@ -69,7 +69,7 @@ export function ProgressOverview({ workoutDates, muscleRows, exercises, units, u
     (event.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus();
   }
   return <div>
-    <div role="tablist" aria-label="Progress views" className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] gap-1 rounded-xl bg-muted/60 p-1">
+    <div role="tablist" aria-label="Progress views" className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,5rem),1fr))] gap-1 rounded-xl bg-muted p-1">
       {TABS.map((name, index) => <button key={name} type="button" role="tab" id={`${id}-${name}`} aria-controls={`${id}-panel`} aria-selected={tab === name} tabIndex={tab === name ? 0 : -1} onKeyDown={e => navigateTabs(e, index)} onClick={() => setTab(name)} className={cn("min-h-11 min-w-0 break-words rounded-lg px-1 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring", tab === name ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>{name}</button>)}
     </div>
     <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`} tabIndex={0}>

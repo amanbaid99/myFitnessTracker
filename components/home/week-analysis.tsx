@@ -46,7 +46,7 @@ export function WeekAnalysis({ review, state, workload, range, which, basePath, 
       href={key === "last" ? `${basePath}?week=last` : basePath}
       replace
       aria-current={which === key ? "page" : undefined}
-      className={cn("flex min-h-11 flex-1 items-center justify-center rounded-full text-sm font-medium", which === key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}
+      className={cn("flex min-h-11 flex-1 items-center justify-center rounded-lg text-sm font-medium", which === key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}
     >
       {label}
     </Link>
@@ -66,7 +66,7 @@ export function WeekAnalysis({ review, state, workload, range, which, basePath, 
         <h1 className="text-2xl font-semibold tracking-tight">{last ? "Last week" : "Your week"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{last ? "Last week" : "This week"} · {range}</p>
       </header>
-      <nav aria-label="Week" className="mb-5 flex gap-1 rounded-full bg-muted p-1">
+      <nav aria-label="Week" className="mb-5 flex gap-1 rounded-xl bg-muted p-1">
         {tab("this", "This week")}
         {tab("last", "Last week")}
       </nav>

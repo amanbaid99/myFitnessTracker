@@ -128,7 +128,7 @@ export function ImportFlow({ available, units, library, workoutStarts, pastImpor
             {result.error ?? "They're in History and count towards your records and volume, not your streaks or weekly goals."}
           </p>
         </div>
-        {result.workouts > 0 && <Button asChild className="w-full"><Link href="/history">View History</Link></Button>}
+        {result.workouts > 0 && <Button size="lg" asChild className="w-full"><Link href="/history">View History</Link></Button>}
         {result.importId && <Button variant="outline" className="w-full" disabled={undoing !== null} onClick={() => undo(result.importId!)}>Undo this import</Button>}
         <Button variant="ghost" className="w-full" onClick={() => { setResult(null); setReview(null); }}>Import another file</Button>
       </section>

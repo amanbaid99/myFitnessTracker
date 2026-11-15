@@ -22,7 +22,7 @@ export function FaqList() {
       {!searching && (
         <nav aria-label="Topics" className="mt-4 flex flex-wrap gap-2">
           {FAQ.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className="inline-flex min-h-9 items-center rounded-full border bg-card px-3 text-sm">
+            <a key={s.id} href={`#${s.id}`} className="inline-flex min-h-11 items-center rounded-full border bg-card px-4 text-sm">
               {s.title}
             </a>
           ))}

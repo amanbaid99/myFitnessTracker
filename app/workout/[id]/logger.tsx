@@ -1743,7 +1743,7 @@ function SetMenuSheet({ row, units, perHand, canAddOn, remaining, onClose, onAdd
         </label>
         <p className="text-xs text-muted-foreground">A small plate or pin added to the main weight. Leave empty for none.</p>
         {!valid && <p role="alert" className="text-sm text-destructive">Enter 0 or more.</p>}
-        <Button className="w-full" disabled={!valid || (kg === 0 && row.addedKg === 0)} onClick={() => onAddOn(kg, false)}>{kg > 0 || row.addedKg === 0 ? "Use for this set" : "Remove from this set"}</Button>
+        <Button size="lg" className="w-full" disabled={!valid || (kg === 0 && row.addedKg === 0)} onClick={() => onAddOn(kg, false)}>{kg > 0 || row.addedKg === 0 ? "Use for this set" : "Remove from this set"}</Button>
         {remaining > 1 && (kg > 0 || row.addedKg > 0) && <Button variant="secondary" className="w-full" disabled={!valid} onClick={() => onAddOn(kg, true)}>{kg > 0 ? `Use for all ${remaining} unlogged sets` : `Remove from all ${remaining} unlogged sets`}</Button>}
       </section>}
       {onSkip && <Button variant="outline" className="w-full" onClick={onSkip}><SkipForward /> Skip set {row.label}</Button>}
