@@ -869,7 +869,7 @@ export function Logger(props: {
           onSkip={()=>setWarmupOpen(false)}
           footer={
             items[0] && exercises[0]?.warmups.length > 0
-              ? items[0].exercise.loadMode === "assisted" ? "Edit warm-up assistance below. More assistance makes the movement easier." : `Then ramp up on ${items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.`
+              ? items[0].exercise.loadMode === "assisted" ? "Edit warm-up assistance below. More assistance makes the movement easier." : `Then warm-up sets on ${items[0].exercise.name}: 50% and 75% of your working weight, then your working sets.`
               : undefined
           }
         />
@@ -1071,12 +1071,12 @@ export function Logger(props: {
 
               {showWarmups && ex.warmups.every((r) => r.logged) && !warmupsShown.includes(ex.exerciseId) ? (
                 <button type="button" onClick={() => setWarmupsShown((w) => [...w, ex.exerciseId])} className="mt-2 flex min-h-11 w-full items-center justify-between gap-2 border-t border-dashed px-4 text-sm text-muted-foreground" aria-expanded={false}>
-                  <span>Ramp-up · {ex.warmups.length} {ex.warmups.length === 1 ? "set" : "sets"} done</span>
+                  <span>Warm-up · {ex.warmups.length} {ex.warmups.length === 1 ? "set" : "sets"} done</span>
                   <ChevronDown className="size-4" aria-hidden />
                 </button>
               ) : showWarmups && (
-                <div className="mt-2 border-t border-dashed px-2" role="group" aria-label="Ramp-up sets">
-                  <div className="flex min-h-11 items-center justify-between gap-2 px-2"><p className="text-sm text-muted-foreground">Ramp-up sets</p><p className="text-xs tabular-nums text-muted-foreground">{ex.warmups.filter(r=>r.logged).length} of {ex.warmups.length} logged</p></div>
+                <div className="mt-2 border-t border-dashed px-2" role="group" aria-label="Warm-up sets">
+                  <div className="flex min-h-11 items-center justify-between gap-2 px-2"><p className="text-sm text-muted-foreground">Warm-up sets</p><p className="text-xs tabular-nums text-muted-foreground">{ex.warmups.filter(r=>r.logged).length} of {ex.warmups.length} logged</p></div>
                   {ex.warmups.map((row) => (
                     <SetRow
                       key={row.key}
@@ -1102,7 +1102,7 @@ export function Logger(props: {
                       onClick={() => setSkipped((s) => [...s, ex.exerciseId])}
                       className="min-h-11 px-2 text-xs text-muted-foreground underline underline-offset-4"
                     >
-                      Skip ramp-up sets
+                      Skip warm-up sets
                     </button>
                   )}
                 </div>
@@ -1195,7 +1195,7 @@ export function Logger(props: {
                         onClick={() => addWarmup(exIndex)}
                         className="flex min-h-11 min-w-0 flex-wrap items-center justify-center gap-1 break-words text-sm text-muted-foreground"
                       >
-                        <Flame className="size-4" /> Ramp-up set
+                        <Flame className="size-4" /> Warm-up set
                       </button>
                       <button
                         type="button"
