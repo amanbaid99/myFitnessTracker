@@ -28,7 +28,7 @@ export const metadata: Metadata = { title: "Demo" };
 
 const FEATURES = [
   { icon: SlidersHorizontal, text: "Plans from templates (Push Pull Legs, Upper Lower and more) that you can edit" },
-  { icon: Flame, text: "A warm-up made for each day, then ramp-up sets at 50% and 75%" },
+  { icon: Flame, text: "A warm-up made for each day, then lighter warm-up sets at 50% and 75%" },
   { icon: Trophy, text: "Your PRs and a target for every exercise, based on last time" },
   { icon: Check, text: "One tap per set, with weights filled in; say how it felt and the next set adjusts" },
 ];

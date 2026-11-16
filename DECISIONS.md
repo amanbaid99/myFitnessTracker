@@ -2753,3 +2753,10 @@ saved reports. The one thing to do next is shown without opening anything
 explanation of "estimated max" when it appears. The prompt change lives in
 the analyze-workout Edge Function, which CI does not deploy; deployed as
 version 25 on 15 Nov with Aman's yes (shared by staging and production).
+
+## 16 Nov: Warm-up sets again (Aman)
+
+Aman asked to rename "Ramp-up set" back to "Warm-up set". The logger
+button is "Warm-up set", the link "Skip warm-up sets", the folded line
+"Warm-up · 2 sets done", and the FAQ and demo match. This undoes the
+naming part of the 14 Nov rotation 6 entry; code names are unchanged.
