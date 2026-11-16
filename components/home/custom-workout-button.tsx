@@ -31,7 +31,7 @@ export function CustomWorkoutButton({
         }}
       >
         <Sparkles className="size-4 shrink-0" />
-        Customize today
+        Customise
       </Button>
       {open && (
         <Sheet
