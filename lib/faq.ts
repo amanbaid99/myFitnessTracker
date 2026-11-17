@@ -127,14 +127,14 @@ export const FAQ: FaqSection[] = [
       {
         q: "How are the weight and reps for each set chosen?",
         a: [
-          "They come from the last time you did that exercise, starting from the heaviest weight you used. If you hit every target last time and it didn't feel too hard, the weight goes up by that exercise's weight step, with fewer reps so the total work stays about the same (5 kg x 12 becomes 7.5 kg x 8), and you build back up from there. If you used an add-on, such as a 3.75 kg clip on a 7.5 kg stack, it comes off and the main weight goes up a full step instead (50 kg plus the clip becomes 57.5 kg); add the clip back when you are ready. If not, you stay at that weight and aim for one more rep than your weakest set.",
+          "They come from the last time you did that exercise, starting from the heaviest weight you used. If you hit every target last time and it didn't feel too hard, the weight goes up by that exercise's weight step, with fewer reps that should feel Good at the new weight, worked out from your estimated max and how the sets felt. It never drops below two-thirds of your target (5 kg x 12 becomes 7.5 kg x 8), and you build back up from there. If you used an add-on, such as a 3.75 kg clip on a 7.5 kg stack, it comes off and the main weight goes up a full step instead (50 kg plus the clip becomes 57.5 kg); add the clip back when you are ready. If not, you stay at that weight and aim for one more rep than your weakest set.",
           "The sets are filled in for you, so logging a set is one tap. Change any number before you tap if today is different.",
         ],
       },
       {
         q: "What do Easy, Good, Hard and Max do?",
         a: [
-          "After you log a set you can say how it felt. Easy makes the next set harder: one more rep, or more weight once you're at your target reps, with the reps lowered to match (12.5 kg x 10 becomes 15 kg x 8). Later sets follow. Max keeps the weight and matches the reps you just did. Good copies your reps to the next set when you beat the plan (aimed for 7, did 8: the next set is 8). Hard leaves the next set as it is. Once you pick, the feel shows as a small tag on that set, such as Hard, so a stray touch cannot change it. Tap the tag to adjust it. Scrolling over the slider never changes it.",
+          "After you log a set you can say how it felt. Easy makes the next set harder: one more rep, or more weight once you're at your target reps, with the reps lowered to what should feel Good at the new weight (30 + 3.75 kg x 15 on a 7.5 kg stack becomes 37.5 kg x 12). Later sets follow. Max keeps the weight and matches the reps you just did. Good copies your reps to the next set when you beat the plan (aimed for 7, did 8: the next set is 8). Hard leaves the next set as it is. Once you pick, the feel shows as a small tag on that set, such as Hard, so a stray touch cannot change it. Tap the tag to adjust it. Scrolling over the slider never changes it.",
           "It also helps next time's suggestion: a session that felt very hard repeats the weight instead of adding more.",
         ],
       },

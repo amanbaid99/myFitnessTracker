@@ -113,7 +113,8 @@ export function aimForSession(input: {
       weightKg: up.weightKg,
       addedKg: up.addedKg,
       // Fewer reps at the heavier weight, then build back up to the target.
-      reps: repsForHeavier(loadOf(first), input.targetReps, up.weightKg + up.addedKg, input.targetReps),
+      // lowestReps: the weakest top set sets the estimate.
+      reps: repsForHeavier(loadOf(first), lowestReps, up.weightKg + up.addedKg, input.targetReps, repsInReserve(hardest)),
       reason: first.addedKg > 0
         ? "Hit every target: up a full step, add-on off"
         : hardest === null ? "You hit every target last time" : "Hit every target and it felt manageable",
@@ -143,8 +144,8 @@ export function aimForSession(input: {
 /**
  * After a set is ticked with a feel, what the next working set should be.
  * Easy: below target reps, one more rep at the same weight; at or above
- * target, add a step, with the reps that keep about the same volume
- * (12.5 kg x 10 easy: 15 kg x 8). Good: at the same weight, copy the
+ * target, add a step, with reps that should feel Good at the new weight
+ * (repsForHeavier: 33.75 kg x 15 easy to 37.5 kg x 12). Good: at the same weight, copy the
  * reps just done when they beat the plan (aimed for 7, did 8: next is 8).
  * Max: keep the weight, match the reps just done. Hard: unchanged.
  */
@@ -165,7 +166,7 @@ export function adjustNextSet(input: {
     if (step !== null && input.done.weightKg !== null) {
       const added = input.done.addedKg ?? 0;
       const up = stepUp(input.done.weightKg, added, step);
-      return { weightKg: up.weightKg, addedKg: up.addedKg, reps: repsForHeavier(input.done.weightKg + added, doneReps, up.weightKg, input.targetReps) };
+      return { weightKg: up.weightKg, addedKg: up.addedKg, reps: repsForHeavier(input.done.weightKg + added, doneReps, up.weightKg + up.addedKg, input.targetReps, repsInReserve(FEEL_RPE.easy)) };
     }
     return { weightKg: input.done.weightKg, reps: doneReps + 1 };
   }
@@ -178,14 +179,30 @@ export function adjustNextSet(input: {
   return input.planned;
 }
 
+/** Reps left in the tank for a recorded effort (RPE 10 minus RPE). */
+export function repsInReserve(rpe: number | null | undefined): number {
+  return rpe == null ? GOOD_RIR : Math.max(0, 10 - rpe);
+}
+
+/** "Good" effort: about 2 to 3 reps left. New, heavier sets aim for this. */
+const GOOD_RIR = 2.5;
+
 /**
- * Reps at a heavier load that keep about the same volume (load x reps):
- * 12.5 kg x 10 to 15 kg is 8; 80 kg x 6 to 82.5 kg stays 6. At least 1, at
- * most maxReps. Pure.
+ * Reps to aim for after the weight goes up (Aman, 17 Nov). Uses the same
+ * Epley estimate as the strength charts: the set just done plus the reps
+ * left in the tank gives an estimated max, which gives the reps at the new
+ * weight that should feel Good. Never more than the target or the reps just
+ * done, never fewer than two-thirds of the target, so a big stack jump
+ * (33.75 kg x 15 easy to 37.5 kg) aims 12, not 14, and does not fall to 4.
+ * Pure.
  */
-export function repsForHeavier(loadKg: number, reps: number, newLoadKg: number, maxReps: number): number {
-  if (loadKg <= 0 || newLoadKg <= loadKg) return Math.min(reps, maxReps);
-  return Math.max(1, Math.min(maxReps, Math.round((loadKg * reps) / newLoadKg)));
+export function repsForHeavier(loadKg: number, reps: number, newLoadKg: number, targetReps: number, rir = GOOD_RIR): number {
+  const upper = Math.max(1, Math.min(targetReps, reps));
+  if (loadKg <= 0 || newLoadKg <= loadKg) return upper;
+  const estimatedMax = loadKg * (1 + (reps + rir) / 30);
+  const repsAtNew = 30 * (estimatedMax / newLoadKg - 1) - GOOD_RIR;
+  const floor = Math.min(upper, Math.ceil((targetReps * 2) / 3));
+  return Math.max(1, floor, Math.min(upper, Math.round(repsAtNew)));
 }
 
 function round2(n: number): number {
