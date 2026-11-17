@@ -2768,3 +2768,13 @@ Aman asked to shorten Customize today to Customise because the button looked
 too large. The real Home action and its public sample now use Customise, and
 the FAQ points to the same label. Existing sizing, 44 px minimum targets and
 custom-workout setup/review/save behavior stay unchanged. Staging first.
+
+## 17 Nov: Training days calendar on History (Aman)
+
+Aman asked for a week heatmap of gym days at the top of History. The
+12-week grid from Progress is now a shared `ActivityCalendar`
+(components/activity-calendar.tsx) and sits in a "Training days" card
+above the list, with training days in 12 weeks and workouts this week.
+Today has a ring, rest days are grey, coming days are outlined. It draws
+after mount so the device timezone decides the day. Month labels skip the
+first column when the next week starts a month, so they never overlap.
