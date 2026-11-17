@@ -2790,3 +2790,12 @@ Options, and "Suggested" repeated what the set rows already show. Now:
 - Replace, Rest, Seat, Muscles, Add record and Skip remaining sets moved
   behind one ⋯ button in the card header (one tap, same row of tiles).
 - Collapsed cards show "Last ..." instead of "Aim ...".
+
+## 17 Nov: Rep-only aims use the top weight's reps (Aman)
+
+Aman's Walking Lunge (equipment Other, so no weight step) aimed
+12.5 kg x 21 after 10 kg x 20 and 12.5 kg x 15: the rep branch took the
+best reps from any set and paired them with the heaviest weight. It now
+takes reps only from the sets at the top weight (12.5 kg x 16), like the
+weighted branch already did. Exercises saved as Other or Bodyweight still
+progress by reps only; dumbbell, barbell, machine and cable add weight.
