@@ -2799,3 +2799,15 @@ best reps from any set and paired them with the heaviest weight. It now
 takes reps only from the sets at the top weight (12.5 kg x 16), like the
 weighted branch already did. Exercises saved as Other or Bodyweight still
 progress by reps only; dumbbell, barbell, machine and cable add weight.
+
+## 17 Nov: Reps after a weight step follow effort, not volume (Aman)
+
+After an easy set at target, the next set went up a step with reps that
+kept load x reps equal (33.75 kg x 15 to 37.5 kg x 14), which overshoots
+on big stack jumps. `repsForHeavier` now uses the Epley estimate the
+strength charts use: the set plus its reps in reserve (Easy 4, Good 2.5,
+from RPE) gives an estimated max, and the new reps are those that leave
+about 2.5 in reserve at the new weight. Capped at the target and the reps
+done, floored at two-thirds of the target. Same rule for the next-session
+aim, using the weakest top set and the hardest feel. Aman asked for this
+to go straight to live (PR into the default branch, no staging pass).

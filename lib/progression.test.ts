@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustNextSet, aimForSession, feelFromRpe, FEEL_RPE, parseWeightStep, stepKg, stepUp } from "./progression";
+import { adjustNextSet, aimForSession, repsForHeavier, feelFromRpe, FEEL_RPE, parseWeightStep, stepKg, stepUp } from "./progression";
 
 const set = (weightKg: number | null, reps: number | null, rpe: number | null = null, addedKg = 0) => ({ weightKg, addedKg, reps, rpe });
 
@@ -16,9 +16,9 @@ describe("aimForSession", () => {
     expect(aim).toMatchObject({ weightKg: 15, reps: 10, reason: "Your top weight last time, one more rep", readyToIncrease: false });
   });
 
-  it("adds a step on top of the heaviest weight when every set hit, with reps that keep the volume", () => {
+  it("adds a step on top of the heaviest weight when every set hit, with reps that should feel Good", () => {
     const aim = aimForSession({ lastSets: [set(12.5, 12), set(15, 12), set(15, 12)], targetSets: 3, targetReps: 12, equipment: "dumbbell" });
-    expect(aim).toMatchObject({ weightKg: 17.5, reps: 10, readyToIncrease: true });
+    expect(aim).toMatchObject({ weightKg: 17.5, reps: 8, readyToIncrease: true });
   });
 
   it("uses how the top sets felt, not a lighter first set", () => {
@@ -32,14 +32,14 @@ describe("aimForSession", () => {
 
   it("hit every target, no feel recorded: add a step, fewer reps", () => {
     const aim = aimForSession({ lastSets: [set(15, 10), set(15, 10), set(15, 11)], targetSets: 3, targetReps: 10, equipment: "machine" });
-    expect(aim).toMatchObject({ weightKg: 17.5, reps: 9, readyToIncrease: true });
+    expect(aim).toMatchObject({ weightKg: 17.5, reps: 7, readyToIncrease: true });
   });
 
-  it("a big jump drops the reps; a small one keeps them", () => {
+  it("a big jump drops the reps to the floor; a small one drops about one", () => {
     expect(aimForSession({ lastSets: [set(5, 12), set(5, 12), set(5, 12)], targetSets: 3, targetReps: 12, equipment: "dumbbell" }))
       .toMatchObject({ weightKg: 7.5, reps: 8 });
     expect(aimForSession({ lastSets: [set(80, 6), set(80, 6), set(80, 6)], targetSets: 3, targetReps: 6, equipment: "barbell" }))
-      .toMatchObject({ weightKg: 82.5, reps: 6 });
+      .toMatchObject({ weightKg: 82.5, reps: 5 });
   });
 
   it("takes the add-on off and moves the main weight up a full step (Aman, 5 Nov)", () => {
@@ -52,7 +52,7 @@ describe("aimForSession", () => {
   it("an add-on of a full step or more still lands heavier than before", () => {
     // 35 kg + 3.75 kg on a 1.25 kg step (38.75 total): next is 40 kg, no add-on.
     const aim = aimForSession({ lastSets: [set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75), set(35, 12, 7.5, 3.75)], targetSets: 3, targetReps: 12, equipment: "cable", weightStepKg: 1.25 });
-    expect(aim).toMatchObject({ weightKg: 40, addedKg: 0, reps: 12 });
+    expect(aim).toMatchObject({ weightKg: 40, addedKg: 0, reps: 11 });
   });
 
   it("keeps the add-on when the weight does not go up", () => {
@@ -87,13 +87,27 @@ describe("aimForSession", () => {
   });
 });
 
+describe("repsForHeavier", () => {
+  it("aims for reps that feel Good at the new weight, within the floor and the target (Aman, 17 Nov)", () => {
+    // Hip adduction: 30 + 3.75 kg x 15 felt easy, stack goes to 37.5 kg.
+    expect(repsForHeavier(33.75, 15, 37.5, 15, 4)).toBe(12);
+    // Easy small barbell jump keeps the reps.
+    expect(repsForHeavier(80, 6, 82.5, 6, 4)).toBe(6);
+    // A big dumbbell jump stops at two-thirds of the target.
+    expect(repsForHeavier(12.5, 10, 15, 10, 4)).toBe(7);
+    // Never above the reps just done or the target; no jump keeps them.
+    expect(repsForHeavier(20, 8, 20, 12)).toBe(8);
+    expect(repsForHeavier(10, 20, 10.5, 12, 4)).toBe(12);
+  });
+});
+
 describe("adjustNextSet", () => {
   const planned = { weightKg: 15, reps: 10 };
   const base = { planned, targetReps: 10, equipment: "machine" };
-  it("easy at target reps: next set goes up a step, with reps that keep the volume", () => {
-    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "easy" })).toEqual({ weightKg: 17.5, reps: 9, addedKg: 0 });
+  it("easy at target reps: next set goes up a step, with reps that should feel Good", () => {
+    expect(adjustNextSet({ ...base, done: { weightKg: 15, reps: 10 }, feel: "easy" })).toEqual({ weightKg: 17.5, reps: 7, addedKg: 0 });
     expect(adjustNextSet({ ...base, planned: { weightKg: 12.5, reps: 10 }, done: { weightKg: 12.5, reps: 10 }, feel: "easy", equipment: "dumbbell" }))
-      .toEqual({ weightKg: 15, reps: 8, addedKg: 0 });
+      .toEqual({ weightKg: 15, reps: 7, addedKg: 0 });
   });
   it("easy below target reps: one more rep, same weight", () => {
     expect(adjustNextSet({ ...base, planned: { weightKg: 15, reps: 8 }, done: { weightKg: 15, reps: 8 }, feel: "easy" }))
