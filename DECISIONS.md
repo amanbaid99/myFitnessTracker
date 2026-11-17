@@ -2778,3 +2778,15 @@ above the list, with training days in 12 weeks and workouts this week.
 Today has a ring, rest days are grey, coming days are outlined. It draws
 after mount so the device timezone decides the day. Month labels skip the
 first column when the next week starts a month, so they never overlap.
+
+## 17 Nov: Last time and PR at a glance in the workout (Aman)
+
+Aman found the exercise card slow to read: last time and the PR sat behind
+Options, and "Suggested" repeated what the set rows already show. Now:
+- Under the name, always visible: "Last time 90 kg x 8, 8, 8" and the PR
+  with a trophy, plus body weight and last note when relevant.
+- No "Suggested" line; the aim lives in the prefilled rows, and "Ready to
+  increase" stays beside the target.
+- Replace, Rest, Seat, Muscles, Add record and Skip remaining sets moved
+  behind one ⋯ button in the card header (one tap, same row of tiles).
+- Collapsed cards show "Last ..." instead of "Aim ...".

@@ -20,7 +20,7 @@ export const FAQ: FaqSection[] = [
     title: "Training reports and workout options",
     items: [
       { q: "Can I change between kilograms and pounds?", a: ["Yes. Open Settings, Training, Measurement system, choose Metric (kg, cm) or Imperial (lb, ft/in), then Save units. This single preference controls workout weights, body weight, height and body measurements. Your recorded values stay unchanged."] },
-      { q: "What if the equipment I need is busy?", a: ["Tap Options on the exercise, then Replace. Search by name or choose the equipment you can use. Tap an exercise to review the replacement and its muscles, then choose Use replacement. Cancel keeps the current exercise; Choose another keeps your search and equipment choice. It changes today only, not your regular plan. Logged sets must be unticked first. Check the replacement weight; it uses its own history. Known library exercises work offline. AI suggestions and new exercises need a connection."] },
+      { q: "What if the equipment I need is busy?", a: ["Tap the ⋯ button on the exercise, then Replace. Search by name or choose the equipment you can use. Tap an exercise to review the replacement and its muscles, then choose Use replacement. Cancel keeps the current exercise; Choose another keeps your search and equipment choice. It changes today only, not your regular plan. Logged sets must be unticked first. Check the replacement weight; it uses its own history. Known library exercises work offline. AI suggestions and new exercises need a connection."] },
       { q: "Can I do a custom workout today?", a: ["On Today, choose Customise below Start workout. Your plan and source workout are shown first. Choose equipment, focus and time, or describe what you want. AI uses the source plan to draft a version you can review. Edit sets, reps or seconds and rest, replace or remove exercises, add your own, and reorder them before starting. A today-only workout keeps your regular plan and rotation unchanged. It still counts as a workout and appears in History."] },
       { q: "Can I customize a workout I have already started?", a: ["Choose Customize workout. Adapt the remaining workout, or review an adapted copy of the whole plan and choose a day. Exercises with logged or skipped sets and extras you added stay intact. Review the draft, then choose Use this workout. Sets must finish syncing before the reviewed changes are applied. Check starting weights; each exercise uses its own history."] },
       { q: "Can I save an AI customization for future workouts?", a: ["From the review, choose Save for later. Add this workout to my plan adds another day. Replace an existing day updates the selected day; a whole-plan draft offers Update days in this plan. Review the affected days and confirm before replacing them. Current and past workouts keep their original prescription, preparation and alternates. The weekly goal and existing day order stay the same. Save as a new plan saves the reviewed days as an inactive plan; activate it later from Plan if you want. Generating or dismissing a draft does not save or change a plan. AI needs a connection and uses the shared daily allowance. Once started, set logging uses the same offline outbox as other workouts."] },
@@ -58,7 +58,7 @@ export const FAQ: FaqSection[] = [
       },
       {
         q: "Can I do fewer sets than planned?",
-        a: ["All working sets stay visible as compact rows in set order. Tap the circle at the right to mark a set done using its prefilled values, or edit the values first. Tap a checked circle to undo. You can log sets later or out of order. Tap a set number (the dots under it) for add-on weight and Skip set. An add-on shows inside the weight box, and Edit beside it changes every unlogged set at once. Skip remaining sets is under the exercise's Options. Undo skip brings a set back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
+        a: ["All working sets stay visible as compact rows in set order. Tap the circle at the right to mark a set done using its prefilled values, or edit the values first. Tap a checked circle to undo. You can log sets later or out of order. Tap a set number (the dots under it) for add-on weight and Skip set. An add-on shows inside the weight box, and Edit beside it changes every unlogged set at once. Skip remaining sets is under the exercise's ⋯ button. Undo skip brings a set back. The choice stays on this phone for that workout, including offline. Skipped sets do not count as logged sets, and your plan stays the same for next time."],
       },
       {
         q: "What does the weekly analysis cover?",
@@ -78,7 +78,7 @@ export const FAQ: FaqSection[] = [
       {
         q: "I already lift. Can I start from my current weights?",
         a: [
-          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, an exercise you have never logged shows Add record under Options; it opens a short form and you stay in the workout. Once it has history, add records from the exercise in your plan. Enter weight and reps for one set and skip any you don't know.",
+          "Yes. After creating a plan, you can enter previous records or starting weights, or skip for now. You can also open these from an exercise's edit sheet or from your plan. During a workout, an exercise you have never logged shows Add record under its ⋯ button; it opens a short form and you stay in the workout. Once it has history, add records from the exercise in your plan. Enter weight and reps for one set and skip any you don't know.",
           "Your next workout's suggested weights, warm-ups and records build on these. They don't count as a workout, so they don't change your streak or totals.",
         ],
       },
@@ -167,7 +167,7 @@ export const FAQ: FaqSection[] = [
         q: "How does the rest timer work?",
         a: [
           "It starts when you log a set and beeps when rest is over. Use +15s for more time, the circular arrow to restart it, or Skip. The speaker button mutes the beeps.",
-          "Tap Options on the exercise, then Rest. A preset saves immediately, or use Custom duration. It updates that exercise in the workout routine, including the next time you train it. Offline changes sync when you reconnect. Exercises added only to this session keep their rest change in this session. You can also edit rest in your plan.",
+          "Tap the ⋯ button on the exercise, then Rest. A preset saves immediately, or use Custom duration. It updates that exercise in the workout routine, including the next time you train it. Offline changes sync when you reconnect. Exercises added only to this session keep their rest change in this session. You can also edit rest in your plan.",
         ],
       },
       {
