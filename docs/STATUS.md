@@ -4,9 +4,16 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-12.
+Last updated: 2026-11-16.
 
 ## In progress
+
+- 2026-11-16: `ui/review-home-customise` shortens the Home action to Customise
+  at Aman's request; demo and FAQ match. Copy-only change, with existing
+  workout behavior and touch targets preserved. Staging-first review.
+- 2026-11-16: Production is 8a24e26 (#72), matching the canonical live version.
+  #69, #70 and the staging UX/UI release #71 are merged. Older pending notes
+  below describe earlier snapshots, not the current release state.
 
 - 2026-11-14: `staging` (test site my-fitness-tracker-staging.vercel.app)
   carries UX rotations 1 to 7, a designer pass and UI passes 1 and 2 (see DECISIONS, 14 and 15 Nov): sign-in copy, workout first on Today, trimmed

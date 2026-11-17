@@ -2760,3 +2760,11 @@ Aman asked to rename "Ramp-up set" back to "Warm-up set". The logger
 button is "Warm-up set", the link "Skip warm-up sets", the folded line
 "Warm-up · 2 sets done", and the FAQ and demo match. This undoes the
 naming part of the 14 Nov rotation 6 entry; code names are unchanged.
+
+
+## 2026-11-16: Shorter Home custom-workout label (Aman)
+
+Aman asked to shorten Customize today to Customise because the button looked
+too large. The real Home action and its public sample now use Customise, and
+the FAQ points to the same label. Existing sizing, 44 px minimum targets and
+custom-workout setup/review/save behavior stay unchanged. Staging first.
