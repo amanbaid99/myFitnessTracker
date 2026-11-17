@@ -95,12 +95,14 @@ export function aimForSession(input: {
 
   // Bodyweight or no weight recorded: progress by reps.
   if (first.weightKg === null || step === null) {
-    const reps = Math.max(...sets.map((s) => s.reps ?? 0)) + 1;
+    // Reps from the sets at the weight being aimed for, never from a
+    // lighter set: 10 kg x 20 then 12.5 kg x 15 aims 12.5 kg x 16, not 21.
+    const reps = Math.max(...topSets.map((s) => s.reps ?? 0)) + 1;
     return {
       weightKg: first.weightKg,
       addedKg: first.addedKg,
       reps,
-      reason: "One more rep than your best set last time",
+      reason: mixed ? "Your top weight last time, one more rep" : "One more rep than your best set last time",
       readyToIncrease: allHit,
     };
   }

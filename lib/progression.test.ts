@@ -4,6 +4,12 @@ import { adjustNextSet, aimForSession, feelFromRpe, FEEL_RPE, parseWeightStep, s
 const set = (weightKg: number | null, reps: number | null, rpe: number | null = null, addedKg = 0) => ({ weightKg, addedKg, reps, rpe });
 
 describe("aimForSession", () => {
+  it("rep-only exercises take reps from the top weight, not a lighter set (Aman, 17 Nov)", () => {
+    // Walking lunge saved as Other: 10 kg x 20, then 12.5 kg x 15, target 3 x 20.
+    const aim = aimForSession({ lastSets: [set(10, 20), set(12.5, 15)], targetSets: 3, targetReps: 20, equipment: "other" });
+    expect(aim).toMatchObject({ weightKg: 12.5, reps: 16, reason: "Your top weight last time, one more rep" });
+    expect(aimForSession({ lastSets: [set(null, 12), set(null, 10)], targetSets: 3, targetReps: 10, equipment: "bodyweight" })?.reps).toBe(13);
+  });
   it("builds from the heaviest weight when it went up during the session", () => {
     // Aman's incline press: 12.5 x 12, then 15 x 9 and 15 x 10, target 3 x 12.
     const aim = aimForSession({ lastSets: [set(12.5, 12), set(15, 9), set(15, 10)], targetSets: 3, targetReps: 12, equipment: "dumbbell" });

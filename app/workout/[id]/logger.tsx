@@ -223,6 +223,8 @@ export function Logger(props: {
   const [feelEdit, setFeelEdit] = useState<string | null>(null);
   // The exercise whose empty seat or pin setting is being added (from Options).
   const [seatEditFor, setSeatEditFor] = useState<string | null>(null);
+  // The exercise whose tools row (Replace, Rest, Seat, Muscles, Skip) is open.
+  const [toolsFor, setToolsFor] = useState<string | null>(null);
   // Closes the feel slider a moment after a pick, so the choice can be seen (and changed) first.
   const feelSettle = useRef<ReturnType<typeof setTimeout> | null>(null);
   function pickFeel(exIndex: number, row: Row, rpe: number) {
@@ -906,7 +908,7 @@ export function Logger(props: {
                         )}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {ex.aim ? `Aim ${formatSet(ex.aim, units)}` : formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
+                        {ex.last.length ? `Last ${formatSets(ex.last, units)}` : formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
                       </span>
                     </span>
                     {notes[ex.exerciseId] && (
@@ -965,6 +967,16 @@ export function Logger(props: {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className={cn("-mt-1 shrink-0 text-muted-foreground", toolsFor === ex.exerciseId && "bg-muted text-foreground")}
+                    onClick={() => setToolsFor((t) => (t === ex.exerciseId ? null : ex.exerciseId))}
+                    aria-expanded={toolsFor === ex.exerciseId}
+                    aria-label={`More for ${item.exercise.name}: replace, rest, muscles`}
+                  >
+                    <MoreHorizontal />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="-mr-2 -mt-1 shrink-0 text-muted-foreground"
                     onClick={() => setOpenId(null)}
                     aria-expanded
@@ -973,19 +985,15 @@ export function Logger(props: {
                     <ChevronUp />
                   </Button>
                 </div>
-                    <details className="group -mt-1">
-                    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 [&::-webkit-details-marker]:hidden">
-                      <span className="min-w-0 text-xs text-muted-foreground">{item.exercise.loadMode !== "assisted" && ex.aim ? `Suggested: ${formatSet(ex.aim,units)}` : ex.last.length ? `Last time: ${formatSets(ex.last, units)}` : "First time: log what you do and it becomes your starting point"}</span>
-                      <span className="flex shrink-0 items-center gap-0.5 text-sm font-medium text-primary">Options<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></span>
-                    </summary>
-                    <div className="mb-2 space-y-0.5 text-xs">
-                  {pr && (
-                    <p className="flex items-center gap-1 text-muted-foreground">
-                      <Trophy className="size-3 text-primary" aria-hidden /> PR {formatSet(pr, units)}
-                    </p>
-                  )}
+                <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    {ex.last.length > 0
+                      ? <span>Last time <span className="font-medium text-foreground tabular-nums">{formatSets(ex.last, units)}</span></span>
+                      : <span>First time: log what you do and it becomes your starting point</span>}
+                    {pr && <span className="flex items-center gap-1"><Trophy className="size-3.5 text-primary" aria-hidden />PR <span className="font-medium text-foreground tabular-nums">{formatSet(pr, units)}</span></span>}
+                  </p>
                   {item.exercise.equipment === "bodyweight" && item.exercise.tracking !== "time" && (
-                    <p className="text-muted-foreground">
+                    <p>
                       {props.bodyWeightKg ? (
                         <>
                           Lifting your body weight, <span className={MASK}>{formatWeight(props.bodyWeightKg, units)}</span>, plus any
@@ -996,17 +1004,14 @@ export function Logger(props: {
                       )}
                     </p>
                   )}
-                  {/* No "Aim" line: the set rows are already filled in with it. */}
-                  {ex.last.length > 0 && item.exercise.loadMode !== "assisted" && ex.aim && (
-                    <p className="text-muted-foreground">Last time: {formatSets(ex.last, units)}</p>
-                  )}
                   {props.lastNotes?.[ex.exerciseId] && (
-                    <p className="flex gap-1.5 text-muted-foreground">
+                    <p className="flex gap-1.5">
                       <StickyNote className="mt-0.5 size-3 shrink-0" aria-hidden />
                       <span className={MASK}>Last note: {props.lastNotes[ex.exerciseId]}</span>
                     </p>
                   )}
                 </div>
+                {toolsFor === ex.exerciseId && <div className="mt-3">
                     <div className="mb-2 flex gap-1.5">
                       <ActionTile icon={<ArrowLeftRight />} label="Replace" onClick={()=>setSwapIndex(exIndex)} ariaLabel={`Replace exercise ${item.exercise.name}`} />
                       <ActionTile icon={<Timer />} label={`Rest ${clock(item.restSec ?? props.defaultRestSec)}`} onClick={()=>setRestIndex(exIndex)} ariaLabel={`Rest timer for ${item.exercise.name}, ${clock(item.restSec ?? props.defaultRestSec)}`} />
@@ -1066,7 +1071,7 @@ export function Logger(props: {
                         )}
                       </div>
                     )}
-                    </details>
+                </div>}
               </div>
 
               {showWarmups && ex.warmups.every((r) => r.logged) && !warmupsShown.includes(ex.exerciseId) ? (

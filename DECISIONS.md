@@ -2768,3 +2768,34 @@ Aman asked to shorten Customize today to Customise because the button looked
 too large. The real Home action and its public sample now use Customise, and
 the FAQ points to the same label. Existing sizing, 44 px minimum targets and
 custom-workout setup/review/save behavior stay unchanged. Staging first.
+
+## 17 Nov: Training days calendar on History (Aman)
+
+Aman asked for a week heatmap of gym days at the top of History. The
+12-week grid from Progress is now a shared `ActivityCalendar`
+(components/activity-calendar.tsx) and sits in a "Training days" card
+above the list, with training days in 12 weeks and workouts this week.
+Today has a ring, rest days are grey, coming days are outlined. It draws
+after mount so the device timezone decides the day. Month labels skip the
+first column when the next week starts a month, so they never overlap.
+
+## 17 Nov: Last time and PR at a glance in the workout (Aman)
+
+Aman found the exercise card slow to read: last time and the PR sat behind
+Options, and "Suggested" repeated what the set rows already show. Now:
+- Under the name, always visible: "Last time 90 kg x 8, 8, 8" and the PR
+  with a trophy, plus body weight and last note when relevant.
+- No "Suggested" line; the aim lives in the prefilled rows, and "Ready to
+  increase" stays beside the target.
+- Replace, Rest, Seat, Muscles, Add record and Skip remaining sets moved
+  behind one ⋯ button in the card header (one tap, same row of tiles).
+- Collapsed cards show "Last ..." instead of "Aim ...".
+
+## 17 Nov: Rep-only aims use the top weight's reps (Aman)
+
+Aman's Walking Lunge (equipment Other, so no weight step) aimed
+12.5 kg x 21 after 10 kg x 20 and 12.5 kg x 15: the rep branch took the
+best reps from any set and paired them with the heaviest weight. It now
+takes reps only from the sets at the top weight (12.5 kg x 16), like the
+weighted branch already did. Exercises saved as Other or Bodyweight still
+progress by reps only; dumbbell, barbell, machine and cable add weight.

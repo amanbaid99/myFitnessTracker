@@ -14,10 +14,11 @@ import type { WorkoutExercise } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { heatLink } from "@/lib/anatomy";
+import { ActivityCalendar } from "@/components/activity-calendar";
 import { track } from "@/lib/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatE1rm, formatSet } from "@/lib/format";
-import { muscleWeeks, trainingCalendar, weekStreak } from "@/lib/progress";
+import { muscleWeeks, weekStreak } from "@/lib/progress";
 import { analysisActivity } from "@/lib/analysis-week";
 import { sessionsInRange, sessionChange, strengthTrend, type ProgressRange } from "@/lib/progress-range";
 import type { Units } from "@/lib/units";
@@ -91,22 +92,13 @@ function ProgressSummary({workoutDates,exercises}:{workoutDates:string[];exercis
 function Consistency({ workoutDates }: { workoutDates: string[] }) {
   const now = new Date();
   const dates = workoutDates.map(d => new Date(d));
-  const calendar = trainingCalendar(dates, now);
-  const days = calendar.flat();
-  const fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
-  const month = new Intl.DateTimeFormat("en-GB", { month: "short" });
   return <section className="rounded-2xl border bg-card p-4">
     <h2 className="font-semibold">Training rhythm</h2>
     <p className="mt-2 text-2xl font-semibold tabular-nums">{weekStreak(dates,now)}-week streak</p>
     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Weeks with at least one workout, in your device timezone. This week does not break your streak while it is still in progress.</p>
     <details className="group mt-2 border-t">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium">12-week activity calendar<ChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden /></summary>
-      <div role="img" aria-label={`${days.filter(d => d.trained).length} training days over the last 12 weeks. One square per day.`} className="flex gap-2 pb-2">
-        <div className="mt-5 grid shrink-0 grid-rows-7 gap-[3px] text-[10px] leading-[14px] text-muted-foreground" aria-hidden>{["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(d => <span key={d}>{d}</span>)}</div>
-        <div className="min-w-0 flex-1"><div className="mb-1 grid h-4 grid-cols-12 gap-[3px] text-[9px] text-muted-foreground" aria-hidden>{calendar.map((week, i) => <span key={week[0].key}>{i === 0 || week[0].date.getMonth() !== calendar[i - 1][0].date.getMonth() ? month.format(week[0].date) : ""}</span>)}</div>
-        <div className="grid grid-flow-col grid-cols-12 grid-rows-7 gap-[3px]" aria-hidden>{days.map(day => <span key={day.key} title={`${fmt.format(day.date)}: ${day.future ? "future day" : day.trained ? "trained" : "not trained"}`} className={cn("h-[14px] min-w-0 rounded-[3px]", day.trained ? "bg-primary" : day.future ? "border border-border" : "bg-secondary")} />)}</div></div>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground"><span className="flex items-center gap-1"><i className="size-2 rounded-sm bg-primary" />Trained</span><span className="flex items-center gap-1"><i className="size-2 rounded-sm bg-secondary" />Not trained</span><span className="flex items-center gap-1"><i className="size-2 rounded-sm border" />Future</span></div>
+      <div className="pb-2"><ActivityCalendar workoutDates={workoutDates} /></div>
       <p className="mt-2 text-xs text-muted-foreground">Last 12 weeks, Monday to Sunday in your device timezone. Multiple sessions on one day share a square.</p>
     </details>
   </section>;
