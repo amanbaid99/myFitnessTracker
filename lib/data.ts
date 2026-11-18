@@ -61,6 +61,7 @@ export interface RoutineExercise {
 }
 
 export interface Routine {
+  isOptional?: boolean;
   id: string;
   planId: string;
   name: string;
@@ -82,6 +83,7 @@ export interface Plan {
 }
 
 export interface WorkoutSummary {
+  countsForRotation?: boolean;
   id: string;
   routineId: string | null;
   startedAt: string;
@@ -214,6 +216,7 @@ interface ExerciseRow {
 }
 
 interface RoutineRow {
+  is_optional?: boolean;
   id: string;
   plan_id: string;
   name: string;
@@ -259,14 +262,14 @@ async function queryRoutines(
 ): Promise<Routine[]> {
   const { planId, routineId } = filter;
   const activePlan = filter.activePlan ? ", plans!inner(is_active)" : "";
-  const run = (withAlternates: boolean) => {
+  const run = (withAlternates: boolean, withOptional: boolean) => {
     const alternates = withAlternates
       ? `, routine_exercise_alternates(sort_order, exercises(${EXERCISE_COLS}))`
       : "";
     let query = supabase
       .from("routines")
       .select(
-        `id, plan_id, name, sort_order, warmup, cooldown, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS})${alternates})${activePlan}`,
+        `id, plan_id, name, sort_order, warmup, cooldown${withOptional ? ", is_optional" : ""}, routine_exercises(id, sort_order, target_sets, target_reps, rest_sec, exercises(${EXERCISE_COLS})${alternates})${activePlan}`,
       )
       .order("sort_order")
       .order("sort_order", { referencedTable: "routine_exercises" });
@@ -275,14 +278,21 @@ async function queryRoutines(
     if (routineId) query = query.eq("id", routineId);
     return query;
   };
-  let { data, error } = await run(true);
-  // Before the alternates migration has run: read the days without them.
-  if (error && /routine_exercise_alternates/.test(error.message)) ({ data, error } = await run(false));
+  let withOptional = true, withAlternates = true;
+  let { data, error } = await run(withAlternates, withOptional);
+  // Fall back independently when either optional days or alternates is not live.
+  for (let retry = 0; error && retry < 2; retry++) {
+    if (withOptional && /is_optional/.test(error.message) && ["42703", "PGRST204"].includes(error.code)) withOptional = false;
+    else if (withAlternates && /routine_exercise_alternates/.test(error.message)) withAlternates = false;
+    else break;
+    ({data,error} = await run(withAlternates,withOptional));
+  }
   if (error) throw new Error(error.message);
 
   return ((data ?? []) as unknown as RoutineRow[]).map((r) => ({
     id: r.id,
     planId: r.plan_id,
+    isOptional: r.is_optional === true,
     name: r.name,
     sortOrder: r.sort_order,
     warmup: r.warmup?.length ? r.warmup : null,
@@ -599,10 +609,26 @@ export async function getRecentWorkouts(supabase: Supabase, limit = 200): Promis
     .map((w) => ({
       id: w.id,
       routineId: w.routine_id,
+      countsForRotation: w.counts_for_rotation !== false,
       startedAt: w.started_at,
       endedAt: w.ended_at,
       source: toSource(w.source),
     }));
+}
+
+/** One regular rotation anchor, independent of the recent-history display window. */
+export async function getRotationWorkouts(supabase: Supabase, routineIds: string[]): Promise<import("./rotation").WorkoutRef[]> {
+  if (!routineIds.length) return [];
+  const run=(withSnapshot:boolean)=>{
+    let query=supabase.from("workouts").select("routine_id,started_at").in("routine_id",routineIds)
+      .eq("source","app").not("ended_at","is",null).is("cancelled_at",null).order("started_at",{ascending:false}).limit(1);
+    if(withSnapshot)query=query.eq("counts_for_rotation",true);
+    return query;
+  };
+  let {data,error}=await run(true);
+  if(error && /counts_for_rotation/.test(error.message) && ["42703","PGRST204"].includes(error.code))({data,error}=await run(false));
+  if(error)throw new Error(error.message);
+  return (data??[]).map(w=>({routineId:w.routine_id,startedAt:w.started_at}));
 }
 
 function toSet(s: Record<string, unknown>): SetRow {

@@ -452,3 +452,26 @@ and an atomic update of review_refresh_requested_at to suppress duplicate
 refreshes for the same revision for 150 seconds. A new edit permits a new claim.
 The Edge function remains backward compatible and requires a separate deploy;
 only the reviewed migration is applied by merge CI after owner SQL approval.
+
+
+### Optional plan days
+
+`routines.is_optional` is an owner-controlled plan setting, default false.
+`capture_workout_rotation` is a SECURITY INVOKER trigger that snapshots it as
+`workouts.counts_for_rotation` at insert and forbids subsequent snapshot changes.
+Old workouts retain true. Today-only custom workouts remain unanchored through
+their existing null routine_id. There is no new metric or outbox operation.
+
+`getRotationWorkouts` fetches the latest finished, uncancelled app workout among
+the current regular routine IDs with counts_for_rotation=true. This is separate
+from the 200-row recent History window. `suggestNextRoutineId` filters optional
+days and exempt snapshots while keeping regular out-of-order and wrap behavior.
+`getRecentWorkouts` keeps optional sessions for recaps, activity and last-done.
+
+The plan editor creates or marks optional days; PlanDays and OptionalWorkouts
+show badges/manual Start actions. Starts use the existing server action and
+owner RPC, including existing open-workout resumption. An all-optional plan
+shows manual choices and secondary actions. Reads fall back when new columns
+are absent, while writes never misrepresent an unsupported optional setting.
+The migration must land with approval before staging's live-schema guard permits
+this UI. No AI function or announcement deployment is needed.
