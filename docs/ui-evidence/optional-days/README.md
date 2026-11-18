@@ -44,6 +44,11 @@ All network access outside the local app and fixture bridge is blocked.
 - `after-demo-320/390/430.png`: updated sample, including a manual bodyweight
   extra that opens the real demo logger without account writes.
 
+- `legacy-home-390.png` and `legacy-install-message-390.png`: real signed-in
+  reads against PostgREST on the previous schema, without the two new columns.
+  Home still selects Pull, and optional creation reports installation pending,
+  retains its inputs and does not create an accidental regular day.
+
 No document horizontal overflow or page errors in the passing runs.
 
 ## Reproduce locally
@@ -64,6 +69,12 @@ browser test process. Do not print or commit credentials.
 Start Next on port 3004. Run `ui-optional-days.cjs`, then
 `ui-optional-day-states.cjs`. Use a fresh fixture for repeat runs. Auth cookies,
 provider responses and production accounts are not copied into this evidence.
+
+For the legacy check, apply all migrations except optional_plan_days to a separate
+throwaway `wt_optional_legacy_1818`, then load `optional-days-legacy.sql`. Expose
+its PostgREST on 55448 and the same local bridge on 55447, set the local app/test
+environment to that bridge, and run `ui-optional-day-legacy.cjs`. No optional-day
+columns exist in that database.
 
 ## Validation and preserved behavior
 
