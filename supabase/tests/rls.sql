@@ -612,5 +612,6 @@ reset role;
 \i supabase/tests/assisted-bodyweight.sql
 \i supabase/tests/history-missed-sets.sql
 \i supabase/tests/weighted-sets.sql
+\i supabase/tests/optional-days.sql
 \o
 \echo 'All RLS checks passed.'

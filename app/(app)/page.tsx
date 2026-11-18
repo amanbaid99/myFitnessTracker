@@ -1,3 +1,4 @@
+import { OptionalWorkouts } from "@/components/home/optional-workouts";
 import { CustomWorkoutButton } from "@/components/home/custom-workout-button";
 import { MonthlyCheckIn } from "@/components/measurements/monthly-check-in";
 import { analysisWeek } from "@/lib/analysis-week";
@@ -21,7 +22,7 @@ import { HomeWorkoutRecap } from "@/components/home/workout-recap-link";
 import { HomeHero } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
-import { getActivePlan, getBodyWeights, getExerciseLibrary, getProfile, getRecentWorkouts, getWorkoutCustomizations, load } from "@/lib/data";
+import { getActivePlan, getBodyWeights, getExerciseLibrary, getProfile, getRecentWorkouts, getRotationWorkouts, getWorkoutCustomizations, load } from "@/lib/data";
 import { shouldPromptFeedback } from "@/lib/feedback";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +32,11 @@ export default async function TodayPage() {
   // Everything in parallel: one round trip's wait instead of several.
   const [profile, result, bodyWeights, library, reports] = await Promise.all([
     getProfile(supabase),
-    load(() => Promise.all([getActivePlan(supabase), getRecentWorkouts(supabase)])),
+    load(async () => {
+      const [active,workouts] = await Promise.all([getActivePlan(supabase),getRecentWorkouts(supabase)]);
+      const rotation = await getRotationWorkouts(supabase,active?.routines.filter(r=>!r.isOptional).map(r=>r.id)??[]);
+      return [active,workouts,rotation] as const;
+    }),
     getBodyWeights(supabase),
     // Optional: a failed read only hides the muscles card.
     getExerciseLibrary(supabase).catch(() => []),
@@ -100,13 +105,15 @@ export default async function TodayPage() {
   const trained = workouts.filter((w) => w.source === "app");
   const finished = trained.filter((w) => w.endedAt);
   const open = trained.find((w) => !w.endedAt);
-  const nextId = suggestNextRoutineId(routines, finished);
+  const nextId = suggestNextRoutineId(routines, result.data[2]);
   const lastDone = lastDoneByRoutine(finished);
   const next = routines.find((r) => r.id === nextId);
-  const others = routines.filter((r) => r.id !== nextId);
+  const others = routines.filter((r) => !r.isOptional && r.id !== nextId);
+  const optional = routines.filter((r) => r.isOptional);
   // Not while a workout is open: that is not the moment to ask.
   const customOpen = open ? customizations.rows.get(open.id) : null;
   const workoutRoutine = open ? customOpen ? {id: "custom",name: customOpen.name,exercises: customOpen.items} : routines.find((r) => r.id === open.routineId)??{id:"open",name:"Workout in progress",exercises:[]} : next;
+  const secondaryActions = (routineId:string) => (<div className={`mt-2 grid gap-2 ${customizations.available ? "grid-cols-2" : ""}`}>{customizations.available&&<CustomWorkoutButton source={{planId:plan.id,planName:plan.name,routineId,routines}} library={library}/>}<Button asChild variant="secondary" className="h-auto min-h-11 whitespace-normal py-2 text-sm"><Link href="/log">Quick log</Link></Button></div>);
   const askFeedback = !open && shouldPromptFeedback(trained, profile.feedbackPrompted);
 
   return (
@@ -116,7 +123,7 @@ export default async function TodayPage() {
           name={workoutRoutine.name}
           exerciseCount={open&&!customOpen&&!routines.some(r=>r.id===open.routineId)?null:workoutRoutine.exercises.length}
           lastDone={relativeDay(lastDone.get(workoutRoutine.id))}
-          action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <><form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form><div className={`mt-2 grid gap-2 ${customizations.available ? "grid-cols-2" : ""}`}>{customizations.available&&<CustomWorkoutButton source={{planId:plan.id,planName:plan.name,routineId:workoutRoutine.id,routines}} library={library}/>}<Button asChild variant="secondary" className="h-auto min-h-11 whitespace-normal py-2 text-sm"><Link href="/log">Quick log</Link></Button></div></>}
+          action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <><form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form>{secondaryActions(workoutRoutine.id)}</>}
           footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" /> : others.length > 0 ? (
         <details className="group">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden /></summary>
@@ -140,7 +147,9 @@ export default async function TodayPage() {
           </ul>
         </details>
           ) : undefined}
-        /> : null)}
+        /> : optional.length ? <div><OptionalWorkouts routines={optional} lastDone={lastDone} expanded/>{secondaryActions(optional[0].id)}</div> : null)}
+
+      {!open && next && optional.length > 0 && <div className="mt-4"><OptionalWorkouts routines={optional} lastDone={lastDone}/></div>}
 
       {/* Nothing logged yet: offer starting weights so the first workout is not empty boxes. */}
       {!open && finished.length === 0 && !workouts.some((w) => w.source === "baseline") && (

@@ -132,6 +132,15 @@ export const DEMO_ROUTINES: Routine[] = DAYS.map((day, dayIndex) => ({
   })),
 }));
 
+/** An extra day picked manually, outside the three-day sample rotation. */
+export const DEMO_OPTIONAL_ROUTINE: Routine = {
+  id:"bodyweight-extra",planId:DEMO_PLAN.id,name:"Bodyweight extras",sortOrder:3,isOptional:true,warmup:null,cooldown:null,
+  exercises:[
+    {id:"optional-pushup",sortOrder:0,targetSets:2,targetReps:10,restSec:60,exercise:demoExercise({slug:"optional-pushup",name:"Push-up",equipment:"bodyweight",muscles:["chest","triceps"]})},
+    {id:"optional-plank",sortOrder:1,targetSets:2,targetReps:30,restSec:60,exercise:demoExercise({slug:"optional-plank",name:"Plank",equipment:"bodyweight",muscles:["core"]})},
+  ],
+};
+
 /** Last session's working sets per exercise, as the logger expects them. */
 export const DEMO_PREVIOUS: Map<string, SessionSet[]> = new Map(
   DAYS.flatMap((day) =>
@@ -183,7 +192,7 @@ export const DEMO_LAST_DONE: Map<string, string> = new Map(
 export const DEMO_NEXT_ROUTINE_ID = "push";
 
 export function demoRoutine(slug: string): Routine | null {
-  return slug === "assisted" ? ASSISTED_DEMO_ROUTINE : DEMO_ROUTINES.find((r) => r.id === slug) ?? null;
+  return slug === "assisted" ? ASSISTED_DEMO_ROUTINE : slug === DEMO_OPTIONAL_ROUTINE.id ? DEMO_OPTIONAL_ROUTINE : DEMO_ROUTINES.find((r) => r.id === slug) ?? null;
 }
 
 

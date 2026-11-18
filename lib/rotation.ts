@@ -11,21 +11,25 @@
 export interface RoutineRef {
   id: string;
   sortOrder: number;
+  isOptional?: boolean;
 }
 
 export interface WorkoutRef {
   routineId: string | null;
   startedAt: string;
+  countsForRotation?: boolean;
 }
 
 export function suggestNextRoutineId(routines: RoutineRef[], history: WorkoutRef[]): string | null {
-  if (routines.length === 0) return null;
-  const ordered = [...routines].sort((a, b) => a.sortOrder - b.sortOrder);
+  const regular = routines.filter((r) => !r.isOptional);
+  if (regular.length === 0) return null;
+  const ordered = [...regular].sort((a, b) => a.sortOrder - b.sortOrder);
   const latestFirst = [...history].sort(
     (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
   );
 
   for (const workout of latestFirst) {
+    if (workout.countsForRotation === false) continue;
     const index = ordered.findIndex((r) => r.id === workout.routineId);
     // Workouts from a deleted routine (routine_id null) or ad hoc sessions
     // are skipped; keep looking further back.

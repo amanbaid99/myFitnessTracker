@@ -1,5 +1,7 @@
 "use client";
 
+import { AddDayForm } from "@/components/plan/add-day";
+import { addPlanDay, setRoutineOptional } from "@/lib/optional-days";
 import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
@@ -61,19 +63,23 @@ export function PlanEditor({
   const run: Run = async (fn, markCustom = true) => {
     setBusy(true);
     setError(null);
-    const res = await fn();
-    if (res && res.error) {
-      setBusy(false);
-      const message = friendlyError(res.error);
+    try {
+      const res = await fn();
+      if (res && res.error) {
+        const message = friendlyError(res.error);
+        setError(message);
+        return message;
+      }
+      if (markCustom && plan.template && !plan.isCustom) {
+        await supabase.from("plans").update({ is_custom: true }).eq("id", plan.id);
+      }
+      router.refresh();
+      return null;
+    } catch (error) {
+      const message = friendlyError({message: error instanceof Error ? error.message : "Could not save the change. Try again."});
       setError(message);
       return message;
-    }
-    if (markCustom && plan.template && !plan.isCustom) {
-      await supabase.from("plans").update({ is_custom: true }).eq("id", plan.id);
-    }
-    setBusy(false);
-    router.refresh();
-    return null;
+    } finally { setBusy(false); }
   };
 
   async function deletePlan() {
@@ -93,7 +99,7 @@ export function PlanEditor({
   const nextSort = routines.length ? Math.max(...routines.map((r) => r.sortOrder)) + 1 : 0;
 
   return (
-    <div className={`${MASK} ${busy ? "pointer-events-none opacity-70" : ""}`}>
+    <div aria-busy={busy} className={`${MASK} ${busy ? "pointer-events-none opacity-70" : ""}`}>
       <header className="mb-6 pr-14">
         <div className="flex gap-1">
           {plan.isActive && <Badge variant="accent">Active</Badge>}
@@ -108,7 +114,7 @@ export function PlanEditor({
         />
         </h1>
         <p className="text-xs text-muted-foreground">
-          Tap a name or exercise to edit it. Open Day options to reorder or remove a day.
+          Tap a name or exercise to edit it. Open Day options to mark a day optional, reorder or remove it.
         </p>
         <details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Plan options</summary>
         <Button asChild variant="outline" className="mt-3 w-full">
@@ -157,18 +163,7 @@ export function PlanEditor({
         ))}
       </div>
 
-      <Button
-        variant="outline"
-        size="lg"
-        className="mt-5 w-full"
-        onClick={() =>
-          run(() =>
-            supabase.from("routines").insert({ plan_id: plan.id, name: `Day ${routines.length + 1}`, sort_order: nextSort }),
-          )
-        }
-      >
-        <Plus /> Add a day
-      </Button>
+      <AddDayForm name={`Day ${routines.length + 1}`} onAdd={(name, optional) => run(() => addPlanDay(supabase, plan.id, name, nextSort, optional))} />
     </div>
   );
 }
@@ -247,7 +242,7 @@ function RoutineEditor({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card">
+    <section id={routine.id} className="scroll-mt-6 overflow-hidden rounded-2xl border bg-card">
       <div className="flex items-center gap-1 border-b py-1 pl-4 pr-1">
         <InlineName
           label="Day name"
@@ -255,8 +250,11 @@ function RoutineEditor({
           className="min-w-0 flex-1 text-lg font-semibold"
           onSave={(name) => run(() => supabase.from("routines").update({ name }).eq("id", routine.id))}
         />
+        {routine.isOptional && <Badge variant="outline" className="mr-3 shrink-0">Optional</Badge>}
       </div>
-      <details className="border-b px-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">Day options</summary><div className="flex flex-wrap gap-2 pb-2">
+      <details className="border-b px-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">Day options</summary>
+      <OptionalDayToggle key={String(Boolean(routine.isOptional))} value={Boolean(routine.isOptional)} onSave={(optional) => run(() => setRoutineOptional(supabase,routine.id,optional))}/>
+      <div className="flex flex-wrap gap-2 pb-2">
         <Button variant="ghost" size="icon" aria-label={`Move ${routine.name} earlier`} disabled={first} onClick={() => onMove(-1)}>
           <ArrowUp className="text-muted-foreground" />
         </Button>
@@ -432,5 +430,63 @@ function InlineName({
       }}
       className={className}
     />
+  );
+}
+
+function OptionalDayToggle({
+  value,
+  onSave,
+}: {
+  value: boolean;
+  onSave: (value: boolean) => Promise<string | null>;
+}) {
+  const [checked, setChecked] = useState(value),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState<string | null>(null);
+  return (
+    <div>
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 py-2 text-sm">
+        <input
+          type="checkbox"
+          disabled={busy}
+          className="mt-1 size-5 shrink-0 accent-[var(--primary)]"
+          checked={checked}
+          onChange={async (e) => {
+            const next = e.target.checked;
+            setChecked(next);
+            setBusy(true);
+            setError(null);
+            try {
+              const message = await onSave(next);
+              if (message) {
+                setChecked(value);
+                setError(message);
+              }
+            } catch {
+              setChecked(value);
+              setError("Could not save the change. Try again.");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+        <span>
+          <span className="block font-medium">Optional day</span>
+          <span className="block text-xs text-muted-foreground">
+            Start it whenever you like. It stays out of your rotation.
+          </span>
+          {busy && (
+            <span role="status" className="block text-xs text-muted-foreground">
+              Saving…
+            </span>
+          )}
+        </span>
+      </label>
+      {error && (
+        <p role="alert" className="pb-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

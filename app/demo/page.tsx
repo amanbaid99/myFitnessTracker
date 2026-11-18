@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { OptionalWorkouts } from "@/components/home/optional-workouts";
+import { DEMO_OPTIONAL_ROUTINE } from "@/lib/demo";
 import { Check, ChevronDown, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
 import { WorkoutRecap } from "@/components/workout-recap";
 import { DemoNav } from "@/components/demo-nav";
@@ -98,6 +100,8 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
         </div>
 
 
+        <div className="mt-4"><OptionalWorkouts demo routines={[DEMO_OPTIONAL_ROUTINE]}/></div>
+
         {latest && <HomeWorkoutRecap href="/demo?finished=1" name={latest.name} startedAt={DEMO_LAST_DONE.get(latest.id)!} when={relativeDay(DEMO_LAST_DONE.get(latest.id))} />}
 
 
@@ -116,7 +120,7 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
         </section>
 
         <h2 className="mb-4 mt-8 text-xl font-semibold tracking-tight">The full plan</h2>
-        <PlanDays routines={DEMO_ROUTINES} lastSets={DEMO_LAST_SETS} prs={DEMO_PRS} units={DEMO_PROFILE.units} />
+        <PlanDays demo routines={[...DEMO_ROUTINES,DEMO_OPTIONAL_ROUTINE]} lastSets={DEMO_LAST_SETS} prs={DEMO_PRS} units={DEMO_PROFILE.units} />
       </main>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur">
