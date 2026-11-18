@@ -2811,3 +2811,40 @@ about 2.5 in reserve at the new weight. Capped at the target and the reps
 done, floored at two-thirds of the target. Same rule for the next-session
 aim, using the weakest top set and the hardest feel. Aman asked for this
 to go straight to live (PR into the default branch, no staging pass).
+
+
+## 2026-11-18: Optional plan days (Aman)
+
+Aman asked for extras such as bodyweight or cardio that remain part of a plan,
+can be started manually, and never move the regular day sequence. Add a day
+now offers an Optional day checkbox. Existing days use the same setting under
+Day options. Optional badges distinguish them in the editor and plan view;
+Today offers a compact Optional workouts section below its primary content.
+All-optional plans offer manual choices without inventing an automatic next day.
+Start/Resume, Customise and Quick log remain accessible. Empty extras link to
+exercise editing before they can start.
+
+routines.is_optional defaults false. workouts.counts_for_rotation defaults true
+for existing rows and is captured by an invoker trigger at each new start.
+The snapshot is immutable, so changing a day later does not turn an old optional
+session into a rotation anchor. No historical dates or workout rows are rewritten.
+Normal manual out-of-order days still re-anchor the rotation as before. The
+regular anchor is queried separately from the recent History window, preventing
+many extra sessions from hiding the last regular workout.
+
+Optional sessions retain ordinary logging, History, metrics and training-day
+qualification. No change to weekly goal values, snapshots, muscle coverage
+calculation, progression, kg storage, warm-up exclusions or offline outbox.
+Plan creation and AI customization keep their existing semantics; new generated
+days start regular and can be marked optional in the plan editor. No Edge
+Function or update-tour activation is part of this feature.
+
+Reads fall back on previous schemas; failed optional writes show an install
+message and never silently add a regular day. Optional toggles show the pending
+choice, roll back on failure and report a real save state. Failed additions keep
+their entered name and optional choice. The rejected-promise path in the shared
+plan save wrapper now also releases its busy state.
+
+Staging shares the live database. The exact final migration needs owner approval
+and a schema-only production PR first, followed by the UI PR to staging. No
+production workout, measurement or invitation is used for testing.
