@@ -7,6 +7,7 @@ import { ScreenHeader } from "@/components/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getActivePlan, getLastWorkingSets, getPersonalRecords, getProfile, load } from "@/lib/data";
+import { MASK } from "@/lib/mask";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your plan" };
@@ -45,10 +46,10 @@ export default async function RoutinesPage() {
 
   return (
     <>
-      <header className="mb-6">
+      <header className={`${MASK} mb-6`}>
         <p className="pr-14 text-sm text-muted-foreground">Active plan</p>
         <div className="mt-1 flex items-center gap-2 pr-14">
-          <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">{plan.name}</h1>
+          <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight">{plan.name}</h1>
           {plan.isCustom && plan.template && <Badge variant="outline">Custom</Badge>}
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3">
@@ -69,7 +70,7 @@ export default async function RoutinesPage() {
         <p className="text-center text-xs text-muted-foreground">Tap a PR to check or fix it.</p>
       </header>
 
-      <PlanDays routines={routines} lastSets={lastSets} prs={prs} units={profile.units} startingWeightsHref="/starting-weights" />
+      <PlanDays allowOptionalStart routines={routines} lastSets={lastSets} prs={prs} units={profile.units} startingWeightsHref="/starting-weights" />
     </>
   );
 }

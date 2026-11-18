@@ -1,11 +1,15 @@
 "use client";
 
+import { AddDayForm } from "@/components/plan/add-day";
+import { addPlanDay, setRoutineOptional } from "@/lib/optional-days";
+import { DaySettingsSheet } from "@/components/plan/day-settings-sheet";
+import { planDayGroups } from "@/lib/plan-day-order";
 import { MASK } from "@/lib/mask";
 import { confirmDialog } from "@/components/confirm-dialog";
 import Link from "next/link";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowLeftRight, ArrowUp, ChevronRight, Flame, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, ChevronRight, Flame, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,19 +65,23 @@ export function PlanEditor({
   const run: Run = async (fn, markCustom = true) => {
     setBusy(true);
     setError(null);
-    const res = await fn();
-    if (res && res.error) {
-      setBusy(false);
-      const message = friendlyError(res.error);
+    try {
+      const res = await fn();
+      if (res && res.error) {
+        const message = friendlyError(res.error);
+        setError(message);
+        return message;
+      }
+      if (markCustom && plan.template && !plan.isCustom) {
+        await supabase.from("plans").update({ is_custom: true }).eq("id", plan.id);
+      }
+      router.refresh();
+      return null;
+    } catch (error) {
+      const message = friendlyError({message: error instanceof Error ? error.message : "Could not save the change. Try again."});
       setError(message);
       return message;
-    }
-    if (markCustom && plan.template && !plan.isCustom) {
-      await supabase.from("plans").update({ is_custom: true }).eq("id", plan.id);
-    }
-    setBusy(false);
-    router.refresh();
-    return null;
+    } finally { setBusy(false); }
   };
 
   async function deletePlan() {
@@ -90,10 +98,12 @@ export function PlanEditor({
     if (!err) router.push("/plans");
   }
 
+  const { regular, optional } = planDayGroups(routines);
+  const ordered = [...regular, ...optional];
   const nextSort = routines.length ? Math.max(...routines.map((r) => r.sortOrder)) + 1 : 0;
 
   return (
-    <div className={`${MASK} ${busy ? "pointer-events-none opacity-70" : ""}`}>
+    <div aria-busy={busy} className={`${MASK} ${busy ? "pointer-events-none opacity-70" : ""}`}>
       <header className="mb-6 pr-14">
         <div className="flex gap-1">
           {plan.isActive && <Badge variant="accent">Active</Badge>}
@@ -108,7 +118,7 @@ export function PlanEditor({
         />
         </h1>
         <p className="text-xs text-muted-foreground">
-          Tap a name or exercise to edit it. Open Day options to reorder or remove a day.
+          Tap a name or exercise to edit it. Use Day settings for rotation, order and removal.
         </p>
         <details className="mt-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium">Plan options</summary>
         <Button asChild variant="outline" className="mt-3 w-full">
@@ -132,7 +142,11 @@ export function PlanEditor({
       )}
 
       <div className="space-y-5">
-        {routines.map((routine, i) => (
+        {ordered.map((routine, i) => {
+          const group = routine.isOptional ? optional : regular;
+          const position = group.findIndex(day => day.id === routine.id);
+          return <Fragment key={routine.id}>
+          {(i === 0 || i === regular.length) && <h2 className="pt-1 text-sm font-semibold">{routine.isOptional ? "Optional workouts" : "In your rotation"}</h2>}
           <RoutineEditor
             units={units}
             key={routine.id}
@@ -141,34 +155,24 @@ export function PlanEditor({
             defaultRestSec={defaultRestSec}
             run={run}
             onMove={(dir) => {
-              const other = routines[i + dir];
-              if (!other) return;
-              // Swap the two days' places in the rotation.
-              run(async () => {
-                const first = await supabase.from("routines").update({ sort_order: other.sortOrder }).eq("id", routine.id);
+              const other = group[position + dir];
+              if (!other) return Promise.resolve(null);
+              // Reorder only within this group, matching the displayed days.
+              return run(async () => {
+                const first = await supabase.from("routines").update({ sort_order: other.sortOrder }).eq("id", routine.id).select("id").single();
                 if (first.error) return first;
-                return supabase.from("routines").update({ sort_order: routine.sortOrder }).eq("id", other.id);
+                return supabase.from("routines").update({ sort_order: routine.sortOrder }).eq("id", other.id).select("id").single();
               });
             }}
-            first={i === 0}
-            last={i === routines.length - 1}
+            first={position === 0}
+            last={position === group.length - 1}
             guideItemId={guideItemId}
           />
-        ))}
+          </Fragment>;
+        })}
       </div>
 
-      <Button
-        variant="outline"
-        size="lg"
-        className="mt-5 w-full"
-        onClick={() =>
-          run(() =>
-            supabase.from("routines").insert({ plan_id: plan.id, name: `Day ${routines.length + 1}`, sort_order: nextSort }),
-          )
-        }
-      >
-        <Plus /> Add a day
-      </Button>
+      <AddDayForm name={`Day ${routines.length + 1}`} onAdd={(name, optional) => run(() => addPlanDay(supabase, plan.id, name, nextSort, optional))} />
     </div>
   );
 }
@@ -189,7 +193,7 @@ function RoutineEditor({
   defaultRestSec: number;
   units?: "kg" | "lb";
   run: Run;
-  onMove: (dir: -1 | 1) => void;
+  onMove: (dir: -1 | 1) => Promise<string | null>;
   first: boolean;
   last: boolean;
   guideItemId: string | null;
@@ -197,6 +201,7 @@ function RoutineEditor({
   const supabase = createClient();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [prepOpen, setPrepOpen] = useState(false);
   const items = routine.exercises;
   const custom = Boolean(routine.warmup || routine.cooldown);
@@ -247,7 +252,7 @@ function RoutineEditor({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card">
+    <section id={routine.id} className="scroll-mt-6 overflow-hidden rounded-2xl border bg-card">
       <div className="flex items-center gap-1 border-b py-1 pl-4 pr-1">
         <InlineName
           label="Day name"
@@ -255,18 +260,22 @@ function RoutineEditor({
           className="min-w-0 flex-1 text-lg font-semibold"
           onSave={(name) => run(() => supabase.from("routines").update({ name }).eq("id", routine.id))}
         />
+        {routine.isOptional && <Badge variant="outline" className="mr-3 shrink-0">Optional</Badge>}
       </div>
-      <details className="border-b px-3"><summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">Day options</summary><div className="flex flex-wrap gap-2 pb-2">
-        <Button variant="ghost" size="icon" aria-label={`Move ${routine.name} earlier`} disabled={first} onClick={() => onMove(-1)}>
-          <ArrowUp className="text-muted-foreground" />
-        </Button>
-        <Button variant="ghost" size="icon" aria-label={`Move ${routine.name} later`} disabled={last} onClick={() => onMove(1)}>
-          <ArrowDown className="text-muted-foreground" />
-        </Button>
-        <Button variant="ghost" size="icon" aria-label={`Remove ${routine.name}`} onClick={deleteRoutine}>
-          <Trash2 className="text-muted-foreground" />
-        </Button>
-      </div></details>
+      <button type="button" onClick={() => setSettingsOpen(true)} className="flex min-h-11 w-full items-center justify-between gap-3 border-b px-4 py-3 text-left text-sm text-muted-foreground">
+        <span>Day settings</span><ChevronRight className="size-4 shrink-0" aria-hidden />
+      </button>
+      {settingsOpen && <DaySettingsSheet
+        name={routine.name}
+        optional={Boolean(routine.isOptional)}
+        first={first}
+        last={last}
+        onSave={value => run(() => setRoutineOptional(supabase, routine.id, value))}
+        onMove={onMove}
+        onRemove={() => { setSettingsOpen(false); void deleteRoutine(); }}
+        onClose={() => setSettingsOpen(false)}
+      />}
+
 
       <ol className="divide-y">
         {items.map((item, i) => {
@@ -280,10 +289,10 @@ function RoutineEditor({
                 type="button"
                 onClick={() => setEditing(item.id)}
                 data-guide={item.id === guideItemId ? "tip:edit-exercise" : undefined}
-                className="flex min-h-16 w-full flex-wrap items-center gap-3 px-4 py-3 text-left active:bg-muted"
+                className="grid min-h-16 w-full grid-cols-[1.25rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left active:bg-muted"
               >
                 <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</span>
-                <span className="min-w-[min(100%,8rem)] flex-1">
+                <span className="min-w-0">
                   <span className="block break-words font-medium">{item.exercise.name}</span>
                   {item.alternates && item.alternates.length > 0 && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -295,10 +304,12 @@ function RoutineEditor({
                     <span className="block truncate text-xs text-muted-foreground">{details.join(" · ")}</span>
                   )}
                 </span>
+                <span className="flex items-center gap-2">
                 <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-sm tabular-nums">
                   {formatTarget(item.targetSets, item.targetReps, item.exercise.tracking)}
                 </span>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                </span>
               </button>
             </li>
           );

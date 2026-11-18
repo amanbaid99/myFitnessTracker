@@ -8,6 +8,15 @@ Last updated: 2026-11-18.
 
 ## In progress
 
+- 2026-11-18: `ui/review-plan-day-layout` cleans up the Plan overview and
+  editor after owner screenshots: closed day cards, separate optional workouts,
+  labelled Day settings sheet, safe modal focus during saves/reordering and
+  narrow exercise rows. Evidence: `docs/ui-evidence/plan-day-layout`. No schema,
+  logger/outbox, metric, AI or tour change. Staging review only.
+- 2026-11-18: Optional-day UI is on staging through #79 and #80 (a66df1b).
+  Production #78 (8e15ab1) includes the approved schema and compatible readers.
+  The earlier optional-day in-progress note below describes its initial state.
+
 - 2026-11-18: `ui/review-optional-days` starts from live/staging #76 (2607b9a).
   Adds optional plan days, manual starts on Plan/Today, immutable start-time
   rotation snapshots and a regular anchor independent of the History window.
