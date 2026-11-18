@@ -1,0 +1,23 @@
+{
+  "viewports": [
+    320,
+    390,
+    430
+  ],
+  "pageErrors": [],
+  "checks": [
+    "all days initially collapsed",
+    "optional Start visible without expansion",
+    "exercise targets and detail access",
+    "labelled day settings",
+    "Escape and focus restoration",
+    "failed save rollback",
+    "real pending and saved state",
+    "busy prevents dismissal",
+    "optional and regular toggles retain sheet while moving groups",
+    "remove confirmation and cancel",
+    "reorder within visible group and restore",
+    "large text and dark theme",
+    "optional flag preserved"
+  ]
+}
