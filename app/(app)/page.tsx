@@ -21,7 +21,7 @@ import { HomeWorkoutRecap } from "@/components/home/workout-recap-link";
 import { HomeHero } from "@/components/home/home-hero";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
-import { getActivePlan, getBodyWeights, getExerciseLibrary, getProfile, getRecentWorkouts, getWorkoutCustomizations, load } from "@/lib/data";
+import { getActivePlan, getBodyWeights, getExerciseLibrary, getProfile, getRecentWorkouts, getRotationWorkouts, getWorkoutCustomizations, load } from "@/lib/data";
 import { shouldPromptFeedback } from "@/lib/feedback";
 import { lastDoneByRoutine, relativeDay, suggestNextRoutineId } from "@/lib/rotation";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +31,11 @@ export default async function TodayPage() {
   // Everything in parallel: one round trip's wait instead of several.
   const [profile, result, bodyWeights, library, reports] = await Promise.all([
     getProfile(supabase),
-    load(() => Promise.all([getActivePlan(supabase), getRecentWorkouts(supabase)])),
+    load(async () => {
+      const [active,workouts] = await Promise.all([getActivePlan(supabase),getRecentWorkouts(supabase)]);
+      const rotation = await getRotationWorkouts(supabase,active?.routines.filter(r=>!r.isOptional).map(r=>r.id)??[]);
+      return [active,workouts,rotation] as const;
+    }),
     getBodyWeights(supabase),
     // Optional: a failed read only hides the muscles card.
     getExerciseLibrary(supabase).catch(() => []),
@@ -100,7 +104,7 @@ export default async function TodayPage() {
   const trained = workouts.filter((w) => w.source === "app");
   const finished = trained.filter((w) => w.endedAt);
   const open = trained.find((w) => !w.endedAt);
-  const nextId = suggestNextRoutineId(routines, finished);
+  const nextId = suggestNextRoutineId(routines, result.data[2]);
   const lastDone = lastDoneByRoutine(finished);
   const next = routines.find((r) => r.id === nextId);
   const others = routines.filter((r) => r.id !== nextId);
