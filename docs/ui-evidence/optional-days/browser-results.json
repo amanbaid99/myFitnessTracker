@@ -1,0 +1,20 @@
+{
+  "viewports": [
+    320,
+    390,
+    430
+  ],
+  "pageErrors": [],
+  "checks": [
+    "real signed-in Home and plan editor",
+    "regular anchor beyond 200 extras",
+    "manual optional start and resume",
+    "offline one-tap logging, reconnection, refresh and finish",
+    "History saved with rotation exemption",
+    "same next regular day",
+    "add optional day with retained error inputs",
+    "existing-day optional toggles",
+    "empty optional Start disabled",
+    "weekly goal unchanged"
+  ]
+}

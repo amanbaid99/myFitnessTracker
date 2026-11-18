@@ -69,7 +69,7 @@ export default async function RoutinesPage() {
         <p className="text-center text-xs text-muted-foreground">Tap a PR to check or fix it.</p>
       </header>
 
-      <PlanDays routines={routines} lastSets={lastSets} prs={prs} units={profile.units} startingWeightsHref="/starting-weights" />
+      <PlanDays allowOptionalStart routines={routines} lastSets={lastSets} prs={prs} units={profile.units} startingWeightsHref="/starting-weights" />
     </>
   );
 }
