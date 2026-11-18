@@ -74,3 +74,22 @@ describe("relativeDay", () => {
     expect(relativeDay(iso, now)).toBe(text);
   });
 });
+
+it("skips optional days in sequence and ignores their completed workouts",()=>{
+ const days=[...routines,{id:"extras",sortOrder:1.5,isOptional:true}];
+ const history=[{routineId:"legs",startedAt:"2026-11-16T10:00:00Z"},{routineId:"extras",startedAt:"2026-11-17T10:00:00Z",countsForRotation:false}];
+ expect(suggestNextRoutineId(days,history)).toBe("upper2");
+ expect(suggestNextRoutineId(days,[{routineId:"extras",startedAt:"2026-11-17T10:00:00Z"}])).toBe("push");
+ expect(lastDoneByRoutine(history).get("extras")).toBe("2026-11-17T10:00:00Z");
+});
+it("a past optional workout stays out after its day becomes regular",()=>{
+ const history=[{routineId:"legs",startedAt:"2026-11-16T10:00:00Z"},{routineId:"upper2",startedAt:"2026-11-17T10:00:00Z",countsForRotation:false}];
+ expect(suggestNextRoutineId(routines,history)).toBe("upper2");
+});
+it("returns no automatic choice in an optional-only plan",()=>{
+ expect(suggestNextRoutineId(routines.map(r=>({...r,isOptional:true})),[])).toBeNull();
+});
+it("regular workouts after optional extras still wrap and re-anchor normally",()=>{
+ const days=[...routines,{id:"extra",sortOrder:20,isOptional:true}];
+ expect(suggestNextRoutineId(days,[{routineId:"lower",startedAt:"2026-11-18T10:00:00Z"},{routineId:"extra",startedAt:"2026-11-17T10:00:00Z",countsForRotation:false}])).toBe("push");
+});

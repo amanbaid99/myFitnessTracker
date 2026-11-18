@@ -4,9 +4,23 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-16.
+Last updated: 2026-11-18.
 
 ## In progress
+
+- 2026-11-18: `ui/review-optional-days` starts from live/staging #76 (2607b9a).
+  Adds optional plan days, manual starts on Plan/Today, immutable start-time
+  rotation snapshots and a regular anchor independent of the History window.
+  Existing workouts, goals, metrics, logging/outbox and tour stay intact.
+  Mobile and real signed-in local browser/API evidence is in
+  `docs/ui-evidence/optional-days`. Lint, strict types, 587 tests, production
+  build and full local database/RLS/race/seed checks pass. Real signed-in
+  browser/API tests cover offline finish, retry/rollback, all-optional plans
+  and 320/390/430 layouts. Exact SQL approval is required for a
+  schema and compatibility production PR before the UI can merge to staging. Not live.
+- 2026-11-18: Production and staging include owner releases #75 and #76.
+  These add training-day History wording, last-time/PR display and rep-target
+  refinements. Earlier staging/review notes below describe old snapshots.
 
 - 2026-11-16: `ui/review-home-customise` shortens the Home action to Customise
   at Aman's request; demo and FAQ match. Copy-only change, with existing
