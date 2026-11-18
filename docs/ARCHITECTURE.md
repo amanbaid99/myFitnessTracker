@@ -16,6 +16,14 @@ moving part.
 | Hosting | Vercel, deployed by GitHub Actions only (`vercel.json` turns off Vercel's own Git deploys) |
 | Tests | Vitest (unit), plain SQL against local Postgres (`supabase/tests/`) |
 
+## Plan day presentation
+
+`PlanDays` presents collapsed regular/optional day cards. `planDayGroups` shares
+ordering with `PlanEditor`, so labelled reorder actions stay within each visible
+group. `DaySettingsSheet` uses the shared native `Sheet` through a body portal
+to retain modality when its parent day moves. Saving/error/rollback states use
+the existing owner-scoped edits; no extra storage or rotation calculation.
+
 ## Request flow
 
 - `proxy.ts` runs on every request: refreshes the Supabase session cookie

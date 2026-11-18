@@ -11,6 +11,7 @@ Last updated: 2026-11-12.
 
 | Item | Status | PR | Notes |
 | --- | --- | --- | --- |
+| Owner follow-up: Plan day layout | In review | `ui/review-plan-day-layout` | Closed day cards, optional group, labelled settings and narrow rows; evidence `ui-evidence/plan-day-layout` |
 | Owner follow-up: Home training overview | In review | `ui/review-home-training-overview` | Broader four-week takeaway on Home, honest legacy states and direct matching detail navigation |
 | Owner follow-up: useful AI analysis | Live | #65 (f33a451) | Reading-only Home; evidence-led daily/weekly detail and a four-week view; analyze-workout v22 deployed |
 | Owner feature: reviewed custom workouts | Ready for review | `ui/review-custom-workouts` | Home and in-workout flows; today-only use, add/replace days, inactive copy; exact-SQL approval and separate Edge deployment pending |

@@ -2853,3 +2853,28 @@ The compatibility rotation readers are staged before the schema release and
 ship with the approved migration. This protects the older production UI when
 the later staging UI writes optional days to the shared database. The optional
 creation controls still wait for staging review.
+
+## 2026-11-18: Compact Plan days and labelled day settings (Aman)
+
+Aman reported that the optional-day controls and Plan overview looked cluttered.
+Plan now opens with every day collapsed in a bordered card. Regular days and
+optional workouts have separate headings. Exercise counts remain visible, and
+optional Start stays reachable without expanding details. Targets, machine
+settings, per-hand labels, PR links and last-session results remain expandable.
+Long plan names wrap instead of truncating, with personal content masked.
+
+The editor replaces its expanded Day options block and bare action icons with
+a compact Day settings row. A native modal sheet explains rotation versus
+optional days and labels Move earlier, Move later and Remove day. Reordering
+uses neighbours within the same displayed group. It keeps the existing stored
+sort-order swaps and does not alter the rotation algorithm. Optional choices
+save immediately, show real pending/saved/error states and roll back on failure.
+The sheet stays mounted while a day changes groups or order; its dialog is
+portalled so DOM moves cannot remove it from the browser's modal top layer.
+Escape, backdrop and Close wait for an active save. Removal still requires the
+existing confirmation after the settings sheet closes.
+
+No schema, AI, metrics, workout logging/outbox or update-tour changes. Synthetic
+local browser checks cover 320, 390 and 430 px, dark theme, larger text, keyboard
+focus, actual saves, retry/rollback, reorder and removal cancellation. Staging
+first; production release remains a separate owner-requested step.
