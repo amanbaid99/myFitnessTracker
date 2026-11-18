@@ -17,7 +17,7 @@ Last updated: 2026-11-18.
   build and full local database/RLS/race/seed checks pass. Real signed-in
   browser/API tests cover offline finish, retry/rollback, all-optional plans
   and 320/390/430 layouts. Exact SQL approval is required for a
-  schema-only production PR before the UI can merge to staging. Not live.
+  schema and compatibility production PR before the UI can merge to staging. Not live.
 - 2026-11-18: Production and staging include owner releases #75 and #76.
   These add training-day History wording, last-time/PR display and rep-target
   refinements. Earlier staging/review notes below describe old snapshots.

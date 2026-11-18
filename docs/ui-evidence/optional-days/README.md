@@ -80,7 +80,8 @@ plan save/copy/replace semantics and human-coaching pause stay unchanged.
 
 ## Release order
 
-The schema-only production PR must receive owner approval of its exact SQL and
+The backward-compatible rotation readers go to staging first. The schema and
+compatibility production PR must receive owner approval of its exact SQL and
 complete CI first. Then the UI PR may merge to staging, whose migration guard
 requires every migration to be live. A separate owner-approved staging release
 makes the UI live. No Edge Function deployment is required.

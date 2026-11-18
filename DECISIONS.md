@@ -2846,5 +2846,10 @@ their entered name and optional choice. The rejected-promise path in the shared
 plan save wrapper now also releases its busy state.
 
 Staging shares the live database. The exact final migration needs owner approval
-and a schema-only production PR first, followed by the UI PR to staging. No
+and a schema and compatibility production PR first, followed by the UI PR to staging. No
 production workout, measurement or invitation is used for testing.
+
+The compatibility rotation readers are staged before the schema release and
+ship with the approved migration. This protects the older production UI when
+the later staging UI writes optional days to the shared database. The optional
+creation controls still wait for staging review.

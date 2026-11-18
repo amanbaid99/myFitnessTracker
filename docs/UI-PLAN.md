@@ -248,5 +248,5 @@ error/offline and SQL evidence: `docs/ui-evidence/history-missed-sets`.
 
 Owner feature (18 Nov): Optional plan days with manual Start, visible badges,
 a compact Home section and unchanged regular rotation. Review branch:
-`ui/review-optional-days`. Evidence: `docs/ui-evidence/optional-days`. Schema-only
+`ui/review-optional-days`. Evidence: `docs/ui-evidence/optional-days`. Schema and compatibility
 approval/release must precede staging UI because the test site uses live data.
