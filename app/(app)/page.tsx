@@ -1,4 +1,4 @@
-import { OptionalWorkouts } from "@/components/home/optional-workouts";
+import { WorkoutChoices } from "@/components/home/workout-choices";
 import { CustomWorkoutButton } from "@/components/home/custom-workout-button";
 import { MonthlyCheckIn } from "@/components/measurements/monthly-check-in";
 import { analysisWeek } from "@/lib/analysis-week";
@@ -8,7 +8,7 @@ import { getMeasurementReminder } from "@/lib/feedback-data";
 import Link from "next/link";
 import { MASK } from "@/lib/mask";
 import { redirect } from "next/navigation";
-import { ChevronDown, ChevronRight, Dumbbell, Play, Plus, RotateCcw } from "lucide-react";
+import { ChevronRight, Dumbbell, Play, Plus, RotateCcw } from "lucide-react";
 import { startWorkout } from "@/app/actions";
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { DataError } from "@/components/data-error";
@@ -108,7 +108,7 @@ export default async function TodayPage() {
   const nextId = suggestNextRoutineId(routines, result.data[2]);
   const lastDone = lastDoneByRoutine(finished);
   const next = routines.find((r) => r.id === nextId);
-  const others = routines.filter((r) => !r.isOptional && r.id !== nextId);
+  const others = routines.filter((r) => r.id !== nextId);
   const optional = routines.filter((r) => r.isOptional);
   // Not while a workout is open: that is not the moment to ask.
   const customOpen = open ? customizations.rows.get(open.id) : null;
@@ -124,32 +124,9 @@ export default async function TodayPage() {
           exerciseCount={open&&!customOpen&&!routines.some(r=>r.id===open.routineId)?null:workoutRoutine.exercises.length}
           lastDone={relativeDay(lastDone.get(workoutRoutine.id))}
           action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <><form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form>{secondaryActions(workoutRoutine.id)}</>}
-          footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" /> : others.length > 0 ? (
-        <details className="group">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden /></summary>
-          <p className={`pb-2 text-xs text-muted-foreground ${MASK}`}>{plan.name}</p>
-          <ul className="divide-y border-t">
-            {others.map((routine) => (
-              <li key={routine.id} className="flex items-center gap-3 px-4 py-2">
-                <div className="min-w-0 flex-1 py-1">
-                  <p className="font-medium">{routine.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {routine.exercises.length} {routine.exercises.length === 1 ? "exercise" : "exercises"} · {relativeDay(lastDone.get(routine.id))}
-                  </p>
-                </div>
-                <form action={startWorkout.bind(null, routine.id)}>
-                  <SubmitButton variant="secondary" pendingLabel="…" aria-label={`Start ${routine.name}`}>
-                    Start
-                  </SubmitButton>
-                </form>
-              </li>
-            ))}
-          </ul>
-        </details>
-          ) : undefined}
-        /> : optional.length ? <div><OptionalWorkouts routines={optional} lastDone={lastDone} expanded/>{secondaryActions(optional[0].id)}</div> : null)}
+          footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" />  : others.length ? <WorkoutChoices routines={others} lastDone={lastDone} planName={plan.name} /> : undefined}
+        /> : optional.length ? <div className="mt-4 rounded-2xl border bg-card px-4"><WorkoutChoices routines={optional} lastDone={lastDone} planName={plan.name} another={false} expanded/>{secondaryActions(optional[0].id)}</div> : null)}
 
-      {!open && next && optional.length > 0 && <div className="mt-4"><OptionalWorkouts routines={optional} lastDone={lastDone}/></div>}
 
       {/* Nothing logged yet: offer starting weights so the first workout is not empty boxes. */}
       {!open && finished.length === 0 && !workouts.some((w) => w.source === "baseline") && (

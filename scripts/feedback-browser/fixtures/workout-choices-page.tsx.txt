@@ -1,0 +1,8 @@
+import { WorkoutChoices } from "@/components/home/workout-choices";
+import { DEMO_OPTIONAL_ROUTINE, DEMO_ROUTINES } from "@/lib/demo";
+export default async function Fixture({searchParams}:PageProps<"/demo/workout-choices-fixture">){
+ const {mode}=await searchParams;
+ const optional={...DEMO_OPTIONAL_ROUTINE,id:"optional",name:"Optional bodyweight workout whenever I have extra time",sortOrder:0};
+ const regular={...DEMO_ROUTINES[0],sortOrder:10};
+ return <main className="mx-auto max-w-lg p-4"><WorkoutChoices routines={mode==="empty"?[]:mode==="optional"?[optional]:mode==="no-exercises"?[{...optional,exercises:[]}]:[optional,regular]} another={mode!=="optional"} expanded /></main>;
+}

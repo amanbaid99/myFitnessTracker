@@ -3,49 +3,49 @@ import { ChevronDown } from "lucide-react";
 import { startWorkout } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { planDayGroups } from "@/lib/plan-day-order";
 import { MASK } from "@/lib/mask";
 import type { Routine } from "@/lib/data";
 import { relativeDay } from "@/lib/rotation";
 
-/** Manual extras never replace the regular Start/Resume action. */
-export function OptionalWorkouts({
+/** One chooser, with optional extras after every regular alternative. */
+export function WorkoutChoices({
   routines,
   lastDone = new Map(),
   demo = false,
   expanded = false,
+  planName,
+  another = true,
 }: {
   routines: Routine[];
   lastDone?: Map<string, string>;
   demo?: boolean;
   expanded?: boolean;
+  planName?: string;
+  another?: boolean;
 }) {
-  const optional = routines.filter((r) => r.isOptional);
-  if (!optional.length) return null;
+  const { regular, optional } = planDayGroups(routines);
+  const choices = [...regular, ...optional];
+  if (!choices.length) return null;
   return (
     <details
       open={expanded || undefined}
-      className="group rounded-2xl border bg-card px-4"
+      className="group"
     >
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 py-3 [&::-webkit-details-marker]:hidden">
-        <span className="font-medium">
-          Optional workouts{" "}
-          <span className="text-sm font-normal text-muted-foreground">
-            ({optional.length})
-          </span>
-        </span>
+        <span className="text-sm font-medium">{another ? "Choose another workout" : "Choose a workout"}</span>
         <ChevronDown
-          className="size-4 shrink-0 transition-transform group-open:rotate-180"
+          className="size-4 shrink-0 transition-transform motion-reduce:transition-none group-open:rotate-180"
           aria-hidden
         />
       </summary>
-      <p className="pb-3 text-sm text-muted-foreground">
-        Choose any time. Your next regular workout stays the same.
-      </p>
+      {planName && <p className={`pb-2 text-xs text-muted-foreground ${MASK}`}>{planName}</p>}
       <ul className={`divide-y border-t ${MASK}`}>
-        {optional.map((r) => (
+        {choices.map((r) => (
           <li key={r.id} className="flex items-center gap-3 py-3">
             <div className="min-w-0 flex-1">
-              <p className="break-words font-medium">{r.name}</p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><p className="break-words font-medium">{r.name}</p>{r.isOptional && <Badge variant="outline">Optional</Badge>}</div>
               <p className="text-xs text-muted-foreground">
                 {r.exercises.length}{" "}
                 {r.exercises.length === 1 ? "exercise" : "exercises"} ·{" "}
@@ -64,7 +64,7 @@ export function OptionalWorkouts({
               <Button asChild variant="secondary">
                 <Link
                   href={`/demo/workout/${r.id}`}
-                  aria-label={`Start optional ${r.name}`}
+                  aria-label={`Start ${r.isOptional ? "optional " : ""}${r.name}`}
                 >
                   Start
                 </Link>
@@ -75,7 +75,7 @@ export function OptionalWorkouts({
                   variant="secondary"
                   pendingLabel="Starting…"
                   disabled={!r.exercises.length}
-                  aria-label={`Start optional ${r.name}`}
+                  aria-label={`Start ${r.isOptional ? "optional " : ""}${r.name}`}
                 >
                   Start
                 </SubmitButton>

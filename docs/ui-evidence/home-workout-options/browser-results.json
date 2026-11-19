@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "one Today chooser and no separate optional section",
+    "regular alternatives precede optional even when sort order is lower",
+    "optional badge and safe sample Start",
+    "optional sample workout opens",
+    "keyboard Enter",
+    "offline expansion",
+    "320/390/430 without overflow",
+    "long names, dark and larger text",
+    "all-optional chooser",
+    "empty day disabled with edit link",
+    "no alternatives hides chooser"
+  ],
+  "pageErrors": []
+}
