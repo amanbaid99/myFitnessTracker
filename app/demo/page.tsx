@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { OptionalWorkouts } from "@/components/home/optional-workouts";
+import { WorkoutChoices } from "@/components/home/workout-choices";
 import { DEMO_OPTIONAL_ROUTINE } from "@/lib/demo";
-import { Check, ChevronDown, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
+import { Check, Flame, Play, SlidersHorizontal, Trophy } from "lucide-react";
 import { WorkoutRecap } from "@/components/workout-recap";
 import { DemoNav } from "@/components/demo-nav";
 import { HomeWorkoutCard } from "@/components/home/workout-card";
@@ -72,35 +72,13 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
         <div className="mt-4">
           <HomeHero lead={<HomeWorkoutCard name={next.name} exerciseCount={next.exercises.length} lastDone={relativeDay(DEMO_LAST_DONE.get(next.id))}
           action={<><Button asChild size="lg" className="w-full"><Link href={`/demo/workout/${next.id}`}><Play />Try this workout</Link></Button><div className="mt-2 grid grid-cols-2 gap-2"><Button asChild variant="secondary" className="min-h-11 text-sm"><Link href="/demo/custom-workout">Customise</Link></Button><Button asChild variant="secondary" className="min-h-11 text-sm"><Link href="/login?mode=signup">Quick log</Link></Button></div></>}
-          footer={
-        <details className="group">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium [&::-webkit-details-marker]:hidden">Choose another workout<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
-          <ul className="divide-y border-t">
-            {others.map((routine) => (
-              <li key={routine.id} className="flex items-center gap-3 px-4 py-2">
-                <div className="min-w-0 flex-1 py-1">
-                  <p className="font-medium">{routine.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {routine.exercises.length} {routine.exercises.length === 1 ? "exercise" : "exercises"} · {relativeDay(DEMO_LAST_DONE.get(routine.id))}
-                  </p>
-                </div>
-                <Button asChild variant="secondary">
-                  <Link href={`/demo/workout/${routine.id}`} aria-label={`Try ${routine.name}`}>
-                    Try
-                  </Link>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </details>
-          }
+          footer={<WorkoutChoices demo routines={[...others, DEMO_OPTIONAL_ROUTINE]} lastDone={DEMO_LAST_DONE} planName={DEMO_PLAN.name} />}
         />} name={DEMO_PROFILE.name} workoutDates={[...DEMO_LAST_DONE.values()]} daysPerWeek={DEMO_PLAN.daysPerWeek}>
             <WeeklyReviewCard lastEndedAt={null} lastStartedAt={null} lastWorkoutId={null} demoReview={DEMO_WEEKLY_REVIEW} fullHref="/demo/week" />
           </HomeHero>
         </div>
 
 
-        <div className="mt-4"><OptionalWorkouts demo routines={[DEMO_OPTIONAL_ROUTINE]}/></div>
 
         {latest && <HomeWorkoutRecap href="/demo?finished=1" name={latest.name} startedAt={DEMO_LAST_DONE.get(latest.id)!} when={relativeDay(DEMO_LAST_DONE.get(latest.id))} />}
 

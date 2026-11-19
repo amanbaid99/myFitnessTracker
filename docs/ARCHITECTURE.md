@@ -476,10 +476,14 @@ from the 200-row recent History window. `suggestNextRoutineId` filters optional
 days and exempt snapshots while keeping regular out-of-order and wrap behavior.
 `getRecentWorkouts` keeps optional sessions for recaps, activity and last-done.
 
-The plan editor creates or marks optional days; PlanDays and OptionalWorkouts
+The plan editor creates or marks optional days; PlanDays and WorkoutChoices
 show badges/manual Start actions. Starts use the existing server action and
 owner RPC, including existing open-workout resumption. An all-optional plan
 shows manual choices and secondary actions. Reads fall back when new columns
 are absent, while writes never misrepresent an unsupported optional setting.
 The migration must land with approval before staging's live-schema guard permits
 this UI. No AI function or announcement deployment is needed.
+
+Today uses one WorkoutChoices list: regular alternatives followed by optional
+days with an Optional badge. It replaces the separate optional accordion. The
+all-optional fallback uses the same chooser without inventing a next day.
