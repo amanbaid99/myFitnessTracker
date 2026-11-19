@@ -124,7 +124,7 @@ export default async function TodayPage() {
           exerciseCount={open&&!customOpen&&!routines.some(r=>r.id===open.routineId)?null:workoutRoutine.exercises.length}
           lastDone={relativeDay(lastDone.get(workoutRoutine.id))}
           action={open ? <Button asChild size="lg" className="w-full"><Link href={`/workout/${open.id}`}><RotateCcw />Resume workout</Link></Button> : <><form action={startWorkout.bind(null, workoutRoutine.id)}><SubmitButton size="lg" className="w-full" pendingLabel="Starting…"><Play />Start workout</SubmitButton></form>{secondaryActions(workoutRoutine.id)}</>}
-          footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" /> : <WorkoutChoices routines={others} lastDone={lastDone} planName={plan.name} />}
+          footer={open ? <CancelWorkoutButton workoutId={open.id} loggedSets={null} className="w-full text-muted-foreground" />  : others.length ? <WorkoutChoices routines={others} lastDone={lastDone} planName={plan.name} /> : undefined}
         /> : optional.length ? <div className="mt-4 rounded-2xl border bg-card px-4"><WorkoutChoices routines={optional} lastDone={lastDone} planName={plan.name} another={false} expanded/>{secondaryActions(optional[0].id)}</div> : null)}
 
 
