@@ -2878,3 +2878,16 @@ No schema, AI, metrics, workout logging/outbox or update-tour changes. Synthetic
 local browser checks cover 320, 390 and 430 px, dark theme, larger text, keyboard
 focus, actual saves, retry/rollback, reorder and removal cancellation. Staging
 first; production release remains a separate owner-requested step.
+
+## 2026-11-19: Optional workouts in Today's existing chooser (Aman)
+
+Aman asked to show optional workouts below regular alternatives in Choose
+another workout, rather than a separate Home section. WorkoutChoices shares
+one list for both kinds of day, ordered using planDayGroups with regular days
+first. Optional badges identify the extras. No additional section heading,
+accordion or explanation is added. The sample Home uses the same component.
+
+If only optional days exist, Choose a workout is open by default. Empty days
+still show an edit link and disabled Start. Resume keeps its existing priority
+and does not expose starts for competing workouts. Plan-page grouping is
+unchanged. No rotation, goal, metric, schema, AI, outbox or tour changes.

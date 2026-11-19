@@ -4,9 +4,17 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-18.
+Last updated: 2026-11-19.
 
 ## In progress
+
+- 2026-11-19: `ui/review-home-workout-options` puts optional days last in
+  Today's existing Choose another workout list and removes its separate section.
+  Optional labels/manual starts, all-optional and empty-day states remain;
+  Plan layout, rotation and logging are unchanged. Staging-first review.
+  Evidence: `docs/ui-evidence/home-workout-options`.
+- 2026-11-18: #82 released optional plan days and Plan layout fixes to
+  production as a869509. Older review notes below describe earlier snapshots.
 
 - 2026-11-18: `ui/review-plan-day-layout` cleans up the Plan overview and
   editor after owner screenshots: closed day cards, separate optional workouts,
