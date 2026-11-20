@@ -1,5 +1,7 @@
 "use client";
 
+import { SupersetSheet } from "@/components/superset-sheet";
+import { pairFor, supersetLabel, saveSuperset, type SupersetState } from "@/lib/supersets";
 import { AddDayForm } from "@/components/plan/add-day";
 import { addPlanDay, setRoutineOptional } from "@/lib/optional-days";
 import { DaySettingsSheet } from "@/components/plan/day-settings-sheet";
@@ -42,12 +44,14 @@ type Run = (fn: () => PromiseLike<Result>, markCustom?: boolean) => Promise<stri
  */
 export function PlanEditor({
   plan,
+  supersetState = {},
   routines,
   library,
   defaultRestSec,
   units = "kg",
 }: {
   plan: Plan;
+  supersetState?: Record<string,SupersetState>;
   routines: Routine[];
   library: Exercise[];
   defaultRestSec: number;
@@ -148,6 +152,7 @@ export function PlanEditor({
           return <Fragment key={routine.id}>
           {(i === 0 || i === regular.length) && <h2 className="pt-1 text-sm font-semibold">{routine.isOptional ? "Optional workouts" : "In your rotation"}</h2>}
           <RoutineEditor
+            pairing={supersetState[routine.id]}
             units={units}
             key={routine.id}
             routine={routine}
@@ -178,6 +183,7 @@ export function PlanEditor({
 }
 
 function RoutineEditor({
+  pairing,
   units = "kg",
   routine,
   library,
@@ -189,6 +195,7 @@ function RoutineEditor({
   guideItemId,
 }: {
   routine: Routine;
+  pairing?: SupersetState;
   library: Exercise[];
   defaultRestSec: number;
   units?: "kg" | "lb";
@@ -199,6 +206,8 @@ function RoutineEditor({
   guideItemId: string | null;
 }) {
   const supabase = createClient();
+  const [pairSlot,setPairSlot]=useState<string|null>(null);
+  const pairState=pairing;
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -294,6 +303,7 @@ function RoutineEditor({
                 <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{i + 1}</span>
                 <span className="min-w-0">
                   <span className="block break-words font-medium">{item.exercise.name}</span>
+                  {pairFor(pairState?.pairs??[],item.id)&&<span className="block text-xs font-medium text-primary">Superset {supersetLabel(pairState?.pairs??[],item.id)}</span>}
                   {item.alternates && item.alternates.length > 0 && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <ArrowLeftRight className="size-3 shrink-0" aria-hidden />
@@ -363,9 +373,11 @@ function RoutineEditor({
         />
       )}
 
+      {pairSlot&&<SupersetSheet scope="plan" first={pairSlot} items={items.map(i=>({id:i.id,name:i.exercise.name}))} pairs={pairState?.pairs??[]} defaultRest={defaultRestSec} onClose={()=>setPairSlot(null)} onSave={change=>run(()=>saveSuperset(supabase,"routine",routine.id,change))}/>}
       {editingItem && (
         <ExerciseSheet
             units={units}
+          onSuperset={pairState?.available?()=>{setPairSlot(editingItem.id);setEditing(null);}:undefined}
           key={editingItem.id}
           item={editingItem}
           recordHref={`/starting-weights?exercise=${editingItem.exercise.id}&plan=${routine.planId}`}

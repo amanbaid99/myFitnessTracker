@@ -2891,3 +2891,32 @@ If only optional days exist, Choose a workout is open by default. Empty days
 still show an edit link and disabled Start. Resume keeps its existing priority
 and does not expose starts for competing workouts. Plan-page grouping is
 unchanged. No rotation, goal, metric, schema, AI, outbox or tour changes.
+
+## 2026-11-20: Two-exercise supersets (Aman)
+
+Aman requested pairing exercises in plans and while training. Each pair has
+independent working rows and a shared Rest after pair duration. Paired cards
+stay adjacent and open together, with A1/A2 (then B1/B2) labels and a Next cue.
+All rows stay inspectable, editable and manually loggable out of order. Warm-up
+sets keep their existing rest; working rest starts after both corresponding
+rows are logged or skipped. Unequal tails rest after the remaining exercise.
+Weights, reps, timed holds, assistance, progression, SQL metrics and undo remain
+independent. Pairing does not mark a set done.
+
+Plan editing saves future pairings. During a workout the default is today only;
+Also save to this plan day appears only when both slots belong to that day.
+One invoker RPC updates today and the requested future plan atomically. Its
+parent-row locks preserve unrelated pairs, reject overlaps and require owner
+access. Template plans become custom. Existing finished workouts are read-only;
+an exact replay is a no-op. New planned starts capture the plan metadata. Legacy
+workouts stay unknown/unpaired, with no history or set backfill. Removing a plan
+slot unpairs only the plan; captured workouts keep their snapshot.
+
+The logger queues pairing changes before subsequent sets using the existing
+outbox and replays pending changes over server metadata after refresh. Save
+success waits for the local write. Temporary exercises keep their existing
+cookie/until-first-set behavior; pairing does not invent a new prescription.
+Removing/replacing/converting an extra clears its old pairing, preventing stale
+links. Missing metadata on older schemas disables pairing without blocking
+ordinary logging. No AI or update-tour batch changes. The exact SQL requires
+owner approval before a schema-only release, followed by UI staging review.

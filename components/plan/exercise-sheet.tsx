@@ -56,6 +56,7 @@ export function ExerciseSheet({
   onSwap,
   onAddAlternate,
   onRemoveAlternate,
+  onSuperset,
   onClose,
   recordHref,
   onRecords,
@@ -76,6 +77,7 @@ export function ExerciseSheet({
   /** With these (and library), the sheet offers Alternates: exercises this slot takes turns with. */
   onAddAlternate?: (pick: ExercisePick) => Promise<string | null>;
   onRemoveAlternate?: (exerciseId: string) => Promise<string | null>;
+  onSuperset?: () => void;
   onClose: () => void;
   recordHref?: string;
   onRecords?: () => void;
@@ -421,6 +423,7 @@ export function ExerciseSheet({
                     <ArrowLeftRight /> Swap
                   </Button>
                 )}
+                {onSuperset&&<Button variant="outline" onClick={onSuperset}>Pair as superset</Button>}
                 <Button variant="outline" className="text-destructive" onClick={onRemove}>
                   <Trash2 /> Remove
                 </Button>

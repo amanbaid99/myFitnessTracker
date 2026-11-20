@@ -4,9 +4,18 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-19.
+Last updated: 2026-11-20.
 
 ## In progress
+
+- 2026-11-20: `ui/review-supersets` implements plan and workout pairing,
+  A1/A2 grouping, all visible working rows, rest after each resolved pair and
+  explicit future-plan scope. Offline pairing uses the existing outbox.
+  Evidence: `docs/ui-evidence/supersets`. The exact migration needs owner SQL
+  approval and a schema-only production release before UI staging. Not live.
+- 2026-11-19: #84 released the combined Today chooser as 55ec37f, with
+  optional days last and no separate Home accordion. Older review notes below
+  describe earlier snapshots.
 
 - 2026-11-19: `ui/review-home-workout-options` puts optional days last in
   Today's existing Choose another workout list and removes its separate section.
