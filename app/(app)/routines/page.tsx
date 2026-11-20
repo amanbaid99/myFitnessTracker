@@ -1,3 +1,4 @@
+import { getSupersets } from "@/lib/supersets";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Dumbbell, Pencil, Plus } from "lucide-react";
@@ -43,6 +44,7 @@ export default async function RoutinesPage() {
   }
 
   const { plan, routines } = active;
+  const pairing=Object.fromEntries(await Promise.all(routines.map(async r=>[r.id,await getSupersets(supabase,"routine",r.id)])));
 
   return (
     <>
@@ -70,7 +72,7 @@ export default async function RoutinesPage() {
         <p className="text-center text-xs text-muted-foreground">Tap a PR to check or fix it.</p>
       </header>
 
-      <PlanDays allowOptionalStart routines={routines} lastSets={lastSets} prs={prs} units={profile.units} startingWeightsHref="/starting-weights" />
+      <PlanDays pairing={pairing} allowOptionalStart routines={routines} lastSets={lastSets} prs={prs} units={profile.units} startingWeightsHref="/starting-weights" />
     </>
   );
 }

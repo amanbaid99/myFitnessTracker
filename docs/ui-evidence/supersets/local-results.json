@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "real plan save and retained failure inputs",
+    "plan indicators at 320/390/430",
+    "start snapshots pairing",
+    "bodyweight and timed rows visible together",
+    "explicit future-plan save",
+    "offline pairing persists across refresh and sync",
+    "today rest does not overwrite plan",
+    "offline individual sets, reconnect, refresh and finish",
+    "saved workout History",
+    "temporary exercise pairing and future-scope guard",
+    "removing a temporary exercise unpairs without resurrecting it"
+  ],
+  "pageErrors": []
+}

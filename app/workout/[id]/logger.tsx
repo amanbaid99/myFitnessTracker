@@ -1,5 +1,7 @@
 "use client";
 
+import { SupersetSheet } from "@/components/superset-sheet";
+import { changeSuperset, pairFor, supersetLabel, pairNext, pairRest, supersetOrder, visibleSupersets, type Superset, type SupersetState } from "@/lib/supersets";
 import { friendlyError as plainError } from "@/lib/friendly-error";
 import { parseAssistedDraft, restoreAssistedOps, validAssistance } from "@/lib/assistance";
 import { RecordSheet } from "@/components/record-sheet";
@@ -95,6 +97,7 @@ interface PR {
 
 
 export function Logger(props: {
+  supersetState?: SupersetState;
   workoutId: string;
   startedAt: string;
   routineName: string;
@@ -124,6 +127,15 @@ export function Logger(props: {
   customization?: {source:CustomSource;library:Exercise[];revision:number};
 }) {
   const { workoutId, units, demo = false, editing } = props;
+  const [pairs,setPairs]=useState<Superset[]>(props.supersetState?.pairs??[]);
+  const [pairSlot,setPairSlot]=useState<string|null>(null);
+  const pairingAvailable=demo||Boolean(props.supersetState?.available);
+  useEffect(()=>{let active=true;void (async()=>{
+    const ops=demo?[]:await pendingWorkoutOps(workoutId).catch(()=>[]);
+    let value=props.supersetState?.pairs??[];
+    for(const op of ops)if(op.kind==="setSuperset")try{value=changeSuperset(value,op.change.first,op.change.second,op.change.restSec);}catch{}
+    if(active)setPairs(value);
+  })();return()=>{active=false;};},[workoutId,demo,props.supersetState?.pairs]);
   // Alternates switched to on this screen, by slot id.
   const [swapped,setSwapped]=useState<Record<string,SlotOption & {targetSets?:number;targetReps?:number}>>({});
   const [swapIndex,setSwapIndex]=useState<number|null>(null);
@@ -152,6 +164,13 @@ export function Logger(props: {
     const o = replacement ?? (choice[i.id] ? props.options?.[i.id]?.find((x) => x.exercise.id === choice[i.id]) : undefined);
     return { ...i, ...(o?{exercise:o.exercise}:{}),targetSets:replacement?.targetSets??i.targetSets,targetReps:replacement?.targetReps??i.targetReps,restSec:restChoices[i.id]??i.restSec };
   });
+  const activePairs=visibleSupersets(pairs,items.map(i=>i.id));
+  async function clearExtraPair(item:Item) {
+    const pair=pairFor(pairs,item.id);
+    if(!isExtraItem(item)||!pair)return;
+    if(!demo)await enqueue(workoutId,{kind:"setSuperset",change:{first:item.id,second:null,restSec:pair.restSec}});
+    setPairs(prev=>changeSuperset(prev,item.id,null,pair.restSec));
+  }
   const swapLibrary=[...new Map([...(editing?.library??props.library??props.customization?.library??props.items.map(i=>i.exercise)),...Object.values(swapped).map(o=>o.exercise)].map(e=>[e.id,e])).values()];
   const isCustomSlot=(item:Item)=>props.customSession?.slotIds.includes(item.id)??false;
   async function prepareReplacement(pick:Alternative):Promise<Exercise>{
@@ -207,6 +226,12 @@ export function Logger(props: {
   function skipRows(exIndex: number, keys: string[], skip: boolean) {
     const next = exercises.map((ex, i) => i !== exIndex ? ex : { ...ex, working: ex.working.map((r) => keys.includes(r.key) && !r.logged && hold?.key !== r.key ? { ...r, skipped: skip } : r) });
     setExercises(next);
+    const pair=pairFor(activePairs,items[exIndex].id);
+    if(pair&&skip){
+      const a=next[items.findIndex(i=>i.id===pair.first)].working,b=next[items.findIndex(i=>i.id===pair.second)].working;
+      const resolved=next[exIndex].working.filter(r=>keys.includes(r.key)&&[...a,...b].some(other=>other.setNo===r.setNo&&other.logged)&&pairRest(pair,a,b,r.setNo)!==null);
+      if(resolved.length){setRest({endsAt:secondsFromNow(pair.restSec),total:pair.restSec});beep(REST_START);}
+    }
     try { localStorage.setItem(skipKey, JSON.stringify(next.flatMap((ex) => ex.working.filter((r) => r.skipped).map((r) => r.key)))); } catch {}
   }
   const exercisesRef = useRef(exercises);
@@ -555,9 +580,11 @@ export function Logger(props: {
       );
     }
     setError(null);
-    const restSec = row.setType === "warmup" ? WARMUP_REST_SEC : (item.restSec ?? props.defaultRestSec);
-    setRest({ endsAt: secondsFromNow(restSec), total: restSec });
-    beep(REST_START);
+    const pair=pairFor(activePairs,item.id);
+    const pairRows=(slot:string)=>exercises[items.findIndex(i=>i.id===slot)]?.working.map(r=>r.key===row.key?{...r,logged}:r)??[];
+    const restSec = row.setType === "warmup" ? WARMUP_REST_SEC : pair ? pairRest(pair,pairRows(pair.first),pairRows(pair.second),row.setNo) : (item.restSec ?? props.defaultRestSec);
+    setRest(restSec===null?null:{ endsAt: secondsFromNow(restSec), total: restSec });
+    if(restSec!==null)beep(REST_START);
     if (row.setType === "working") setFeelKey(row.key);
     if (demo) return;
     track("set_logged", { set_type: row.setType });
@@ -643,7 +670,8 @@ export function Logger(props: {
     const ex = exercises[exIndex];
     const next = ex.working.find((r) => r.setNo > row.setNo && !r.logged && !r.skipped);
     // That was the last set: close this exercise and open the next one.
-    if (isExerciseDone(ex)) {
+    const completedPair=pairFor(activePairs,items[exIndex].id);
+    if (isExerciseDone(ex) && (!completedPair || [completedPair.first,completedPair.second].every(slot=>isExerciseDone(exercises[items.findIndex(i=>i.id===slot)])))) {
       // The next unfinished one in the order shown, with this exercise moved up if it was done early.
       // Waits as long as the feel slider does, so the pick is seen before the card closes.
       const next = workoutOrder(exercises.length, startedRef.current);
@@ -854,6 +882,7 @@ export function Logger(props: {
           </p>
         )}
         {saveState!=="idle"&&<p role="status" className="text-xs text-muted-foreground">{saveState==="error"?"A save needs attention":saveState==="synced"?"Synced":pending>0?"Saved on this device · waiting to sync":"Saved on this device"}</p>}
+        {!demo&&props.supersetState&&!props.supersetState.available&&<p role="status" className="rounded-xl border p-3 text-sm text-muted-foreground">Superset settings could not be loaded. Logging is available; refresh when connected to restore pairing and rest guidance.</p>}
         {error && (
           <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
             {error}
@@ -876,7 +905,7 @@ export function Logger(props: {
           }
         />
 
-        {order.map((exIndex) => {
+        {supersetOrder(order,items.map(i=>i.id),activePairs).map((exIndex) => {
           const ex = exercises[exIndex];
           if (!ex) return null;
           const item = items[exIndex];
@@ -884,7 +913,12 @@ export function Logger(props: {
           const setting = ex.exerciseId in settings ? settings[ex.exerciseId] : item.exercise.machineSetting;
           const workingDone = isExerciseDone(ex);
           const showWarmups = ex.warmups.length > 0 && !skipped.includes(ex.exerciseId);
-          const open = openId === ex.exerciseId;
+          const pair=pairFor(activePairs,item.id);
+          const pairedOpen=pair&&items.some(i=>(i.id===pair.first||i.id===pair.second)&&i.exercise.id===openId);
+          const open = openId === ex.exerciseId || Boolean(pairedOpen);
+          const pairLabel=supersetLabel(activePairs,item.id);
+          const pairNextId=pair?pairNext(pair,Object.fromEntries(items.map((i,index)=>[i.id,exercises[index]?.working??[]]))):null;
+          const pairNextItem=items.find(i=>i.id===pairNextId);
           if (!open) {
             const loggedCount = ex.working.filter((r) => r.logged).length;
             return (
@@ -902,7 +936,7 @@ export function Logger(props: {
                   >
                     <span className="min-w-0 flex-1">
                       <span className={cn("flex items-center gap-1.5 font-semibold", workingDone && "text-muted-foreground")}>
-                        <span className="truncate">{item.exercise.name}</span>
+                        <span className="truncate">{item.exercise.name}</span>{pairLabel&&<Badge variant="outline">{pairLabel}</Badge>}
                         {props.options?.[item.id] && (
                           <ArrowLeftRight className="size-3.5 shrink-0 text-muted-foreground" aria-label="Has alternates" />
                         )}
@@ -1011,10 +1045,16 @@ export function Logger(props: {
                     </p>
                   )}
                 </div>
+                {pair&&<div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
+                  <p className="font-medium text-primary">Superset {pairLabel} · Rest after pair {clock(pair.restSec)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">With {items.find(i=>i.id===(pair.first===item.id?pair.second:pair.first))?.exercise.name}</p>
+                  {pairNextItem&&<Button variant="ghost" className="mt-1 min-h-11 w-full justify-start px-0" onClick={()=>openExercise(pairNextItem.exercise.id)}>Next: {supersetLabel(activePairs,pairNextItem.id)} · {pairNextItem.exercise.name}</Button>}
+                </div>}
                 {toolsFor === ex.exerciseId && <div className="mt-3">
-                    <div className="mb-2 flex gap-1.5">
+                    <div className="mb-2 flex flex-wrap gap-1.5">
                       <ActionTile icon={<ArrowLeftRight />} label="Replace" onClick={()=>setSwapIndex(exIndex)} ariaLabel={`Replace exercise ${item.exercise.name}`} />
-                      <ActionTile icon={<Timer />} label={`Rest ${clock(item.restSec ?? props.defaultRestSec)}`} onClick={()=>setRestIndex(exIndex)} ariaLabel={`Rest timer for ${item.exercise.name}, ${clock(item.restSec ?? props.defaultRestSec)}`} />
+                      {pairingAvailable&&<ActionTile icon={<ArrowLeftRight />} label="Superset" onClick={()=>setPairSlot(item.id)} ariaLabel={`${pair?"Edit superset":"Pair as superset"} for ${item.exercise.name}`} />}
+                      <ActionTile icon={<Timer />} label={pair?"Pair rest":`Rest ${clock(item.restSec ?? props.defaultRestSec)}`} onClick={()=>pair?setPairSlot(item.id):setRestIndex(exIndex)} ariaLabel={`Rest timer for ${item.exercise.name}, ${clock(pair?.restSec??item.restSec ?? props.defaultRestSec)}`} />
                       {!setting && showSettingChip(null, item.exercise.equipment) && (
                         <ActionTile icon={<Armchair />} label="Seat" onClick={() => setSeatEditFor(ex.exerciseId)} ariaLabel={`Add a seat or pin setting for ${item.exercise.name}`} />
                       )}
@@ -1045,7 +1085,7 @@ export function Logger(props: {
                                 { exerciseId: item.exercise.id, name: item.exercise.name, equipment: item.exercise.equipment },
                                 { sets: item.targetSets, reps: item.targetReps, restSec: item.restSec },
                               );
-                              if (!res.error) removeExtra(workoutId, item.exercise.id);
+                              if (!res.error) {await clearExtraPair(item);removeExtra(workoutId, item.exercise.id);}
                               return res;
                             });
                             if (err) setError(err);
@@ -1059,6 +1099,7 @@ export function Logger(props: {
                             className="px-2 text-muted-foreground"
                             onClick={async () => {
                               const err = await applyEdit(async (s) => {
+                                await clearExtraPair(item);
                                 removeExtra(workoutId, item.exercise.id);
                                 if(isCustomSlot(item))return s.rpc("remove_custom_workout_exercise",{p_workout:workoutId,p_slot:item.id});
                                 return { error: null };
@@ -1373,10 +1414,11 @@ export function Logger(props: {
             )[0];
             if (!demo) {
               if (isCustomSlot(item)) {
-                if(isExtraItem(item))removeExtra(workoutId,item.exercise.id);
+                if(isExtraItem(item)){await clearExtraPair(item);removeExtra(workoutId,item.exercise.id);}
                 await enqueue(workoutId,{kind:"setCustomExercise",workoutId,slotId:item.id,previousId:item.exercise.id,exerciseId:replacement.id});
                 saveAdjustment(workoutId,item.id,{exerciseId:replacement.id,targetReps:replacementTarget});
               } else if (isExtraItem(item)) {
+                await clearExtraPair(item);
                 removeExtra(workoutId, item.exercise.id);
                 addExtra(workoutId, replacement.id, {sets:item.targetSets,reps:item.targetReps,restSec:item.restSec});
               } else
@@ -1441,6 +1483,13 @@ export function Logger(props: {
         />
       )}
 
+      {pairSlot&&<SupersetSheet scope="workout" first={pairSlot} items={items.map(i=>({id:i.id,name:i.exercise.name}))} pairs={activePairs} defaultRest={props.defaultRestSec} futureIds={editing&&!editing.sessionOnly?editing.slots.map(i=>i.id):[]} onClose={()=>setPairSlot(null)} onSave={async (change,future)=>{
+        try {
+          const next=changeSuperset(pairs,change.first,change.second,change.restSec);
+          if(!demo)await enqueue(workoutId,{kind:"setSuperset",change:{...change,...(future&&editing?{routineId:editing.routineId}:{})}});
+          setPairs(next);if(!syncFailed.current)setSaveState("local");return null;
+        }catch{return "Could not save the pairing on this device. Try again.";}
+      }}/>}
       {restIndex !== null && items[restIndex] && (
         <RestTimerSheet
           key={items[restIndex].id}

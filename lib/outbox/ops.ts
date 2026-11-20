@@ -7,6 +7,7 @@
  */
 
 export type Op =
+  | { kind: "setSuperset"; change: import("../supersets").SupersetChange }
   | {
       kind: "insertSet";
       row: {

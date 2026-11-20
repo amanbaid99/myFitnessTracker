@@ -5,12 +5,14 @@ import { parseRestDuration } from "@/lib/rest-duration";
 const PRESETS = [30, 45, 60, 90, 120, 150, 180, 240, 300];
 export function RestDuration({
   value,
+  label = "Rest between sets",
   defaultSec,
   onChange,
   onValidityChange,
   allowDefault = true,
 }: {
   value: number | null;
+  label?: string;
   defaultSec: number;
   onChange: (value: number | null) => void;
   onValidityChange?: (valid: boolean) => void;
@@ -34,7 +36,7 @@ export function RestDuration({
   return (
     <div>
       <label htmlFor={id} className="text-sm font-medium">
-        Rest between sets
+        {label}
       </label>
       <select
         id={id}

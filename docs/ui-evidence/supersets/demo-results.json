@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "pair via exercise options",
+    "sheet and paired sets at 320/390/430",
+    "all four and three set rows visible",
+    "no rest after A1",
+    "rest after A2",
+    "undo retains editable row",
+    "unpair",
+    "Escape retains edited set input"
+  ],
+  "pageErrors": []
+}

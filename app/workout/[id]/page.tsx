@@ -1,3 +1,4 @@
+import { getSupersets } from "@/lib/supersets";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -49,6 +50,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
   const result = await load(async () => {
     const workout = await getWorkout(supabase, id);
     if (!workout) return null;
+    const supersetState=await getSupersets(supabase,"workout",id);
     const [routine, logged, initialLibrary, guide, customizations] = await Promise.all([
       workout.routineId ? getRoutine(supabase, workout.routineId) : Promise.resolve(null),
       getWorkoutSets(supabase, id),
@@ -91,7 +93,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
       getBodyWeights(supabase),
     ]);
     const bodyWeightKg = bodyWeights.entries[bodyWeights.entries.length - 1]?.weightKg ?? bodyWeights.profileKg;
-    return { custom, sourceRoutine, planRoutines, customAvailable:customizations.available, guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
+    return { supersetState, custom, sourceRoutine, planRoutines, customAvailable:customizations.available, guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg };
   });
 
   if (result.error !== null) {
@@ -102,7 +104,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     );
   }
   if (!result.data) notFound();
-  const { custom, sourceRoutine, planRoutines, customAvailable, guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
+  const { supersetState, custom, sourceRoutine, planRoutines, customAvailable, guide, workout, routine, items, slotsOfDay, profile, logged, previous, prs, notes, lastNotes, plan, library, planSlots, bodyWeightKg } = result.data;
   if (workout.endedAt) redirect("/");
   if (!routine && !custom) notFound();
 
@@ -123,6 +125,7 @@ export default async function WorkoutPage({ params }: PageProps<"/workout/[id]">
     <GuideProvider seen={guide.seen} joinedAt={guide.joinedAt} full={false}>
     <Logger
       key={structure}
+      supersetState={supersetState}
       workoutId={workout.id}
       startedAt={workout.startedAt}
       routineName={custom?.name ?? routine!.name}

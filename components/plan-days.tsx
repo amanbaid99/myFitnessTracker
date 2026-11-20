@@ -3,6 +3,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ChevronDown, Trophy } from "lucide-react";
+import { pairFor, supersetLabel, type SupersetState } from "@/lib/supersets";
 import { Fragment } from "react";
 import { MASK } from "@/lib/mask";
 import { planDayGroups } from "@/lib/plan-day-order";
@@ -15,6 +16,7 @@ import { formatTarget } from "@/lib/tracking";
 /** Every day of a plan with each exercise's targets, PR and last set. */
 export function PlanDays({
   routines,
+  pairing = {},
   lastSets,
   prs,
   units,
@@ -23,6 +25,7 @@ export function PlanDays({
   demo = false,
 }: {
   routines: Routine[];
+  pairing?: Record<string,SupersetState>;
   allowOptionalStart?: boolean;
   demo?: boolean;
   lastSets: Map<string, SetLike>;
@@ -58,6 +61,7 @@ export function PlanDays({
             </summary>
           <ol className="divide-y border-t">
             {routine.exercises.map(({ id, exercise, targetSets, targetReps }) => {
+              const pair=pairFor(pairing[routine.id]?.pairs??[],id);
               const last = lastSets.get(exercise.id);
               const pr = prs.get(exercise.id);
               return (
@@ -65,6 +69,7 @@ export function PlanDays({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="break-words font-medium leading-snug">{exercise.name}</p>
+                      {pair&&<p className="mt-1 text-xs font-medium text-primary">Superset {supersetLabel(pairing[routine.id]?.pairs??[],id)}</p>}
                       <div className="mt-1 flex flex-wrap gap-1">
                         {exercise.machineSetting && <Badge variant="accent">{settingLabel(exercise.machineSetting)}</Badge>}
                         {exercise.perHand && <Badge variant="outline">per hand</Badge>}
