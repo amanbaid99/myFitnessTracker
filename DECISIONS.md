@@ -2900,3 +2900,10 @@ exercise name: "Last time" with only the sets at the top weight
 (`topSets`, so 22.5 + 3.75 kg x 20 then 30 kg x 14, 15 reads
 "30 kg x 14, 15") and "PR" with a trophy. Full detail stays in History.
 Aman did not want it behind the ⋯ button, so it stays visible.
+
+## 22 Nov: Weekly analysis page shows everything (Aman)
+
+Aman asked for no folded sections on the weekly analysis page. "Why we
+think this" for the week and for the bigger picture, and the muscle map's
+"How this is worked out" note, are now shown in full. The workout recap
+card keeps its fold, since it sits inside the history detail.

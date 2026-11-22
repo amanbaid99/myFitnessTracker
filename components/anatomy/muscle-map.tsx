@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { ChevronDown, PersonStanding } from "lucide-react";
+import { PersonStanding } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { rankedWorkload, workoutBodyLink } from "@/lib/anatomy";
 import { track } from "@/lib/analytics";
@@ -47,10 +47,7 @@ export function MuscleMap({ workload, title, note }: {
           </li>)}</ul>
         </>
       )}
-      <details className="group mt-3 text-sm">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-muted-foreground [&::-webkit-details-marker]:hidden">How this is worked out<ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden /></summary>
-        <p className="pb-2 text-xs leading-relaxed text-muted-foreground">{note}</p>
-      </details>
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground"><span className="font-medium">How this is worked out: </span>{note}</p>
       {open3d && <AtlasSheet url={workoutBodyLink(workload, theme)} title={title} onClose={() => setOpen3d(false)} />}
     </section>
   );
