@@ -49,6 +49,19 @@ export function formatSets(sets: SetLike[], units: Units): string {
 }
 
 /**
+ * The sets at the heaviest load, for a quick "Last time" glance: a lighter
+ * first set (22.5 + 3.75 kg x 20, then 30 kg x 14 and x 15) is left out so
+ * the line reads "30 kg x 14, 15". Assisted and timed sets, and sets with no
+ * weight, are returned as they are. Pure.
+ */
+export function topSets<T extends SetLike>(sets: T[]): T[] {
+  if (sets.some((s) => s.assistanceKg != null || s.durationSec != null || s.weightKg === null)) return sets;
+  const load = (s: SetLike) => (s.weightKg ?? 0) + (s.addedKg ?? 0);
+  const top = Math.max(...sets.map(load));
+  return sets.filter((s) => load(s) === top);
+}
+
+/**
  * A machine's seat or pin setting as a label: a bare number reads as
  * "Seat 5"; anything with words ("pin 7", "seat 3, handles 2") as typed.
  */

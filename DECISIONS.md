@@ -2891,3 +2891,12 @@ If only optional days exist, Choose a workout is open by default. Empty days
 still show an edit link and disabled Start. Resume keeps its existing priority
 and does not expose starts for competing workouts. Plan-page grouping is
 unchanged. No rotation, goal, metric, schema, AI, outbox or tour changes.
+
+## 22 Nov: Last time and PR as two tiles (Aman)
+
+The single "Last time ... PR ..." line wrapped into a cluttered block when
+a session used two weights. It is now two side-by-side tiles under the
+exercise name: "Last time" with only the sets at the top weight
+(`topSets`, so 22.5 + 3.75 kg x 20 then 30 kg x 14, 15 reads
+"30 kg x 14, 15") and "PR" with a trophy. Full detail stays in History.
+Aman did not want it behind the ⋯ button, so it stays visible.

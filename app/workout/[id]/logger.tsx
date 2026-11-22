@@ -17,7 +17,7 @@ import { Armchair, ArrowLeftRight, Check, MoreHorizontal, SkipForward, PersonSta
 import { CancelWorkoutButton } from "@/components/cancel-workout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatSet, formatSets, settingLabel, showSettingChip, exerciseMeta } from "@/lib/format";
+import { formatSet, formatSets, settingLabel, showSettingChip, exerciseMeta, topSets } from "@/lib/format";
 import { beep, REST_END, REST_START, setSoundOn, soundOn } from "@/lib/beep";
 import { adjustNextSet, FEEL_LABEL, FEEL_RPE, feelFromRpe } from "@/lib/progression";
 import { colorAt, FEEL_STOPS, MAX_RPE, MIN_RPE, positionOf, rpeAt, stepRpe, stopPosition, feelDisplay, feelGesture, FEEL_SETTLE_MS } from "@/lib/feel";
@@ -986,12 +986,22 @@ export function Logger(props: {
                   </Button>
                 </div>
                 <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {ex.last.length > 0
-                      ? <span>Last time <span className="font-medium text-foreground tabular-nums">{formatSets(ex.last, units)}</span></span>
-                      : <span>First time: log what you do and it becomes your starting point</span>}
-                    {pr && <span className="flex items-center gap-1"><Trophy className="size-3.5 text-primary" aria-hidden />PR <span className="font-medium text-foreground tabular-nums">{formatSet(pr, units)}</span></span>}
-                  </p>
+                  {ex.last.length > 0 || pr ? (
+                    <div className={cn("grid gap-2 pb-1", ex.last.length > 0 && pr && "grid-cols-2")}>
+                      {ex.last.length > 0 && (
+                        <div className="min-w-0 rounded-xl bg-muted/60 px-3 py-2">
+                          <p>Last time</p>
+                          <p className="mt-0.5 truncate text-sm font-medium text-foreground tabular-nums">{formatSets(topSets(ex.last), units)}</p>
+                        </div>
+                      )}
+                      {pr && (
+                        <div className="min-w-0 rounded-xl bg-muted/60 px-3 py-2">
+                          <p className="flex items-center gap-1"><Trophy className="size-3 text-primary" aria-hidden />PR</p>
+                          <p className="mt-0.5 truncate text-sm font-medium text-foreground tabular-nums">{formatSet(pr, units)}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : <p>First time: log what you do and it becomes your starting point</p>}
                   {item.exercise.equipment === "bodyweight" && item.exercise.tracking !== "time" && (
                     <p>
                       {props.bodyWeightKg ? (
