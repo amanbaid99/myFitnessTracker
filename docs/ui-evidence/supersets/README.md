@@ -45,3 +45,9 @@ Final results: lint, typecheck, all 596 unit tests and production build pass.
 Full local database/RLS, start/review race and seed checks pass with the final
 migration. Both browser scripts pass against the final UI, including removal
 of a paired temporary extra and Escape retaining an edited set input.
+
+2026-11-25 integration: merged the current production baseline ebc0079, retained
+the newer Last time/PR tiles and fully expanded weekly analysis, and reran both
+browser scripts successfully. Updated screenshots show that merged UI. Lint,
+types, 598 unit tests and build pass; the full DB/RLS/race/seed suite passes.
+The schema remains byte-identical to the owner's approved migration.
