@@ -613,5 +613,6 @@ reset role;
 \i supabase/tests/history-missed-sets.sql
 \i supabase/tests/weighted-sets.sql
 \i supabase/tests/optional-days.sql
+\i supabase/tests/supersets.sql
 \o
 \echo 'All RLS checks passed.'
