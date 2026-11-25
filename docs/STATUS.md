@@ -4,15 +4,20 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-20.
+Last updated: 2026-11-25.
 
 ## In progress
 
-- 2026-11-20: `ui/review-supersets` implements plan and workout pairing,
-  A1/A2 grouping, all visible working rows, rest after each resolved pair and
-  explicit future-plan scope. Offline pairing uses the existing outbox.
-  Evidence: `docs/ui-evidence/supersets`. The exact migration needs owner SQL
-  approval and a schema-only production release before UI staging. Not live.
+- 2026-11-25: Owner approved the exact superset migration shown in chat
+  (SHA256 421b738362b4f3106c7fb0dfddfa5bf618bbd5c57991a4de7aa4bf0d2bb13e8f).
+  Schema-only #88 is merged as 88a63ab. Confirm its application before enabling
+  #85 on staging. The superset UI passes lint/types, 598 tests, build and real
+  synthetic browser/API flows, including offline refresh/sync and removal.
+  Latest Last time/PR tiles and expanded weekly analysis are retained. UI
+  production release stays separate. Evidence: `docs/ui-evidence/supersets`.
+- 2026-11-20: Initial superset implementation is in #85: plan/workout pairing,
+  all rows visible, shared round rest and explicit future scope. The approval
+  and release notes above supersede its original pending-SQL status.
 - 2026-11-19: #84 released the combined Today chooser as 55ec37f, with
   optional days last and no separate Home accordion. Older review notes below
   describe earlier snapshots.

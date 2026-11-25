@@ -2936,3 +2936,13 @@ Aman asked for no folded sections on the weekly analysis page. "Why we
 think this" for the week and for the bigger picture, and the muscle map's
 "How this is worked out" note, are now shown in full. The workout recap
 card keeps its fold, since it sits inside the history detail.
+
+## 2026-11-25: Approved superset schema before UI staging (Aman)
+
+Aman approved the exact SQL shown for draft #85. Release that unchanged
+migration and its RLS tests from the current production branch first. Its
+SHA256 is 421b738362b4f3106c7fb0dfddfa5bf618bbd5c57991a4de7aa4bf0d2bb13e8f.
+The superset UI stays separate until the shared live database has the schema.
+The newer Last time/PR tiles and expanded weekly analysis remain intact.
+No feature tour or AI deployment is included. UI production release remains
+separate from staging review.

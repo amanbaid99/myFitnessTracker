@@ -11,7 +11,7 @@ Last updated: 2026-11-12.
 
 | Item | Status | PR | Notes |
 | --- | --- | --- | --- |
-| Owner feature: Supersets | In review, SQL approval pending | `ui/review-supersets` | Plan/workout pairing, all rows visible, shared rest and offline saves; evidence `ui-evidence/supersets` |
+| Owner feature: Supersets | Ready for staging, schema approved | `ui/review-supersets` | Plan/workout pairing, all rows visible, shared rest and offline saves; evidence `ui-evidence/supersets` |
 | Owner follow-up: Today workout choices | In review | `ui/review-home-workout-options` | Optional days last in the existing chooser, no separate Home section |
 | Owner follow-up: Plan day layout | In review | `ui/review-plan-day-layout` | Closed day cards, optional group, labelled settings and narrow rows; evidence `ui-evidence/plan-day-layout` |
 | Owner follow-up: Home training overview | In review | `ui/review-home-training-overview` | Broader four-week takeaway on Home, honest legacy states and direct matching detail navigation |

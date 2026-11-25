@@ -488,7 +488,7 @@ Today uses one WorkoutChoices list: regular alternatives followed by optional
 days with an Optional badge. It replaces the separate optional accordion. The
 all-optional fallback uses the same chooser without inventing a next day.
 
-## Supersets (pending schema approval)
+## Supersets (schema approved)
 
 `lib/supersets.ts` validates pair metadata and derives adjacency, A/B labels,
 round rest and the next working row. `SupersetSheet` is shared between the plan
