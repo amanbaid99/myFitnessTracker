@@ -84,3 +84,11 @@ it("sends assisted set values unchanged and treats a repeated insert as already 
  const op={kind:"insertSet" as const,row:{id:"local",workout_id:"workout",exercise_id:"dips",set_no:1,set_type:"working" as const,weight_kg:null,added_kg:0,assistance_kg:0,reps:8}};
  expect(await sendOp(client,op)).toEqual({ok:true});expect(await sendOp(client,op)).toEqual({ok:true});expect(insert).toHaveBeenCalledWith(op.row);
 });
+
+it("queues superset metadata against the workout without changing set or rest operations",async()=>{
+ const rpc=vi.fn().mockResolvedValue({error:null});const client={rpc} as unknown as SupabaseClient;
+ const op={kind:"setSuperset" as const,change:{first:"a",second:"b",restSec:90,routineId:"routine"}};
+ expect(await sendOp(client,op,"workout")).toEqual({ok:true});
+ expect(rpc).toHaveBeenCalledWith("set_superset",{p_kind:"workout",p_parent:"workout",p_first:"a",p_second:"b",p_rest:90,p_routine:"routine"});
+ expect(await sendOp(client,op)).toMatchObject({ok:false,transient:false});
+});

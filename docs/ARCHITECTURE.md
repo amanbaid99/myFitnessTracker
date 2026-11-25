@@ -487,3 +487,16 @@ this UI. No AI function or announcement deployment is needed.
 Today uses one WorkoutChoices list: regular alternatives followed by optional
 days with an Optional badge. It replaces the separate optional accordion. The
 all-optional fallback uses the same chooser without inventing a next day.
+
+## Supersets (schema approved)
+
+`lib/supersets.ts` validates pair metadata and derives adjacency, A/B labels,
+round rest and the next working row. `SupersetSheet` is shared between the plan
+editor and logger. `routines.supersets` defaults to an empty array; new workouts
+snapshot it into `workouts.supersets`. Legacy NULL remains unknown/unpaired.
+The owner-scoped invoker `set_superset` locks the parent, validates membership
+and conflicts, and optionally saves to the source plan in the same transaction.
+`setSuperset` outbox operations retain pending pairs across refresh and keep
+local save, pending sync and failed sync distinct. Ordinary set operations,
+progression and SQL metrics are unchanged. Plan-slot removal cleans up only
+future metadata. Extras retain their existing cookies and set-derived recovery.

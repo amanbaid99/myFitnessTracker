@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { saveSuperset } from "../supersets";
 import { ALREADY_SAVED, toResult, type Op, type SendResult } from "./ops";
 
 /**
@@ -12,6 +13,9 @@ export async function sendOp(
   workoutId?: string,
 ): Promise<SendResult> {
   switch (op.kind) {
+    case "setSuperset":
+      if (!workoutId) return {ok:false,transient:false,message:"Workout unavailable"};
+      return toResult(await saveSuperset(supabase,"workout",workoutId,op.change));
     case "insertSet":
       return toResult(await supabase.from("sets").insert(op.row), [
         ALREADY_SAVED,

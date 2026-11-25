@@ -1,3 +1,4 @@
+import { getSupersets } from "@/lib/supersets";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { DataError } from "@/components/data-error";
@@ -23,11 +24,12 @@ export default async function PlanPage({ params }: PageProps<"/plans/[id]">) {
   if (result.error !== null) return <DataError message={result.error} />;
   const [plan, routines, library, profile] = result.data;
   if (!plan) notFound();
+  const supersets=Object.fromEntries(await Promise.all(routines.map(async r=>[r.id,await getSupersets(supabase,"routine",r.id)])));
 
   return (
     <>
       <BackLink fallback="/plans" label="All plans" />
-      <PlanEditor units={profile.units} plan={plan} routines={routines} library={library} defaultRestSec={profile.defaultRestSec} />
+      <PlanEditor supersetState={supersets} units={profile.units} plan={plan} routines={routines} library={library} defaultRestSec={profile.defaultRestSec} />
     </>
   );
 }
