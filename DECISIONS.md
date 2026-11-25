@@ -2920,3 +2920,19 @@ Removing/replacing/converting an extra clears its old pairing, preventing stale
 links. Missing metadata on older schemas disables pairing without blocking
 ordinary logging. No AI or update-tour batch changes. The exact SQL requires
 owner approval before a schema-only release, followed by UI staging review.
+
+## 22 Nov: Last time and PR as two tiles (Aman)
+
+The single "Last time ... PR ..." line wrapped into a cluttered block when
+a session used two weights. It is now two side-by-side tiles under the
+exercise name: "Last time" with only the sets at the top weight
+(`topSets`, so 22.5 + 3.75 kg x 20 then 30 kg x 14, 15 reads
+"30 kg x 14, 15") and "PR" with a trophy. Full detail stays in History.
+Aman did not want it behind the ⋯ button, so it stays visible.
+
+## 22 Nov: Weekly analysis page shows everything (Aman)
+
+Aman asked for no folded sections on the weekly analysis page. "Why we
+think this" for the week and for the bigger picture, and the muscle map's
+"How this is worked out" note, are now shown in full. The workout recap
+card keeps its fold, since it sits inside the history detail.

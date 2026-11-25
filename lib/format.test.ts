@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatLoad, formatSet, formatSets, settingLabel, showSettingChip, exerciseMeta } from "./format";
+import { formatLoad, formatSet, formatSets, settingLabel, showSettingChip, exerciseMeta, topSets } from "./format";
 
 describe("formatSet", () => {
   it.each([
@@ -60,5 +60,16 @@ describe("exerciseMeta", () => {
   it("lists only what applies", () => {
     expect(exerciseMeta({ target: "3 × 10", perHand: true, extra: false })).toEqual(["3 × 10", "per hand"]);
     expect(exerciseMeta({ target: "4 × 6", perHand: false, extra: true })).toEqual(["4 × 6", "this workout only"]);
+  });
+});
+
+describe("topSets", () => {
+  it("keeps only the sets at the heaviest load (Aman, 22 Nov)", () => {
+    const sets = [{ weightKg: 22.5, addedKg: 3.75, reps: 20 }, { weightKg: 30, addedKg: 0, reps: 14 }, { weightKg: 30, addedKg: 0, reps: 15 }];
+    expect(formatSets(topSets(sets), "kg")).toBe("30 kg × 14, 15");
+  });
+  it("leaves bodyweight sets alone", () => {
+    const sets = [{ weightKg: null, addedKg: 0, reps: 12 }, { weightKg: null, addedKg: 0, reps: 10 }];
+    expect(topSets(sets)).toEqual(sets);
   });
 });
