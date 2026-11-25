@@ -4,9 +4,15 @@ What is live, what is in flight and what is known to be missing. Update
 this when you finish, start or find something the next agent should
 know. Newest first within each section; date every line.
 
-Last updated: 2026-11-19.
+Last updated: 2026-11-25.
 
 ## In progress
+
+- 2026-11-25: Owner approved the exact superset migration shown in chat
+  (SHA256 421b738362b4f3106c7fb0dfddfa5bf618bbd5c57991a4de7aa4bf0d2bb13e8f).
+  This branch releases only schema and RLS tests. Superset controls stay in
+  draft #85 until the migration is live, then move to staging for review.
+  The existing workout UI, logging and metrics are unchanged here.
 
 - 2026-11-19: `ui/review-home-workout-options` puts optional days last in
   Today's existing Choose another workout list and removes its separate section.
